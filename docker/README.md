@@ -103,4 +103,4 @@ cd application && php artisan migrate --seed
 ## Referencias
 
 - Issue #43 — T7 (mirror local de S3).
-- `aws/iac/cloudformation/stacks/06-storage.yaml` — definición de los buckets en AWS.
+- `aws/iac/cloudformation/stacks/03-storage.yaml` — definición de los buckets en AWS.
