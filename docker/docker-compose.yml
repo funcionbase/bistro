@@ -54,3 +54,17 @@ services:
             echo 'Buckets ready: assets (public download), documents (private)' &&
             exit 0
             "
+
+    # pgweb: GUI web liviana para la BD local. Autoconecta vía DATABASE_URL,
+    # sin login. http://localhost:8081 una vez levantado.
+    # Bind a 127.0.0.1 para no exponer credenciales en la LAN.
+    pgweb:
+        image: sosedoff/pgweb:latest
+        container_name: flexyflow_pgweb
+        restart: unless-stopped
+        depends_on:
+            - db
+        environment:
+            - PGWEB_DATABASE_URL=postgres://postgres:root@db:5432/laravel_app?sslmode=disable
+        ports:
+            - "127.0.0.1:8081:8081"
