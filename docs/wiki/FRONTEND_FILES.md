@@ -1030,3 +1030,68 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 ### `lib/api.ts`
 
 - `apiFetch` ahora detecta `403 + { code: 'company_not_verified' }` y hace `router.visit('/company/under-review')` si no estás ya ahí. Esto cubre el caso de una ruta de negocio invocada con sesión válida pero empresa no verificada (e.g. botón que llama directo a `/api/v1/orders`).
+
+---
+
+## Colaboradores y planificador de turnos (#182)
+
+### Páginas Inertia
+
+- `pages/employees/index.tsx` — listado paginado con filtros (sede,
+  cargo, estado, búsqueda) + acción "Nuevo colaborador" + acceso a Informes.
+  Badge 🛡 para usuarios con cuenta en el sistema.
+- `pages/employees/create.tsx` — usa `<EmployeeForm />` para POST a
+  `/api/v1/employees`. Redirige al listado al guardar.
+- `pages/employees/show.tsx` — detalle/edición + cambio de estado de
+  vinculación (modal) + revelar salario (audita `employee.salary_viewed`)
+  + botón archivar.
+- `pages/employees/reports.tsx` — tabla con filtros de fecha y exports
+  CSV/PDF (links directos a la API).
+- `pages/planner/week.tsx` — vista semanal por colaborador. Click en
+  turno scheduled abre modal de cancelación (motivo + nota). Botón
+  "Asignar turno" abre modal con select de empleado + fecha + horas.
+  Si fin ≤ inicio se asume cruce de medianoche y se mueve `ends_at`
+  un día adelante.
+- `pages/planner/month.tsx` — calendario mensual con horas planificadas
+  vs canceladas por día. Click en celda → drill-down a planificador
+  semanal con la semana correspondiente.
+- `pages/me/agenda.tsx` — agenda del colaborador. Lee
+  `/api/v1/me/shifts`. Read-only.
+- `pages/me/perfil.tsx` — perfil con salario enmascarado. Botón 👁
+  destapa salario llamando `/api/v1/me/salary` (audita).
+
+### Componentes
+
+- `components/employee-form.tsx` — formulario HHRR compartido entre
+  create y edit. 5 fieldsets: Identidad, Contacto, Cargo y sede,
+  Seguridad social, Pago, Jornada. Carga sedes y cargos al montar.
+
+### Rutas web
+
+- `/configuracion/colaboradores` (index), `/nuevo`, `/{id}` (show),
+  `/informes` — gate RBAC con `employees.read` / `employees.create` /
+  `workforce.reports`.
+- `/planificador`, `/planificador/calendario` — gate `shifts.read`.
+- `/me/agenda`, `/me/perfil` — sin gate específico; el endpoint backend
+  responde 404 si el user no tiene perfil `employees`.
+
+### Sidebar
+
+Grupo "Colaboradores" agregado bajo "Configuración" con 4 ítems
+(Colaboradores, Planificador, Calendario mensual, Informes) gobernados
+por sus respectivos permisos `employees.read` / `shifts.read` /
+`workforce.reports`. Iconos: UserCog, CalendarRange, BarChart2.
+
+### Salario enmascarado
+
+El backend devuelve `pay_rate: null, pay_rate_masked: true` cuando el
+actor no tiene `employees.view_salary`. El frontend muestra `••••••`.
+El botón 👁 hace una llamada separada al endpoint dedicado (que audita
+la consulta) y el cliente guarda el valor en estado local sin volver a
+recargar la vista completa.
+
+### Texto contable visible
+
+La página de informes incluye una nota explícita: "el costo estimado no
+incluye prestaciones, parafiscales ni retención en la fuente". Esto
+previene que el operador confunda el reporte con una nómina formal.

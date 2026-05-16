@@ -2509,3 +2509,134 @@ SELECT created_at, data->>'from' AS from, data->>'to' AS to,
    AND data->>'company_nit' = '<NIT>'
  ORDER BY created_at DESC;
 ```
+
+---
+
+## Colaboradores y planificador de turnos (#182)
+
+### Tablas
+
+- `employee_positions` — catálogo de cargos. `is_system=true` + `company_nit=null`
+  para los 7 cargos canónicos (waiter, cook, cashier, bar, manager, host,
+  cleaning). Custom por empresa con `is_system=false`. UNIQUE
+  `(company_nit, slug)`.
+- `employees` — perfil HHRR. UUID PK, `user_id` nullable (bigInt FK a
+  `users`). UNIQUE `(company_nit, doc_number)` y `(company_nit, email)`.
+  Columnas monetarias `decimal(12,2)`. `vinculation_status` enum cerrado.
+  Soft-archive vía `archived_at`.
+- `employees_branches` — pivote para sedes auxiliares. La sede principal
+  vive en `employees.primary_branch_id`.
+- `employee_shifts` — turno asignado. `starts_at`/`ends_at` son timestamps
+  para soportar turnos partidos + cruce de medianoche. Soft-cancel mantiene
+  fila. CHECK `ends_at > starts_at` en Postgres.
+- `company_workforce_settings` — 1:1 con `companies`. `max_weekly_hours`
+  (48 default), `min_days_off_per_week` (1 default),
+  `hours_warning_mode` (warn|block|off).
+
+### Modelos Eloquent
+
+- `App\Models\Employee` — casts decimal:2 en `pay_rate`/`base_salary`;
+  relaciones `position`, `primaryBranch`, `extraBranches`, `shifts`, `user`.
+- `App\Models\EmployeeShift` — casts datetime en `starts_at`/`ends_at`/
+  `cancelled_at`. Scopes `scheduled()`, `between($from, $to)`.
+- `App\Models\EmployeePosition` — relación `employees`. `is_system` se
+  protege en `EmployeePositionController::destroy`.
+- `App\Models\CompanyWorkforceSetting` — primary key string (NIT),
+  `incrementing=false`.
+
+### Servicios
+
+- `App\Services\ShiftActiveGuardService` — valida turno activo para
+  apertura/cierre de caja. **Propietario** y **Administrador** bypasean por
+  responsabilidad supervisoria (cobertura, emergencias, auditoría in-situ).
+  El rol Empleado y los roles custom (Cocina, Domiciliario, etc.) sí
+  requieren turno activo. Filtra por nombre del rol además de `is_system`,
+  porque los 3 roles canónicos son `is_system=true`. Lanza
+  `AuthorizationException` con mensaje `"No tienes turno activo en esta sede
+  a esta hora."`.
+- `App\Services\Shifts\ShiftSuggestionService` — algoritmo greedy de
+  asignación equitativa. Invariante: minimiza desviación estándar de horas
+  por empleado en la semana. Restricciones duras: empleado activo, sede
+  principal, sin solapamiento. Restricciones suaves: máx semanal, mín días
+  libres (devueltas como `warnings`).
+
+### Policy
+
+- `App\Policies\EmployeeVinculationPolicy::denialReason($actor, $target,
+  $newStatus)` retorna `REASON_SELF` / `REASON_TARGET_IS_OWNER` /
+  `REASON_ADMIN_CANNOT_DEMOTE_OWNER` o `null` si permitido. El controller
+  audita `employee.vinculation_change_denied` con el motivo.
+
+### Endpoints (v1)
+
+```
+GET    /api/v1/employees                          listar (filtros y paginación)
+POST   /api/v1/employees                          crear (intenta match user por email)
+GET    /api/v1/employees/{id}                     detalle
+PUT    /api/v1/employees/{id}                     editar (audita diff)
+POST   /api/v1/employees/{id}/archive             soft-archive + cancela turnos futuros
+POST   /api/v1/employees/{id}/vinculation-state   cambia estado + cascada turnos
+GET    /api/v1/employees/{id}/salary              revela pay_rate (audita)
+
+GET    /api/v1/employee-positions                 catálogo combinado (sistema + empresa)
+POST   /api/v1/employee-positions                 custom (is_system=false)
+DELETE /api/v1/employee-positions/{id}            solo no-system
+
+GET    /api/v1/shifts                             ?from&to&branch_id&employee_id
+POST   /api/v1/shifts                             crea con lockForUpdate sobre employee
+PUT    /api/v1/shifts/{id}
+POST   /api/v1/shifts/{id}/cancel
+POST   /api/v1/shifts/suggest                     borrador equitativo
+
+GET    /api/v1/me/shifts                          agenda del colaborador
+GET    /api/v1/me/profile                         perfil + salario enmascarado
+GET    /api/v1/me/salary                          destapa salario propio (audita)
+
+GET    /api/v1/workforce-settings
+PUT    /api/v1/workforce-settings
+
+GET    /api/v1/reports/workforce                  JSON
+GET    /api/v1/reports/workforce.csv              CSV con BOM UTF-8
+GET    /api/v1/reports/workforce.pdf              PDF (blade pdf.workforce-report)
+```
+
+### Seeders
+
+- `FeatureSeeder` — registra las 10 features nuevas en grupos
+  Colaboradores / Planificador / Reportes.
+- `PermissionTemplateSeeder` — `shifts.read` se otorga al template `employee`
+  para que aparezca en el permissions del JWT y `/me/agenda` quede habilitado.
+- `EmployeePositionSeeder` — siembra los 7 cargos del sistema (idempotente).
+- `EmployeesFeatureBackfillSeeder` — proyecta los permisos sobre los roles
+  del sistema (`is_system=true`) de empresas existentes. Idempotente con
+  `firstOrCreate` por `(company_role_id, feature_id)`.
+- `WorkforceSettingsBackfillSeeder` — crea filas default en
+  `company_workforce_settings` para empresas existentes (idempotente).
+- Empresas nuevas reciben workforce_settings en `CompanyEnrollmentController`.
+
+### Auditoría — acciones nuevas
+
+- `employee.created`, `employee.updated`, `employee.archived`
+- `employee.vinculation_changed`, `employee.vinculation_change_denied`
+- `employee.salary_viewed`, `employee.salary_viewed_self`
+- `employee.linked_to_user` (cuando el match user-email enlaza tras enrollment)
+- `employee_position.created`, `employee_position.deleted`
+- `shift.created`, `shift.updated`, `shift.cancelled`
+- `shift.bulk_cancelled_by_state`, `shift.suggested`
+- `workforce.settings_updated`
+
+### Integración con módulo de Caja
+
+`CashRegisterController::open()` y `close()` invocan
+`$this->shiftGuard->assertActiveShift($user, $companyNit, $branchId)`. Owners
+bypasean; el resto necesita un `employee_shift` `scheduled` en la sede
+actual cuya ventana contenga `NOW()`. Si falla → 403 vía
+`AuthorizationException`.
+
+### Enrollment
+
+- `UserEnrollmentController::linkExistingEmployees($user)` — al completar
+  enrollment, busca employees no enlazados con el mismo email en empresas
+  donde el user es miembro, y enlaza `user_id`.
+- `CompanyEnrollmentController` — crea fila default en
+  `company_workforce_settings` dentro de la misma transacción.

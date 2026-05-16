@@ -7233,3 +7233,108 @@ Se ejecuta desde el workflow **`Company Status (per env)`**
 
 Detalle técnico y queries de auditoría: `BACKEND_FILES.md` → sección
 "Enrolamiento — Verificación de propiedad (#154)".
+
+
+---
+
+## 13. Colaboradores y planificador de turnos (#182)
+
+Módulo nuevo HU #182. Permite gestionar perfiles HHRR de colaboradores
+(con o sin usuario en el sistema), asignar turnos semanales por sede,
+controlar estados de vinculación (active/inactive/vacation/sick_leave/
+compensatory) y consultar informes de horas + costo estimado.
+
+### Pantallas
+
+- `/configuracion/colaboradores` — listado con filtros (sede, cargo,
+  estado), búsqueda por nombre/documento/email, paginación. Permiso:
+  `employees.read`.
+- `/configuracion/colaboradores/nuevo` — formulario HHRR completo
+  (identidad, contacto, seguridad social, contrato y pago). Crea fila
+  en `employees` y, si el email coincide con un user de la empresa,
+  enlaza automáticamente `user_id`.
+- `/configuracion/colaboradores/{id}` — detalle + edición + cambio de
+  estado de vinculación (con cascada de cancelación de turnos en
+  vacaciones/incapacidad/compensatorio) + revelar salario auditado.
+- `/configuracion/colaboradores/informes` — tabla agregada por
+  colaborador (horas asignadas/ejecutadas/canceladas + costo estimado)
+  con exportación CSV y PDF.
+- `/planificador` — vista semanal de turnos (filas: colaborador, columnas:
+  días). Click en celda permite asignar/cancelar turno. Permiso:
+  `shifts.read` para ver, `shifts.manage` para mutar.
+- `/planificador/calendario` — calendario mensual con horas planificadas
+  vs canceladas; drill-down a vista semanal.
+- `/me/agenda` — agenda del colaborador (sin permisos especiales, requiere
+  perfil `employees` vinculado).
+- `/me/perfil` — perfil + salario enmascarado con icono 👁 para revelar
+  (audita `employee.salary_viewed_self`).
+
+### Reglas contables
+
+- `pay_rate` y `base_salary`: `decimal(12,2)` con cast `decimal:2`.
+- Mutaciones envueltas en `DB::transaction` + `lockForUpdate` sobre el
+  `employee` o `shift` afectado.
+- Toda operación audita vía `AuditService::log` con metadata accionable
+  (`employee.created`, `shift.cancelled`, `employee.vinculation_changed`,
+  etc.).
+- Soft-delete obligatorio (`archived_at`) para conservación DIAN 5/10 años.
+- Cálculos de reportes en SQL (subqueries por estado de turno) — no se
+  itera en PHP. Costo estimado normaliza pay_rate × horas según `pay_type`.
+
+### Reglas de desactivación (§12 del plan)
+
+`EmployeeVinculationPolicy::denialReason()` centraliza las 4 reglas:
+
+1. Auto-desactivación prohibida (`REASON_SELF`).
+2. Owner indesactivable mientras tenga rol `Propietario`
+   (`REASON_TARGET_IS_OWNER`).
+3. Admin no puede desactivar a un owner
+   (`REASON_ADMIN_CANNOT_DEMOTE_OWNER`).
+4. Owners pueden con cualquiera salvo a sí mismos y a otros owners
+   (cubierto por reglas 1 y 2).
+
+Cada bloqueo audita `employee.vinculation_change_denied` con el motivo.
+
+### Caja con turno activo
+
+`ShiftActiveGuardService::assertActiveShift($user, $companyNit, $branchId)`
+se invoca en `CashRegisterController::open()` y `close()`. Verifica que
+el actor tenga un `employee_shift` `scheduled` en la sede con `NOW()`
+dentro de la ventana. **Propietario** y **Administrador** bypasean — pueden
+operar caja sin turno por responsabilidad supervisoria. El rol Empleado y
+los roles custom (Cocina, Domiciliario, etc.) sí requieren turno activo.
+
+### Sugerencias automáticas
+
+`ShiftSuggestionService::suggestForWeek(...)` genera un borrador equitativo
+(round-robin sobre horas acumuladas) respetando jornada máxima y mínimo de
+días libres por empresa (con override por empleado). Solo opera dentro de
+la sede principal del colaborador.
+
+### Permisos RBAC
+
+| Slug | Owner | Admin | Empleado |
+|---|---|---|---|
+| `employees.read/create/update/delete` | ✅ CRUD | ✅ CRUD | ❌ |
+| `employees.view_salary` | ✅ | ✅ | ❌ |
+| `shifts.read` | ✅ | ✅ | ✅ (solo /me) |
+| `shifts.manage` | ✅ | ✅ | ❌ |
+| `shifts.suggest` | ✅ | ✅ | ❌ |
+| `workforce.reports` | ✅ | ✅ | ❌ |
+| `workforce.settings` | ✅ | ✅ | ❌ |
+
+Las features se siembran en `FeatureSeeder` (grupo Colaboradores /
+Planificador / Reportes). `EmployeesFeatureBackfillSeeder` (idempotente,
+en `ProductionSeeder`) proyecta los permisos sobre los roles del sistema
+de empresas existentes. `WorkforceSettingsBackfillSeeder` siembra la
+configuración default. Empresas nuevas reciben ambas en el
+`CompanyEnrollmentController`.
+
+### Fuera de alcance
+
+- Notificaciones (in-app/email/WhatsApp) al asignar o cancelar turnos.
+- Self-service del colaborador (solicitar cambio, días libres).
+- Check-in/check-out explícito (la validación por hora actual basta).
+- Integración de nómina (prestaciones, parafiscales, retención).
+- Facturación electrónica DIAN para OPS.
+- Definición de demanda por sede (hoy el admin la define).
