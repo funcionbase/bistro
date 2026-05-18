@@ -31,20 +31,52 @@ User ── pertenece a ──► CompanyUser ◄── tiene rol ──► Comp
 
 ---
 
-## Roles del sistema
+## Roles del sistema (creados al onboarding de empresa)
 
-Definidos en `config/roles.php` y creados automáticamente al onboarding de empresa:
+Definidos en `config/roles.php` (`system_roles`, `role_names`, `role_colors`)
+y creados automáticamente cuando se da de alta una empresa nueva. Son `is_system=true`:
 
 | Rol | `is_system` | Permisos | Notas |
 |-----|-------------|----------|-------|
 | `owner` | `true` | Todos | El creador de la empresa. Al menos uno siempre debe existir. No puede eliminarse del último owner. |
-| `admin` | `true` | La mayoría (configurable) | Pensado para gerentes |
-| `employee` | `true` | Solo lectura por defecto | Pensado para staff operativo |
+| `admin` | `true` | La mayoría (configurable) | Pensado para gerentes. Excepciones: permisos `is_owner_only` (`whatsapp.swap_phone`, `whatsapp.disconnect`) y los sensibles de sede (`chats.reassign_branch`, `cash_register.bypass_switch_lock`, `inventory.transfer_cross_branch`) NO se le otorgan por default. |
+| `employee` | `true` | Solo lectura por defecto | Staff operativo. Lee `orders.read`, `chats.read`, `clients.read` y `shifts.read` (para `/me/agenda`) por default. |
 
 Los roles `is_system=true`:
 - **No pueden eliminarse** desde la UI ni la API.
 - **No pueden modificarse** sus permisos.
 - **Bypass del RBAC** en `EnsureFeaturePermission` (un `owner` siempre pasa cualquier `permission:...`).
+
+## Roles operativos de plantilla (no system)
+
+Pensados para el flujo de mesa con QR (#191 Fase 7). NO son `is_system`, así
+que el owner los puede renombrar / eliminar / ajustar permisos. Se crean
+opcionalmente por empresa vía `php artisan roles:sync-templates` (idempotente).
+Su matriz de permisos vive en `permission_templates`:
+
+| Rol | `role_type` | Para qué se diseñó |
+|-----|-------------|---------------------|
+| Mesero | `waiter` | Aprobar/rechazar tandas, editar notas, resolver `cancellation_requests`, ver/responder chats. |
+| Cocinero | `cook` | KDS exclusivo: ver órdenes y mover estado de items. |
+| Cajero | `cashier` | Caja con pago dividido, refund, reportes propios. |
+
+## Roles demo (solo seeders de QA)
+
+Existen únicamente en la empresa demo `SuperPapas` sembrada por
+`RestauranteFlexySeeder`. NO se crean en empresas reales, NO son `system`,
+NO tienen `role_type` propio en `PermissionTemplateSeeder`. Sus permisos se
+asignan a mano dentro del seeder:
+
+| Nombre BD | Para qué se diseñó |
+|-----------|---------------------|
+| `Domiciliario` | Demuestra el flujo *courier-only* (#119) — sidebar reducido + redirect post-login a `/my-deliveries`. |
+| `Cocina` | Demuestra el KDS con un rol pre-armado (alternativo a `cook` con set un poco más amplio). |
+
+> **Referencia completa para devs/agentes**: `application/constants/` reúne
+> el modelo RBAC ejecutable del proyecto (catálogo de los 74 permisos,
+> defaults exactos por rol, modo *courier-only*, aislamiento por sede,
+> checklist accionable). Antes de tocar permisos o roles, consultar
+> `application/constants/RBAC_CHECKLIST.md`.
 
 ---
 
@@ -202,3 +234,7 @@ Reglas:
 - El RBAC se evalúa en el middleware antes de llegar al controlador; ningún endpoint protegido se puede consumir sin pasar `EnsureFeaturePermission`.
 - El frontend oculta navegación y botones según `permissions[]` del JWT, pero esto es UX defensivo: el backend siempre verifica.
 - Los permisos se cachean en el JWT para evitar consultas repetidas; cualquier cambio de rol o de override **reemite el JWT** del usuario afectado.
+
+---
+
+> Última revisión: 2026-05-18 (#201) — alineado con `application/constants/` (8 archivos de referencia RBAC para devs y agentes).
