@@ -396,9 +396,14 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 
 `coupon-form.tsx` (#125: bloque de programación con `WEEKDAYS`, `toggleDay()`, time pickers, `auto_apply` toggle), `coupon-input.tsx` (acepta `initialCode` para inyectar canjes de loyalty), `coupon-status-badge.tsx`, `coupon-type-badge.tsx`, `coupon-applied-badge.tsx`, `discount-calculator.tsx`, `redemption-history-table.tsx`, `loyalty-card.tsx` (tarjeta dorada en cart público para canjear puntos, #122).
 
-#### `components/billing/` (~6)
+#### `components/billing/` (~9)
 
-`InvoiceDetailModal`, `InvoiceList` (tabla paginada con filtros), `InvoiceStatusBadge`, `InvoiceTypeChip`, `OverdueBanner` (gates por `company.status=mora|delinquent`), `SubscriptionCard`.
+`InvoiceDetailModal`, `InvoiceList` (tabla paginada con filtros), `InvoiceStatusBadge`, `InvoiceTypeChip`, `SubscriptionCard`, `UploadPaymentProof`.
+
+- `OverdueBanner` — banner dentro de `/billing` con `Alert variant=warning|critical` según `company.status` ∈ `past_due|suspended`. Monto adeudado + fecha más próxima de vencimiento. Sólo se ve en la página de facturación.
+- `PastDueBanner` (#193) — banner blando global en `app-layout.tsx`. `Alert variant="warning"` con countdown desde el día 1 hasta `expected_block_at` (TZ `America/Bogota`). CTA `Ir a Facturación`. Sólo se renderiza si `activeCompany.status === 'past_due'`. Tokens DS (`var(--color-status-warning)`), sin hex.
+- `SuspendedBanner` (#193) — banner persistente global en `app-layout.tsx`. `Alert variant="critical"` con días desde `payment_blocked_at` + monto adeudado (fetch a `/api/v1/billing/subscription`, skeleton inline) + CTA prominente. Sólo si `activeCompany.status === 'suspended'`. Tokens DS, sin hex.
+- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago FlexyFlow y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
 
 #### `components/company/`
 
@@ -439,7 +444,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 
 | Archivo | Notas |
 |---------|-------|
-| `app-sidebar.tsx` | Sidebar principal. Grupo "Órdenes" anida {Caja, Tablero, Mesas, Entregas}. Grupo "Mi Empresa" anida {Información, **Sedes** (multi-sede #117), Configuraciones (sub-anidado: General, WhatsApp), Métricas, Informes}. Grupo "Identidades" anida {Usuarios, Roles}. Top-level: Dashboard, Menú, Chats, Cupones, Horarios. SidebarHeader monta `<RestaurantIdentity>` + `<BranchSwitcher>` |
+| `app-sidebar.tsx` | Sidebar principal. Grupo "Órdenes" anida {Caja, Tablero, Mesas, Entregas}. Grupo "Mi Empresa" anida {Información, **Sedes** (multi-sede #117), Configuraciones (sub-anidado: General, WhatsApp), Métricas, Informes}. Grupo "Identidades" anida {Usuarios, Roles}. Top-level: Dashboard, Menú, Chats, Cupones, Horarios. SidebarHeader monta `<RestaurantIdentity>` + `<BranchSwitcher>`. **Mora #193**: cuando `activeCompany.status === 'suspended'` el sidebar se reduce a Dashboard + Administración → Mi empresa; el resto de grupos (Catálogo y clientes, Operaciones, Equipo) y los demás items se ocultan. |
 | `branch-switcher.tsx` | Multi-sede (#117): dropdown bajo la identidad de empresa con todas las sedes accesibles del usuario. Muestra ícono `MapPin`, badge `Star` para la default. Si el usuario tiene `branches.manage`, incluye link "Gestionar sedes" → `/company/branches`. Persiste última sede en `localStorage` y refresca via `POST /api/v1/auth/switch-branch` |
 | `app-sidebar-header.tsx` | Header sticky con `backdrop-blur`. Trigger sidebar + breadcrumbs. Altura `h-14 sm:h-16` |
 | `nav-footer.tsx` | Footer del sidebar con enlaces externos |
@@ -551,7 +556,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 
 | Archivo | Auth | Props | Hierarchy |
 |---------|------|-------|-----------|
-| `app-layout.tsx` | autenticado | `children`, `breadcrumbs?` | Render `AppLayoutTemplate` (sidebar) + atajos + help modal |
+| `app-layout.tsx` | autenticado | `children`, `breadcrumbs?` | Render `AppLayoutTemplate` (sidebar) + atajos + help modal. Monta banners globales de billing (#193): `SuspendedBanner` cuando `activeCompany.status === 'suspended'`, `PastDueBanner` cuando `'past_due'` (mutuamente excluyentes). Incluye `PaymentBlockedFlashListener` que lee `props.flash.payment_blocked` (emitido por `EnsureCompanyNotBlocked` al redirigir desde una ruta web bloqueada) y dispara un toast `error` accionable. |
 | `auth-layout.tsx` | público | `children`, `title`, `description` | Wrapper para auth pages |
 | `layouts/app/app-sidebar-layout.tsx` | autenticado | `children`, `breadcrumbs?` | Variante con sidebar persistente. Renderiza `<CashRegisterAlertBanner>` debajo del header — banner global cuando caja cerrada + menú activo + horario hábil |
 | `layouts/app/app-header-layout.tsx` | autenticado | `children`, `breadcrumbs?` | AppShell + AppHeader + AppContent |

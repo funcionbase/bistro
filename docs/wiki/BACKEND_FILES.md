@@ -247,6 +247,7 @@ El primer parámetro es el slug (puede traer punto si la feature está nombrada 
 | `ValidateJwt` | `jwt` | Auth | Extrae JWT (cookie → Bearer → session flash → query). Verifica + descifra. Auto-refresca si exp-now < 300s. Inyecta `jwt_token`, `jwt_payload`, `jwt_user_id`. 401 si falla. |
 | `EnsureCompanyAccess` | `company.access` | Auth/multi-tenant | Lee `active_company_nit` del payload, valida membresía vía `CompanyUser`. Inyecta `active_company_nit`, `user_role`, `company_role_id`. Audita `company.unauthorized_access` y devuelve 403 si no es miembro. |
 | `EnsureCompanyVerified` | `company.verified` | Gate de verificación (#154) | Aplica DESPUÉS de `company.access`. Devuelve 403 con `{ code: 'company_not_verified', status }` si `companies.status` no está en `config('companies.verified')`. El frontend usa `code` para redirigir a `/company/under-review`. |
+| `EnsureCompanyNotBlocked` | `company.not_blocked` | Gate de mora (#175 + #193) | Bloquea rutas operativas si `companies.status` está en `config('companies.fully_blocked')` (hoy `suspended`). **Dual context**: API responde `403 + JSON` con `code='company_payment_blocked'`; web (registrado en `bootstrap/app.php` después de `HandleInertiaRequests`) redirige `302 → /dashboard` con flash `payment_blocked`. Allow-lists separadas por contexto (API: `api.billing.*`, `api.companies.active`, `api.auth.logout`, `api.auth.switch-company`; web: `dashboard`, `company.settings`, `company.preferences`, `billing`, `auth.*`, `password.*`, `pwa.*`, `health.*`, `public.*`, etc.). En web resuelve `active_company_nit` extrayendo el JWT inline (cookie/header) cuando no está en attributes. Audita `company.access_blocked_by_suspension` con throttle 1/min por user+ruta vía `Cache::add` (requiere cache store compartido en PDN). |
 | `EnsureBranchAccess` | `branch.access` | Auth/multi-sede (#117) | Lee `active_branch_id` del payload. Valida que pertenezca a la empresa activa, no esté archivada y exista fila en `branch_users`. Inyecta `active_branch_id` + `active_branch` (modelo). Códigos: `NO_ACTIVE_BRANCH` (422), `BRANCH_FORBIDDEN` (403), `BRANCH_ARCHIVED` (422), `BRANCH_COMPANY_MISMATCH` (422). |
 | `EnsureFeaturePermission` | `permission` | RBAC | Parametrizado: `permission:feature,action`. Roles `is_system` bypass. Consulta `company_role_permissions` + overrides. 403 si denegado, 500 si action inválida. |
 | `ValidateBotJwt` | `bot.jwt` | Auth externa | Valida Bearer con `BOT_JWT_SECRET`. Inyecta `bot_jwt_payload`, `bot_company_nit`. Sin `EnsureCompanyAccess`. 401 si falta secret en `.env`. |
@@ -1301,14 +1302,15 @@ Reglas comunes:
 
 ---
 
-## Comandos Artisan (14)
+## Comandos Artisan (15)
 
 Registrados automáticamente por Laravel 12 (no requieren `Kernel.php`).
 
 | Comando | Cron | Hora UTC | Propósito |
 |---------|------|----------|-----------|
 | `billing:generate-monthly-invoices` | `0 3 20 * *` | 3 AM día 20 | Genera facturas del mes para suscripciones activas |
-| `billing:mark-overdue-invoices` | `0 3 16 * *` | 3 AM día 16 | Marca facturas pendientes con `due_date < today` como `overdue`; actualiza `Company.status` a `mora`/`delinquent` |
+| `billing:mark-overdue-invoices` | `dailyAt('04:30')` | 4:30 AM diaria | Marca facturas pendientes con `due_date < today` como `overdue` y delega `BillingService::recalculateCompanyStatus()` para transicionar `active → past_due → suspended → active` por empresa. Idempotente. |
+| `companies:recalculate-statuses` (#193) | `everyFourHours()` | cada 4 horas | Itera empresas en `past_due`/`suspended` por chunks de 200 y vuelve a evaluar su estado. Permite que un comprobante aprobado a media tarde reactive la cuenta dentro de las próximas ~4h sin esperar al cron diario. Idempotente; `onOneServer()+withoutOverlapping(30)` para ser N-instance safe en el ASG (requiere cache store compartido). |
 | `billing:expire-discounts` | `0 4 1 * *` | 4 AM día 1 | Expira `subscription_discounts` con `ends_at < today` |
 | `chats:purge-old` | `dailyAt('03:00')` | 3 AM diaria | Borra `chats` inactivos > 60 días, preservando `contacts` y `orders` |
 | `menus:sync-schedule` | `0 * * * *` | cada hora | Activa el menú correspondiente al día de la semana |
