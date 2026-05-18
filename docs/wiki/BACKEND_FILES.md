@@ -167,6 +167,7 @@
 | `menu.read` / `menu.create` / `menu.update` / `menu.delete` | Menú | Menú | no |
 | `coupons.create` / `coupons.read` / `coupons.update` / `coupons.delete` | Cupones | Cupones | no |
 | `deliveries.read` / `deliveries.create` / `deliveries.update` / `deliveries.delete` | Entregas | Entregas | no |
+| `deliveries.self_assign` | Auto-asignación de entregas (mobile-first del courier #119) | Entregas | no — default rol Domiciliario, asignable a otros |
 | `hours.read` / `hours.update` | Horarios | Horarios | no |
 | `reports.read` | Reportes (incluye métricas y alertas) | Reportes | no |
 | `metrics.view_all_branches` | Reportes consolidados cross-sede | Reportes | no |
@@ -582,6 +583,16 @@ Fuente del SQL DDL: `database/sql/menu_scan_partition_function.sql` (mantenido p
 | GET | `orders/{id}/receipt-escpos` | `orders.read,read` |
 | GET | `orders/{orderId}/available-deliverers` | `deliveries.read,read` |
 | POST | `orders/{orderId}/assign-courier` | `deliveries.create,create` |
+| GET | `deliveries/mine` | `deliveries.read,read` (#119) |
+| GET | `deliveries/available` | `deliveries.self_assign,read` (#119) |
+| POST | `deliveries/orders/{orderId}/self-assign` | `deliveries.self_assign,read` + throttle 30/min (#119) |
+| PUT | `deliveries/{id}/revert` | `deliveries.update,update` + throttle 30/min (#119) |
+| PUT | `deliveries/{id}/reject` | `deliveries.update,update` + throttle 30/min (#119) |
+
+**Endpoints del courier mobile-first (#119)**. Toda mutación del courier vive bajo `branch.access` (sede activa obligatoria) y throttle 30/min para evitar toggles abusivos.
+- `revert` y `reject` están bloqueados con 409 (`code=DELIVERY_HAS_RECEIPT`) si la orden ya tiene `payment_receipts` — inmutabilidad DIAN, refund requiere intervención de admin.
+- `selfAssign` usa `Order::lockForUpdate` para resolver carrera entre dos couriers concurrentes (segundo recibe `code=ORDER_ALREADY_TAKEN` 409); el partial unique index `deliveries_active_order_unique` es el cinturón a nivel BD.
+- Las 5 acciones loguean en `delivery_status_logs` (append-only, indexado por `delivery_id`) además de `audit_logs`.
 
 **`GET /api/v1/orders/{id}/receipt-escpos`** — devuelve el binario ESC/POS del recibo de venta (`Content-Type: application/octet-stream`). Solo lectura: NO crea ni muta `payment_receipts`. 409 si la orden no tiene comprobantes registrados. Query params: `?width=58|80` (override del setting), `?copy=true` (marca "*** COPIA ***"). Pipeline: `ReceiptPrintController` → `ReceiptPrintingService` (lee `Order` + `receipts` + `company_settings.printing.*`) → `EscposBuilder` (CP850, alineación, doble alto, corte). Settings asociados: `printing.receipt_width`, `printing.header_lines`, `printing.footer_message`, `printing.show_qr_menu`, `printing.copies`.
 

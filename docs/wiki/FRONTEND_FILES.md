@@ -147,6 +147,14 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 |---------|-----|---------|------|-------|
 | `index.tsx` | `/orders/deliveries` | `deliveries.read` (gate web) | `GET /api/v1/deliveries`, `PATCH .../complete`, `POST .../reassign`, `DELETE .../{id}` | Lista paginada con filtros (status, courier, fechas). Live toggle 30s con auto-off 5min. Modal asignar/reasignar. Hook: `useDeliveryList` |
 | `metrics.tsx` | `/deliveries/metrics` | `deliveries.read` | `GET /api/v1/deliveries/metrics?period=` | Tabla por repartidor: número entregas, tiempo promedio, tasa éxito. Selector período (today/week/month). Export PDF: `POST /api/v1/exports/couriers/pdf`. Hook: `useDeliveryMetrics` |
+| `mine.tsx` | `/my-deliveries` | `deliveries.read` (gate web) | `GET /api/v1/deliveries/mine`, `GET .../available`, `POST .../orders/{id}/self-assign`, `PATCH .../{id}/complete`, `PUT .../{id}/revert`, `PUT .../{id}/reject` | **#119**: vista mobile-first del domiciliario. Tabs `Asignadas / Disponibles / Historial hoy`. Polling 30s en `Disponibles` (visible si `deliveries.self_assign`). Cards usan `MyDeliveryCard` con tap-to-call (`tel:`) y tap-to-maps (`maps.google.com`). Bottom-sheets para acciones secundarias (revertir, rechazar). Tokens DS, sin colores hardcoded |
+
+#### Componentes nuevos en `components/deliveries/` (#119)
+
+- `my-delivery-card.tsx` — card mobile-first con CTA grande "Marcar entregado" + menú "..." para acciones secundarias. Tap-to-call y tap-to-maps. Acento lateral por estado (`var(--color-status-*)`).
+- `available-order-card.tsx` — card de orden sin domicilio. CTA "Tomar entrega" + busy state. Currency formatter COP sin decimales.
+- `delivery-action-sheet.tsx` — bottom-sheet (`@/components/ui/bottom-sheet`) con acciones secundarias según estado.
+- `reject-reason-sheet.tsx` — bottom-sheet de motivo con chips de razones rápidas + textarea opcional. Envía `reason` libre al backend.
 
 ### Empresa (`pages/company/`)
 
