@@ -5477,30 +5477,45 @@ Permission: `billing.read,read`.
 
 Visible cuando `Company.status IN ('mora', 'delinquent')`. Calculado por el comando `billing:mark-overdue-invoices`.
 
-| `Company.status` | Trigger | Color banner | Bloquea acceso |
+| `Company.status` | Trigger | Banner DS | Bloquea acceso |
 |---|---|---|---|
-| `active` | Default | (sin banner) | no |
-| `mora` | 1+ factura `overdue` activa | Naranja | **no** — sólo informativo |
-| `delinquent` | 2+ facturas `overdue` o gracia agotada | Rojo | **no** — sólo informativo |
-| `suspended` | Manualmente por staff | Rojo + barra grande | sí (logout forzado) |
+| `active` | Default. Empresa al día. | (sin banner) | no |
+| `past_due` | ≥1 factura vencida y atraso ≤ `BILLING_PAST_DUE_GRACE_MONTHS` (3 meses default). | `PastDueBanner` global (`Alert variant="warning"`) con countdown desde día 1 hasta `expected_block_at`. | **no** — operación normal, sólo aviso. |
+| `suspended` | Atraso > gracia. Aplicado por `BillingService::recalculateCompanyStatus()`. | `SuspendedBanner` global (`Alert variant="critical"`) con días vencido + monto adeudado + CTA. | **sí** — middleware `EnsureCompanyNotBlocked` (#175 + #193) gatea API y web. Sidebar se reduce a Dashboard + Mi empresa. |
 
-**El banner es informativo**, no bloquea operación normal. Es responsabilidad del operador de la plataforma decidir suspender la cuenta manualmente.
+#### Bloqueo a nivel HTTP (#193)
 
-#### Lógica del estado
+- **API**: `EnsureCompanyNotBlocked` (montado en el grupo de rutas autenticadas de `routes/api.php`) devuelve `403 + JSON` con `{ code: 'company_payment_blocked', status }`. Allow-list: `api.billing.*`, `api.companies.active`, `api.auth.logout`, `api.auth.switch-company`. El cliente API redirige a `/billing` al detectar el code (`resources/js/lib/api.ts`).
+- **Web**: el mismo middleware se monta en el grupo `web` (`bootstrap/app.php` después de `HandleInertiaRequests`) y emite `302 → /dashboard` con flash `payment_blocked` cuando la ruta no está en la allow-list web. Allow-list: `dashboard`, `company.settings`, `company.preferences`, `company.under-review`, `billing`, `auth.*`, `password.*`, `verification.*`, `logout`, `login`, `register`, `home`, `me*`, `profile.*`, `appearance`, `pwa.*`, `health.*`, `storage-proxy`, `public.*`. El frontend lee `flash.payment_blocked` en `app-layout.tsx` y muestra un toast `error`.
+- **Auditoría**: cada bloqueo registra `company.access_blocked_by_suspension` con metadatos `{route, user_id, company_nit, context}`. Throttle 1/min por user+ruta vía `Cache::add` para evitar flood de `audit_logs` (requiere cache store compartido en PDN — `CACHE_STORE` en redis/dynamodb).
+
+#### Reactivación automática (#193)
+
+- `companies:recalculate-statuses` corre cada 4h en `routes/console.php` con `onOneServer()+withoutOverlapping(30)`.
+- Itera empresas en `past_due`/`suspended` por chunks de 200 y delega a `BillingService::recalculateCompanyStatus($company, now())`.
+- Cubre tres transiciones:
+  - `past_due → active`: cuando se liquidaron todas las facturas vencidas (tras aprobar comprobante de pago).
+  - `past_due → suspended`: cuando `expected_block_at <= today` (gracia expirada).
+  - `suspended → active`: cuando se liquida la deuda tras el bloqueo.
+- Idempotente: el servicio interno hace `lockForUpdate + transaction` por empresa y no genera audit ni notificaciones si no hay cambio.
+- Cuando el cliente sube comprobante y un admin lo aprueba, `BillingService::settleCompanyArrears()` recalcula de forma síncrona — el cron de 4h es el fallback.
+
+#### Lógica del estado (`BillingService::recalculateCompanyStatus`)
 
 ```php
-// BillingService::updateCompanyStatusFromInvoices
-$activeOverdue = Invoice::where('company_nit', $nit)
-    ->where('status', 'overdue')
-    ->count();
-
-$company->status = match (true) {
-    $activeOverdue >= 2 => 'delinquent',
-    $activeOverdue >= 1 => 'mora',
-    default => 'active',
+$target = match (true) {
+    $trialActive => 'active',
+    !$hasOverdue => 'active',
+    $fresh->status === 'active' => 'past_due',
+    $fresh->status === 'past_due' => $this->pastDueGraceExpired($fresh, $today, $graceMonths)
+        ? 'suspended'
+        : 'past_due',
+    $fresh->status === 'suspended' => 'suspended',
+    default => $fresh->status,
 };
-$company->save();
 ```
+
+Los estados retirados `mora` y `delinquent` (modelo previo a #175) ya no existen — fueron colapsados en `past_due` con countdown.
 
 ### 17.3 Historial de facturas (`GET /api/v1/billing/invoices`)
 
