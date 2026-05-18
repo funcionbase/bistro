@@ -2653,3 +2653,76 @@ actual cuya ventana contenga `NOW()`. Si falla → 403 vía
   donde el user es miembro, y enlaza `user_id`.
 - `CompanyEnrollmentController` — crea fila default en
   `company_workforce_settings` dentro de la misma transacción.
+
+---
+
+## HU #200 — Sanitización transversal de inputs
+
+> Capa centralizada para que persistir texto sucio sea imposible sin saltarse a propósito. Política completa en `docs/wiki/SECURITY_INPUT_HANDLING.md`.
+
+### Reglas custom (`app/Rules/`)
+
+- `NoControlCharacters` — bloquea U+0000–U+001F (control), U+007F (DEL),
+  U+202A–U+202E (bidi overrides). Acepta `\t`/`\n` con
+  `allowWhitespace: true`.
+- `SafePlainText` — compone `NoControlCharacters` + cap por **bytes** +
+  helper `static sanitize($value, $allowWhitespace)` que aplica
+  `strip_tags` + NFC + trim.
+
+### Trait `App\Http\Requests\Concerns\SanitizesInput`
+
+Hook por default en `prepareForValidation()` que aplica saneamiento
+según el mapa declarado en la FormRequest:
+
+```php
+protected array $sanitize = [
+    'body' => 'plain_text_long',
+    'name' => 'plain_text_short',
+];
+```
+
+Categorías: `plain_text_short`, `plain_text_long`, `markdown_trusted`,
+`identifier`, `json_payload`. FormRequests con su propio
+`prepareForValidation` invocan `$this->sanitizeMappedFields()`.
+
+### Middleware `App\Http\Middleware\NormalizeStrings`
+
+Normalización Unicode NFC sobre todos los strings del payload.
+Registrado en `bootstrap/app.php` como prepend de `web` y `api`.
+Whitelist: `api/v1/webhooks/whatsapp/*`, `api/v1/csp-report`,
+`csp-report` (firmas byte-exact).
+
+### Hardening aplicado
+
+10 FormRequests críticos (Chat, Clients, Deliveries, Menu*, Branch,
+Company, Coupons, Profile) + 17 controllers con `validate()` inline
+migrados a `SafePlainText` inline (sin crear FormRequests nuevas, para
+mantener PR contenido). Cobertura: ~40 campos de texto libre del
+proyecto.
+
+### Migración one-off
+
+`2026_05_18_161716_sanitize_existing_freetext` — saneamiento de data
+histórica de 7 columnas críticas (chat_messages.body, order_items.notes,
+order_notes.body, client_notes.note, cart_items.notes,
+delivery_status_logs.reason, branches.address). Idempotente, batched
+500, registra cada fila tocada en `audit_logs` con
+`action='sanitize.migrated'` (hash SHA-256 before/after).
+
+### Render seguro
+
+- `EscposTicketBuilder` — método privado `sanitizePrintable()` filtra
+  bytes ESC/POS (`\x1B`/`\x1D` y demás control chars) de texto del
+  cliente (`item.name`, `item.notes`, `order.table_number`). Sin esto
+  un payload podía abrir cajón monedero o cortar papel.
+- `routes/api.php` `/api/v1/csp-report` — además del log textual,
+  persiste cada violación en `audit_logs` con `action='csp.violation'`
+  para dashboards de seguridad.
+
+### Config CSP
+
+`config/app.php` mantiene los defaults `security_headers_enabled=false`
+y `csp_enabled=false`. `.env.example` documenta el rollout gradual:
+QA primero via GH Environment vars + 7 días de monitoreo, luego flip
+en PDN. No se modifica QA en este PR.
+

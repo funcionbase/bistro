@@ -1109,3 +1109,71 @@ recargar la vista completa.
 La página de informes incluye una nota explícita: "el costo estimado no
 incluye prestaciones, parafiscales ni retención en la fuente". Esto
 previene que el operador confunda el reporte con una nómina formal.
+
+---
+
+## HU #200 — Sanitización frontend
+
+> Política completa en `docs/wiki/SECURITY_INPUT_HANDLING.md`. El frontend no garantiza nada — el backend revalida.
+
+### Helper de sanitización
+
+`resources/js/lib/input-sanitize.ts`:
+
+- `sanitizePlainText(value, maxLength, allowWhitespace?)` — strip HTML +
+  NFC + bloqueo de control chars y bidi overrides + límite por unit
+  count.
+- `assertNoControlChars(value, allowWhitespace?)` — devuelve `true` si
+  el value NO contiene caracteres invisibles bloqueados. Útil para
+  feedback de UI al pegar.
+- `stripDangerousHtml(value)` — strip de tags como defensa en
+  profundidad.
+- `assertIdentifier(value, kind)` — valida `nit`, `email`, `phone`,
+  `slug`, `coupon` con regex y casefold.
+
+### Schemas zod
+
+`resources/js/lib/schemas/`:
+
+- `common.ts` — factories `plainTextShort(max)` y `plainTextLong(max)`
+  con `.transform()` que aplica `sanitizePlainText` automáticamente.
+- `auth.ts`, `menu.ts`, `company.ts`, `chat.ts`, `delivery.ts` —
+  schemas por feature listos para componer con `useForm` de Inertia.
+
+### Primitive `<SanitizedInput>`
+
+`resources/js/components/ui/sanitized-input.tsx` — `<Input>` controlado
+que aplica `sanitizePlainText` en cada `onChange`. Props: `value`,
+`onChange(value)`, `maxLength`, `allowWhitespace?`.
+
+### Markdown seguro
+
+`resources/js/components/ui/markdown.tsx` — refactor con
+`rehype-sanitize` + allowlist explícita (h1-h4, p, listas, código,
+tablas, blockquote, links http/https/mailto) y `rehype-external-links`
+(`rel="noopener noreferrer nofollow"`, `target="_blank"`). Bloquea
+`<script>`, `<iframe>`, `<object>`, `<embed>`, eventos `on*`, `style`
+inline, `javascript:`, `data:`, `vbscript:`.
+
+### Hardening aplicado
+
+- `pages/auth/register.tsx` — name (SanitizedInput, 255 short).
+- `pages/settings/profile.tsx` — name (SanitizedInput, 255 short).
+- `pages/company/settings.tsx` — commercial_name + legal_name (255
+  short).
+- `pages/menu/index.tsx` — form de nuevo menú: name (128 short) +
+  description (512 long).
+- `pages/chats.tsx` — contact name (120 short) + contact notes (2000
+  long).
+- `components/deliveries/reject-reason-sheet.tsx` — detalle (255 long).
+- `components/ui/notes-editor.tsx` — `emit()` ahora pasa por
+  `sanitizePlainText(value, maxLength, true)`.
+
+### Dependencias nuevas
+
+`package.json`:
+
+- `rehype-sanitize`, `rehype-external-links` — schema-based markdown
+  sanitization.
+- `zod` — validación cliente schema-based con transform.
+

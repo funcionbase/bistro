@@ -7353,3 +7353,34 @@ configuración default. Empresas nuevas reciben ambas en el
 - Integración de nómina (prestaciones, parafiscales, retención).
 - Facturación electrónica DIAN para OPS.
 - Definición de demanda por sede (hoy el admin la define).
+
+---
+
+## HU #200 — Sanitización transversal de inputs
+
+**Estado**: Implementada. Política única en `docs/wiki/SECURITY_INPUT_HANDLING.md`.
+
+**Alcance**:
+- Backend: capa central de saneamiento (trait `SanitizesInput`, reglas
+  `NoControlCharacters` + `SafePlainText`, middleware `NormalizeStrings`
+  con NFC sobre web+api). 10 FormRequests críticos hardeneados + 17
+  controllers con `validate()` inline migrados.
+- Migración one-off de data histórica con trazabilidad en `audit_logs`
+  (`action='sanitize.migrated'`, hash SHA-256 before/after, idempotente,
+  batched 500).
+- Frontend: helper `lib/input-sanitize.ts`, schemas zod, primitive
+  `<SanitizedInput>`, refactor de `<Markdown>` con `rehype-sanitize` +
+  `rehype-external-links`. 6 formularios críticos sanean en `onChange`.
+- Canales de salida: `EscposTicketBuilder` filtra bytes ESC/POS de
+  texto del usuario; CSP report persiste en `audit_logs` para dashboards.
+- Config CSP: `.env.example` documenta el rollout gradual. QA/PDN flip
+  fuera de scope del PR.
+
+**Impacto RBAC**: Ninguno. La sanitización aplica por igual a todos los
+roles (owner incluido — no es excepción). Sin permisos nuevos ni cambios
+al catálogo.
+
+**Compatibilidad N-instance**: La capa es por-request; no comparte
+estado entre instancias. La migración one-off corre en deploy una sola
+vez (idempotente).
+
