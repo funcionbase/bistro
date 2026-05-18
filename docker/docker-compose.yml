@@ -37,6 +37,11 @@ services:
     # Bootstrap: creates the two buckets the app expects, marks the assets
     # bucket as publicly readable, and uploads a .health marker that
     # HealthController::ready() will probe.
+    #
+    # Idempotente: cada subcomando verifica si la acción ya está aplicada
+    # antes de ejecutar. Cuando los buckets ya existen, los logs muestran
+    # solo "Bootstrap idempotente: nada que hacer" en lugar del falso
+    # positivo "Bucket created successfully" en cada `docker compose up`.
     minio-bootstrap:
         image: minio/mc:latest
         container_name: flexyflow_minio_bootstrap
@@ -45,13 +50,25 @@ services:
                 condition: service_healthy
         entrypoint: >
             /bin/sh -c "
-            mc alias set local http://minio:9000 minioadmin minioadmin &&
-            mc mb -p local/flexyflow-restaurante-local-assets &&
-            mc mb -p local/flexyflow-restaurante-local-documents &&
-            mc anonymous set download local/flexyflow-restaurante-local-assets &&
-            echo ok | mc pipe local/flexyflow-restaurante-local-assets/.health &&
-            echo ok | mc pipe local/flexyflow-restaurante-local-documents/.health &&
-            echo 'Buckets ready: assets (public download), documents (private)' &&
+            set -e;
+            mc alias set local http://minio:9000 minioadmin minioadmin > /dev/null;
+            changed=0;
+            if ! mc ls local/flexyflow-restaurante-local-assets > /dev/null 2>&1; then
+              mc mb local/flexyflow-restaurante-local-assets;
+              mc anonymous set download local/flexyflow-restaurante-local-assets;
+              echo ok | mc pipe local/flexyflow-restaurante-local-assets/.health > /dev/null;
+              changed=1;
+            fi;
+            if ! mc ls local/flexyflow-restaurante-local-documents > /dev/null 2>&1; then
+              mc mb local/flexyflow-restaurante-local-documents;
+              echo ok | mc pipe local/flexyflow-restaurante-local-documents/.health > /dev/null;
+              changed=1;
+            fi;
+            if [ \"$$changed\" = \"1\" ]; then
+              echo 'Buckets ready: assets (public download), documents (private)';
+            else
+              echo 'Bootstrap idempotente: nada que hacer (buckets ya existen).';
+            fi;
             exit 0
             "
 
