@@ -39,9 +39,9 @@ referencia canónica completa.
 
 | Slug | owner | admin | cook | manager | supervisor | waiter | cashier |
 |---|---|---|---|---|---|---|---|
-| `kds.view_station` | RCUD | RCUD | R--- | R--- | R--- | R--- | R--- |
-| `kds.operate_station` | RCUD | RCUD | --U- | --U- | --U- | ---- | ---- |
-| `kds.manage_stations` | RCUD | ---- (sensible — asignable manualmente) | ---- | ---- | ---- | ---- | ---- |
+| `kds.read` | RCUD | RCUD | R--- | R--- | R--- | R--- | R--- |
+| `kds.update` | RCUD | RCUD | --U- | --U- | --U- | ---- | ---- |
+| `kds_stations.*` | RCUD | ---- (sensible — asignable manualmente) | ---- | ---- | ---- | ---- | ---- |
 
 > `accountant`, `marketing` y `inventory_manager` no reciben KDS por
 > default; el owner puede asignarles manualmente. Ver
@@ -53,9 +53,9 @@ referencia canónica completa.
 
 | Contexto | Auth | Permiso |
 |---|---|---|
-| Consolidado web (`/kds`) | JWT cookie `flexyflow_jwt` | `kds.view_station` |
-| API consolidado (`/api/v1/kds/tickets`) | JWT + `EnsureCompanyAccess` + `EnsureBranchAccess` | `kds.view_station` (read) / `kds.operate_station` (update) |
-| Settings (`/company/kds`) | JWT | `kds.manage_stations` |
+| Consolidado web (`/kds`) | JWT cookie `flexyflow_jwt` | `kds.read` |
+| API consolidado (`/api/v1/kds/tickets`) | JWT + `EnsureCompanyAccess` + `EnsureBranchAccess` | `kds.read` (read) / `kds.update` (update) |
+| Settings (`/company/kds`) | JWT | `kds_stations.*` |
 | Standalone tablet (`/kds/{stationSlug}`) | Device-token (cookie HttpOnly `kds_device_token` o `Authorization: Bearer`) | — middleware `kds.device` resuelve company/branch/station — |
 | API estación (`/api/v1/kds/{stationSlug}/...`) | Device-token | rate-limited 60 req/min per token |
 
