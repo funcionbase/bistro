@@ -46,7 +46,7 @@
 | Endpoints API v1 | ~200 | `routes/api.php` |
 | Endpoints externos (bot) | 7 | `api/external/*` (hours/status, chats/handoff + messages, loyalty/lookup + redeem) |
 | Configuraciones | 32 | `config/` (incluye `payments.php` #203, `rbac.php` #203, `employees.php` #204) |
-| Catálogos canónicos (referencia humana) | 19 | `application/constants/` — `.md` por dominio; NO se bundlea ni se autoloadea |
+| Catálogos canónicos (referencia humana) | 20 | `application/constants/` — `.md` por dominio; NO se bundlea ni se autoloadea |
 
 ---
 
@@ -61,6 +61,7 @@ Archivos clave:
 - Operaciones y contabilidad (#202): `ORDER_STATUSES.md`, `PAYMENT_METHODS.md`, `ACCOUNTING_RULES.md`, `MIDDLEWARE_MAP.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`.
 - Usuarios, legal y entregas (#203): `USER_STATUSES.md`, `LEGAL_DOCUMENT_TYPES.md`, `DELIVERY_STATUSES.md`.
 - Colaboradores y tributario (#204): `EMPLOYEE_STATUSES.md` (espejo de `config/employees.php`), `TAXES_AND_REGIMES.md` (espejo de `config/taxes.php`).
+- Empresa (#205): `COMPANY_STATUSES.md` (espejo de `config/companies.php` + `lib/company-status.ts`; cubre buckets `verified` / `pending` / `blocked` / `fully_blocked` y workflow ops).
 
 Regla obligatoria en `CLAUDE.md` §7: antes de tocar un permiso, rol, estado de orden, método de pago, tipo de documento legal o columna que dispare cambio de catálogo cerrado, consultar el `.md` correspondiente y actualizarlo en el mismo PR.
 

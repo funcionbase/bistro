@@ -50,6 +50,7 @@ Antes de declarar uniones de strings literales para cualquier estado, tipo, mét
 | Métodos de pago (#203) | `paymentMethods` | `usePaymentMethods()` | `hooks/use-payment-methods.ts` (`PAYMENT_METHODS_FALLBACK`) |
 | Acciones RBAC (#203) | `rbacActions` | `usePage().props.rbacActions` | `permissions-matrix.tsx` (`ACTIONS_FALLBACK`) |
 | Vinculation status (#204) | `employeeStatuses` | `useEmployeeStatuses()` | `hooks/use-employee-statuses.ts` (`EMPLOYEE_STATUSES_FALLBACK`) |
+| Company status (#205) | n/a — viaja en `activeCompany.status` | helpers de `@/lib/company-status` (`companyStatusLabel`, `companyStatusBadgeVariant`, `isVerified`, `isFullyBlocked`, etc.) | `lib/company-status.ts` (`COMPANY_STATUS_FALLBACK`) |
 
 Tipos canónicos en `resources/js/types/index.ts`:
 
@@ -58,6 +59,10 @@ Tipos canónicos en `resources/js/types/index.ts`:
 - `UserStatus`, `DeliveryReason`, `DeliveryRowReason`, `DELIVERY_REASON_LABELS`
 - `RbacActionKey`, `RbacActionDescriptor`
 - `EmployeeStatus`, `EmployeeStatusBadge`, `EmployeeStatusesConfig`
+
+Tipos canónicos en `resources/js/lib/company-status.ts` (no en `types/`):
+
+- `CompanyStatus`, `CompanyStatusBadgeVariant`, `CompanyStatusCatalog`
 
 ---
 
