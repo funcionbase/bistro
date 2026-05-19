@@ -45,7 +45,23 @@
 | Páginas Inertia (web) | 60 | rutas web |
 | Endpoints API v1 | ~200 | `routes/api.php` |
 | Endpoints externos (bot) | 7 | `api/external/*` (hours/status, chats/handoff + messages, loyalty/lookup + redeem) |
-| Configuraciones | 30 | `config/` |
+| Configuraciones | 31 | `config/` (incluye `payments.php` #203 y `rbac.php` #203) |
+| Catálogos canónicos (referencia humana) | 17 | `application/constants/` — `.md` por dominio; NO se bundlea ni se autoloadea |
+
+---
+
+## Catálogos canónicos compartidos (`application/constants/`)
+
+Carpeta `application/constants/` con archivos `.md` que actúan como fuente única de verdad documental para conceptos que viven duplicados entre backend y frontend (RBAC, estados de orden, métodos de pago, tipos de documento legal, etc.). **NO se importa en runtime** — ningún `vite.config.js` ni `composer.json` la consume. Referencia para desarrolladores y agentes Claude antes de modificar catálogos cerrados.
+
+Archivos clave:
+
+- `README.md` — propósito + exclusión de builds + plantilla.
+- Núcleo RBAC (#201): `ROLES_SYSTEM.md`, `ROLES_TEMPLATES.md`, `ROLES_DEMO.md`, `PERMISSIONS_CATALOG.md`, `COURIER_MODE.md`, `BRANCH_RBAC.md`, `RBAC_CHECKLIST.md`.
+- Operaciones y contabilidad (#202): `ORDER_STATUSES.md`, `PAYMENT_METHODS.md`, `ACCOUNTING_RULES.md`, `MIDDLEWARE_MAP.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`.
+- Usuarios, legal y entregas (#203): `USER_STATUSES.md`, `LEGAL_DOCUMENT_TYPES.md`, `DELIVERY_STATUSES.md`.
+
+Regla obligatoria en `CLAUDE.md` §7: antes de tocar un permiso, rol, estado de orden, método de pago, tipo de documento legal o columna que dispare cambio de catálogo cerrado, consultar el `.md` correspondiente y actualizarlo en el mismo PR.
 
 ---
 

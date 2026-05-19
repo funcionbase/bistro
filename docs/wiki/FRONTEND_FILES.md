@@ -33,10 +33,29 @@
 |-----------|--------|-----------|
 | Páginas | 60 | `resources/js/pages/` |
 | Componentes | 156 | `resources/js/components/` (incluye `alerts/`, `branch-switcher`, `cash-register/`, `clients/`, `coupons/`, `company/`, `loyalty-badge`, `offline/`, `orders/`, `printing/`, `pwa/`, `reports/`, además de `ui/`, `dashboard/`, `menu/`, `metrics/`, `deliveries/`, `hours/`, `billing/`, `chats/`, `whatsapp/`) |
-| Hooks | 42 | `resources/js/hooks/` (`.ts` + `.tsx`) |
+| Hooks | 43 | `resources/js/hooks/` (`.ts` + `.tsx`) — incluye `use-payment-methods.ts` (#203) |
 | Layouts | 8 | `resources/js/layouts/` |
 | Librerías utilitarias | 15 | `resources/js/lib/` |
 | Type files | 9 | `resources/js/types/` (`index`, `billing`, `business-hours`, `coupon`, `inventory`, `purchases`, `recipes`, `suppliers`, `vite-env.d`) |
+
+---
+
+## Catálogos canónicos compartidos
+
+Antes de declarar uniones de strings literales para cualquier estado, tipo, método o acción RBAC, **consultar `application/constants/`** (fuente única documental — ver `BACKEND_FILES.md` para el inventario completo). Si el catálogo se sirve desde backend, leerlo vía Inertia shared props en lugar de hardcodearlo.
+
+| Catálogo | Shared prop | Hook frontend | Fallback embebido |
+|---|---|---|---|
+| Estados de orden | `orderStatuses` | `useOrderStatuses()` | `lib/order-status.ts` (`ORDER_STATUS_FALLBACK`) |
+| Métodos de pago (#203) | `paymentMethods` | `usePaymentMethods()` | `hooks/use-payment-methods.ts` (`PAYMENT_METHODS_FALLBACK`) |
+| Acciones RBAC (#203) | `rbacActions` | `usePage().props.rbacActions` | `permissions-matrix.tsx` (`ACTIONS_FALLBACK`) |
+
+Tipos canónicos en `resources/js/types/index.ts`:
+
+- `OrderStatus`, `OrderStatusCategory`, `OrderStatusesConfig`
+- `PaymentMethod`, `PaymentReceiptMethod`, `PaymentMethodsConfig`
+- `UserStatus`, `DeliveryReason`, `DeliveryRowReason`, `DELIVERY_REASON_LABELS`
+- `RbacActionKey`, `RbacActionDescriptor`
 
 ---
 
