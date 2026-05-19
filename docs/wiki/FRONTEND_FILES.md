@@ -1203,3 +1203,64 @@ inline, `javascript:`, `data:`, `vbscript:`.
   sanitization.
 - `zod` — validación cliente schema-based con transform.
 
+## HU #149 — Web Push notifications (PWA)
+
+Guía completa: [`docs/wiki/PWA-Push-Notifications.md`](./PWA-Push-Notifications.md).
+
+### Service Worker
+
+- `resources/js/sw.ts` (nuevo) — SW custom compilado vía `injectManifest`
+  de `vite-plugin-pwa`. Replica el runtime caching previo (NetworkFirst
+  APIs, CacheFirst imágenes/fuentes) + agrega 3 listeners:
+  - `push` — deserializa payload JSON y llama `showNotification`.
+  - `notificationclick` — abre/foca la URL del payload.
+  - `pushsubscriptionchange` — pide al cliente activo re-suscribir vía
+    `postMessage`.
+- `vite.config.js` migra `strategies: 'generateSW'` → `'injectManifest'`
+  apuntando a `srcDir: 'resources/js'` + `filename: 'sw.ts'`.
+
+### Hook
+
+- `resources/js/hooks/use-push-subscription.ts` (nuevo) — encapsula el
+  handshake `PushManager.subscribe()` → `POST /api/v1/push/subscriptions`.
+  Expone `{isSupported, isStandalone, permission, isSubscribed, busy,
+  error, subscribe(), unsubscribe(), refresh()}`. Detecta automáticamente
+  Safari iOS < 16.4 vía feature detection.
+
+### Componentes
+
+- `resources/js/components/notifications/push-prompt-banner.tsx` (nuevo)
+  — banner accent del DS que aparece SÓLO si PWA instalada +
+  `permission='default'` + no dismissed en localStorage (7 días). Mobile
+  first (botones apilados <640px, en línea >=640px).
+- `resources/js/components/notifications/push-subscriptions-list.tsx`
+  (nuevo) — lista de dispositivos suscritos del user con botón "Quitar".
+
+### Página
+
+- `resources/js/pages/settings/notifications.tsx` (nuevo) — usa
+  `AppLayout` + `SettingsLayout`. Muestra estado actual (Activado /
+  Bloqueado / No soportado / PWA no instalada) con `<Alert variant=
+  {safe|critical|warning|accent}>` del DS y lista de devices.
+- `routes/settings.php` agrega `Route::get('settings/notifications')`
+  apuntando a `Inertia::render('settings/notifications')`.
+
+### Integraciones layout
+
+- `layouts/settings/layout.tsx`: nuevo item de sidebar
+  `{ title: 'Notificaciones', url: '/settings/notifications', icon: Bell }`.
+- `layouts/app-layout.tsx`: monta `<PushPromptBanner />` antes de
+  `<PendingApprovalsBanner />` en el stack de banners globales.
+
+### Tipos
+
+- `types/index.ts`: `SharedData` agrega `vapidPublicKey?: string | null`.
+  La clave pública no es secreta — se expone vía Inertia shared props.
+
+### Browser support
+
+- Chrome / Edge / Firefox / Opera desktop + Android: total.
+- Safari macOS 16.4+: total.
+- Safari iOS 16.4+: requiere PWA instalada (Add to Home Screen).
+- iOS < 16.4: NO soportado; el hook lo detecta y oculta la UI.
+
