@@ -43,6 +43,7 @@ Plataforma multi-empresa para la gestión operativa de restaurantes en Colombia.
 
 ### Dominios funcionales
 - [Empresas](Empresas.md) — Multi-tenancy, registro, configuración.
+- [Multi-tenancy](Multi-tenancy.md) — Arquitectura cross-tenant (`company_nit`), aislamiento por sede, `BranchScope`.
 - [Menú](Men%C3%BA.md) — CRUD, programación, menú público.
 - [Pedidos](Pedidos.md) — Kanban, estados, items JSON.
 - [Repartidores](Repartidores.md) — Asignación, métricas.

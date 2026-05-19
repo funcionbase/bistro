@@ -6967,10 +6967,9 @@ CRUD de impresoras térmicas por empresa. Cada impresora tiene `type` (kitchen/b
 
 | Recurso | Ubicación | Propósito |
 |---------|-----------|-----------|
-| Wiki técnico | `../docs/wiki/` (raíz del repo) | Markdown público con páginas por dominio: Autenticación, Empresas, Menú, Pedidos, Repartidores, Cupones, Horarios, Dashboard-Métricas, WhatsApp-Bot, Facturación, Usuarios-Roles-Permisos, Variables-de-Entorno, Errores-API, Guía-de-Contribución, Frontend |
+| Wiki técnico | `../docs/wiki/` (raíz del repo) | Markdown público con páginas por dominio: Autenticación, Empresas, Multi-tenancy, Menú, Pedidos, Repartidores, Cupones, Horarios, Dashboard-Métricas, WhatsApp-Bot, Facturación, Usuarios-Roles-Permisos, Variables-de-Entorno, Errores-API, Guía-de-Contribución, Frontend |
 | Guía visual | `FRONTEND_UI_GUIDELINES.md` | Paleta, espaciados, ejemplos UI |
 | Provisioning EC2 | `../aws/ec2/install.sh`, `../aws/ec2/scripts/{deploy,healthcheck}.sh` | Bootstrap idempotente + deploy |
-| Tests Playwright | `testing/playwright-ui/tests/` | Suite headed por feature |
 | Skills locales | `**/skills/**` | Domain-specific Claude skills |
 
 Cada PR debe actualizar la página correspondiente del wiki cuando se modifique un endpoint, un permiso, una variable `.env` o un código de error.
@@ -7003,15 +7002,12 @@ npm run format
 
 # Combo
 composer run dev         # backend + frontend en paralelo
-
-# Tests Playwright (locales, headed)
-cd testing/playwright-ui
-npm install
-npm run install:browsers
-npm run test:headed       # navegador visible
-npm run test:ui           # viewer Playwright interactivo
-HEADLESS=1 npm test       # CI
 ```
+
+> La suite Playwright vivió en `testing/playwright-ui/` hasta #219 (HU de
+> reestructuración). El workflow `playwright-qa.yml` también se retiró
+> hasta que se reincorpore con su propia ruta versionada (sub-issue
+> futuro).
 
 ### Política de testing
 

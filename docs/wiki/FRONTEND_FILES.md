@@ -969,7 +969,6 @@ Sección **Menu engineering** justo debajo de Food cost. Cruza popularidad (% de
 | Wiki frontend | `../docs/wiki/Frontend.md` | Arquitectura, convenciones, catálogo de componentes, patrones (Inertia v2, formularios, polling, permisos) |
 | Guía visual | `FRONTEND_UI_GUIDELINES.md` | Paleta, espaciados, ejemplos UI |
 | Wiki por dominio | `../docs/wiki/` | Cada feature tiene su página con contratos API |
-| Tests Playwright | `testing/playwright-ui/tests/` | Suite headed por feature: `dashboard`, `metrics`, `reports`, `users`, `identities-roles`, `orders-cashier`, `orders-deliveries`, `orders-board`, `company-settings`, `company-preferences`, `company-whatsapp` |
 
 Cuando agregues una página, componente o hook reutilizable, actualiza este archivo y, si toca patrones de uso o convenciones, también `docs/wiki/Frontend.md`.
 
