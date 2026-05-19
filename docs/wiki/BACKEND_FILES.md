@@ -2744,3 +2744,107 @@ y `csp_enabled=false`. `.env.example` documenta el rollout gradual:
 QA primero via GH Environment vars + 7 días de monitoreo, luego flip
 en PDN. No se modifica QA en este PR.
 
+## HU #149 — Web Push notifications (PWA)
+
+**Catálogo canónico de tipos / payloads / browser matrix**:
+[`application/constants/NOTIFICATIONS.md`](../../application/constants/NOTIFICATIONS.md)
+y guía operativa en
+[`docs/wiki/PWA-Push-Notifications.md`](./PWA-Push-Notifications.md).
+
+### Tablas
+
+- `push_subscriptions` (migración `2026_05_19_173435_create_push_subscriptions_table.php`):
+  - `user_id` (FK users), `company_nit`, `branch_id` (nullable — cross-branch),
+    `endpoint` (text), `p256dh`, `auth`, `user_agent`, `last_seen_at`, `revoked_at`.
+  - Unique partial PostgreSQL `(user_id, MD5(endpoint)) WHERE revoked_at IS NULL`.
+
+### Modelos
+
+- `App\Models\PushSubscription` — sin `BranchScope` (sub es por user, no por sede).
+  Scopes `active()` / `revoked()`. Helpers `isActive()`.
+
+### Eventos / Listeners
+
+- `App\Events\OrderItemSubmittedForApproval(OrderItem $item)` — disparado
+  en `TableOrderService::addItem` después de persistir el item con
+  `status='pending_approval'`.
+- `App\Listeners\NotifyPendingApprovalListener` (`ShouldQueue`) → encola
+  `SendPendingApprovalPushJob`. Registrado explícitamente en
+  `AppServiceProvider::boot`.
+
+### Jobs (queue `notifications`)
+
+- `App\Jobs\SendPendingApprovalPushJob(int $orderItemId)` — push inicial.
+- `App\Jobs\SendPendingApprovalReminderPushJob(int $orderItemId)` — push
+  con minutos transcurridos; reusa el `tag` para colapsar.
+- `App\Jobs\SendInventoryDigestPushJob(int $userId, string $companyNit)`
+  — digest del día con count de `alert_events` activos.
+
+### Service
+
+- `App\Services\WebPushDispatcher` — wrapper de `minishlink/web-push`.
+  - `send(PushSubscription, array $payload)`: cifra y manda. 410/404
+    → soft-revoke automático.
+  - `userCanReceiveOrderUpdate(User, $nit, $branchId)` /
+    `userCanReceiveInventoryDigest(User, $nit)`: gating de destinatarios.
+  - Helpers `pendingApprovalTag(orderId)`, `inventoryDigestTag(isoDate)`.
+
+### Endpoints (v1)
+
+- `POST /api/v1/push/subscriptions` (auth + `permission:notifications,create`,
+  `throttle:20,1`): upsert por `(user_id, endpoint)`.
+- `DELETE /api/v1/push/subscriptions` (auth + `permission:notifications,delete`,
+  `throttle:20,1`): soft-revoke por endpoint. Idempotente (siempre 204).
+- `GET /api/v1/push/subscriptions/me` (auth + `permission:notifications,read`):
+  lista subs activas del user actual.
+
+Controller: `App\Http\Controllers\Api\PushSubscriptionController`.
+FormRequests: `App\Http\Requests\Push\{Store,Destroy}PushSubscriptionRequest`
+(con `SanitizesInput` + `SafePlainText`).
+
+### Cron
+
+`routes/console.php` — `notifications:remind-pending-approvals`
+(`everyMinute()->onOneServer()->withoutOverlapping(5)`). Triple defensa
+con `Cache::lock("push.reminder.order_item.{id}", throttle*60)` per-item.
+
+### Comando Artisan
+
+- `php artisan push:generate-vapid-keys` — genera par P-256 base64url
+  (con fallback OpenSSL CLI para Windows). NO rotar sin comunicar — el
+  SW re-suscribe automáticamente via `pushsubscriptionchange`.
+
+### Config
+
+- `config/notifications.php`: VAPID keys + tuning (cooldown,
+  throttle, kill-switch del digest).
+- `.env.example` documenta `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` /
+  `VAPID_SUBJECT` / `PUSH_INVENTORY_DIGEST_ENABLED`.
+- `HandleInertiaRequests::share()` agrega `vapidPublicKey` a las shared
+  props.
+
+### RBAC
+
+Feature `notifications` con 4 slugs CRUD canónicos
+(`notifications.{read,create,update,delete}`). `PermissionTemplateSeeder`
+les da `[true,true,true,true]` a TODOS los `role_type` por short-circuit
+(self-service universal). El gating real de destinatarios usa permisos
+operativos existentes (`orders.update`, `reports.read`/`inventory.read`).
+
+### Auditoría
+
+`AuditService::log` con acciones:
+- `notifications.subscribed` (al POST exitoso).
+- `notifications.revoked` (al DELETE o al recibir 410 Gone).
+- `notifications.pushed` (1 por sub enviada exitosamente).
+
+Ver [`AUDIT_EVENTS.md`](../../application/constants/AUDIT_EVENTS.md).
+
+### N-instance safety (CLAUDE.md §12)
+
+Requiere en PDN:
+- `QUEUE_CONNECTION=redis|sqs` (workers de varias EC2 no toman el mismo
+  job — visibility timeout del driver).
+- `CACHE_STORE=redis|dynamodb` (el cron y `AuthController::selectCompany`
+  usan `Cache::lock` y `Cache::add` cross-instance).
+
