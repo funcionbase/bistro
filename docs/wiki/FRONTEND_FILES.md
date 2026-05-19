@@ -33,7 +33,7 @@
 |-----------|--------|-----------|
 | Páginas | 60 | `resources/js/pages/` |
 | Componentes | 156 | `resources/js/components/` (incluye `alerts/`, `branch-switcher`, `cash-register/`, `clients/`, `coupons/`, `company/`, `loyalty-badge`, `offline/`, `orders/`, `printing/`, `pwa/`, `reports/`, además de `ui/`, `dashboard/`, `menu/`, `metrics/`, `deliveries/`, `hours/`, `billing/`, `chats/`, `whatsapp/`) |
-| Hooks | 43 | `resources/js/hooks/` (`.ts` + `.tsx`) — incluye `use-payment-methods.ts` (#203) |
+| Hooks | 44 | `resources/js/hooks/` (`.ts` + `.tsx`) — incluye `use-payment-methods.ts` (#203), `use-employee-statuses.ts` (#204) |
 | Layouts | 8 | `resources/js/layouts/` |
 | Librerías utilitarias | 15 | `resources/js/lib/` |
 | Type files | 9 | `resources/js/types/` (`index`, `billing`, `business-hours`, `coupon`, `inventory`, `purchases`, `recipes`, `suppliers`, `vite-env.d`) |
@@ -49,6 +49,7 @@ Antes de declarar uniones de strings literales para cualquier estado, tipo, mét
 | Estados de orden | `orderStatuses` | `useOrderStatuses()` | `lib/order-status.ts` (`ORDER_STATUS_FALLBACK`) |
 | Métodos de pago (#203) | `paymentMethods` | `usePaymentMethods()` | `hooks/use-payment-methods.ts` (`PAYMENT_METHODS_FALLBACK`) |
 | Acciones RBAC (#203) | `rbacActions` | `usePage().props.rbacActions` | `permissions-matrix.tsx` (`ACTIONS_FALLBACK`) |
+| Vinculation status (#204) | `employeeStatuses` | `useEmployeeStatuses()` | `hooks/use-employee-statuses.ts` (`EMPLOYEE_STATUSES_FALLBACK`) |
 
 Tipos canónicos en `resources/js/types/index.ts`:
 
@@ -56,6 +57,7 @@ Tipos canónicos en `resources/js/types/index.ts`:
 - `PaymentMethod`, `PaymentReceiptMethod`, `PaymentMethodsConfig`
 - `UserStatus`, `DeliveryReason`, `DeliveryRowReason`, `DELIVERY_REASON_LABELS`
 - `RbacActionKey`, `RbacActionDescriptor`
+- `EmployeeStatus`, `EmployeeStatusBadge`, `EmployeeStatusesConfig`
 
 ---
 
