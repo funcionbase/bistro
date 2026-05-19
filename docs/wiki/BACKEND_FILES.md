@@ -2842,9 +2842,11 @@ Ver [`AUDIT_EVENTS.md`](../../application/constants/AUDIT_EVENTS.md).
 
 ### N-instance safety (CLAUDE.md §12)
 
-Requiere en PDN:
-- `QUEUE_CONNECTION=redis|sqs` (workers de varias EC2 no toman el mismo
-  job — visibility timeout del driver).
-- `CACHE_STORE=redis|dynamodb` (el cron y `AuthController::selectCompany`
-  usan `Cache::lock` y `Cache::add` cross-instance).
+Stack canónico (sin Redis/SQS/DynamoDB):
+- `QUEUE_CONNECTION=database` — tabla `jobs` en postgres. Workers EC2
+  coordinan vía `SELECT ... FOR UPDATE SKIP LOCKED` del driver `database`;
+  un solo worker toma cada job.
+- `CACHE_STORE=database` — tablas `cache` y `cache_locks` en postgres. El
+  cron y `AuthController::selectCompany` usan `Cache::lock` y `Cache::add`
+  cross-instance; postgres provee atomicidad.
 

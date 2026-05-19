@@ -178,9 +178,15 @@ las pisa en el `.env` durante deploy. Cada entorno tiene su propio par
 
 ### Requisitos N-instance (CLAUDE.md §12)
 
-- `QUEUE_CONNECTION=redis|sqs` en PDN. NO `sync`, NO `database` local.
-- `CACHE_STORE=redis|dynamodb` en PDN. El cron y `AuthController` usan
-  `Cache::lock` y `Cache::add` que requieren coordinación cross-instance.
+Stack canónico del proyecto: TODO sobre PostgreSQL. NO se usa Redis, SQS
+ni DynamoDB.
+
+- `QUEUE_CONNECTION=database` (tablas `jobs` + `failed_jobs` en postgres).
+  Los workers EC2 coordinan vía `SELECT ... FOR UPDATE SKIP LOCKED` — un
+  solo worker toma cada job. NO `sync` (inline, bloquea request).
+- `CACHE_STORE=database` (tablas `cache` + `cache_locks` en postgres). El
+  cron y `AuthController::selectCompany` usan `Cache::lock` y `Cache::add`
+  que requieren coordinación cross-instance; postgres da atomicidad.
 - Cron `notifications:remind-pending-approvals` ya viene con
   `->onOneServer()->withoutOverlapping(5)` (`routes/console.php`).
 
@@ -237,8 +243,8 @@ las pisa en el `.env` durante deploy. Cada entorno tiene su propio par
 | `push:generate-vapid-keys` falla con "Unable to create the key" | PHP Windows sin `openssl.cnf` | El comando auto-fallbackea a OpenSSL CLI. Asegurate de tener `openssl` en PATH (Git Bash lo trae). |
 | Push se envía pero el browser no muestra notif | Permission revocado / OS notifications off | Verificar `Notification.permission` en consola del browser. Verificar OS settings. |
 | `push_subscriptions.revoked_at` se llena solo | El endpoint del browser está expirando con 410 | Normal post rotación VAPID o cuando el user desinstaló la PWA. El SW debería re-suscribirse en el próximo `pushsubscriptionchange`. |
-| Recordatorios duplicados | Cache store no compartido entre EC2 (file/array) | Cambiar a `CACHE_STORE=redis|dynamodb`. |
-| Push síncrono lento bloquea HTTP | Queue es `sync` | Cambiar a `QUEUE_CONNECTION=redis|sqs`. |
+| Recordatorios duplicados | Cache store no compartido entre EC2 (file/array) | Cambiar a `CACHE_STORE=database` (postgres). |
+| Push síncrono lento bloquea HTTP | Queue es `sync` | Cambiar a `QUEUE_CONNECTION=database` (postgres). |
 | iOS no recibe push | PWA no instalada / iOS <16.4 | Instalar PWA desde Safari → Compartir. Verificar versión iOS. |
 
 ---
