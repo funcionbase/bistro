@@ -1110,7 +1110,7 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 - `/configuracion/colaboradores` (index), `/nuevo`, `/{id}` (show),
   `/informes` — gate RBAC con `employees.read` / `employees.create` /
   `workforce.reports`.
-- `/planificador`, `/planificador/calendario` — gate `shifts.read`.
+- `/planner`, `/planner/calendar` — gate `shifts.read`.
 - `/me/agenda`, `/me/perfil` — sin gate específico; el endpoint backend
   responde 404 si el user no tiene perfil `employees`.
 
