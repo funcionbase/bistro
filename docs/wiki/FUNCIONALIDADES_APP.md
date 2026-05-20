@@ -7270,10 +7270,10 @@ compensatory) y consultar informes de horas + costo estimado.
 - `/configuracion/colaboradores/informes` — tabla agregada por
   colaborador (horas asignadas/ejecutadas/canceladas + costo estimado)
   con exportación CSV y PDF.
-- `/planificador` — vista semanal de turnos (filas: colaborador, columnas:
+- `/planner` — vista semanal de turnos (filas: colaborador, columnas:
   días). Click en celda permite asignar/cancelar turno. Permiso:
   `shifts.read` para ver, `shifts.manage` para mutar.
-- `/planificador/calendario` — calendario mensual con horas planificadas
+- `/planner/calendar` — calendario mensual con horas planificadas
   vs canceladas; drill-down a vista semanal.
 - `/me/agenda` — agenda del colaborador (sin permisos especiales, requiere
   perfil `employees` vinculado).
