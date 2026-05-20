@@ -20,7 +20,7 @@
 | Cache | database / redis | TTL configurable por dominio (`config/metrics.php`, `config/company_settings.php`) |
 | PDF | DomPDF | `barryvdh/laravel-dompdf`; `config/dompdf.php`, `config/pdf.php` |
 | OAuth | laravel/socialite v5 | Sólo Google habilitado (`auth/google`) |
-| Mail | log / smtp | Plantillas en `resources/views/emails/` |
+| Mail | log (local) / ses (qa/pdn) | Amazon SES via IAM instance profile; templates `vendor/mail/html` personalizadas con branding FlexyFlow. Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) |
 | Storage | local / s3 | Disco `public` para logos/QR; `private` para PDFs de facturas |
 | Pint | v1 | `vendor/bin/pint --dirty --format agent` antes de commitear |
 
@@ -1440,7 +1440,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `legal.php` (#170) | Ruta a `legal/*.md`, lista cerrada de `types`, mapeo `type` → archivo | `LEGAL_SOURCE_PATH` (override del directorio fuente) |
 | `logging.php` | Canales (single, daily, slack) | `LOG_CHANNEL` |
 | `loyalty.php` (#122) | Tiers, ratio earn, expiración, rewards | `LOYALTY_ENABLED`, `LOYALTY_EARN_RATIO`, `LOYALTY_EXPIRY_DAYS`, `LOYALTY_MAX_MANUAL_ADJUST`, `LOYALTY_REWARDS` |
-| `mail.php` | Driver, from address | `MAIL_MAILER`, `MAIL_FROM_*` |
+| `mail.php` | Driver, from, reply_to global; SES via IAM en qa/pdn ([`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md)) | `MAIL_MAILER`, `MAIL_FROM_*`, `MAIL_REPLY_TO_ADDRESS`, `SES_CONFIGURATION_SET`, `SES_WEBHOOK_SECRET` |
 | `menu.php` | Disco de imágenes, tamaño máximo, auto_consume_recipes | `MENU_IMAGE_DISK`, `MENU_IMAGE_MAX_SIZE_KB`, `MENU_AUTO_CONSUME_RECIPES` |
 | `metrics.php` | TTL de caché por dominio | `METRICS_CACHE_TTL`, `DASHBOARD_*_CACHE_TTL`, `DASHBOARD_CACHE_ENABLED` |
 | `mobile.php` | Page sizes para cursor pagination | `MOBILE_API_*_PAGE_SIZE` |

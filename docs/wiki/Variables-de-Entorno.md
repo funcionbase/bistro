@@ -66,6 +66,25 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 
 ---
 
+## Correo electrónico (Amazon SES + Cloudflare Routing)
+
+| Variable | Obligatoria | Default | Descripción |
+|----------|-------------|---------|-------------|
+| `MAIL_MAILER` | Sí | `log` | `log` en local; `ses` en qa/pdn (override via `sync-env-secret.yml`) |
+| `MAIL_FROM_ADDRESS` | Sí | `noreply@flexyflow.co` | Debe pertenecer al dominio verificado en SES |
+| `MAIL_FROM_NAME` | Sí | `${APP_NAME}` | Nombre mostrado al destinatario |
+| `MAIL_REPLY_TO_ADDRESS` | No | `soporte@flexyflow.co` | Buzón que recibe respuestas vía CF Email Routing |
+| `MAIL_REPLY_TO_NAME` | No | `${MAIL_FROM_NAME}` | Nombre del reply-to (hereda del from) |
+| `SES_CONFIGURATION_SET` | No | — | Configuration Set de SES (Fase 2 — habilita SNS para bounces) |
+| `SES_WEBHOOK_SECRET` | No | — | Secreto compartido para validar webhook SNS (Fase 2) |
+| `AWS_DEFAULT_REGION` | Sí | `us-east-1` | Región AWS — debe coincidir con la región de los identities de SES |
+
+**Importante:** las credenciales AWS (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`) **no se setean en qa/pdn** — el SDK las toma del IAM instance profile del ASG. Mismo patrón que S3.
+
+Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) para configuración completa de DKIM, Custom MAIL FROM, SPF, DMARC, IAM policy, salida de sandbox y Cloudflare Email Routing.
+
+---
+
 ## Facturación
 
 | Variable | Obligatoria | Default | Descripción |
