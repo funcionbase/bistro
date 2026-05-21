@@ -46,6 +46,7 @@ El middleware `NormalizeStrings` aplica **NFC** (Canonical Composition) a todos 
 Whitelist de rutas excluidas del middleware (no se normaliza):
 
 - `/api/v1/webhooks/whatsapp` — el payload viene de Meta y se valida con signature; mutarlo invalidaría la firma.
+- `/api/v1/webhooks/ses-notifications` — el payload viene de AWS SNS y se valida con firma RSA contra el canonical string byte-exact del body; mutarlo invalidaría la firma.
 - `/csp-report` / `/api/v1/csp-report` — reporte de violaciones CSP que viene del navegador, no de un usuario.
 
 ---
