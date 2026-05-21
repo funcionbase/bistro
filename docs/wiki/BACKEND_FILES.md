@@ -1363,8 +1363,9 @@ Todos los `dispatched()` schedules viven en `routes/console.php`.
 | `InvoiceGeneratedNotification` | Tras generar facturas mensuales | mail | sí |
 | `InvoiceOverdueNotification` | Tras marcar como vencida | mail | sí |
 | `WhatsappActionVerificationCodeNotification` | Acción sensible WhatsApp (connect/swap/disconnect) | mail | sí |
+| `CompanyRegistrationPendingNotification` | Tras `CompanyEnrollmentController@store` — registro exitoso + empresa pendiente de aprobación | mail | sí |
 
-Plantilla principal: `resources/views/emails/whatsapp/verification-code.blade.php`.
+Plantillas: `resources/views/emails/whatsapp/verification-code.blade.php`, `resources/views/emails/enrollment/company-pending-approval.blade.php`.
 
 ---
 
