@@ -154,8 +154,8 @@ Regla obligatoria en `CLAUDE.md` §7: antes de tocar un permiso, rol, estado de 
 
 - **Nombre:** `flexyflow_jwt` (excluida de Laravel `EncryptCookies` porque ya viene cifrada).
 - **HttpOnly:** `true` (no accesible a JavaScript).
-- **Secure:** `true` en producción (HTTPS).
-- **SameSite:** `lax`.
+- **Secure:** `true` en producción (HTTPS) — `config('session.secure')`.
+- **SameSite:** `config('session.same_site')`. En qa/pdn es `none` (deploy cross-origin: SPA y API en hosts distintos). `JwtService::buildCookie` aplica un guard: si `same_site=none` con `secure=false` (caso local sobre HTTP) lo degrada a `lax` para no descartar la cookie.
 - **Path:** `/`.
 - **TTL:** `ceil(JWT_TTL / 60)` minutos.
 
@@ -1564,8 +1564,8 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 |----------|---------|-------------|
 | `SESSION_DRIVER` | database | — |
 | `SESSION_LIFETIME` | 120 | min |
-| `SESSION_SECURE_COOKIE` | true | HTTPS |
-| `SESSION_SAME_SITE` | lax | — |
+| `SESSION_SECURE_COOKIE` | true | HTTPS; obligatorio `true` si `SESSION_SAME_SITE=none` |
+| `SESSION_SAME_SITE` | none | `none` en deploy cross-origin (SPA y API en hosts distintos); `JwtService::buildCookie` degrada a `lax` en local sin TLS |
 | `SECURITY_HEADERS_ENABLED` | true | Toggle headers |
 | `CSP_ENABLED` | true | Content-Security-Policy con nonce |
 
