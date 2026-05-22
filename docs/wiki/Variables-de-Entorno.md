@@ -20,6 +20,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `APP_DEBUG` | Sí | `false` | `true` solo en local |
 | `APP_URL` | Sí | `http://localhost` | URL canónica usada en correos y links |
 | `APP_TIMEZONE` | No | `UTC` | Zona horaria por defecto |
+| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://restaurante.flexyflow.co`, `qa`→`https://restaurante-qa.flexyflow.co`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
 
 ---
 
