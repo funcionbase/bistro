@@ -639,6 +639,8 @@ Mapa canónico en `resources/js/lib/shortcuts.ts` (`APP_SHORTCUTS`). Validados c
 | `lib/order-status.ts` | `ORDER_STATUS_FALLBACK`, `statusLabel`, `statusBadgeClass`, `isOperational`, `isRevenue`, `isTerminal` | SSoT de estados de orden en frontend. Fallback embebido espejo de `config/orders.php`. Consume shared props vía `useOrderStatuses()` |
 | `lib/tax.ts` | `calculateTaxLine(price, qty, rate, included)`, `aggregateTax(lines)` | Espejo del backend `TaxCalculator` para preview UX en caja/mesas. El backend recalcula al persistir |
 | `lib/datetime.ts` | `toBogotaDate`, `parseBogotaIso`, `formatBogotaTime`, `dayOfWeekShort` | Helpers timezone `America/Bogota`. Evita drift del navegador del operador |
+| `lib/route-compat.ts` | `route(name, params)`, `routeBackend(name, params)`, `routeExists(name)` | Resolución de rutas con nombre (#220). `route()` → path relativo del SPA; `routeBackend()` → URL absoluta al backend (prefija `VITE_API_URL`) para `<a href>` cross-origin como el OAuth de Google. Ver sección "ROUTES" abajo |
+| `lib/route-map.ts` | `ROUTE_MAP` | Mapa `nombre → template` autogenerado desde `php artisan route:list`. Lo consume `route-compat.ts` |
 
 Otros archivos del directorio (`escpos-printer.ts`, helpers internos de cupones) se usan exclusivamente dentro de componentes específicos y no exponen API a otras partes del frontend.
 
@@ -759,19 +761,38 @@ Inertia `flash` props (success/error/warning) también se renderizan automática
 
 ---
 
-## ROUTES — Helper Ziggy
+## ROUTES — Helpers `route()` y `routeBackend()`
 
-`route(name, params)` de `tightenco/ziggy` genera URLs en JS.
+La resolución de rutas con nombre vive en `lib/route-compat.ts` (#220) y
+reemplaza al `route()` global de Ziggy. Resuelve nombres contra `ROUTE_MAP`
+(`lib/route-map.ts`), el mapa autogenerado desde `php artisan route:list`.
 
 ```ts
-import { route } from '@/ziggy.js';
+import { route, routeBackend } from '@/lib/route-compat';
 
-route('orders.board');                   // → /orders/board
-route('menu.show', { id: 42 });          // → /menu/42
-route('coupons.show', { id: 'CODE10' }); // → /coupons/CODE10
+route('orders.board');         // → /orders/board   (path relativo del SPA)
+route('menu.show', { id: 42 }); // → /menu/42
+routeBackend('auth.google');   // → https://restaurante-api.flexyflow.co/auth/google
 ```
 
-Archivo `resources/js/ziggy.js` se regenera con `php artisan ziggy:generate resources/js/ziggy.js` cuando cambian las rutas web.
+### Cuándo usar `route()` vs `routeBackend()`
+
+| Helper | Devuelve | Usar para |
+|--------|----------|-----------|
+| `route(name, params)` | Path relativo (`/dashboard`) | `<a href>` y navegación a rutas del SPA — las sirve el Worker de Cloudflare |
+| `routeBackend(name, params)` | URL absoluta al backend (prefija `VITE_API_URL`) | `<a href>` o `window.location.href` top-level que debe ir **cross-origin al backend Laravel**: hoy solo el flujo OAuth de Google (`auth.google`) |
+
+El SPA (`restaurante.flexyflow.co`) y la API (`restaurante-api.flexyflow.co`)
+viven en hosts distintos. Un `<a href>` con path relativo a `/auth/google`
+caería en el Worker SPA, que no maneja esa ruta → **404**. `routeBackend()`
+antepone `VITE_API_URL` para que la navegación llegue al backend real.
+
+`routeBackend()` **no** se usa para llamadas a la API (`fetch`/XHR): `apiFetch`
+(`lib/api.ts`) ya antepone el host del backend por su cuenta.
+
+En dev `VITE_API_URL` queda vacío → `routeBackend()` devuelve un path relativo
+que resuelve el proxy de Vite (same-origin). El valor de PDN vive en
+`application/frontend/.env.production`.
 
 ---
 
