@@ -463,7 +463,7 @@ Cada sede puede tener N bodegas (`warehouses`): cocina, barra, congelador, almac
 | GET | `/hours` | `hours` | `hours.read` | `hours/index.tsx` |
 | GET | `/chats` | `chats` | `chats.read` | `chats.tsx` |
 | GET | `/clients` | `clients` | `clients.read` (gate web, #123) | `clients/index.tsx` |
-| GET | `/clients/{phone}` | `clients.show` | `clients.read` (gate web) | `clients/show.tsx` (phone restringido a `[0-9]+`) |
+| GET | `/clients/{contact}` | `clients.show` | `clients.read` (gate web) | `clients/show.tsx` (param `{contact}` = `contacts.id`, refactor #235 — phone ya no es único) |
 | GET | `/cart/{jwt}` | `cart` | sin auth (CartJwt) | `cart.tsx` |
 | GET | `/company/preferences` | `company.preferences` | `company.update` (gate web) | `company/preferences.tsx` |
 | GET | `/company/settings` | `company.settings` | `company.update` (gate web) | `company/settings.tsx`. Inertia props: `activeCompany`, `availableBanks`, `acceptedContract` (snapshot del contrato aceptado por el owner, #170). |
@@ -733,11 +733,11 @@ CartController resuelve `CartJwtService` perezosamente. 401 si `CART_JWT_SECRET`
 | Método | URL | Permiso |
 |--------|-----|---------|
 | GET | `clients` | `clients.read,read` |
-| GET | `clients/{phone}` | `clients.read,read` |
-| POST | `clients/{phone}/notes` | `clients.update,update` |
-| DELETE | `clients/{phone}/notes/{id}` | `clients.delete,delete` |
-| POST | `clients/{phone}/tags` | `clients.update,update` |
-| DELETE | `clients/{phone}/tags/{id}` | `clients.delete,delete` |
+| GET | `clients/{contact}` | `clients.read,read` |
+| POST | `clients/{contact}/notes` | `clients.update,update` |
+| DELETE | `clients/{contact}/notes/{id}` | `clients.delete,delete` |
+| POST | `clients/{contact}/tags` | `clients.update,update` |
+| DELETE | `clients/{contact}/tags/{id}` | `clients.delete,delete` |
 
 **Cross-sede**: el bloque CRM **no** está bajo `branch.access`. Las queries usan `Order::withoutBranchScope()` y `Contact::withoutBranchScope()` para consolidar un teléfono = un cliente para toda la empresa. `{phone}` se restringe a `[0-9]+` en la ruta y se normaliza con `CrmService::normalizePhone()` antes de cualquier lookup.
 
@@ -1187,7 +1187,7 @@ Ver tablas `client_notes` y `client_tags` en "Comunicación". Son cross-sede (s�
 | `Billing/` | `GetInvoicesRequest` | `GET /api/v1/billing/invoices` |
 | `Cart/` | `ApplyCouponRequest`, `ActiveAutoApplyRequest` (#125) | `POST /api/v1/cart/apply-coupon`, `POST /api/v1/cart/active-auto-apply` |
 | `Chat/` | `StoreChatMessageRequest`, `UpdateChatBotRequest`, `UpdateChatContactRequest` | `/api/v1/chats/{id}/{messages,bot,contact}` |
-| `Clients/` | `StoreNoteRequest`, `StoreTagRequest` | `/api/v1/clients/{phone}/{notes,tags}` (#123). Tag se lowercases en `prepareForValidation`; regex slug `/^[a-z0-9_\-]+$/`. |
+| `Clients/` | `StoreNoteRequest`, `StoreTagRequest` | `/api/v1/clients/{contact}/{notes,tags}` (#123, refactor #235 — param `{contact}` = `contacts.id`). Tag se lowercases en `prepareForValidation`; regex slug `/^[a-z0-9_\-]+$/`. |
 | `Company/` | `UpdateCompanyRequest`, `StoreBranchRequest`, `UpdateBranchRequest`, `StorePrinterRequest`, `UpdatePrinterRequest` | `PUT /api/v1/company`, `/api/v1/company/branches/*`, `/api/v1/company/printers/*` |
 | `Coupon/` | `StoreCouponRequest`, `UpdateCouponRequest`, `UpdateStatusRequest` | `/api/v1/coupons/*`. Incluye reglas para `valid_days`, `valid_hours_from/to` (`required_with` pair, `H:i`), `auto_apply` (#125) |
 | `Delivery/` | `AssignCourierRequest`, `CompleteDeliveryRequest`, `ReassignDeliveryRequest`, `StoreDeliveryRequest` | `/api/v1/deliveries/*`, `/api/v1/orders/{id}/assign-courier` |
