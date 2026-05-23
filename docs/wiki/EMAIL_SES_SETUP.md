@@ -392,6 +392,26 @@ sección "Enrolamiento" y el job propio para el detalle. Eventos auditados:
 persiste si la transacción commitea OK. Si algún call site necesita el
 comportamiento previo, usar `->beforeCommit()` puntual.
 
+### #227 — Correo de invitación de usuario (idempotente)
+
+Correo transaccional al invitado tras `InvitationController::store`.
+Orquestado por `SendUserInvitationEmailJob` (`ShouldQueue` + `ShouldBeUnique`,
+`uniqueId="invitation_email:{invitation_id}"`, `uniqueFor=3600`). Mismas
+cuatro capas que `SendCompanyRegistrationWelcomeEmailJob`, pero con
+`uniqueFor` de 1 hora para permitir reenvíos manuales legítimos via
+`POST /api/v1/invitations/{id}/resend`. Eventos auditados:
+`invitation.email_sent` (OK), `invitation.email_failed` (tras agotar
+`tries=3`), `invitation.resent` (reencolado manual). Ver
+`application/backend/constants/AUDIT_EVENTS.md` sección "Invitaciones a
+usuarios de empresa (#227)".
+
+El correo NO incluye token en URL: la aceptación es automática vía
+email auto-match en `InvitedEnrollmentController` cuando el invitado
+autentica con el mismo correo que recibió la invitación. El CTA va a
+`/login` sin parámetros sensibles, lo que evita exposición del token de
+64 bytes en logs/proxies/correo cacheado. El token sigue persistido en
+`company_invitations.token` como respaldo de auditoría.
+
 ## 11. Referencias
 
 - AWS SES Developer Guide: <https://docs.aws.amazon.com/ses/latest/dg/>
