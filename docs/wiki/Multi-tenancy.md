@@ -16,8 +16,8 @@
 | Sede | `branches.id` (UUID) | Unidad operativa: caja, mesas, menú, inventario, KDS, reportes. |
 
 - Las tablas globales (`companies`, `users`, `company_roles`, `permissions`,
-  `legal_documents`, `subscriptions`, etc.) **no** tienen `branch_id`. Son
-  compartidas dentro de la empresa.
+  `subscriptions`, etc.) **no** tienen `branch_id`. Son compartidas dentro de
+  la empresa.
 - Las tablas operativas (29+ y creciendo) tienen `branch_id uuid NOT NULL`,
   FK a `branches.id` con `onDelete restrict`. La sede NO se borra; se
   archiva (`branches.archived_at`).

@@ -466,7 +466,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 
 **Paso 1 — Datos personales:** captura `first_name`, `last_name`, `cedula`.
 
-**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad. Cada documento llega via `GET /api/v1/legal-document/{type}` (público, sin auth):
+**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el wiki externo en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
 ```json
 {
   "type": "tos",
@@ -477,7 +477,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 ```
 El frontend guarda `tos_version` y `privacy_version` para enviarlos en el siguiente paso.
 
-> **Fuente de verdad (#170):** el contenido de TOS, privacidad y contrato vive en archivos Markdown versionados en `legal/` (raíz del repo: `user-tos.md`, `user-privacy.md`, `company-contract.md`). Cada `.md` declara `type`, `version` y `published_at` en frontmatter YAML. El comando `php artisan legal:sync` se ejecuta en cada deploy a QA y PDN encadenado al `migrate --force` del workflow `App Deploy`. Si la version del archivo coincide con la persistida en `legal_documents` → no-op; si es nueva → INSERT; si hay drift de contenido con misma version → aborta el deploy (regla de inmutabilidad). Para publicar cambios: editar el `.md`, bumpear `version` (`1.0` → `1.1`), actualizar `published_at`, mergear a `main`.
+> **Fuente de verdad:** desde mayo 2026 los documentos legales viven en el wiki externo (`https://flexyflow.co/wiki/restaurante/legal/terminos/`, `/privacidad/`, `/contrato/`; en local `http://localhost:4321/...`). La URL base por ambiente se configura con `LEGAL_WIKI_BASE_URL` y se expone al frontend vía `useBootstrap().data.legalUrls`. El enrollment los abre en pestaña nueva. Para publicar cambios: editar el wiki externo (versionado en su propio git, no en este repo).
 
 **Paso 3 — Vinculación:** dos opciones:
 - **Crear nueva empresa** → al hacer "Continuar" envía a `/enrollment/company`.
@@ -504,18 +504,16 @@ Body:
 - `first_name`: `required|string|max:100`
 - `last_name`: `required|string|max:100`
 - `cedula`: `required|string|max:20|unique:users,cedula,{$user->id}`
-- `accepted_documents`: `required|array|size:2`
-- `accepted_documents.*.type`: `required|in:tos,privacy`
-- `accepted_documents.*.version`: `required|string|max:20`
+- `accept_tos`: `required|boolean|accepted`
+- `accept_privacy`: `required|boolean|accepted`
 
 **Controller** (`UserEnrollmentController::store`):
 1. Valida que el usuario está en `status=pending_enrollment` (si no, 422 con `enrollment.already_completed`).
-2. Verifica que la `version` de cada documento coincide con la última publicada (`legal_documents.published_at` más reciente para ese type). Si no coincide → 422 (forzar re-aceptación con la versión actual).
-3. En transacción:
-   - Update `users` con `first_name`, `last_name`, `cedula`, `status='pending_company'`.
-   - Insert en `user_acceptances` por cada documento: `(user_id, document_type, version, accepted_at=now(), ip, user_agent)`.
-4. Reissue JWT con el nuevo `enrollment_step`.
-5. Audit log: `user.enrolled` con `{accepted_versions}`.
+2. En transacción:
+   - Update `users` con `first_name`, `last_name`, `cedula`, `status='active'`.
+   - Insert en `user_acceptances` por cada documento (`terms` y `privacy`): `(user_id, document_type, accepted_at=now(), ip, user_agent)`. Sin snapshot — el contenido vive en el wiki externo versionado.
+3. Reissue JWT con el nuevo `enrollment_step`.
+4. Audit log: `user.enrolled` con `{accepted_documents: ['terms','privacy'], documents_source: 'external_wiki'}`.
 
 **Respuesta (200)**:
 ```json
@@ -529,8 +527,7 @@ Body:
 | Status | Código aplicación | Causa |
 |---|---|---|
 | 422 | `enrollment.already_completed` | El usuario ya completó enrollment |
-| 422 | `legal_document.version_mismatch` | La versión aceptada no es la vigente |
-| 422 | `validation` | Falla de FormRequest (cedula duplicada, campos faltantes) |
+| 422 | `validation` | Falla de FormRequest (cedula duplicada, campos faltantes, checkboxes legales sin aceptar) |
 
 ### 2.2 Onboarding de empresa (`/enrollment/company`)
 
@@ -539,10 +536,8 @@ Página: `resources/js/pages/enrollment/company.tsx`. Gate: `users.status == 'pe
 #### Wizard de 2 pasos
 
 **Paso 1 — Contrato de servicio:**
-- `GET /api/v1/legal-document/contract` retorna `version` y `content` (markdown). Fuente de verdad: `legal/company-contract.md` (#170).
+- El contrato vive en el wiki externo (`bootstrap.legalUrls.contract` → `<LEGAL_WIKI_BASE_URL>/wiki/restaurante/legal/contrato/`). El link del checkbox abre el documento en una pestaña nueva.
 - Checkbox obligatorio "He leído y acepto el contrato de servicio".
-
-> **Visibilidad post-aceptación (#170):** desde Dashboard → Configuración → Mi empresa → tab **Facturación**, el owner/admin puede revisar el contrato firmado por la empresa (sección "Contrato de servicio aceptado"). Muestra `version`, `accepted_at`, `accepter_name` y un modal con el snapshot inmutable del `document_content` de `user_acceptances`. Si `legal_documents` tiene una versión más reciente publicada, se muestra un badge informativo (sin botón de re-aceptación — fuera de scope de #170). Gated por `company.update`. Vive en el tab Facturación porque agrupa todo lo relacionado con la relación contractual (suscripción, facturas, contrato).
 
 **Paso 2 — Datos de empresa:**
 - `nit`: input de texto, máx 20 chars (acepta dígitos y guion para verificador, ej. `900123456-7`).
@@ -571,11 +566,10 @@ Content-Type: multipart/form-data (porque tiene archivo)
 - `account_type`: `required|in:corriente,ahorros`
 - `breb_key`: `nullable|string|max:50`
 - `qr_code`: `nullable|file|mimes:png,jpg,jpeg|max:5120` (KB)
-- `accepted_contract_version`: `required|string|max:20`
+- `accept_contract`: `required|boolean|accepted`
 
 **Controller** (`CompanyEnrollmentController::store`):
-1. Verifica que el `accepted_contract_version` coincide con la versión vigente de `legal_documents` type `contract`.
-2. En transacción:
+1. En transacción:
    - **Insert `companies`** con `status='pending_activation'`, `plan='free'`.
    - **Crea 3 roles del sistema** copiando templates desde `permission_templates`:
      ```php
@@ -599,11 +593,11 @@ Content-Type: multipart/form-data (porque tiene archivo)
      }
      ```
    - **Insert membership** en `company_users`: `(user_id, company_nit, company_role_id=ownerRoleId, status='active')`.
-   - **Insert `user_acceptances`** del contrato.
+   - **Insert `user_acceptances`** del contrato (sin snapshot — contenido vive en el wiki externo).
    - **Si hay QR:** `Storage::disk('public')->putFile("companies/qr-codes", $request->file('qr_code'))` → guarda `qr_code_path` en `companies`.
    - **Update `users.status='completed'`**.
-3. Reissue JWT con `active_company_nit=$nit` y `companies=[{...}]` poblado.
-4. Audit log: `company.created` con `{nit, owner_id}`, `user.enrolled` final, `auth.company.selected`.
+2. Reissue JWT con `active_company_nit=$nit` y `companies=[{...}]` poblado.
+3. Audit log: `company.created` con `{nit, owner_id}`, `user.enrolled` final, `auth.company.selected`.
 
 **Respuesta (200)**:
 ```json

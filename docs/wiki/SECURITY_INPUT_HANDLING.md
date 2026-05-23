@@ -6,7 +6,7 @@
 
 ## Principio rector
 
-**Saneamos en persistencia, escapamos en render.** El backend nunca confía en el cliente, el cliente nunca confía en el servidor, y la base de datos guarda solo texto plano normalizado. La única excepción es `legal_documents.content` (markdown trusted, editado solo por el equipo vía deploy, sanitizado en render con `rehype-sanitize`).
+**Saneamos en persistencia, escapamos en render.** El backend nunca confía en el cliente, el cliente nunca confía en el servidor, y la base de datos guarda solo texto plano normalizado. Los documentos legales (TOS, privacidad, contrato) viven fuera del repo en el wiki externo (ver `config/legal.php`), así que ya no almacenamos markdown trusted en BD — el componente `markdown.tsx` se mantiene para otros usos puntuales con `rehype-sanitize`.
 
 Cero campos de usuario admiten HTML enriquecido. Cero columnas guardan markup. Cero canales de salida (KDS, comanda térmica, carta QR pública, WhatsApp, PDF de factura, email, panel admin) reciben texto sin pasar por la capa de saneamiento.
 
@@ -18,7 +18,7 @@ Cero campos de usuario admiten HTML enriquecido. Cero columnas guardan markup. C
 |---|---|---|---|---|
 | `plain_text_short` | Nombres, ciudad, número de mesa, código corto | `strip_tags` + `trim` + NFC + `NoControlCharacters` + `mb_substr` al `max:` declarado | `sanitizePlainText(v, max)` | `{{ }}` Blade / JSX interpolation |
 | `plain_text_long` | Notas, descripciones, direcciones, razones de cancelación, mensajes de chat | `strip_tags` + `trim` + NFC + `NoControlCharacters` (permite `\n`, `\t`) + `mb_substr` | `sanitizePlainText(v, max)` | `{{ }}` Blade / JSX interpolation |
-| `markdown_trusted` | **Únicamente** `legal_documents.content` (TOS, privacy, contratos) | Passthrough (texto raw del archivo del repo, sin transformar) | n/a (no editable por usuario) | `react-markdown` + `rehype-sanitize` con allowlist + `rehype-external-links` |
+| `markdown_trusted` | Reservado para contenido producido por staff y servido desde una fuente confiable. Hoy sin uso en BD — los documentos legales viven en el wiki externo (`config/legal.php`). | Passthrough (texto raw sin transformar) | n/a (no editable por usuario) | `react-markdown` + `rehype-sanitize` con allowlist + `rehype-external-links` |
 | `identifier` | NIT, email, teléfono, slug, código de cupón, código postal | Regex estricta por subtipo + `Str::lower` cuando aplique | `assertIdentifier(v, kind)` | `{{ }}` (no necesita sanitización extra; la regex ya filtró) |
 | `json_payload` | `audit_logs.data`, `restaurant_menus.structure`, settings opacos | Validación por esquema (Laravel `array` + reglas anidadas) | n/a (interno) | `{{ json_encode(...) }}` con `JSON_HEX_TAG \| JSON_HEX_AMP` |
 
@@ -139,7 +139,7 @@ Por default todo se escapa con `{{ }}` (Blade) y JSX interpolation (`{value}`). 
 
 ### Markdown (`components/ui/markdown.tsx`)
 
-Solo `legal_documents.content`. Renderiza con `react-markdown` + `rehype-sanitize` con allowlist:
+Componente genérico para renderizar markdown con allowlist estricta. Hoy sin consumidores activos (los documentos legales viven en el wiki externo); se conserva por si se requiere para contenido staff-curated. Renderiza con `react-markdown` + `rehype-sanitize`:
 
 - Tags permitidos: `h1`-`h4`, `p`, `ul`, `ol`, `li`, `strong`, `em`, `code`, `pre`, `blockquote`, `a`, `br`, `hr`, `table`, `thead`, `tbody`, `tr`, `th`, `td`.
 - Atributo `href` solo con protocolos `http`, `https`, `mailto`.
@@ -173,7 +173,6 @@ Templates en `application/resources/views/emails/**/*.blade.php` usan `{{ }}`. E
 | `orders` | `delivery_address` | `plain_text_long` | SMS/email cliente, app courier |
 | `restaurant_menus` | `name` | `plain_text_short` | Carta QR pública |
 | `restaurant_menus` | `description` | `plain_text_long` | **Carta QR pública (sin auth)** |
-| `legal_documents` | `content` | `markdown_trusted` | UI público (signup, contratos) |
 | `cart_items` | `notes` | `plain_text_long` | UI cliente público |
 | `table_session_guests` | `display_name` | `plain_text_short` | **QR público + comanda impresa** |
 | `client_notes` | `note` | `plain_text_long` | UI admin (CRM) |
@@ -206,7 +205,7 @@ Columnas migradas:
 - `delivery_status_logs.reason`
 - `branches.address`
 
-`legal_documents.content` **no** se migra (es markdown trusted; cualquier cambio requiere bump de versión y revisión legal — ver `legal/README.md`).
+Los documentos legales viven en el wiki externo (`config/legal.php` → `LEGAL_WIKI_BASE_URL`) y no se persisten en BD, así que no entran en esta matriz de saneamiento.
 
 ---
 

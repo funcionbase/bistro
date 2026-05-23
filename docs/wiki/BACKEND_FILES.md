@@ -406,7 +406,6 @@ Cada sede puede tener N bodegas (`warehouses`): cocina, barra, congelador, almac
 | `api/v1/features` | 1 |
 | `api/v1/hours` | 7 |
 | `api/v1/invitations` | 1 |
-| `api/v1/legal-document` | 1 |
 | `api/v1/me` | 2 |
 | `api/v1/menus` | 18 |
 | `api/v1/metrics` | 10 |
@@ -927,10 +926,7 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 
 | Método | URL | Auth |
 |--------|-----|------|
-| GET | `legal-document/{type}` | público |
 | POST | `csp-report` | público |
-
-`legal-document/{type}`: `type ∈ {tos, privacy, contract}`. Retorna la versión vigente con HTML renderizado y `version` para registrar aceptación.
 
 ---
 
@@ -968,7 +964,6 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 | `InventoryHistoryController` | `series` | Serie temporal de valorización por bodega/sede (Chart) |
 | `InventoryTransferController` | `store` | Transferencias entre bodegas (multi-bodega #120) |
 | `InvitationController` | `store` | Crear invitación de usuario |
-| `LegalDocumentController` | `show` | TOS, privacy, contract (públicos) |
 | `LoyaltyController` | `index, show, adjust, redeem` | Programa de fidelización (#122). Cuentas y movimientos por `(company_nit, client_phone)` cross-sede |
 | `LoyaltyReportController` | `summary` | KPIs del programa: otorgados/canjeados/expirados, distribución por tier, ARPU, top clientes |
 | `MeController` | `show, destroy` | Perfil del usuario actual |
@@ -1051,7 +1046,7 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 | `PermissionTemplate` | `permission_templates` | role_type (owner/admin/employee), feature_id, can_* | belongsTo(Feature) | bools | no |
 | `CompanyMember` | (vista) | — | — | — | — |
 | `CompanySetting` | `company_settings` | company_nit, key, value (JSONB) | belongsTo(Company) | `value: array` | no |
-| `UserAcceptance` | `user_acceptances` | user_id, document_type, version, accepted_at | belongsTo(User, LegalDocument) | `accepted_at: datetime` | no |
+| `UserAcceptance` | `user_acceptances` | user_id, document_type, accepted_at (snapshot opcional para registros previos al wiki externo) | belongsTo(User) | `accepted_at: datetime` | no |
 | `UserActiveToken` | `user_active_tokens` | user_id, token_jti, last_seen_at | belongsTo(User) | `last_seen_at: datetime` | no |
 
 ### Operaciones
@@ -1173,7 +1168,6 @@ Ver tablas `client_notes` y `client_tags` en "Comunicación". Son cross-sede (s�
 | Modelo | Tabla | Campos clave | Notas |
 |--------|-------|--------------|-------|
 | `AuditLog` | `audit_logs` | event, user_id, model_type, model_id, data (JSON), ip, user_agent | `data: array` con `before/after` cuando aplica. Auto-incluye `branch_id` + `actor_active_branch_id` (#117) |
-| `LegalDocument` | `legal_documents` | type, version, content (markdown), published_at | Relación many-to-many implícita con `UserAcceptance`. Fuente de verdad: `legal/*.md` en raíz del repo. Sincronizado vía `php artisan legal:sync` en cada deploy (#170). |
 | `WebhookEvent` | `webhook_events` | source, event, payload (JSON), processed_at, error | Idempotencia de webhooks externos |
 | `Bank` | `banks` | id, name, code | Catálogo de bancos colombianos |
 
@@ -1272,7 +1266,6 @@ Reglas comunes:
 | `CompanySettingsService` | Lectura/escritura de `company_settings` (key-value JSONB) con allowlist `ALLOWED_KEYS` |
 | `AuditService` | `log($event, $user, $model, $metadata, $request)` → tabla `audit_logs` |
 | `PeriodResolver` | Parsea `period` (`today/week/month/custom`) → `[Carbon $from, Carbon $to]` |
-| `LegalDocumentSyncService` | Lee `legal/*.md` (frontmatter YAML), valida, inserta en `legal_documents` si la `version` es nueva, skip si coincide, falla con error si hay drift de contenido con misma `version` (#170). Consumido por `legal:sync` y por `LegalDocumentSeeder`. |
 
 ### Exportaciones
 
@@ -1350,7 +1343,6 @@ Registrados automáticamente por Laravel 12 (no requieren `Kernel.php`).
 | `inventory:snapshot-daily` | diario 02:30 (#120) | — | Snapshot diario por bodega a `warehouse_stock_snapshots` |
 | `loyalty:expire-stale` | diario 03:30 (#122) | — | Caduca puntos con `last_earn_at < now() - LOYALTY_EXPIRY_DAYS` (default 365). Inserta `loyalty_movements.type='expire'` con delta negativo |
 | `alerts:evaluate-rules` | cada 30 min (#124) | — | Ejecuta `AlertEngine` para todas las empresas activas con reglas habilitadas |
-| `legal:sync` | en cada deploy (encadenado a `migrate --force` desde el workflow `App Deploy`) | — | Sincroniza `legal/*.md` (fuente de verdad) con la tabla `legal_documents` (#170). Idempotente: inserta solo cuando la `version` del .md es nueva; skip si coincide; falla con error si el contenido difiere con la misma version (drift). |
 
 Todos los `dispatched()` schedules viven en `routes/console.php`.
 
@@ -1386,7 +1378,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 
 | Archivo | Dominio | Contenido principal |
 |---------|---------|---------------------|
-| `0001_01_01_000000_create_foundation_tables` | Foundation | `users`, `password_reset_tokens`, `sessions`, `cache`, `jobs`, `audit_logs`, `webhook_events`, `legal_documents`, `user_acceptances`, `user_active_tokens`, `personal_access_tokens` |
+| `0001_01_01_000000_create_foundation_tables` | Foundation | `users`, `password_reset_tokens`, `sessions`, `cache`, `jobs`, `audit_logs`, `webhook_events`, `user_acceptances`, `user_active_tokens`, `personal_access_tokens` (la tabla `legal_documents` se introdujo aquí y se retiró en mayo 2026) |
 | `0001_01_01_000100_create_companies_block` | Empresas | `companies` (con tax_regime, banking, logo/QR, status), `banks`, `company_settings` (JSONB), `company_invitations` |
 | `0001_01_01_000200_create_permissions_block` | RBAC | `features` (con `is_owner_only`), `permission_templates`, `company_roles`, `company_users` (con `custom_permissions` JSONB), `company_role_permissions` |
 | `0001_01_01_000300_create_branches_block` | Multi-sede (#117) | `branches`, `branch_users` |
@@ -1407,6 +1399,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `2026_05_11_200000_create_loyalty_tables` | Fidelización (#122) | `loyalty_accounts`, `loyalty_movements`, `loyalty_redemptions` |
 | `2026_05_11_210000_add_loyalty_columns_to_coupons` | Fidelización | `coupons.locked_to_phone`, `coupons.source` ENUM (`manual`, `loyalty_redeem`, ...) para canjes desde puntos |
 | `2026_05_14_084116_cleanup_stale_legal_document_v1_placeholders` | Legales (#170) | Migración one-shot: borra filas `legal_documents` v1.0 cuyo contenido coincide byte-a-byte con el texto placeholder del seeder anterior. Habilita la transición a la fuente .md sin abortar el deploy por drift. `user_acceptances` no afectados (snapshot propio). |
+| `2026_05_23_000000_drop_legal_documents_and_relax_user_acceptances` | Legales | Drop de `legal_documents` (los documentos pasaron al wiki externo `https://flexyflow.co/wiki/restaurante/legal/...`) y `document_version` / `document_content` de `user_acceptances` quedan nullable. Los registros históricos se conservan para Habeas Data CO. |
 
 ### Índices de rendimiento (migración `2026_05_01_210000_dashboard_performance`)
 
@@ -1438,7 +1431,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `delivery.php` | Límites, notificaciones | `DELIVERY_MAX_ACTIVE_PER_COURIER`, `DELIVERY_NOTIFY_*` |
 | `dompdf.php` | Tamaño papel, orientación, fuentes (FlexyFont) | `PDF_DRIVER` |
 | `filesystems.php` | Discos (local, public, s3) | `FILESYSTEM_DISK`, `AWS_*` |
-| `legal.php` (#170) | Ruta a `legal/*.md`, lista cerrada de `types`, mapeo `type` → archivo | `LEGAL_SOURCE_PATH` (override del directorio fuente) |
+| `legal.php` | URL base del wiki externo (`wiki_base_url`) + paths por tipo (`terms` / `privacy` / `contract`). El frontend lee `useBootstrap().data.legalUrls`. | `LEGAL_WIKI_BASE_URL` (default `https://flexyflow.co`, en local `http://localhost:4321`) |
 | `logging.php` | Canales (single, daily, slack) | `LOG_CHANNEL` |
 | `loyalty.php` (#122) | Tiers, ratio earn, expiración, rewards | `LOYALTY_ENABLED`, `LOYALTY_EARN_RATIO`, `LOYALTY_EXPIRY_DAYS`, `LOYALTY_MAX_MANUAL_ADJUST`, `LOYALTY_REWARDS` |
 | `mail.php` | Driver, from, reply_to global; SES via IAM en qa/pdn ([`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md)) | `MAIL_MAILER`, `MAIL_FROM_*`, `MAIL_REPLY_TO_ADDRESS`, `SES_CONFIGURATION_SET`, `SES_WEBHOOK_SECRET` |
@@ -1617,7 +1610,6 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 
 | Método | URL | Descripción |
 |--------|-----|-------------|
-| GET | `/api/v1/legal-document/{type}` | TOS, privacy, contract |
 | GET | `/api/v1/public/menu/{companyNit}` | Menú activo de cualquier empresa por NIT |
 | GET | `/api/v1/webhooks/whatsapp` | Handshake (verify_token) Meta |
 | POST | `/api/v1/webhooks/whatsapp` | Eventos Meta (validados HMAC) |

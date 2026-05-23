@@ -131,8 +131,8 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 
 | Archivo | URL | APIs | Notas |
 |---------|-----|------|-------|
-| `user.tsx` | `/enrollment/user` | `GET /api/v1/legal-document/{type}`, `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad → vinculación |
-| `company.tsx` | `/enrollment/company` | `GET /api/v1/legal-document/contract`, `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene como prop Inertia |
+| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a wiki externo en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
+| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (link al wiki externo en pestaña nueva, URL desde `bootstrap.legalUrls.contract`) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
 
 ### Dashboard, Métricas, Reportes
 
