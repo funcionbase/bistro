@@ -376,6 +376,22 @@ bucket privado) y nunca se borran.
   FlexyFlow, paleta del DS, footer legal CO (razón social, dirección,
   contacto, link a política de privacidad).
 
+### #226 — Welcome email idempotente (registro exitoso)
+
+Correo transaccional al usuario tras `CompanyEnrollmentController::store`.
+Orquestado por `SendCompanyRegistrationWelcomeEmailJob` (`ShouldQueue` +
+`ShouldBeUnique`, `uniqueId="welcome_email:{user_id}:{company_nit}"`,
+`uniqueFor=86400`). Cuatro capas de protección contra envíos duplicados en
+el ASG N-instance — ver `application/backend/constants/AUDIT_EVENTS.md`
+sección "Enrolamiento" y el job propio para el detalle. Eventos auditados:
+`enrollment.welcome_email_sent` (OK), `enrollment.welcome_email_failed`
+(tras agotar `tries=3`).
+
+`config/queue.php` ahora tiene `after_commit: true` global en el driver
+`database`: cualquier `dispatch` dentro de una `DB::transaction` sólo se
+persiste si la transacción commitea OK. Si algún call site necesita el
+comportamiento previo, usar `->beforeCommit()` puntual.
+
 ## 11. Referencias
 
 - AWS SES Developer Guide: <https://docs.aws.amazon.com/ses/latest/dg/>
