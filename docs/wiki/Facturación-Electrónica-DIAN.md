@@ -142,6 +142,78 @@ DEE POS (`prefix=PO`) y otra para FEV (`prefix=FE`).
 
 ---
 
+## Seguridad de los endpoints (#235)
+
+**Regla**: ningún endpoint DIAN se expone públicamente. Todos los caminos
+de emisión, configuración y consulta son consumo interno autenticado.
+
+### Stack de middleware aplicado al bloque `/api/v1/dian/*`
+
+Hereda del bloque padre `routes/api.php` (línea 258):
+
+```
+['jwt', 'throttle:api', 'company.access', 'company.verified', 'company.not_blocked']
+```
+
+Sobre eso, cada endpoint suma:
+- `permission:dian.<feature>,<action>` — RBAC fino con `FeaturePermissionService`.
+- `branch.access` cuando es operativo (`documents/*`, `recipients/*`).
+- `branch.consolidate` cuando puede pasar `?branch=all`.
+
+Resultado: para tocar cualquier ruta DIAN se requiere **sesión activa
+(JWT cookie HttpOnly) + empresa verificada + no bloqueada por past_due +
+permiso fino + acceso a la sede activa**.
+
+### Validaciones adicionales del backend (defensa en profundidad)
+
+1. **`order_id` debe pertenecer a la empresa Y a la sede activa** (no solo
+   `exists` global). `Rule::exists(...)->where(...)`.
+2. **`references_document_id` también validado por empresa**.
+3. **`printer_id` debe pertenecer a la sede activa Y estar `is_active`**.
+4. **Estado de la orden**: 422 `dian.order_not_emittable` si la orden NO está
+   en `config('orders.revenue')` (default `['completed']`).
+5. **`Idempotency-Key` obligatorio** en `POST /dian/documents`.
+6. **Cache::lock por (`order_id`, `document_type`)** serializa emisiones paralelas.
+7. **Cada controller con route binding** valida `company_nit === active_company_nit`.
+
+### Único endpoint público
+
+`POST /api/v1/webhooks/dian/{provider}`. Defensas:
+
+| Capa | Mecanismo |
+|------|-----------|
+| Whitelist provider | regex en route + check defensivo en controller (`mock\|factura1\|siigo`). |
+| Rate limit | `throttle:60,1` por IP. |
+| Autenticación criptográfica | HMAC SHA-256 con `webhook_secret_encrypted`. |
+| Idempotencia | `Cache::lock` por (provider, track_id) + transición monotónica. |
+| Anti-normalización | Whitelisted en `NormalizeStrings`. |
+| Anti-leak | 404 silencioso cuando no encuentra config / track_id. |
+
+### Quién dispara la emisión
+
+El backend es la única autoridad de emisión:
+- **Manual**: cajero con permiso `dian.documents.emit` pulsa "Emitir documento" desde UI; frontend `POST /dian/documents` con `Idempotency-Key`.
+- **Automático** (cuando se configure): `EmitDianDocumentJob` desde `closeWithPayment` según `company_settings.dian.auto_emit_on_close`.
+- **No hay endpoint público** que dispare emisión. El webhook solo recibe respuestas.
+
+### Cómo NO se puede atacar
+
+| Vector | Bloqueo |
+|--------|---------|
+| Sin sesión | `jwt` middleware → 401. |
+| Sesión de otra empresa | `Rule::exists` por `company_nit` → 422. |
+| Sin permiso fino | `EnsureFeaturePermission` → 403. |
+| Empresa pending/suspended | `company.verified`/`company.not_blocked` → 403. |
+| Orden no facturable | `dian.order_not_emittable` → 422. |
+| Reenvío con misma `Idempotency-Key` | dedupe + Cache::lock → 200 con doc existente. |
+| Doble emisión paralela | UNIQUE compuesta + UNIQUE en `unique_code`. |
+| Robo de tokens del provider | Cast `encrypted` en BD; jamás en GET. |
+| Webhook falso | HMAC inválido → 401. |
+| Webhook con provider no whitelist | Regex de ruta + check controller → 404. |
+| Robo de XML/PDF | URLs S3 firmadas TTL 15 min + endpoint con `permission:dian.documents,read`. |
+
+---
+
 ## Conservación legal
 
 - **5 años** para personas naturales / **10 años** para jurídicas (legislación DIAN).
