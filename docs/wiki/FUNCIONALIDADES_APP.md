@@ -3785,16 +3785,16 @@ Respuesta:
 
 Cache: `crm:list:base:{nit}` con `Cache::flexible([300, 1800])` — 5min fresh, 30min stale. Filtros se aplican sobre la lista cacheada en PHP (sin re-pegarle a la BD). Se invalida explícitamente al crear/eliminar nota o tag.
 
-### 12.bis.5 Perfil consolidado (`GET /api/v1/clients/{phone}`)
+### 12.bis.5 Perfil consolidado (`GET /api/v1/clients/{contact}`)
 
-Devuelve KPIs (mismos del listado) + historial de 50 últimas órdenes + 20 últimos chats (cross-sede) + todas las notas + todas las tags. Si el cliente no tiene órdenes ni contacto registrado, devuelve 404.
+Refactor #235: el param `{contact}` es `contacts.id`. Devuelve KPIs (mismos del listado) + historial de 50 últimas órdenes (matchea por `contact_id` y por `client_phone` legacy) + 20 últimos chats (cross-sede, por phone del Contact) + todas las notas + todas las tags. Si el contact no existe en la empresa activa, devuelve 404.
 
 ### 12.bis.6 Notas privadas
 
 | Método | URL | Permission |
 |---|---|---|
-| POST | `/api/v1/clients/{phone}/notes` | `clients.update,update` |
-| DELETE | `/api/v1/clients/{phone}/notes/{id}` | `clients.delete,delete` |
+| POST | `/api/v1/clients/{contact}/notes` | `clients.update,update` |
+| DELETE | `/api/v1/clients/{contact}/notes/{id}` | `clients.delete,delete` |
 
 Validación: `note` requerido, 1–2000 chars. Soft-delete con auditoría completa (`client.note_created` / `client.note_deleted`) que incluye un excerpt de hasta 200 chars del contenido para reconstrucción ante disputa.
 
@@ -3802,42 +3802,40 @@ Validación: `note` requerido, 1–2000 chars. Soft-delete con auditoría comple
 
 | Método | URL | Permission |
 |---|---|---|
-| POST | `/api/v1/clients/{phone}/tags` | `clients.update,update` |
-| DELETE | `/api/v1/clients/{phone}/tags/{id}` | `clients.delete,delete` |
+| POST | `/api/v1/clients/{contact}/tags` | `clients.update,update` |
+| DELETE | `/api/v1/clients/{contact}/tags/{id}` | `clients.delete,delete` |
 
 Validación: `tag` slug-style (`/^[a-z0-9_\-]+$/`), 1–50 chars. Se lowercases en `prepareForValidation`. Idempotente: si el tag ya existe (UNIQUE constraint), devuelve el row existente con 200 en vez de 201.
 
 ### 12.bis.8 Privacidad y validación cross-tenant
 
-Antes de aceptar mutaciones (notes/tags), `ClientController::ensureClientExists()` verifica que el teléfono tenga al menos:
-- Una orden registrada en `orders` para la empresa, **o**
-- Un row en `contacts` para la empresa.
-
-Esto previene que un usuario malicioso cree notas sobre teléfonos arbitrarios (PII de terceros). `company_nit` siempre viene del JWT, jamás del body o path.
+Refactor #235: el route model binding `Contact` ya garantiza que el contact exista; `ClientController::loadContactOrFail` valida adicionalmente que `company_nit` del contact coincida con `active_company_nit` del JWT. Aborta 404 si pertenece a otra empresa (no leak cross-tenant). `company_nit` siempre viene del JWT, jamás del body o path.
 
 ### 12.bis.9 Auditoría
 
 Cada mutación queda en `audit_logs`:
-- `client.note_created` — incluye `note_id`, `client_phone`.
-- `client.note_deleted` — incluye `note_id`, `client_phone`, `note_excerpt`.
-- `client.tag_added` — incluye `tag`, `client_phone`.
-- `client.tag_removed` — incluye `tag`, `client_phone`.
+- `client.created` — incluye `contact_id`, `doc_type`, `doc_number`, `client_phone`, `client_name`, `branch_id`.
+- `client.note_created` — incluye `contact_id`, `client_phone`, `note_id`.
+- `client.note_deleted` — incluye `contact_id`, `client_phone`, `note_id`, `note_excerpt`.
+- `client.tag_added` — incluye `contact_id`, `client_phone`, `tag`.
+- `client.tag_removed` — incluye `contact_id`, `client_phone`, `tag`.
 
 ### 12.bis.10 UI
 
-- **Listado** (`/clients`): tabla con búsqueda con debounce 300ms, filtros por segmento y tag, paginación. Phone display: `+57 3XX XXX XXXX` (humano), pero en BD/API siempre `573XXXXXXXXXX`.
-- **Detalle** (`/clients/{phone}`): header con KPIs, badge de segmento, editor de tags, tabs (historial órdenes / chats / notas). Acción "Ver chat" abre `/chats?chat={id}` si el cliente tiene al menos una conversación.
+- **Listado** (`/clients`): tabla con búsqueda con debounce 300ms (matchea nombre / documento / teléfono), filtros por segmento y tag, paginación. Refactor #235: la fila del cliente muestra nombre + documento + teléfono. Identidad canónica = `contacts.id`.
+- **Detalle** (`/clients/{contact}`): header con nombre + documento + phone + segmento + KPIs, editor de tags, tabs (historial órdenes / chats / notas). Acción "Ver chat" abre `/chats?chat={id}` si el cliente tiene al menos una conversación.
 
 ### 12.bis.11 Endpoints (resumen)
 
 | Método | URL | Permission |
 |---|---|---|
 | GET | `clients` | `clients.read,read` |
-| GET | `clients/{phone}` | `clients.read,read` |
-| POST | `clients/{phone}/notes` | `clients.update,update` |
-| DELETE | `clients/{phone}/notes/{id}` | `clients.delete,delete` |
-| POST | `clients/{phone}/tags` | `clients.update,update` |
-| DELETE | `clients/{phone}/tags/{id}` | `clients.delete,delete` |
+| POST | `clients` | `clients.create,create` (refactor #235: doc obligatorio, phone opcional) |
+| GET | `clients/{contact}` | `clients.read,read` |
+| POST | `clients/{contact}/notes` | `clients.update,update` |
+| DELETE | `clients/{contact}/notes/{id}` | `clients.delete,delete` |
+| POST | `clients/{contact}/tags` | `clients.update,update` |
+| DELETE | `clients/{contact}/tags/{id}` | `clients.delete,delete` |
 
 ### 12.bis.12 Pendientes fuera de alcance
 
@@ -3849,7 +3847,7 @@ Cada mutación queda en `audit_logs`:
 
 ---
 
-## 12.ter Fidelización con puntos (`/loyalty/reports`, integrado en `/clients/{phone}` y `/cart/{jwt}`) — issue #122
+## 12.ter Fidelización con puntos (`/loyalty/reports`, integrado en `/clients/{contact}` y `/cart/{jwt}`) — issue #122
 
 Programa de retención cross-sede. Una cuenta de puntos vive por `(company_nit, client_phone)` sin importar la sede donde el cliente pidió. El programa puede habilitarse/configurarse por empresa via `company_settings` (key prefix `loyalty.*`); defaults globales en `config/loyalty.php` y `.env` (`LOYALTY_*`).
 
@@ -3905,7 +3903,7 @@ Schedule diario 04:15 hora local. Por cada empresa con `loyalty.enabled`:
 
 `--dry-run` salta la expiración pero igual marca redenciones vencidas. `--company={nit}` limita el alcance.
 
-### 12.ter.8 UI staff (`/clients/{phone}` panel)
+### 12.ter.8 UI staff (`/clients/{contact}` panel)
 `LoyaltyPanel` se renderiza encima de las tabs si `loyalty.read`. Muestra saldo, tier badge, progreso a siguiente tier, catálogo de rewards (canjeables/bloqueados), historial de 50 movements, modales para ajustar puntos y para canjear en nombre del cliente. Tras canjear staff-side, se muestra el `coupon_code` para que el operador se lo dicte al cliente.
 
 ### 12.ter.9 UI cliente (`/cart/{jwt}`)
