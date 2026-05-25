@@ -772,7 +772,7 @@ import { route, routeBackend } from '@/lib/route-compat';
 
 route('orders.board');         // → /orders/board   (path relativo del SPA)
 route('menu.show', { id: 42 }); // → /menu/42
-routeBackend('auth.google');   // → https://restaurante-api.flexyflow.co/auth/google
+routeBackend('auth.google');   // → https://panel-api.flexyflow.co/auth/google
 ```
 
 ### Cuándo usar `route()` vs `routeBackend()`
@@ -782,7 +782,7 @@ routeBackend('auth.google');   // → https://restaurante-api.flexyflow.co/auth/
 | `route(name, params)` | Path relativo (`/dashboard`) | `<a href>` y navegación a rutas del SPA — las sirve el Worker de Cloudflare |
 | `routeBackend(name, params)` | URL absoluta al backend (prefija `VITE_API_URL`) | `<a href>` o `window.location.href` top-level que debe ir **cross-origin al backend Laravel**: hoy solo el flujo OAuth de Google (`auth.google`) |
 
-El SPA (`restaurante.flexyflow.co`) y la API (`restaurante-api.flexyflow.co`)
+El SPA (`panel.flexyflow.co`) y la API (`panel-api.flexyflow.co`)
 viven en hosts distintos. Un `<a href>` con path relativo a `/auth/google`
 caería en el Worker SPA, que no maneja esa ruta → **404**. `routeBackend()`
 antepone `VITE_API_URL` para que la navegación llegue al backend real.
