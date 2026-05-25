@@ -8,7 +8,7 @@
 
 ## Multi-tenancy
 
-FlexyFlow es multi-empresa. Reglas clave:
+flexyflow es multi-empresa. Reglas clave:
 
 - La PK de `companies` es el **NIT** (string), no un autoincremental.
 - Toda tabla operativa (orders, deliveries, coupons, etc.) lleva FK `company_nit`.

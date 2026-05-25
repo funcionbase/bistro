@@ -1,6 +1,6 @@
 # BACKEND_FILES.md — Inventario Técnico Backend
 
-> Referencia técnica completa del backend Laravel 12 de FlexyFlow Restaurante.
+> Referencia técnica completa del backend Laravel 12 de flexyflow Restaurante.
 > Documento canónico para desarrollo, troubleshooting y manuales operativos.
 > Cubre: rutas, controladores, modelos, servicios, middleware, jobs, comandos, configuración, RBAC, auditoría y multi-tenancy.
 
@@ -20,7 +20,7 @@
 | Cache | database / redis | TTL configurable por dominio (`config/metrics.php`, `config/company_settings.php`) |
 | PDF | DomPDF | `barryvdh/laravel-dompdf`; `config/dompdf.php`, `config/pdf.php` |
 | OAuth | laravel/socialite v5 | Sólo Google habilitado (`auth/google`) |
-| Mail | log (local) / ses (qa/pdn) | Amazon SES via IAM instance profile; templates `vendor/mail/html` personalizadas con branding FlexyFlow. Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) |
+| Mail | log (local) / ses (qa/pdn) | Amazon SES via IAM instance profile; templates `vendor/mail/html` personalizadas con branding flexyflow. Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) |
 | Storage | local / s3 | Disco `public` para logos/QR; `private` para PDFs de facturas |
 | Pint | v1 | `vendor/bin/pint --dirty --format agent` antes de commitear |
 
@@ -1485,9 +1485,9 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `GOOGLE_CLIENT_ID` | OAuth Google |
 | `GOOGLE_CLIENT_SECRET` | OAuth Google |
 | `GOOGLE_REDIRECT_URI` | Callback Google |
-| `META_APP_ID` | App ID FlexyFlow en Meta (1265007232388204) |
+| `META_APP_ID` | App ID flexyflow en Meta (1265007232388204) |
 | `META_APP_SECRET` | Secret app Meta |
-| `META_BUSINESS_ID` | Business Manager FlexyFlow |
+| `META_BUSINESS_ID` | Business Manager flexyflow |
 | `META_SYSTEM_USER_ID` | System User ID |
 | `META_SYSTEM_USER_TOKEN` | Token never-expire del System User |
 | `META_CONFIG_ID_QA` | Config ID Embedded Signup QA (941660645323511) |
@@ -2275,7 +2275,7 @@ Cada PR debe actualizar la página correspondiente del wiki cuando modifique end
 
 | Método | Ruta | Controlador | Auth | Propósito |
 |---|---|---|---|---|
-| `GET` | `/manifest.webmanifest` (`pwa.manifest`) | `App\Http\Controllers\PwaManifestController@show` | Pública (lee JWT cookie si está) | Sirve el Web App Manifest. Si hay JWT válido con `active_company_nit`, el manifest usa `commercial_name` y `menu_primary_color` de esa empresa; si no, devuelve branding FlexyFlow por defecto. |
+| `GET` | `/manifest.webmanifest` (`pwa.manifest`) | `App\Http\Controllers\PwaManifestController@show` | Pública (lee JWT cookie si está) | Sirve el Web App Manifest. Si hay JWT válido con `active_company_nit`, el manifest usa `commercial_name` y `menu_primary_color` de esa empresa; si no, devuelve branding flexyflow por defecto. |
 | `GET` | `/sw.js` (`pwa.sw`) | `App\Http\Controllers\PwaManifestController@serviceWorker` | Pública | Sirve el Service Worker generado por Workbox (`public/build/sw.js`) desde la raíz para que el `scope` por defecto sea `/`. Reescribe URLs internas a `/build/...`. |
 
 ### Comportamiento
@@ -2285,7 +2285,7 @@ Cada PR debe actualizar la página correspondiente del wiki cuando modifique end
 - Branding por empresa: `CompanySettingsService::get($nit, 'menu_primary_color', '#FF6B35')`.
 - Headers manifest: `Content-Type: application/manifest+json; charset=UTF-8`, `Cache-Control: private, max-age=300`.
 - Headers SW: `Content-Type: application/javascript; charset=UTF-8`, `Service-Worker-Allowed: /`, `Cache-Control: public, max-age=0, must-revalidate`.
-- Fallback estático sin lógica: `public/manifest.webmanifest` (FlexyFlow brand). Sirve como red de seguridad si la ruta dinámica falla.
+- Fallback estático sin lógica: `public/manifest.webmanifest` (flexyflow brand). Sirve como red de seguridad si la ruta dinámica falla.
 
 ### Iconos servidos
 
@@ -2305,7 +2305,7 @@ Cada PR debe actualizar la página correspondiente del wiki cuando modifique end
 |---|---|---|---|---|
 | `POST` | `/api/v1/orders/sync-batch` (`api.orders.syncBatch`) | `App\Http\Controllers\Api\OrderSyncController@syncBatch` | JWT + `orders.create` | Sincroniza un batch de órdenes/cobros offline idempotentemente por `client_uuid`. Multitenant estricto (rechaza si `company_nit` ≠ JWT activo). |
 | `GET` | `/api/v1/metrics/offline/operation` (`api.metrics.offline.operation`) | `App\Http\Controllers\Api\MetricsController@offlineOperation` | JWT + `reports.read` | Agrega `offline_sync_events` por período. Devuelve totales (orders_synced, receipts_synced, amount_synced, failed) + serie diaria. |
-| `GET` | `/apple-touch-icon.png` (`pwa.apple-touch-icon`) | `App\Http\Controllers\PwaManifestController@appleTouchIcon` | Pública | Sirve el apple-touch-icon de la empresa activa (rasterizado desde su logo) o el FlexyFlow black-font por defecto. |
+| `GET` | `/apple-touch-icon.png` (`pwa.apple-touch-icon`) | `App\Http\Controllers\PwaManifestController@appleTouchIcon` | Pública | Sirve el apple-touch-icon de la empresa activa (rasterizado desde su logo) o el flexyflow black-font por defecto. |
 
 ### Política contable
 

@@ -70,7 +70,7 @@ Tipos canónicos en `resources/js/lib/company-status.ts` (no en `types/`):
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `VITE_APP_NAME` | FlexyFlow | `<title>` y branding |
+| `VITE_APP_NAME` | flexyflow | `<title>` y branding |
 | `VITE_API_URL` | `/api/v1` | Base URL para llamadas REST |
 | `VITE_PUSHER_APP_KEY` | — | WebSocket Pusher (futuro) |
 | `VITE_PUSHER_HOST` | — | Pusher |
@@ -438,7 +438,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 - `PastDueBanner` (#193) — banner blando global en `app-layout.tsx`. `Alert variant="warning"` con countdown desde el día 1 hasta `expected_block_at` (TZ `America/Bogota`). CTA `Ir a Facturación`. Sólo se renderiza si `activeCompany.status === 'past_due'`. Tokens DS (`var(--color-status-warning)`), sin hex.
 - `SuspendedBanner` (#193) — banner persistente global en `app-layout.tsx`. `Alert variant="critical"` con días desde `payment_blocked_at` + monto adeudado (fetch a `/api/v1/billing/subscription`, skeleton inline) + CTA prominente. Sólo si `activeCompany.status === 'suspended'`. Tokens DS, sin hex.
 - `components/branches/missing-branch-banner` (#193) — banner global en `app-layout.tsx` cuando `!activeBranch`. Tres sub-estados según conteo de sedes y permisos: empresa sin sedes con CTA `Crear primera sede` (si puede manage), empresa sin sedes sin permiso (mensaje a admin), o hay sedes pero JWT sin sede activa (CTA al `branch-selector`). Antes cada banner operativo (`PendingApprovalsBanner`, `PendingCancellationsBanner`) replicaba un fallback "Sede activa fuera de fecha"; ahora se centraliza acá para que el mensaje sea único y accionable.
-- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago FlexyFlow y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
+- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago flexyflow y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
 
 #### `components/company/`
 
@@ -1024,7 +1024,7 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
   cd application && node scripts/generate-pwa-icons.mjs
   ```
 - Sharp se instala on-demand (`npm install --no-save sharp`); no se commitea en `package.json`.
-- A partir de Fase 2 (#140) los iconos default se generan desde `public/images/logo-black-font.svg` (logo FlexyFlow texto negro sobre fondo blanco). Cuando una empresa sube su logo, los iconos por-empresa se rasterizan server-side vía `App\Services\LogoIconRasterizer` y se sirven dinámicamente desde el manifest.
+- A partir de Fase 2 (#140) los iconos default se generan desde `public/images/logo-black-font.svg` (logo flexyflow texto negro sobre fondo blanco). Cuando una empresa sube su logo, los iconos por-empresa se rasterizan server-side vía `App\Services\LogoIconRasterizer` y se sirven dinámicamente desde el manifest.
 
 ### Modo offline — Fase 2 (issue #140)
 

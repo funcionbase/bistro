@@ -8,7 +8,7 @@
 
 ## Visión general
 
-El bot de WhatsApp es un **proceso externo** que conversa con clientes finales y crea pedidos en FlexyFlow. Se autentica con un JWT separado (`BOT_JWT_SECRET`) y consume:
+El bot de WhatsApp es un **proceso externo** que conversa con clientes finales y crea pedidos en flexyflow. Se autentica con un JWT separado (`BOT_JWT_SECRET`) y consume:
 
 - Endpoints públicos del catálogo (`/api/v1/public/menu/{companyNit}`).
 - Endpoints externos del status del restaurante (`/api/external/hours/status`).

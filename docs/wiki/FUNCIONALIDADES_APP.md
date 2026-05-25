@@ -8,7 +8,7 @@
 
 ## 0. Resumen técnico del sistema
 
-**FlexyFlow Restaurante** es una plataforma SaaS multi-empresa multi-sede multi-bodega para la gestión operativa de restaurantes en Colombia. Stack monolito server-rendered con Inertia.js v2 (React en el cliente, Laravel en el servidor; sin REST público para la SPA — los endpoints `/api/v1/*` son contratos para datos asíncronos y para integraciones externas como bots de WhatsApp).
+**flexyflow Restaurante** es una plataforma SaaS multi-empresa multi-sede multi-bodega para la gestión operativa de restaurantes en Colombia. Stack monolito server-rendered con Inertia.js v2 (React en el cliente, Laravel en el servidor; sin REST público para la SPA — los endpoints `/api/v1/*` son contratos para datos asíncronos y para integraciones externas como bots de WhatsApp).
 
 **Módulos cubiertos en producción** (al 2026-05-11):
 
@@ -4207,7 +4207,7 @@ Mientras n8n no esté disponible, los mensajes entrantes caen al panel de chats 
 
 #### `meta_platform_credentials`
 
-Credenciales de la app de FlexyFlow en Meta (BSP — Business Solution Provider). Una fila por ambiente.
+Credenciales de la app de flexyflow en Meta (BSP — Business Solution Provider). Una fila por ambiente.
 
 ```sql
 meta_platform_credentials (
@@ -4423,7 +4423,7 @@ public function embeddedSignupCallback(Request $request): JsonResponse {
 
 ### 14.4 Number as a Service (Opción B)
 
-`POST /api/v1/whatsapp/naas-request` — el restaurante solicita que FlexyFlow le provisione un número.
+`POST /api/v1/whatsapp/naas-request` — el restaurante solicita que flexyflow le provisione un número.
 
 Permission: `whatsapp.connect,create` + OTP.
 
@@ -4436,7 +4436,7 @@ Body:
 }
 ```
 
-Crea `company_whatsapp_accounts` con `status='pending'`, `provisioning_mode='naas'`. El equipo interno de FlexyFlow gestiona el provisioning manualmente y luego marca `status='active'`.
+Crea `company_whatsapp_accounts` con `status='pending'`, `provisioning_mode='naas'`. El equipo interno de flexyflow gestiona el provisioning manualmente y luego marca `status='active'`.
 
 ### 14.5 OTP (verificación por correo)
 
@@ -4765,7 +4765,7 @@ La fuente de verdad operativa es `meta_platform_credentials` (cifrada en BD). El
 |---|---|---|---|
 | GET | `whatsapp` | `whatsapp.read,read` | Estado actual de la cuenta |
 | POST | `whatsapp/embedded-signup-callback` | `whatsapp.connect,create` + OTP | Conectar via FB SDK |
-| POST | `whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de FlexyFlow |
+| POST | `whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de flexyflow |
 | DELETE | `whatsapp/phone` | `whatsapp.swap_phone,delete` + Policy + OTP | Cambiar número (owner only) |
 | DELETE | `whatsapp` | `whatsapp.disconnect,delete` + Policy + OTP | Desconectar (owner only) |
 | POST | `whatsapp/verification/request` | `whatsapp.read,read` | Solicitar OTP |
@@ -5668,7 +5668,7 @@ Permission: `billing.read,read` (sólo lectura).
 
 `is_current` se calcula contra la `Subscription` activa de la empresa.
 
-**Cambio de plan**: NO implementado en este endpoint. La gestión de upgrade/downgrade la hace el panel de operador de FlexyFlow externo. El restaurante sólo ve.
+**Cambio de plan**: NO implementado en este endpoint. La gestión de upgrade/downgrade la hace el panel de operador de flexyflow externo. El restaurante sólo ve.
 
 ### 17.8 Generación mensual de facturas (`billing:generate-monthly-invoices`)
 
@@ -7023,9 +7023,9 @@ La app es instalable como PWA en Android, iOS y desktop. La Fase 2 (modo offline
 
 - Endpoint: `GET /manifest.webmanifest` → `App\Http\Controllers\PwaManifestController@show` (ruta nombrada `pwa.manifest`).
 - Si el visitante tiene JWT válido con `active_company_nit`, el manifest hereda:
-  - `name`: `"FlexyFlow · {commercial_name}"`.
+  - `name`: `"flexyflow · {commercial_name}"`.
   - `theme_color` y `background_color`: leídos de `CompanySettingsService::get($nit, 'menu_primary_color', '#FF6B35')`.
-- Sin JWT o sin empresa activa → branding por defecto FlexyFlow (`#FF6B35`).
+- Sin JWT o sin empresa activa → branding por defecto flexyflow (`#FF6B35`).
 - Cache headers: `Cache-Control: private, max-age=300` (5 min) — evita golpear DB en cada visita y acepta un retraso pequeño en cambios de color.
 - Fallback estático: `public/manifest.webmanifest` (mismo branding por defecto, usado si la ruta dinámica falla por cualquier razón).
 
@@ -7077,14 +7077,14 @@ Sobre la PWA base de Fase 1, la caja (`/orders/cashier`) sigue creando órdenes 
   - `companies/logos/{nit}/icon-512-maskable.png` (maskable con safe area 22%)
   - `companies/logos/{nit}/apple-touch-180.png`
 - Fondo sólido = `menu_primary_color` de la empresa (CompanySettings).
-- Best-effort: si la rasterización falla (formato exótico, GD sin soporte), se loggea y se sigue — el manifest cae al logo FlexyFlow por defecto.
-- `PwaManifestController::show` apunta `icons[]` a estos archivos cuando existen; si no, cae a `/icons/icon-*.png` (FlexyFlow black-font sobre blanco).
-- Apple Touch Icon dinámico: nueva ruta `GET /apple-touch-icon.png` (`pwa.apple-touch-icon`) que sirve la versión rasterizada de la empresa activa o el fallback FlexyFlow.
+- Best-effort: si la rasterización falla (formato exótico, GD sin soporte), se loggea y se sigue — el manifest cae al logo flexyflow por defecto.
+- `PwaManifestController::show` apunta `icons[]` a estos archivos cuando existen; si no, cae a `/icons/icon-*.png` (flexyflow black-font sobre blanco).
+- Apple Touch Icon dinámico: nueva ruta `GET /apple-touch-icon.png` (`pwa.apple-touch-icon`) que sirve la versión rasterizada de la empresa activa o el fallback flexyflow.
 - Comando artisan para regenerar en bulk: `php artisan pwa:rasterize-logos [--nit=...]`.
 
 ### Logo por defecto
 
-- Cuando NO hay JWT o la empresa no subió logo, los iconos se generan a partir de `public/images/logo-black-font.svg` (logo FlexyFlow texto negro sobre blanco). El script `scripts/generate-pwa-icons.mjs` produce los 5 PNGs base con `sharp`.
+- Cuando NO hay JWT o la empresa no subió logo, los iconos se generan a partir de `public/images/logo-black-font.svg` (logo flexyflow texto negro sobre blanco). El script `scripts/generate-pwa-icons.mjs` produce los 5 PNGs base con `sharp`.
 
 ### Sincronización idempotente — endpoint
 

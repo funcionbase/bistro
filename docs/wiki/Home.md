@@ -1,11 +1,11 @@
-# FlexyFlow Restaurante — Wiki
+# flexyflow Restaurante — Wiki
 
 > Documentación técnica y funcional de la plataforma SaaS de gestión de restaurantes.
 > Estado del repositorio: rama `feature/v1`. Última actualización: 2026-05-02.
 
 ---
 
-## ¿Qué es FlexyFlow?
+## ¿Qué es flexyflow?
 
 Plataforma multi-empresa para la gestión operativa de restaurantes en Colombia. Cubre:
 

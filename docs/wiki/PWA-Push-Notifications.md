@@ -1,7 +1,7 @@
 # PWA · Web Push Notifications (#149)
 
 Guía operativa para entender, configurar y testear el sistema de
-notificaciones push de FlexyFlow Restaurante.
+notificaciones push de flexyflow Restaurante.
 
 **Catálogo canónico de tipos / payloads / permisos**:
 [`application/constants/NOTIFICATIONS.md`](../../application/constants/NOTIFICATIONS.md).

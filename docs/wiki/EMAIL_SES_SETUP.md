@@ -166,7 +166,7 @@ Para enviar a cualquier destinatario:
 2. Llenar:
    - **Use case**: Transactional
    - **Website**: `https://panel.flexyflow.co`
-   - **Description**: "FlexyFlow es un SaaS de gestión para restaurantes en
+   - **Description**: "flexyflow es un SaaS de gestión para restaurantes en
      Colombia. Enviamos correos transaccionales: confirmación de cuenta,
      reset de contraseña, facturas mensuales, notificaciones operativas.
      Bounce y complaint rate monitoreados via SNS. Audiencia: dueños y
@@ -373,7 +373,7 @@ bucket privado) y nunca se borran.
 
 ### Fase 3 (incluida en este PR — branding de templates)
 - Templates `vendor/mail/html/*` publicadas y personalizadas con logo
-  FlexyFlow, paleta del DS, footer legal CO (razón social, dirección,
+  flexyflow, paleta del DS, footer legal CO (razón social, dirección,
   contacto, link a política de privacidad).
 
 ### #226 — Welcome email idempotente (registro exitoso)

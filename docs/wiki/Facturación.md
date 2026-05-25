@@ -8,7 +8,7 @@
 
 ## Visión general
 
-FlexyFlow factura mensualmente la suscripción de cada empresa al plan vigente. El módulo soporta:
+flexyflow factura mensualmente la suscripción de cada empresa al plan vigente. El módulo soporta:
 
 - Suscripciones con planes (`free`/`pro`/`enterprise`).
 - Generación automática de facturas mensuales (cron).

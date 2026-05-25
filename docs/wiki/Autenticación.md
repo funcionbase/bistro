@@ -8,7 +8,7 @@
 
 ## Visión general
 
-FlexyFlow autentica **únicamente con Google OAuth** desde HU #231. Las páginas y endpoints heredados de Laravel Breeze (email + contraseña, reset, verify) siguen existiendo como named routes para no romper código que llame a `route('login')`, pero su comportamiento es:
+flexyflow autentica **únicamente con Google OAuth** desde HU #231. Las páginas y endpoints heredados de Laravel Breeze (email + contraseña, reset, verify) siguen existiendo como named routes para no romper código que llame a `route('login')`, pero su comportamiento es:
 
 - `GET /login`, `/register`, `/forgot-password`, `/reset-password/{token}`, `/verify-email`, `/confirm-password` → redirigen `302` a `/auth/google?reason=email_auth_disabled` (preservan `?intended=` si venía).
 - `POST /login`, `/register`, `/forgot-password`, `/reset-password`, `/email/verification-notification`, `PUT /settings/password`, `PUT /api/v1/account/password` → responden `410 Gone` con `{ code: "email_auth_disabled" }` y emiten `Log::info('auth.legacy_endpoint_hit', ...)`.
