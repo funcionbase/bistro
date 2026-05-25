@@ -1683,16 +1683,16 @@ Ambas Lambdas viven en el **mismo stack** `07-shutdown.yaml` (merge de los antig
 
 | Lambda | Stack IaC | Trigger | Frecuencia (qa) | Propósito |
 |---|---|---|---|---|
-| `flexyflow-restaurante-{env}-shutdown-ec2` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${Ec2CheckIntervalMinutes} minutes)` | **15 min** | Si una EC2 del ASG `flexyflow-restaurante-{env}-asg` lleva > `Ec2ShutdownAfterMinutes` (60) activa, escala `DesiredCapacity=0` y `MinSize=0`. |
-| `flexyflow-restaurante-{env}-shutdown-alb` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${AlbCheckIntervalMinutes} minutes)` | **15 min** | Lee `/{project}/{env}/alb/started-at` (SSM); si edad > `AlbShutdownAfterMinutes` (60), borra el stack `*-alb` (ALB + Listener + TG). |
+| `flexyflow-panel-{env}-shutdown-ec2` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${Ec2CheckIntervalMinutes} minutes)` | **15 min** | Si una EC2 del ASG `flexyflow-panel-{env}-asg` lleva > `Ec2ShutdownAfterMinutes` (60) activa, escala `DesiredCapacity=0` y `MinSize=0`. |
+| `flexyflow-panel-{env}-shutdown-alb` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${AlbCheckIntervalMinutes} minutes)` | **15 min** | Lee `/{project}/{env}/alb/started-at` (SSM); si edad > `AlbShutdownAfterMinutes` (60), borra el stack `*-alb` (ALB + Listener + TG). |
 
 ### Reglas operacionales
 
 - Frecuencia mínima permitida: **5 min** (ambos `MinValue: 5` en CFN). Por costo no bajar de 15 sin justificación documentada.
 - El stack incluye dos `AWS::CloudWatch::Alarm` `*-shutdown-{ec2,alb}-overinvocation` que disparan si `Invocations > 10/h` (umbral fijo). Sirven de canario contra cambios accidentales en el cron.
-- Log groups: `/aws/lambda/flexyflow-restaurante-{env}-shutdown-{ec2,alb}` con retención **7 días**.
+- Log groups: `/aws/lambda/flexyflow-panel-{env}-shutdown-{ec2,alb}` con retención **7 días**.
 - Para volver a encender después de un auto-shutdown:
-  - ASG: `aws autoscaling update-auto-scaling-group --auto-scaling-group-name flexyflow-restaurante-{env}-asg --min-size 1 --desired-capacity 1`.
+  - ASG: `aws autoscaling update-auto-scaling-group --auto-scaling-group-name flexyflow-panel-{env}-asg --min-size 1 --desired-capacity 1`.
   - ALB: `aws/iac/scripts/alb-toggle.sh up` o workflow `alb-toggle.yml`.
 - Cambiar la frecuencia se hace en `aws/iac/cloudformation/parameters/{env}.json` (`Ec2CheckIntervalMinutes`, `AlbCheckIntervalMinutes`) y reaplicando el stack `shutdown` — **no** editar la regla EventBridge a mano.
 
@@ -1713,7 +1713,7 @@ Antes de cualquier `php artisan migrate --force` o `php artisan db:seed` **en pd
 ### Script
 | Archivo | Propósito |
 |---------|-----------|
-| `aws/ec2/scripts/db-backup.sh` | `pg_dump --format=plain --clean --if-exists --no-owner --no-acl`, gzip, sube a `s3://flexyflow-restaurante-{env}-backups/db-dumps/{reason}/{ISO}/dump.sql.gz` + `manifest.json`. Reason ∈ `pre-migration | pre-seed | pre-fresh | manual | other`. Reads creds del `.env` de la app. **Aborta con exit != 0 si pg_dump, upload, o bucket access fallan.** El script no se autorestringe a pdn — la guarda vive en los callers. |
+| `aws/ec2/scripts/db-backup.sh` | `pg_dump --format=plain --clean --if-exists --no-owner --no-acl`, gzip, sube a `s3://flexyflow-panel-{env}-backups/db-dumps/{reason}/{ISO}/dump.sql.gz` + `manifest.json`. Reason ∈ `pre-migration | pre-seed | pre-fresh | manual | other`. Reads creds del `.env` de la app. **Aborta con exit != 0 si pg_dump, upload, o bucket access fallan.** El script no se autorestringe a pdn — la guarda vive en los callers. |
 | `aws/iac/scripts/backup-signed-url.sh` | Genera presigned URL temporal (default 15 min, max 24h) para descargar un dump del bucket privado sin dar IAM directo al usuario. |
 
 ### Puntos de invocación
@@ -1726,16 +1726,16 @@ Cada caller chequea env=pdn antes de invocar. En qa el step se omite.
 | `.github/workflows/app-deploy.yml` step "Run migrations (single instance)" | `if [ "$TARGET_ENV" = "pdn" ]` (compone MIGRATE_CMD distinto) | `php artisan migrate --force` via SSM | Sí (SSM command tiene `set -e`) |
 
 ### Bucket de destino
-- **`flexyflow-restaurante-{env}-backups`** — separado del bucket `*-documents` (DIAN, 10 años, datos de cliente). **NUNCA mezclar dumps operacionales con info contable del cliente.**
+- **`flexyflow-panel-{env}-backups`** — separado del bucket `*-documents` (DIAN, 10 años, datos de cliente). **NUNCA mezclar dumps operacionales con info contable del cliente.**
 - Privado total: `BlockPublicAcls + BlockPublicPolicy + IgnorePublicAcls + RestrictPublicBuckets`.
 - BucketPolicy explícito `DenyInsecureTransport` (sólo HTTPS) y `DenyUnencryptedPut` (sólo AES256). Aplica también a `*-assets` y `*-documents` (defense-in-depth en `03-storage.yaml` y `04-backups.yaml`).
 - Acceso únicamente via:
-  1. IAM role de la EC2 (`flexyflow-restaurante-{env}-app-role` + `ManagedPolicy app-backups-access`).
+  1. IAM role de la EC2 (`flexyflow-panel-{env}-app-role` + `ManagedPolicy app-backups-access`).
   2. Presigned URL generada por `backup-signed-url.sh` (TTL corto, single-use).
 
 ### Path en S3
 ```
-s3://flexyflow-restaurante-{env}-backups/
+s3://flexyflow-panel-{env}-backups/
 ├── db-dumps/
 │   ├── pre-migration/
 │   │   └── 20260512T140000Z/
@@ -2344,7 +2344,7 @@ Cada PR debe actualizar la página correspondiente del wiki cuando modifique end
 - **DB compartida:** Supabase managed PostgreSQL. Local: Postgres en Docker.
 - **Session/cache/queue:** todos `database` driver → tablas en Supabase compartidas entre nodos.
 - **Coordinación de schedulers:** `cache_locks` (vía `->onOneServer()`).
-- **Storage:** S3 (`flexyflow-restaurante-{env}-assets` público, `*-documents` privado). Local: MinIO en `docker/`.
+- **Storage:** S3 (`flexyflow-panel-{env}-assets` público, `*-documents` privado). Local: MinIO en `docker/`.
 - **Auth cross-node:** JWT cifrado AES-256 + HMAC (cookie `flexyflow_jwt`) — sin sticky sessions.
 - **APP_KEY:** GitHub Secret propagado a todas las EC2 al deploy.
 
@@ -2415,7 +2415,7 @@ Las tablas `sessions` y `cache` quedan **UNLOGGED** (migración `2026_05_11_1740
 `docker/docker-compose.yml`:
 - `db` (postgres:15-alpine) — equivalente a Supabase en prod.
 - `minio` (S3-compatible) — equivalente a S3 buckets en prod.
-- `minio-bootstrap` (minio/mc) — crea buckets `flexyflow-restaurante-local-{assets,documents}`, marca el de assets como público, sube objetos `.health`.
+- `minio-bootstrap` (minio/mc) — crea buckets `flexyflow-panel-local-{assets,documents}`, marca el de assets como público, sube objetos `.health`.
 
 Detalles y env vars: `docker/README.md`.
 

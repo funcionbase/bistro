@@ -68,7 +68,7 @@ curl -I https://panel.flexyflow.co/
 1. Cloudflare Dashboard → DNS → Records → Add record.
 2. Type: `CNAME`. Name: `panel-api`. Target: el DNS-name del ALB (output
    `LoadBalancerDnsName` del stack `05-alb`, ej.
-   `flexyflow-restaurante-pdn-alb-1234567890.us-east-1.elb.amazonaws.com`).
+   `flexyflow-panel-pdn-alb-1234567890.us-east-1.elb.amazonaws.com`).
 3. Proxy status: **Proxied (naranja)**. TTL: Auto.
 4. Save.
 
@@ -90,7 +90,7 @@ curl -I -H 'Host: panel-api.flexyflow.co' https://panel-api.flexyflow.co/health/
 
 ```bash
 aws rds create-db-snapshot \
-  --db-instance-identifier flexyflow-restaurante-pdn \
+  --db-instance-identifier flexyflow-panel-pdn \
   --db-snapshot-identifier pre-panel-cutover-$(date +%Y%m%d-%H%M)
 # Si la BD vive en Supabase, snapshot manual desde el dashboard.
 ```
@@ -114,7 +114,7 @@ aws rds create-db-snapshot \
 ```bash
 # Desde la raíz del repo:
 aws cloudformation update-stack \
-  --stack-name flexyflow-restaurante-pdn-05-alb \
+  --stack-name flexyflow-panel-pdn-05-alb \
   --use-previous-template \
   --parameters file://aws/iac/cloudformation/parameters/pdn.json \
   --region us-east-1 \
@@ -150,7 +150,7 @@ En GitHub Environment `pdn`, actualizar y correr el workflow
 
 ```bash
 aws autoscaling start-instance-refresh \
-  --auto-scaling-group-name flexyflow-restaurante-pdn-asg \
+  --auto-scaling-group-name flexyflow-panel-pdn-asg \
   --preferences MinHealthyPercentage=100 \
   --region us-east-1
 ```
@@ -243,7 +243,7 @@ CFN update del ALB (~2 min).
 ```bash
 # Listar instancias del ASG PDN
 aws autoscaling describe-auto-scaling-groups \
-  --auto-scaling-group-names flexyflow-restaurante-pdn-asg \
+  --auto-scaling-group-names flexyflow-panel-pdn-asg \
   --region us-east-1 --query 'AutoScalingGroups[0].Instances'
 
 # Logs de la EC2 (vía SSM)
@@ -256,7 +256,7 @@ aws acm list-certificates --region us-east-1 \
 
 # DNS-name del ALB (para el CNAME en Cloudflare)
 aws cloudformation describe-stacks \
-  --stack-name flexyflow-restaurante-pdn-05-alb \
+  --stack-name flexyflow-panel-pdn-05-alb \
   --region us-east-1 \
   --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' \
   --output text

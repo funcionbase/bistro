@@ -27,8 +27,8 @@ Endpoints expuestos:
 
 El servicio `minio-bootstrap` corre una sola vez al levantar y crea:
 
-- Bucket `flexyflow-restaurante-local-assets` (download público, ACL anonymous).
-- Bucket `flexyflow-restaurante-local-documents` (privado, sin ACL pública).
+- Bucket `flexyflow-panel-local-assets` (download público, ACL anonymous).
+- Bucket `flexyflow-panel-local-documents` (privado, sin ACL pública).
 - Objeto `.health` en ambos (lo lee `HealthController::ready()`).
 
 ## Conectar la app Laravel
@@ -48,11 +48,11 @@ INVOICE_STORAGE_DISK=s3_documents
 AWS_ACCESS_KEY_ID=minioadmin
 AWS_SECRET_ACCESS_KEY=minioadmin
 AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=flexyflow-restaurante-local-assets
-AWS_BUCKET_DOCUMENTS=flexyflow-restaurante-local-documents
+AWS_BUCKET=flexyflow-panel-local-assets
+AWS_BUCKET_DOCUMENTS=flexyflow-panel-local-documents
 AWS_ENDPOINT=http://localhost:9000
 AWS_USE_PATH_STYLE_ENDPOINT=true
-AWS_URL=http://localhost:9000/flexyflow-restaurante-local-assets
+AWS_URL=http://localhost:9000/flexyflow-panel-local-assets
 ```
 
 > **Importante:** `AWS_USE_PATH_STYLE_ENDPOINT=true` es **crítico** para MinIO.
@@ -75,7 +75,7 @@ Esperado:
 ```
 assets:    ok
 documents: ok
-uploaded: http://localhost:9000/flexyflow-restaurante-local-assets/test.txt
+uploaded: http://localhost:9000/flexyflow-panel-local-assets/test.txt
 ```
 
 Abrir esa URL en el browser → debe descargar `test.txt`.

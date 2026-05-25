@@ -13,7 +13,7 @@ services:
             - ./postgres-data:/var/lib/postgresql/data
 
     # MinIO: S3-compatible local storage. Mirrors AWS S3 buckets used in qa/pdn
-    # (flexyflow-restaurante-{env}-assets, flexyflow-restaurante-{env}-documents).
+    # (flexyflow-panel-{env}-assets, flexyflow-panel-{env}-documents).
     # See docker/README.md and issue #43 (T7).
     minio:
         image: minio/minio:latest
@@ -53,15 +53,15 @@ services:
             set -e;
             mc alias set local http://minio:9000 minioadmin minioadmin > /dev/null;
             changed=0;
-            if ! mc ls local/flexyflow-restaurante-local-assets > /dev/null 2>&1; then
-              mc mb local/flexyflow-restaurante-local-assets;
-              mc anonymous set download local/flexyflow-restaurante-local-assets;
-              echo ok | mc pipe local/flexyflow-restaurante-local-assets/.health > /dev/null;
+            if ! mc ls local/flexyflow-panel-local-assets > /dev/null 2>&1; then
+              mc mb local/flexyflow-panel-local-assets;
+              mc anonymous set download local/flexyflow-panel-local-assets;
+              echo ok | mc pipe local/flexyflow-panel-local-assets/.health > /dev/null;
               changed=1;
             fi;
-            if ! mc ls local/flexyflow-restaurante-local-documents > /dev/null 2>&1; then
-              mc mb local/flexyflow-restaurante-local-documents;
-              echo ok | mc pipe local/flexyflow-restaurante-local-documents/.health > /dev/null;
+            if ! mc ls local/flexyflow-panel-local-documents > /dev/null 2>&1; then
+              mc mb local/flexyflow-panel-local-documents;
+              echo ok | mc pipe local/flexyflow-panel-local-documents/.health > /dev/null;
               changed=1;
             fi;
             if [ \"$$changed\" = \"1\" ]; then

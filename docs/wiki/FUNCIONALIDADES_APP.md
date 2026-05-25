@@ -7152,7 +7152,7 @@ Ahora el stack está listo para N=2+ instancias.
 ### Qué cambió
 
 - **Storage cross-node:** los uploads viven en S3 (bucket público
-  `flexyflow-restaurante-{env}-assets`). PDFs de factura y reportes en
+  `flexyflow-panel-{env}-assets`). PDFs de factura y reportes en
   bucket privado `*-documents` (DIAN, 10 años). Local: MinIO en Docker.
 - **Sesiones cross-node:** tabla `sessions` en Supabase (compartida). JWT
   cifrado (cookie `flexyflow_jwt`) lleva la identidad sin depender de
