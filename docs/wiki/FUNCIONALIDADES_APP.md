@@ -210,7 +210,7 @@ Adicionalmente, el actor **no puede modificarse a sí mismo** (rol, permisos, es
 ```
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://restaurante.flexyflow.co/auth/google/callback
+GOOGLE_REDIRECT_URI=https://panel.flexyflow.co/auth/google/callback
 ```
 
 `config/services.php` mapea estos a `services.google.*`.
@@ -4525,7 +4525,7 @@ El consume real ocurre cuando el endpoint sensible (connect/swap/disconnect) pro
 **Endpoint público** — sin auth. El email contiene un link directo:
 
 ```
-https://restaurante.flexyflow.co/api/v1/whatsapp/verification/reject?token={uuid}
+https://panel.flexyflow.co/api/v1/whatsapp/verification/reject?token={uuid}
 ```
 
 ```php
@@ -5597,7 +5597,7 @@ Permission: `billing.read,read`. Genera URL firmada y devuelve:
 ```json
 {
   "data": {
-    "url": "https://restaurante.flexyflow.co/api/v1/billing/invoices/234/pdf?expires=...&signature=...",
+    "url": "https://panel.flexyflow.co/api/v1/billing/invoices/234/pdf?expires=...&signature=...",
     "expires_at": "2026-05-06T22:30:00Z"
   }
 }

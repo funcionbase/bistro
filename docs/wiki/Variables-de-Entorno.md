@@ -20,7 +20,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `APP_DEBUG` | Sí | `false` | `true` solo en local |
 | `APP_URL` | Sí | `http://localhost` | URL canónica usada en correos y links |
 | `APP_TIMEZONE` | No | `UTC` | Zona horaria por defecto |
-| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://restaurante.flexyflow.co`, `qa`→`https://restaurante-qa.flexyflow.co`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
+| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://panel.flexyflow.co`, `qa`→`https://panel-qa.flexyflow.co`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
 
 ---
 
@@ -64,7 +64,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `SESSION_DRIVER` | No | `database` | `database` \| `file` \| `cookie` |
 | `SESSION_LIFETIME` | No | `120` | Minutos de vida de la sesión |
 | `SESSION_SECURE_COOKIE` | No | `false` | `true` en qa/pdn (HTTPS). Obligatorio `true` si `SESSION_SAME_SITE=none` |
-| `SESSION_SAME_SITE` | No | `none` | Política SameSite de las cookies (`flexyflow_jwt`, sesión, mesa). `none` es obligatorio en el deploy cross-origin — el SPA (`restaurante.flexyflow.co`) y la API (`restaurante-api.flexyflow.co`) viven en hosts distintos. En local sobre HTTP, `JwtService::buildCookie` degrada `none`→`lax` automáticamente y el dev no se rompe |
+| `SESSION_SAME_SITE` | No | `none` | Política SameSite de las cookies (`flexyflow_jwt`, sesión, mesa). `none` es obligatorio en el deploy cross-origin — el SPA (`panel.flexyflow.co`) y la API (`panel-api.flexyflow.co`) viven en hosts distintos. En local sobre HTTP, `JwtService::buildCookie` degrada `none`→`lax` automáticamente y el dev no se rompe |
 | `SESSION_DOMAIN` | No | `null` | Dominio de la cookie. Vacío/`null` para que el navegador la asocie al host exacto |
 
 > **Cross-origin:** `SameSite=None` exige `Secure` — el navegador descarta una
@@ -147,7 +147,7 @@ S3 (cuando `FILESYSTEM_DISK=s3`):
 | Variable | Default | Descripción |
 |----------|---------|-------------|
 | `VITE_APP_NAME` | `${APP_NAME}` | Nombre en `<title>` |
-| `VITE_API_URL` | — (vacío en dev) | Host del backend Laravel (origin, ej. `https://restaurante-api.flexyflow.co`). Lo usan `apiFetch` y `routeBackend()`. Vacío en dev → paths relativos vía proxy de Vite. En PDN se define en `application/frontend/.env.production` para el build del Worker |
+| `VITE_API_URL` | — (vacío en dev) | Host del backend Laravel (origin, ej. `https://panel-api.flexyflow.co`). Lo usan `apiFetch` y `routeBackend()`. Vacío en dev → paths relativos vía proxy de Vite. En PDN se define en `application/frontend/.env.production` para el build del Worker |
 | `VITE_PUSHER_APP_KEY` | — | Reservada para WebSocket Pusher (futuro) |
 | `VITE_PUSHER_HOST`, `VITE_PUSHER_PORT`, `VITE_PUSHER_SCHEME`, `VITE_PUSHER_APP_CLUSTER` | — | Igual |
 
