@@ -1,49 +1,49 @@
-# Runbook — Migración `restaurante.flexyflow.co` → `panel.flexyflow.co`
+# Runbook — Cutover a `panel.flexyflow.co`
 
-> **Issue origen**: [#239](https://github.com/cristianmarint/flexyflow.restaurante/issues/239)
+> **Issue origen**: [#239](https://github.com/cristianmarint/panel-flexyflow-co/issues/239)
 > **Tipo**: trabajo de infraestructura coordinado (Cloudflare + AWS + Google Cloud Console).
 > **Ventana sugerida**: madrugada CO 02:00–04:00 (UTC-5), bajo tráfico.
-> **Duración esperada**: 30–60 min total. Cutover real: ~5 min.
+> **Duración esperada**: 15–30 min total. Cutover real: ~2–5 min.
 
-Este runbook concreta el plan del issue #239 a la infra real:
+Cutover **single-host**: el SPA se mueve a `panel.flexyflow.co`. El subdominio
+anterior (`restaurante.flexyflow.co`) se apaga sin redirect ni soporte dual —
+quien tenga el bookmark viejo recibe error DNS hasta que reescriba el dominio.
+
 - Backend en **AWS** (EC2 + ALB), DNS en **Cloudflare** (no Route53).
 - Frontend en **Cloudflare Workers** (`wrangler deploy`).
 - ACM wildcard `*.flexyflow.co` ya cubre `panel.flexyflow.co`.
 
 ---
 
-## Pre-requisitos (hard gate)
+## Pre-requisitos
 
-Antes de iniciar el cutover, confirmar **TODO** lo siguiente:
+Antes de iniciar el cutover:
 
-- [ ] PR de #239 mergeado a `main` y deployado a PDN (cambios de código en
+- [ ] PR de #239 mergeado a `main` y deployado a PDN (cambios en
       `config/app.php`, `config/cors.php`, `SecurityHeaders`, manifest PWA,
-      `MigrationBanner`, params CFN).
-- [ ] Banner visible en `restaurante.flexyflow.co` para usuarios autenticados.
+      `wrangler.jsonc`, CFN params).
 - [ ] Snapshot manual de RDS / Supabase tomado y guardado.
-- [ ] Google Cloud Console: callback nuevo agregado (ver Fase 4 abajo) y testeado
-      con cuenta dummy.
-- [ ] Equipo en standby en grupo de mensajería (mínimo 1 dev + 1 ops).
-- [ ] Rollback plan revisado y testeable.
+- [ ] Google Cloud Console: callback nuevo agregado (Fase B) y smoke-testeado.
+- [ ] Equipo en standby (mínimo 1 dev + 1 ops) durante la ventana.
+- [ ] Rollback plan revisado.
 
-## Plan por fases (la ejecución es secuencial)
+## Fases
 
-### Fase A — Crear Worker `panel-flexyflow-co` (T-7 días)
-
-**Cloudflare Workers**:
+### Fase A — Deploy del Worker `panel-flexyflow-co` (T-1 día o el día)
 
 ```bash
 cd application/frontend
 npm run build
-npx wrangler deploy --name panel-flexyflow-co
+npx wrangler deploy
 ```
 
-Verificar que el deploy aparece como Worker independiente en el dashboard.
+El `wrangler.jsonc` ya tiene `name: "panel-flexyflow-co"`. El deploy crea el
+Worker en Cloudflare (o actualiza si ya existe).
 
 **Custom domain**:
 1. Cloudflare Dashboard → Workers & Pages → `panel-flexyflow-co` → Settings → Triggers.
 2. Add Custom Domain: `panel.flexyflow.co`.
-3. Cloudflare crea automáticamente el record DNS si la zona ya está delegada.
+3. Cloudflare crea el record DNS automáticamente.
 
 **Verificar DNS**:
 ```bash
@@ -54,7 +54,23 @@ curl -I https://panel.flexyflow.co/
 # Esperado: HTTP/2 200 + cert válido. El SPA carga normal.
 ```
 
-### Fase B — Verificar ACM + ALB (T-7 días)
+> En este punto `panel.flexyflow.co` ya sirve el SPA, pero el backend sigue
+> con `APP_URL=https://restaurante.flexyflow.co`. Eso lo cambia la Fase D.
+
+### Fase B — Google Cloud Console (T-1 día)
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials.
+2. Seleccionar el OAuth 2.0 Client ID que usa Socialite.
+3. En **Authorized redirect URIs** **reemplazar**:
+   - Remover `https://restaurante.flexyflow.co/auth/google/callback`.
+   - Agregar `https://panel.flexyflow.co/auth/google/callback`.
+4. Save.
+
+> **Single-host**: no se mantiene el callback viejo. Si por error se hace
+> antes del cutover, login con Google desde `restaurante.*` rompe — por eso
+> esta fase va junto con la Fase D (no antes).
+
+### Fase C — Verificar ACM + SES (T-1 día)
 
 ```bash
 aws acm describe-certificate \
@@ -65,84 +81,46 @@ aws acm describe-certificate \
 
 Esperado: `Status: ISSUED`, SANs incluyen `*.flexyflow.co`.
 
-**No tocar el ALB** — el subdominio del API (`restaurante-api.flexyflow.co`)
-no migra en este issue. El ALB y todo su listener queda igual.
-
-### Fase C — Google Cloud Console (T-7 días)
-
-1. Ir a [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials.
-2. Seleccionar el OAuth 2.0 Client ID que usa Socialite.
-3. En **Authorized redirect URIs** agregar:
-   - `https://panel.flexyflow.co/auth/google/callback`
-   - (Mantener `https://restaurante.flexyflow.co/auth/google/callback`.)
-4. Save.
-5. **Smoke test**: en una sesión limpia (incognito), entrar a `https://panel.flexyflow.co`,
-   click "Continuar con Google". Debe completar el flujo sin error de `redirect_uri_mismatch`.
-
-> NO remover el URI viejo hasta 90 días post-cutover.
-
-### Fase D — SES (verificar) (T-7 días)
-
+**SES**:
 ```bash
 aws ses get-identity-verification-attributes \
   --identities flexyflow.co \
   --region us-east-1
 ```
 
-Esperado: `VerificationStatus: Success`. Si no:
-- Identity `flexyflow.co` ya está verificada (no `restaurante.flexyflow.co`).
-- DKIM debe estar publicado como CNAME en Cloudflare.
-- Ver `docs/wiki/EMAIL_SES_SETUP.md` para detalle.
+Esperado: `VerificationStatus: Success`. Los emails post-cutover salen con
+`From: noreply@flexyflow.co` (marca raíz). Los links del cuerpo se renderizan
+dinámicamente desde `config('app.frontend_url')` — pasan solos a `panel.*`
+cuando se cambie `APP_URL`.
 
-Los emails post-cutover van a salir con `From: noreply@flexyflow.co` (marca raíz,
-no atada a subdominio) y los links del cuerpo se renderizan dinámicamente desde
-`config('app.frontend_url')` — pasarán solos a `panel.*` cuando se cambie `APP_URL`.
-
-### Fase E — Comunicación pre-cutover (T-14 a T-1)
-
-| T- | Canal | Mensaje |
-|---|---|---|
-| 14 días | Banner in-app | Ya activo (PanelMigrationBanner se auto-renderiza en `restaurante.*`). |
-| 14 días | Email | Subject: "Estamos mejorando FlexyFlow — pequeño cambio en tu acceso". |
-| 7 días | Email | Recordatorio. |
-| 1 día | Banner | Variante `warning` (cambiar copy si fuera necesario). |
-| 0 | Email | "Listo — ya estamos en panel.flexyflow.co". |
-
-Templates de email viven en `application/backend/resources/views/emails/migration/`
-(crear cuando se decida la fecha — fuera del PR de código).
-
-### Fase F — Cutover (T+0) ⚡ ventana de mantenimiento
+### Fase D — Cutover (T+0) ⚡ ventana de mantenimiento
 
 #### Paso 1 — Snapshot (T-15 min)
 
 ```bash
-# Si la BD vive en RDS:
 aws rds create-db-snapshot \
   --db-instance-identifier flexyflow-restaurante-pdn \
   --db-snapshot-identifier pre-panel-cutover-$(date +%Y%m%d-%H%M)
-
-# Si vive en Supabase, snapshot manual desde el dashboard.
+# Si la BD vive en Supabase, snapshot manual desde el dashboard.
 ```
 
 #### Paso 2 — Actualizar Secrets Manager (T-5 min)
 
-Vía `.github/workflows/sync-env-secret.yml` o manual con AWS CLI:
+Vía `.github/workflows/sync-env-secret.yml` o manual con AWS CLI.
 
-```bash
-# Variables que cambian:
-#   APP_URL             → https://panel.flexyflow.co
-#   FRONTEND_URL        → (vacío, lo resuelve config/app.php automáticamente)
-#   LEGACY_FRONTEND_URL → https://restaurante.flexyflow.co (queda 90 días)
-#   GOOGLE_REDIRECT_URI → https://panel.flexyflow.co/auth/google/callback
-#   SESSION_DOMAIN      → .flexyflow.co  (con el punto inicial — sin esto las
-#                         cookies no viajan entre subdominios; #239 documenta)
-#   MAIL_FROM_ADDRESS   → noreply@flexyflow.co (sin cambio si ya estaba así)
+Variables que cambian:
+
+```
+APP_URL             → https://panel.flexyflow.co
+FRONTEND_URL        → (vacío, lo resuelve config/app.php por APP_ENV)
+GOOGLE_REDIRECT_URI → https://panel.flexyflow.co/auth/google/callback
+SESSION_DOMAIN      → .flexyflow.co  (con el punto inicial)
 ```
 
 En GitHub Environment `pdn`, actualizar los Variables/Secrets correspondientes
-y correr `sync-env-secret.yml` (environment=pdn).
+y correr el workflow `sync-env-secret.yml` con `environment=pdn`.
 
-#### Paso 3 — Deploy ASG (T+0)
+#### Paso 3 — Deploy ASG con env nuevo (T+0)
 
 ```bash
 aws autoscaling start-instance-refresh \
@@ -157,118 +135,77 @@ Verificar dentro de una instancia:
 ```bash
 aws ssm start-session --target i-XXXXX --region us-east-1
 # Dentro:
-cat /var/www/flexyflow.restaurante/application/.env | grep -E 'APP_URL|SESSION_DOMAIN|LEGACY_FRONTEND_URL'
+cat /var/www/flexyflow.restaurante/application/.env | grep -E 'APP_URL|SESSION_DOMAIN'
 ```
 
-#### Paso 4 — Worker viejo a 301 (T+0 a T+2)
+#### Paso 4 — Apagar Worker viejo + DNS (T+1 min)
 
-**Opción A — Reemplazar el Worker `restaurante-flexyflow-co` con uno minimal**:
+**Cloudflare Dashboard**:
+1. Workers & Pages → `restaurante-flexyflow-co` → Settings → Triggers.
+2. **Remove Custom Domain** `restaurante.flexyflow.co`. Esto borra el DNS
+   record automáticamente.
+3. Opcional: **Delete** del Worker entero. O dejarlo huérfano (no cuesta nada
+   sin tráfico) — la decisión es del owner.
 
-Crear archivo `application/frontend/redirect-worker.js` (no checkearlo en el repo,
-es solo para este cutover):
+Resultado: cualquier request a `restaurante.flexyflow.co` recibe error DNS
+(NXDOMAIN). Sin redirect, sin 301, sin transición.
 
-```js
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
-    return Response.redirect(`https://panel.flexyflow.co${url.pathname}${url.search}`, 301);
-  },
-};
-```
-
-Deployar:
-```bash
-npx wrangler deploy redirect-worker.js \
-  --name restaurante-flexyflow-co \
-  --compatibility-date 2026-05-20
-```
-
-Esto reemplaza el Worker (que servía el SPA) con uno que solo hace 301. La
-asociación del custom domain `restaurante.flexyflow.co` se mantiene — apunta
-al mismo Worker, solo cambió el código.
-
-**Opción B — Cloudflare Page Rule / Redirect Rule**:
-
-1. Dashboard → Rules → Redirect Rules → Create.
-2. Pattern: hostname equals `restaurante.flexyflow.co`.
-3. Action: Static redirect → `https://panel.flexyflow.co${request_path}${request_query}`, status 301.
-4. Esto requiere desconectar el Worker custom domain antes (porque la regla no se aplica si Worker sirve la request).
-
-Recomendación: **Opción A** — más predecible que jugar con el orden de Worker/Rules.
-
-#### Paso 5 — Smoke tests (T+5 min)
+#### Paso 5 — Smoke tests (T+3 min)
 
 ```bash
-# Redirect base
-curl -I https://restaurante.flexyflow.co/
-# Esperado: HTTP/2 301, location: https://panel.flexyflow.co/
-
-# Path preservado
-curl -I https://restaurante.flexyflow.co/dashboard
-# Esperado: 301 → https://panel.flexyflow.co/dashboard
-
-# Query string preservado
-curl -I 'https://restaurante.flexyflow.co/orders?status=pending&page=2'
-# Esperado: 301 → https://panel.flexyflow.co/orders?status=pending&page=2
-
 # App responde en el nuevo host
 curl -I https://panel.flexyflow.co/
 # Esperado: HTTP/2 200
 
-# Health del backend
+# Host viejo apagado
+curl -I https://restaurante.flexyflow.co/
+# Esperado: error DNS o "could not resolve host"
+
+# Health del backend (no migra)
 curl https://restaurante-api.flexyflow.co/health/ready
 # Esperado: 200 OK
 ```
 
-#### Paso 6 — Validar sesión cross-subdomain (T+7 min)
+#### Paso 6 — Validar login E2E (T+5 min)
 
-Con una cuenta de test:
-1. Loguearse en `panel.flexyflow.co`.
-2. En otra pestaña entrar a `https://restaurante.flexyflow.co/dashboard`.
-3. Esperar: redirect 301 → `https://panel.flexyflow.co/dashboard` y **seguir logueado**.
-4. Si pide login: rollback inmediato — las cookies no se migraron al domain padre.
+Con una cuenta de test, sesión limpia (incognito):
+1. Entrar a `https://panel.flexyflow.co`.
+2. Click "Continuar con Google".
+3. Esperar: redirect a Google → callback exitoso → dashboard.
+4. Si error `redirect_uri_mismatch`: revisar Fase B (callback no actualizado).
 
 #### Paso 7 — Monitoring (T+5 a T+60 min)
 
-Dashboard de Cloudflare → Analytics. Buscar:
+Cloudflare → Analytics:
 - Request rate `panel.flexyflow.co` ramping up.
-- Request rate `restaurante.flexyflow.co` colapsando a redirects (status 301).
-- 5xx en ambos hosts ≤ baseline.
+- `restaurante.flexyflow.co` → 0 (DNS apagado).
 
 CloudWatch en AWS:
-- ALB metrics `HTTPCode_Target_5XX_Count` plano.
+- ALB `HTTPCode_Target_5XX_Count` plano.
 - EC2 CPU normal.
 
 ## Rollback
 
 Si en los primeros 15 min hay incidente crítico (login roto, errores masivos):
 
-1. Re-deployar el Worker viejo `restaurante-flexyflow-co` con el `wrangler.jsonc`
-   actual (sirve el SPA, no el 301).
-2. Revertir Secrets Manager:
+1. **Restaurar Worker viejo**: en Cloudflare Workers, re-agregar custom domain
+   `restaurante.flexyflow.co` al Worker `restaurante-flexyflow-co` (o crear de
+   nuevo si lo borraste).
+2. **Restaurar Secrets Manager**:
    - `APP_URL` ← `https://restaurante.flexyflow.co`
-3. `aws autoscaling start-instance-refresh` con el env viejo.
-4. Banner in-app variante "incidente": "Estamos investigando un problema".
-5. Post-mortem en sub-issue.
+   - `GOOGLE_REDIRECT_URI` ← `https://restaurante.flexyflow.co/auth/google/callback`
+3. **Google Cloud Console**: restaurar callback viejo.
+4. **Instance refresh**: `aws autoscaling start-instance-refresh` con env viejo.
 
-Rollback total: **< 15 min**.
+Rollback total: **< 20 min**. El factor lento es el DNS de Cloudflare
+propagándose (TTL 60s para subdominios proxied → casi instantáneo).
 
-## Cleanup (T+90 días)
+## Post-cutover
 
-- [ ] Verificar Cloudflare Analytics: tráfico residual a `restaurante.*` <10%.
-- [ ] Verificar 0 violaciones CSP en `audit_logs` con `action='csp.violation'`.
-- [ ] Google Cloud Console: remover callback `https://restaurante.flexyflow.co/auth/google/callback`.
-- [ ] Backend env: vaciar `LEGACY_FRONTEND_URL` (override en GH Environment, sin redeploy).
-- [ ] CFN params: actualizar `AllowedCorsOrigins` para quitar el host legacy.
-- [ ] Comentario de cierre en #239 con métricas finales.
-- [ ] Mantener el Worker `restaurante-flexyflow-co` con 301 **mínimo 1 año más**
-      (bookmarks, emails antiguos, QR codes impresos).
-
-## Cleanup eventual (T+1 año)
-
-- [ ] Decisión owner: ¿retirar el Worker de 301?
-- [ ] Si sí: remover custom domain `restaurante.flexyflow.co` y el Worker.
-- [ ] Si no: dejarlo indefinido — costo es trivial (~$0 con plan Workers actual).
+- [ ] Apagar el Worker viejo `restaurante-flexyflow-co` si quedó huérfano.
+- [ ] Comentar en #239 con métricas finales: request rate en `panel.*`,
+      login success rate, 5xx.
+- [ ] Cerrar el issue cuando 7 días pasen sin incidente.
 
 ---
 
@@ -287,11 +224,6 @@ aws ssm start-session --target i-XXXXX --region us-east-1
 # Estado del cert ACM
 aws acm list-certificates --region us-east-1 \
   --query 'CertificateSummaryList[?contains(DomainName,`flexyflow.co`)]'
-
-# Verificar listener rules del ALB
-aws elbv2 describe-listeners --region us-east-1 \
-  --load-balancer-arn $(aws elbv2 describe-load-balancers --region us-east-1 \
-    --query 'LoadBalancers[?contains(LoadBalancerName,`flexyflow-restaurante-pdn`)].LoadBalancerArn' --output text)
 ```
 
-> Última revisión: 2026-05-25 (#239 plan inicial).
+> Última revisión: 2026-05-25 (#239 — cutover single-host sin redirect).
