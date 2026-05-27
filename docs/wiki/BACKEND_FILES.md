@@ -2483,8 +2483,8 @@ rol `is_system=true`. 403 a cualquier otro miembro.
 
 ### Ops — cambio de estado por GitHub Action
 
-**Workflow:** `.github/workflows/company-status.yml` (+ SQL parametrizado en
-`.github/workflows/company-status.sql`).
+**Workflow:** `.github/workflows/company-ops.yml` (action `change_status`) +
+SQL parametrizado en `.github/sql/company-status.sql`.
 
 **Tipo:** `workflow_dispatch`. Sólo dispara manualmente.
 
@@ -2502,7 +2502,7 @@ rol `is_system=true`. 403 a cualquier otro miembro.
 Credenciales: `vars.DB_HOST`, `vars.DB_PORT`, `vars.DB_DATABASE`,
 `vars.DB_USERNAME`, `secrets.DB_PASSWORD` del environment seleccionado.
 
-**Transacción atómica** (ver `.github/workflows/company-status.sql`):
+**Transacción atómica** (ver `.github/sql/company-status.sql`):
 
 1. `SELECT id, status FROM companies WHERE nit = :nit FOR UPDATE`.
 2. Valida `status` destino en whitelist y transición permitida
