@@ -251,7 +251,7 @@ en SES → Verified identities → Create identity (Email) → confirmar link.
 SSH al EC2 del ASG y:
 
 ```bash
-cd /var/www/flexyflow.restaurante/application/backend
+cd /var/www/panel.flexyflow/application/backend
 sudo -u www-data php artisan tinker --execute '
     Mail::raw("Test SES desde QA", function ($m) {
         $m->to("cristian@gmail.com")->subject("Test QA → SES");

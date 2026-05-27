@@ -163,7 +163,7 @@ Verificar dentro de una instancia:
 ```bash
 aws ssm start-session --target i-XXXXX --region us-east-1
 # Dentro:
-cat /var/www/flexyflow.restaurante/application/.env | grep -E 'APP_URL|SESSION_DOMAIN|GOOGLE_REDIRECT_URI'
+cat /var/www/panel.flexyflow/application/.env | grep -E 'APP_URL|SESSION_DOMAIN|GOOGLE_REDIRECT_URI'
 sudo nginx -T 2>/dev/null | grep server_name
 ```
 
@@ -248,7 +248,7 @@ aws autoscaling describe-auto-scaling-groups \
 
 # Logs de la EC2 (vía SSM)
 aws ssm start-session --target i-XXXXX --region us-east-1
-# Luego dentro: tail -f /var/www/flexyflow.restaurante/application/storage/logs/laravel.log
+# Luego dentro: tail -f /var/www/panel.flexyflow/application/storage/logs/laravel.log
 
 # Estado del cert ACM
 aws acm list-certificates --region us-east-1 \
