@@ -1,4 +1,17 @@
 services:
+    # Postgres 15 — stack canónico (CLAUDE.md §12: TODO sobre PostgreSQL,
+    # sin Redis/SQS/SQLite). Mismas extensiones que Supabase pdn:
+    # pgcrypto (gen_random_uuid) viene built-in desde PG 13.
+    #
+    # Para usar desde el host: aplica este bloque al `.env` del backend
+    # (`application/backend/.env`):
+    #   DB_CONNECTION=pgsql
+    #   DB_HOST=127.0.0.1
+    #   DB_PORT=5432
+    #   DB_DATABASE=laravel_app
+    #   DB_USERNAME=postgres
+    #   DB_PASSWORD=root
+    # Levantar: docker compose up -d db
     db:
         image: postgres:15-alpine
         container_name: laravel_db
@@ -11,6 +24,15 @@ services:
             - "5432:5432"
         volumes:
             - ./postgres-data:/var/lib/postgresql/data
+        # Healthcheck: pg_isready confirma que postgres acepta conexiones.
+        # Otros servicios pueden `depends_on: { db: { condition: service_healthy } }`
+        # para esperar a que esté listo en vez de race con el bootstrap inicial.
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d laravel_app"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
 
     # MinIO: S3-compatible local storage. Mirrors AWS S3 buckets used in qa/pdn
     # (flexyflow-panel-{env}-assets, flexyflow-panel-{env}-documents).
@@ -80,7 +102,8 @@ services:
         container_name: flexyflow_pgweb
         restart: unless-stopped
         depends_on:
-            - db
+            db:
+                condition: service_healthy
         environment:
             - PGWEB_DATABASE_URL=postgres://postgres:root@db:5432/laravel_app?sslmode=disable
         ports:
