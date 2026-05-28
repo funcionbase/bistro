@@ -430,10 +430,12 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 
 `coupon-form.tsx` (#125: bloque de programación con `WEEKDAYS`, `toggleDay()`, time pickers, `auto_apply` toggle), `coupon-input.tsx` (acepta `initialCode` para inyectar canjes de loyalty), `coupon-status-badge.tsx`, `coupon-type-badge.tsx`, `coupon-applied-badge.tsx`, `discount-calculator.tsx`, `redemption-history-table.tsx`, `loyalty-card.tsx` (tarjeta dorada en cart público para canjear puntos, #122).
 
-#### `components/billing/` (~9)
+#### `components/billing/` (~11)
 
-`InvoiceDetailModal`, `InvoiceList` (tabla paginada con filtros), `InvoiceStatusBadge`, `InvoiceTypeChip`, `SubscriptionCard`, `UploadPaymentProof`.
+`InvoiceDetailModal`, `InvoiceList` (tabla paginada con filtros), `InvoiceStatusBadge`, `InvoiceTypeChip`, `SubscriptionCard`, `UploadPaymentProof`, **`ActivePromoCodeCard`, `PromoCodeEnrollForm` (#246)**.
 
+- `ActivePromoCodeCard` (#246) — DashboardPanel con código, % descuento, meses, vigencia, invoices afectadas (últimas 5). Botón "Cancelar código" (ConfirmDialog destructivo) si owner/admin. `applied_via` se muestra como label legible.
+- `PromoCodeEnrollForm` (#246) — Input + "Validar código" → preview (starts_at primer día próximo mes, ahorro mensual) → "Confirmar inscripción". Sanitización CLAUDE.md §5 con `sanitizePlainText` maxBytes=50. Errores 422 mapeados a `<Alert>` con copy localizado.
 - `OverdueBanner` — banner dentro de `/billing` con `Alert variant=warning|critical` según `company.status` ∈ `past_due|suspended`. Monto adeudado + fecha más próxima de vencimiento. Sólo se ve en la página de facturación.
 - `PastDueBanner` (#193) — banner blando global en `app-layout.tsx`. `Alert variant="warning"` con countdown desde el día 1 hasta `expected_block_at` (TZ `America/Bogota`). CTA `Ir a Facturación`. Sólo se renderiza si `activeCompany.status === 'past_due'`. Tokens DS (`var(--color-status-warning)`), sin hex.
 - `SuspendedBanner` (#193) — banner persistente global en `app-layout.tsx`. `Alert variant="critical"` con días desde `payment_blocked_at` + monto adeudado (fetch a `/api/v1/billing/subscription`, skeleton inline) + CTA prominente. Sólo si `activeCompany.status === 'suspended'`. Tokens DS, sin hex.
@@ -1065,6 +1067,20 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 - `idb ^8.0.3` (devDep) — wrapper minimal de IndexedDB.
 
 ---
+
+## Enrolamiento — Promo codes desde URL (#246)
+
+### `pages/enrollment/company.tsx`
+
+- `usePromoCodeFromUrl()` lee `?promo=SLUG` y consulta `GET /api/v1/promo-codes/{code}/preview` (público, throttle:30,1).
+- `useDefaultPlan()` consume `GET /api/v1/billing/plans/default` (público).
+- Render condicional del aside derecho:
+  - **Sin `?promo=` o promo inválido**: `<HeroPanel>` (marketing) + `<PlanInfoBlock>` debajo con plan + IVA breakdown.
+  - **Con `?promo=` válido**: `<PromoLandingPanel>` reemplaza el aside completo con código, % off, meses, precio tachado y ahorro mensual.
+- Promo inválido (NOT_FOUND, EXPIRED, MAX_REACHED): se muestra `<Alert>` warning arriba del wizard pero NO bloquea el enrollment (continúa con plan default).
+- En submit el form envía `promo_code` opcional al backend si hay promo válido.
+- Backend en `CompanyEnrollmentController` crea la `Subscription` al plan default con snapshot inmutable y aplica el promo si llegó (`applied_via=enrollment`). Si el promo falla al aplicar, log + continúa.
+- Componentes nuevos: `components/enrollment/plan-info-block.tsx`, `components/enrollment/promo-landing-panel.tsx`.
 
 ## Enrolamiento — Evidencia de propiedad (#154)
 

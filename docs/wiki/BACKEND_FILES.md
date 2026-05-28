@@ -921,6 +921,17 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 | GET | `billing/invoices/{id}/download` | `billing.read,read` |
 | GET | `billing/invoices/{id}/pdf` | URL firmada (TTL 3600s) |
 | GET | `billing/invoices/export.csv` | `billing.read,read` |
+| GET | `billing/promo-code` (#246) | `billing.read,read` |
+| POST | `billing/promo-code/preview` (#246) | `billing.read,read` |
+| POST | `billing/promo-code` (#246) | owner/admin estricto |
+| DELETE | `billing/promo-code` (#246) | owner/admin estricto |
+
+#### Promo codes públicos (#246)
+
+| Método | URL | Auth |
+|--------|-----|------|
+| GET | `billing/plans/default` | público, throttle:30,1 |
+| GET | `promo-codes/{code}/preview` | público, throttle:30,1 |
 
 #### Documentos legales y CSP
 
@@ -1088,12 +1099,20 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 
 | Modelo | Tabla | Campos clave | Relaciones |
 |--------|-------|--------------|------------|
-| `BillingPlan` | `billing_plans` | code, name, price, interval, features (JSONB), sort_order | hasMany(Subscription) |
-| `Subscription` | `subscriptions` | company_nit, plan_id, status, current_period_start/end | belongsTo(Company, BillingPlan), hasMany(SubscriptionDiscount, Invoice) |
-| `SubscriptionDiscount` | `subscription_discounts` | subscription_id, discount_percent, starts_at, ends_at | belongsTo(Subscription) |
-| `Invoice` | `invoices` | company_nit, type, period_from/to, amount, status, due_date, pdf_path, voided_by_invoice_id | belongsTo(Company, Subscription), hasMany(InvoiceLine, InvoicePayment) |
+| `BillingPlan` | `billing_plans` | code, name, price, interval, features (JSONB), sort_order, **is_default (UNIQUE WHERE true), price_includes_tax, tax_regime, tax_rate** (#246) | hasMany(Subscription) |
+| `Subscription` | `subscriptions` | company_nit, plan_id, status, current_period_start/end, **plan_*_snapshot + plan_snapshot_at** (#246), deleted_at | belongsTo(Company, BillingPlan), hasMany(Invoice) — SoftDeletes |
+| `PromoCode` (#246) | `promo_codes` | code (UNIQUE), name, discount_percent (1-100), months_duration (1-120), max_companies, usage_count, starts_at/ends_at, status (active\|inactive), deleted_at | hasMany(CompanyPromoCode) — SoftDeletes |
+| `CompanyPromoCode` (#246) | `company_promo_codes` | company_nit, promo_code_id, discount_percent + months_duration (**snapshot inmutable**), starts_at/ends_at, status (active\|expired\|cancelled), applied_via (enrollment\|github_action\|self_service), applied_by, cancelled_*, deleted_at | belongsTo(Company, PromoCode, User), hasMany(Invoice) — UNIQUE parcial (company_nit) WHERE status='active' |
+| `Invoice` | `invoices` | company_nit, subscription_id, type, period_from/to, base_amount, **base_amount_taxable, tax_amount, tax_rate, tax_regime, plan_*_snapshot, company_promo_code_id, electronic_document_id** (#246), amount, status, due_date, pdf_path, voided_by_invoice_id | belongsTo(Company, Subscription, CompanyPromoCode), hasMany(InvoiceLine, InvoicePayment) — inmutable post-create |
 | `InvoiceLine` | `invoice_lines` | invoice_id, description, amount | belongsTo(Invoice) |
 | `InvoicePayment` | `invoice_payments` | invoice_id, paid_at, reference, amount | belongsTo(Invoice) |
+
+**Servicios y comandos #246:**
+- `App\Services\PromoCodeService` — validateBySlug, applyToCompany (lockForUpdate + snapshot + audit), cancelForCompany, expireOverdue.
+- `App\Services\Dian\SaaSInvoiceDispatchService` + `App\Jobs\EmitDianInvoiceJob` — emisión DIAN para invoices SaaS (CUFE + consecutivo, ShouldBeUnique).
+- `App\Support\Money` — banker's rounding (PHP_ROUND_HALF_EVEN), applyPercent, extractBase, sum.
+- `App\Support\Nit\DvCalculator` — DV NIT algoritmo DIAN (factores 3..71).
+- Comandos artisan: `billing:backfill-default-plan`, `promo:create`, `promo:toggle`, `promo:apply`, `promo:cancel`.
 
 ### Multi-sede / multi-bodega (#117, #120)
 
@@ -1330,10 +1349,12 @@ Registrados automáticamente por Laravel 12 (no requieren `Kernel.php`).
 
 | Comando | Cron | Hora UTC | Propósito |
 |---------|------|----------|-----------|
-| `billing:generate-monthly-invoices` | `0 3 20 * *` | 3 AM día 20 | Genera facturas del mes para suscripciones activas |
+| `billing:generate-monthly-invoices` | `0 3 1 * *` (#246 post-pago) | 3 AM día 1 | Factura el mes ANTERIOR para suscripciones activas. IVA desglose UBL AllowanceCharge + snapshot del plan + DB::afterCommit dispatch EmitDianInvoiceJob. onOneServer + withoutOverlapping(60). |
 | `billing:mark-overdue-invoices` | `dailyAt('04:30')` | 4:30 AM diaria | Marca facturas pendientes con `due_date < today` como `overdue` y delega `BillingService::recalculateCompanyStatus()` para transicionar `active → past_due → suspended → active` por empresa. Idempotente. |
 | `companies:recalculate-statuses` (#193) | `everyFourHours()` | cada 4 horas | Itera empresas en `past_due`/`suspended` por chunks de 200 y vuelve a evaluar su estado. Permite que un comprobante aprobado a media tarde reactive la cuenta dentro de las próximas ~4h sin esperar al cron diario. Idempotente; `onOneServer()+withoutOverlapping(30)` para ser N-instance safe en el ASG (requiere cache store compartido). |
-| `billing:expire-discounts` | `0 4 1 * *` | 4 AM día 1 | Expira `subscription_discounts` con `ends_at < today` |
+| `billing:expire-discounts` | `dailyAt('04:45')` (#246) | 4:45 AM diaria | Marca `company_promo_codes.status='active'` con `ends_at<hoy` como `expired`. Audita uno-a-uno con lockForUpdate. Idempotente. onOneServer + withoutOverlapping(15). |
+| `billing:backfill-default-plan` (#246) | manual (SSM) | — | Asigna plan default + snapshot a empresas/subscriptions sin él. Idempotente, --dry-run + --force. Una sola ejecución post-deploy. |
+| `promo:create / promo:toggle / promo:apply / promo:cancel` (#246) | manual via GH Action `promo-codes-ops.yml` | — | Backoffice de promo codes: catálogo + aplicación/cancelación por NIT. Snapshot inmutable + audit. |
 | `chats:purge-old` | `dailyAt('03:00')` | 3 AM diaria | Borra `chats` inactivos > 60 días, preservando `contacts` y `orders` |
 | `menus:sync-schedule` | `0 * * * *` | cada hora | Activa el menú correspondiente al día de la semana |
 | `whatsapp:replay-events` | manual | — | Reprocesa `webhook_events` no procesados (idempotente) |
