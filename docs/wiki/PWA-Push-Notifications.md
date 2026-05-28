@@ -58,7 +58,7 @@ con la app cerrada (siempre que la PWA esté instalada).
    │  ├── 410 Gone / 404 → sub.revoked_at = now()
    │  └── 5xx/red → log Sentry; cron seguirá intentando en próximo tick
    ▼
-[Browser SW (resources/js/sw.ts)]
+[Browser SW (application/frontend/src/sw.ts)]
    │ Listener 'push' → showNotification(title, options)
    │ Listener 'notificationclick' → openWindow(url) o focus existente
    ▼
@@ -160,6 +160,12 @@ Variables (no secrets, decisión owner #149):
 - `VAPID_PUBLIC_KEY`
 - `VAPID_PRIVATE_KEY`
 - `VAPID_SUBJECT` (opcional; default `mailto:info@flexyflow.co`)
+- `PUSH_INVENTORY_DIGEST_ENABLED` (kill-switch global del digest de
+  inventario al login; default `true`). Se consume desde
+  `config/notifications.php` → `inventory_digest.enabled`.
+
+En PDN ambas claves VAPID viven en SSM Parameter Store, no en el `.env`
+directamente. El UserData del ASG las lee al boot.
 
 El workflow [`sync-env-secret.yml`](../../.github/workflows/sync-env-secret.yml)
 las pisa en el `.env` durante deploy. Cada entorno tiene su propio par

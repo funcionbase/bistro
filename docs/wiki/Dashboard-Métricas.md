@@ -16,7 +16,7 @@ Capa frontend: `pages/dashboard.tsx` (Inertia con `Inertia::defer`) + `pages/met
 
 ## Endpoints de métricas
 
-Todos requieren `permission:reports.read,read`.
+Todos están bajo `prefix=metrics` con middleware `['branch.access', 'branch.consolidate', 'permission:reports.read,read']`. La sede activa se resuelve por header; `?branch=all` requiere `metrics.view_all_branches`.
 
 ### KPIs y resumen
 
@@ -31,17 +31,27 @@ Todos requieren `permission:reports.read,read`.
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/api/v1/metrics/items/top` | Top platos vendidos del período |
-| `GET` | `/api/v1/metrics/dishes/ranking` | Variante con más detalle |
+| `GET` | `/api/v1/metrics/dishes/ranking` | Ranking con más detalle |
+| `GET` | `/api/v1/metrics/dishes/margin` | Margen por plato (cruzado con food cost) |
 | `GET` | `/api/v1/metrics/orders/heatmap` | Heatmap horario (24 horas) |
 | `GET` | `/api/v1/metrics/orders/heatmap/weekly` | Heatmap semanal 7×24 |
 | `GET` | `/api/v1/metrics/activity/heatmap` | Heatmap de actividad combinada |
+| `GET` | `/api/v1/metrics/menu-engineering` | Matriz menu-engineering (popularidad × margen) |
 
 ### Carrito
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/api/v1/metrics/carts/abandonment` | Tasa de abandono y revenue perdido |
-| `GET` | `/api/v1/metrics/cart/abandonment` | Variante alterna |
+| `GET` | `/api/v1/metrics/cart/abandonment` | Variante alterna (ratio plano) |
+
+### Operación y costos
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/v1/metrics/offline/operation` | Estado de la operación offline (#149) |
+| `GET` | `/api/v1/metrics/foodcost/summary` | Resumen de food cost por período (#113) |
+| `GET` | `/api/v1/metrics/foodcost/items/{menuItemId}/history` | Histórico de food cost de un ítem |
 
 ---
 
@@ -119,14 +129,16 @@ HTTP/1.1 200 OK
 
 Configurable en `config/metrics.php`:
 
-| Métrica | TTL por defecto | Por qué |
-|---------|----------------|---------|
-| `active_orders` | 30 s | Tiempo casi-real |
-| `summary` | 60 s | Acepta latencia mínima |
-| `heatmap` | 600 s | Cambia poco hora a hora |
-| `top_items` | 300 s | Idem |
+| Clave | TTL por defecto | Por qué |
+|-------|-----------------|---------|
+| `active_orders_ttl` | 30 s | Tiempo casi-real |
+| `dashboard_summary_cache_ttl` | 60 s (`DASHBOARD_SUMMARY_CACHE_TTL`) | Acepta latencia mínima |
+| `dashboard_heatmap_cache_ttl` | 600 s (`DASHBOARD_HEATMAP_CACHE_TTL`) | Cambia poco hora a hora |
+| `dashboard_chart_cache_ttl` | 300 s (`DASHBOARD_CHART_CACHE_TTL`) | Top items / ranking |
+| `dashboard_metrics_cache_ttl` | 300 s (`DASHBOARD_METRICS_CACHE_TTL`) | KPIs derivados |
+| `polling_interval` | 30 s (`METRICS_POLLING_INTERVAL`) | Frecuencia de polling del frontend |
 
-Cualquier mutación en `orders` no invalida el caché automáticamente; el TTL corto es la política.
+`dashboard_cache_enabled=false` (env `DASHBOARD_CACHE_ENABLED`) desactiva el caché en QA. Cualquier mutación en `orders` no invalida el caché automáticamente; el TTL corto es la política. Stack: `CACHE_STORE=database` sobre PostgreSQL (compartido cross-EC2 sin Redis, §12 CLAUDE.md).
 
 ---
 
@@ -169,5 +181,7 @@ Notas:
 ## Notas de seguridad
 
 - Las métricas se calculan **siempre** con scope a `active_company_nit`; nunca cruzan empresas.
+- El scope de sede lo aplica `branch.access`. Para vista consolidada (`?branch=all`) se exige `permission:metrics.view_all_branches` (de lo contrario el middleware `branch.consolidate` rechaza).
 - El JWT firmado de descarga (`/reports/download/{token}`) no requiere autenticación adicional, pero expira rápido (configurable).
 - Los exports PDF se generan en cola cuando el dataset es grande (futuro mejora; hoy son síncronos con timeout protegido).
+- `revenue_statuses=['completed']` — los demás estados no entran en revenue (§13 CLAUDE.md: invariante contable).

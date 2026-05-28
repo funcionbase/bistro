@@ -49,16 +49,25 @@ Los roles `is_system=true`:
 
 ## Roles operativos de plantilla (no system)
 
-Pensados para el flujo de mesa con QR (#191 Fase 7). NO son `is_system`, así
-que el owner los puede renombrar / eliminar / ajustar permisos. Se crean
-opcionalmente por empresa vía `php artisan roles:sync-templates` (idempotente).
-Su matriz de permisos vive en `permission_templates`:
+Roles operativos pre-armados — NO son `is_system`, así que el owner los puede
+renombrar / eliminar / ajustar permisos. Se crean opcionalmente por empresa vía
+`php artisan roles:sync-templates` (idempotente). Su matriz de permisos vive en
+`permission_templates`. A 2026-05 hay 8 plantillas operativas:
 
 | Rol | `role_type` | Para qué se diseñó |
 |-----|-------------|---------------------|
 | Mesero | `waiter` | Aprobar/rechazar tandas, editar notas, resolver `cancellation_requests`, ver/responder chats. |
 | Cocinero | `cook` | KDS exclusivo: ver órdenes y mover estado de items. |
 | Cajero | `cashier` | Caja con pago dividido, refund, reportes propios. |
+| Gerente | `manager` | Operativo de sede: cierra órdenes, ajusta menú, gestiona turnos e inventario (sin contabilidad). |
+| Contador | `accountant` | Lectura financiera cross-sede (`metrics.view_all_branches`): billing, purchases, suppliers, workforce.reports, employees.view_salary. |
+| Marketing | `marketing` | Cupones (RCU sin D), loyalty, clientes y chats. |
+| Bodeguero | `inventory_manager` | Inventario + warehouses.manage + purchases (sin pay/delete) + suppliers RCU. |
+| Supervisor | `supervisor` | Read-mostly operativo cross-módulo, con `orders.update`/`deliveries.update` como únicas mutaciones. |
+
+> Los administrativos (`manager`, `accountant`, `marketing`,
+> `inventory_manager`, `supervisor`) se agregaron en #215 F4. Defaults exactos
+> en `application/backend/constants/ROLES_TEMPLATES.md`.
 
 ## Roles demo (solo seeders de QA)
 
@@ -72,32 +81,37 @@ asignan a mano dentro del seeder:
 | `Domiciliario` | Demuestra el flujo *courier-only* (#119) — sidebar reducido + redirect post-login a `/my-deliveries`. |
 | `Cocina` | Demuestra el KDS con un rol pre-armado (alternativo a `cook` con set un poco más amplio). |
 
-> **Referencia completa para devs/agentes**: `application/constants/` reúne
-> el modelo RBAC ejecutable del proyecto (catálogo de los 74 permisos,
-> defaults exactos por rol, modo *courier-only*, aislamiento por sede,
-> checklist accionable). Antes de tocar permisos o roles, consultar
-> `application/constants/RBAC_CHECKLIST.md`.
+> **Referencia completa para devs/agentes**: `application/backend/constants/` reúne
+> el modelo RBAC ejecutable del proyecto (catálogo de ~82 permisos, defaults
+> exactos por rol, modo *courier-only*, aislamiento por sede, checklist
+> accionable). Antes de tocar permisos o roles, consultar
+> `application/backend/constants/RBAC_CHECKLIST.md`.
 
 ---
 
 ## Features
 
-Definidas en la tabla `features` con `slug` único:
+Definidas en la tabla `features` (sembrada por `FeatureSeeder`) con `slug` único.
+A 2026-05 hay **~82 slugs activos** agrupados por dominio. La fuente de verdad
+ejecutable es `application/backend/database/seeders/FeatureSeeder.php`; el
+catálogo legible vive en `application/backend/constants/PERMISSIONS_CATALOG.md`.
 
-| Slug | Nombre | Grupo |
-|------|--------|-------|
-| `orders` | Pedidos | operations |
-| `menu` | Menú | operations |
-| `hours` | Horarios | operations |
-| `deliveries` | Domicilios | operations |
-| `coupons` | Cupones | marketing |
-| `reports` | Reportes | analytics |
-| `metrics` | Métricas | analytics |
-| `users` | Usuarios | admin |
-| `roles` | Roles | admin |
-| `chats` | Chats | communication |
-| `company` | Empresa | admin |
-| `billing` | Facturación | admin |
+Dominios principales (no exhaustivo):
+
+| Dominio | Slugs representativos |
+|---------|------------------------|
+| Operaciones | `orders.{read,create,update,delete}`, `menu.*`, `hours.*`, `deliveries.{read,create,update,delete,self_assign}`, `kds.{read,update}`, `kds_stations.{read,create,update,delete}` (sensible de sede) |
+| Marketing | `coupons.{read,create,update,delete}`, `loyalty.{read,update}`, `clients.read` |
+| Analítica | `reports.read`, `metrics.view_all_branches`, `workforce.reports` |
+| Admin | `users.{read,update,delete}`, `roles.{read,create,update,delete}`, `company.update`, `billing.read`, `notifications.{read,create,update,delete}` |
+| Comunicación | `chats.{read,update,reassign_branch}` (último sensible de sede) |
+| Multi-sede (#117/#192) | `branches.{manage,assign_users,copy_menu,view_all}`, `cash_register.bypass_switch_lock`, `inventory.transfer_cross_branch` |
+| Workforce (#182) | `employees.{read,create,update,delete,view_salary}`, `shifts.{read,manage,suggest}`, `workforce.{reports,settings}` |
+| WhatsApp (owner-only) | `whatsapp.swap_phone`, `whatsapp.disconnect` |
+| DIAN (#235) | `dian.{config,documents,recipients,print,default_recipient}` |
+
+> El catálogo crece por sprint. Consultar siempre `PERMISSIONS_CATALOG.md`
+> antes de razonar sobre slugs; el código gana ante drift.
 
 ---
 
@@ -178,7 +192,10 @@ El primer argumento (`menu.read`, `coupons.delete`) es un identificador semánti
 
 | Método | Ruta | Permiso |
 |--------|------|---------|
+| `GET` | `/api/v1/invitations` | `users.update,read` |
 | `POST` | `/api/v1/invitations` | `users.update,create` |
+| `POST` | `/api/v1/invitations/{id}/resend` | `users.update,create` |
+| `DELETE` | `/api/v1/invitations/{id}` | `users.update,delete` |
 
 ---
 
@@ -237,4 +254,4 @@ Reglas:
 
 ---
 
-> Última revisión: 2026-05-18 (#201) — alineado con `application/constants/` (8 archivos de referencia RBAC para devs y agentes).
+> Última revisión: 2026-05-18 (#201) — alineado con `application/backend/constants/` (8 archivos de referencia RBAC para devs y agentes).

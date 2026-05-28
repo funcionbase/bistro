@@ -8,13 +8,13 @@
 
 ## Visión general
 
-flexyflow factura mensualmente la suscripción de cada empresa al plan vigente. El módulo soporta:
+flexyflow factura mensualmente (post-pago) la suscripción de cada empresa al plan vigente. El módulo soporta:
 
-- Suscripciones con planes (`free`/`pro`/`enterprise`).
-- Generación automática de facturas mensuales (cron).
-- Marcado de mora con días de gracia.
-- Descuentos temporales.
-- PDFs descargables de facturas.
+- Suscripción única por empresa al **Plan Default** ($100.000 COP/mes, IVA 19% incluido). Desde #246 se retiraron los tiers `starter`/`basic`/`pro`/`enterprise` (quedan inactivos para preservar FKs; nuevas empresas se registran al plan `default`).
+- Generación automática de facturas mensuales por cron (día 1 a las 03:00 América/Bogotá).
+- Marcado de mora con `due_day` + gracia configurable en meses (`BILLING_PAST_DUE_GRACE_MONTHS`).
+- Descuentos por promo code (`subscription_discounts` + `company_promo_codes`).
+- PDFs descargables con CUFE/QR DIAN cuando `BILLING_EMIT_DIAN_FOR_INVOICES=true`.
 
 ---
 
@@ -22,12 +22,14 @@ flexyflow factura mensualmente la suscripción de cada empresa al plan vigente. 
 
 | Tabla | Campos clave |
 |-------|--------------|
-| `billing_plans` | `id`, `name`, `price`, `interval` (`monthly`), `features` (JSONB) |
-| `subscriptions` | `company_nit`, `billing_plan_id`, `status` (`active`/`paused`/`cancelled`), `started_at`, `ends_at` |
-| `subscription_discounts` | `subscription_id`, `percentage`, `expires_at`, `reason` |
-| `invoices` | `id`, `company_nit`, `subscription_id`, `period_from`, `period_to`, `amount_due`, `paid_amount`, `status` (`draft`/`pending`/`paid`/`overdue`/`voided`), `pdf_path`, `voided_by_invoice_id` |
-| `invoice_lines` | `invoice_id`, `description`, `quantity`, `unit_price`, `total` |
-| `invoice_payments` | `invoice_id`, `amount`, `paid_at`, `method`, `reference` |
+| `billing_plans` | `id` UUID, `slug` (unique), `name`, `price` `decimal(12,2)`, `currency` `CHAR(3)` default `COP`, `billing_cycle` (`monthly`), `features` (JSONB), `is_active`, `is_default`, `tax_regime`, `tax_rate`, `price_includes_tax` |
+| `subscriptions` | `id` UUID, `company_nit`, `billing_plan_id`, `status` (`active`/`paused`/`cancelled`), `starts_at`, `ends_at`, `cancelled_at`, `cancelled_by`. UNIQUE parcial `WHERE status='active'` por empresa. |
+| `subscription_discounts` | `id` UUID, `company_nit`, `discount_percent` `decimal(5,2)` con CHECK > 0 ≤ 100, `description`, `starts_at`, `ends_at`, `months_duration`, `status`, `created_by`, `cancelled_by`, `cancelled_at` |
+| `invoices` | `id` UUID, `company_nit`, `subscription_id`, `type`, `period_from`, `period_to`, `days_billed`, `base_amount`, `base_amount_taxable`, `discount_percent`, `discount_amount`, `tax_amount`, `tax_rate`, `tax_regime`, `amount` (total a cobrar), `currency`, `due_date`, `generated_at`, `status` (`draft`/`pending`/`paid`/`overdue`/`voided`), `voided_by_invoice_id` (self-FK), `pdf_path`, `pdf_generated_at`, `electronic_document_id`, `plan_name_snapshot`, `plan_price_snapshot`, `company_promo_code_id`. UNIQUE parcial `(subscription_id, period_from, period_to) WHERE status!='voided'`. |
+| `invoice_lines` | `id` UUID, `invoice_id`, `description`, `quantity`, `unit_price`, `subtotal`, `sort_order` |
+| `invoice_payments` | `id` UUID, `invoice_id`, `company_nit`, `amount`, `currency`, `payment_reference` (obligatoria), `payment_date`, `payment_method`, `registered_by`, `notes` |
+
+Todos los montos son `decimal(12,2)` con cast `decimal:2` en el modelo (§13 CLAUDE.md). El modelo `Invoice` bloquea mutaciones a campos financieros tras la creación (lanza `LogicException` en `updating`).
 
 ---
 
@@ -55,18 +57,45 @@ Las facturas `paid` y `voided` son **inmutables**.
 
 ### Suscripción y facturas (panel admin)
 
-| Método | Ruta | Permiso |
-|--------|------|---------|
-| `GET` | `/api/v1/billing/subscription` | `billing.read,read` |
-| `GET` | `/api/v1/billing/invoices` | `billing.read,read` |
-| `GET` | `/api/v1/billing/invoices/{id}` | `billing.read,read` |
-| `GET` | `/api/v1/billing/invoices/{id}/download` | `billing.read,read` |
+Todos requieren JWT de usuario + `permission:billing.read,read`.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/v1/billing/plans` | Catálogo de planes activos |
+| `GET` | `/api/v1/billing/subscription` | Suscripción activa + `overdue_total` + `earliest_overdue_date` |
+| `GET` | `/api/v1/billing/invoices` | Lista paginada de facturas (filtros por status/período) |
+| `GET` | `/api/v1/billing/invoices/export.csv` | Export CSV |
+| `GET` | `/api/v1/billing/invoices/{id}` | Detalle con `lines` + `payments` |
+| `GET` | `/api/v1/billing/invoices/{id}/download` | Descarga PDF autenticada |
+
+### Comprobantes de pago manuales (#175)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/v1/billing/payment-proofs` | Historial de comprobantes |
+| `POST` | `/api/v1/billing/payment-proofs` | Sube comprobante (exige `billing.write`) |
+| `GET` | `/api/v1/billing/payment-proofs/{uuid}` | Stream del archivo para preview inline |
+
+### Promo codes self-service (#246)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/v1/billing/promo-code` | Código activo en la empresa |
+| `POST` | `/api/v1/billing/promo-code/preview` | Vista previa de impacto |
+| `POST` | `/api/v1/billing/promo-code` | Aplica código (owner/admin) |
+| `DELETE` | `/api/v1/billing/promo-code` | Cancela código activo (owner/admin) |
+
+### Plan default público (sin JWT)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/v1/billing/plans/default` | Plan default (slug `default`) para enrollment |
 
 ### PDF público (URL firmada)
 
 | Método | Ruta | Auth |
 |--------|------|------|
-| `GET` | `/api/v1/billing/invoices/{id}/pdf` | URL firmada (`signed`) |
+| `GET` | `/api/v1/billing/invoices/{id}/pdf` | URL firmada (`signed`), TTL `BILLING_DOWNLOAD_TTL` (default 3600s) |
 
 ---
 
@@ -82,12 +111,11 @@ GET /api/v1/billing/subscription HTTP/1.1
 HTTP/1.1 200 OK
 {
   "subscription": {
-    "id": 14,
-    "plan": { "id": 2, "name": "Pro", "price": 89000, "interval": "monthly" },
+    "id": "uuid",
+    "plan": { "slug": "default", "name": "Plan Default", "price": "100000.00", "currency": "COP", "billing_cycle": "monthly" },
     "status": "active",
-    "started_at": "2025-11-01",
-    "current_period_start": "2026-04-20",
-    "current_period_end": "2026-05-20",
+    "starts_at": "2025-11-01",
+    "ends_at": null,
     "discount": null
   },
   "overdue_total": 0,
@@ -106,19 +134,24 @@ HTTP/1.1 200 OK
 {
   "data": [
     {
-      "id": 412,
-      "period_from": "2026-04-20",
-      "period_to": "2026-05-20",
-      "amount_due": 89000,
-      "paid_amount": 89000,
+      "id": "uuid",
+      "period_from": "2026-05-01",
+      "period_to": "2026-05-31",
+      "base_amount": "84033.61",
+      "tax_amount": "15966.39",
+      "tax_rate": "19.00",
+      "tax_regime": "iva_19",
+      "amount": "100000.00",
+      "currency": "COP",
+      "due_date": "2026-06-15",
       "status": "paid",
-      "issued_at": "2026-04-20T03:00:00-05:00",
-      "paid_at": "2026-04-21T10:23:00-05:00"
+      "generated_at": "2026-06-01T03:00:00-05:00"
     }
   ],
   "current_page": 1,
   "last_page": 6,
-  "total": 60
+  "total": 60,
+  "per_page": 10
 }
 ```
 
@@ -126,15 +159,19 @@ HTTP/1.1 200 OK
 
 ## Comandos programados
 
-Definidos en `routes/console.php` o `bootstrap/app.php`:
+Definidos en `routes/console.php`. Todos N-instance safe con `->onOneServer()` + `->withoutOverlapping()` (cache lock vía `CACHE_STORE=database` sobre PostgreSQL — el proyecto NO usa Redis).
 
 | Comando Artisan | Cron | Descripción |
 |------------------|------|-------------|
-| `billing:generate-monthly-invoices` | `0 3 20 * *` | Genera facturas el día 20 a las 03:00 |
-| `billing:mark-overdue-invoices` | `0 3 16 * *` | Marca como `overdue` el día 16 a las 03:00 |
-| `billing:expire-discounts` | `0 4 1 * *` | Expira descuentos el día 1 a las 04:00 |
+| `billing:generate-monthly-invoices` | `0 3 1 * *` (post-pago: factura el mes anterior) | Genera facturas el día 1 a las 03:00 Bogotá |
+| `billing:mark-overdue-invoices` | diario 04:30 | Marca `pending → overdue` cuando `due_date < today` y recalcula `company.status` |
+| `billing:expire-discounts` | diario 04:45 | Expira `company_promo_codes.status='active'` con `ends_at < today` (#246) |
+| `companies:recalculate-statuses` | cada 4 horas | Reactivación post-pago: past_due/suspended → active si deuda liquidada (#193) |
+| `billing:export-delinquent` | diario 05:30 | Export CSV diario a S3 con foto de empresas past_due/suspended |
 
-Las fechas son configurables en `.env` (ver [Variables de Entorno](Variables-de-Entorno.md)).
+Defensa contable adicional: `BillingService::generateMonthlyInvoices` envuelve cada invoice en `DB::transaction` con `lockForUpdate`, y el UNIQUE parcial `(subscription_id, period_from, period_to) WHERE status!='voided'` rechaza carreras entre workers.
+
+Las fechas son configurables en `.env` (`BILLING_GENERATE_DAY=1`, `BILLING_GENERATE_HOUR=3`, `BILLING_DUE_DAY=15`, `BILLING_OVERDUE_DAY=16` — ver [Variables de Entorno](Variables-de-Entorno.md)).
 
 ---
 
@@ -144,32 +181,44 @@ Las fechas son configurables en `.env` (ver [Variables de Entorno](Variables-de-
 
 | Clave | Default | Descripción |
 |-------|---------|-------------|
-| `currency` | `COP` | Moneda |
-| `grace_months` | `2` | Meses de gracia antes de suspender |
-| `due_day` | `15` | Día del mes de vencimiento |
-| `generate_day` | `20` | Día de generación |
-| `overdue_day` | `16` | Día para marcar vencidas |
+| `currency` | `COP` | Moneda (ISO 4217) |
+| `grace_months` | `2` | Meses de gracia legacy (uso interno) |
+| `due_day` | `15` | Día del mes en que vence la factura |
+| `generate_day` | `1` | Día del mes de generación (post-pago: factura el mes anterior) |
+| `overdue_day` | `16` | Día a partir del cual se marcan vencidas |
+| `flexyflow_tax_regime` | `iva_19` | Régimen fiscal de flexyflow como proveedor SaaS |
+| `flexyflow_tax_rate` | `19.00` | Tasa IVA del plan default |
+| `default_plan_slug` | `default` | Slug del plan default usado por `/billing/plans/default` |
+| `emit_dian_for_invoices` | `true` | Si dispara `EmitDianInvoiceJob` tras generar invoice |
+| `past_due_grace_months` | `3` | Meses calendario en past_due antes de pasar a suspended (#175) |
+| `trial_days` | `90` | Días de prueba post-creación sin invoices |
+| `payment_proof_disk` | `s3_documents` | Disco S3 para comprobantes de pago |
+| `download_ttl` | `3600` | TTL de URL firmada del PDF |
 | `pdf_driver` | `dompdf` | Motor PDF |
 
 ---
 
-## Política de mora
+## Política de mora (#175 + #193)
 
 ```
 Día 1-15:    factura `pending`, sin restricción
-Día 16:      pasa a `overdue` si no se pagó
-Día 16-N:    empresa pasa a `mora` (banner en UI)
-Mes 2 sin pago:  empresa pasa a `delinquent`
-Mes 3+ sin pago: empresa pasa a `suspended` (solo lectura)
+Día 16+:     factura → `overdue`; empresa pasa a `past_due` (banner en UI)
+Mes 2 sin pago (configurable):  past_due continúa (banner persistente)
+Mes 3+ sin pago: empresa pasa a `suspended` — modo solo-lectura, bot bloqueado (#193)
+Pago aprobado:   companies:recalculate-statuses revierte a `active` en máx. 4h
 ```
 
-Configurable con `BILLING_GRACE_MONTHS`.
+Configurable con `BILLING_PAST_DUE_GRACE_MONTHS` (default `3`).
+
+Endpoints como `/api/v1/billing/*`, `/auth/login`, `/companies/me` siguen disponibles en `suspended` para que el usuario suba comprobantes.
 
 ---
 
 ## Notas crédito
 
-Las notas crédito (`invoice_type = credit-note`) son facturas con monto negativo que vinculan a una previa vía `voided_by_invoice_id`. Cuando se emiten, la factura original pasa a `voided` y la nota crédito queda como registro de auditoría.
+Las notas crédito son facturas con monto negativo que vinculan a una previa vía `voided_by_invoice_id` (self-FK). Cuando se emiten, la factura original pasa a `voided` y la nota crédito queda como registro de auditoría inmutable. **Nunca** se hace `UPDATE` para anular una factura (regla §13 CLAUDE.md: refunds y notas crédito como asiento nuevo).
+
+**Conservación legal DIAN** (§13 CLAUDE.md): 5 años para personas naturales / 10 años para jurídicas. No se permite borrar invoices ni payment_receipts antes de plazo — soft-delete máximo, jamás `truncate` en pdn.
 
 ---
 
@@ -177,5 +226,6 @@ Las notas crédito (`invoice_type = credit-note`) son facturas con monto negativ
 
 - El acceso a facturación está restringido a `billing.read` (típicamente `owner` y `admin`).
 - Los PDFs se almacenan en `invoices.pdf_path` y se sirven con URL firmada de TTL corto.
-- Las facturas `paid` y `voided` no pueden ser modificadas; intentar editar devuelve `409 INVOICE_LOCKED`.
-- `BILLING_GRACE_MONTHS=0` desactiva la gracia y suspende inmediatamente al vencer.
+- Las facturas `paid` y `voided` no pueden ser modificadas; el modelo lanza `LogicException` si se intenta mutar `amount`, `base_amount`, `tax_amount`, etc.
+- `BILLING_PAST_DUE_GRACE_MONTHS=0` desactiva la gracia y suspende inmediatamente al vencer.
+- Si `BILLING_EMIT_DIAN_FOR_INVOICES=true`, cada invoice generada dispara `EmitDianInvoiceJob` (ShouldBeUnique por `invoice_id`) que asocia el `electronic_document_id` con CUFE.

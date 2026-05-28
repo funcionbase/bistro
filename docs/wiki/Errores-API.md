@@ -48,9 +48,19 @@ Todos los errores se devuelven como JSON con esta forma base:
 
 | Código | Status | Origen | Significado |
 |--------|--------|--------|-------------|
-| `USER_INACTIVE_IN_COMPANY` | 403 | `selectCompany`, `switchCompany`, `EnsureCompanyAccess` | El admin desactivó la membresía del usuario; el JWT activo se invalida |
-| `COMPANY_NOT_MEMBER` | 403 | `switchCompany` | El usuario solicitó cambiar a una empresa de la que no es miembro |
-| `COMPANY_INACTIVE` | 422 | `switchCompany` | La empresa solicitada está en estado distinto a `active` |
+| `USER_INACTIVE_IN_COMPANY` | 403 | `AuthController::selectCompany`, `switchCompany`, `EnsureCompanyAccess` | El admin desactivó la membresía del usuario; el JWT activo se invalida |
+| `COMPANY_NOT_MEMBER` | 403 | `AuthController::switchCompany` | El usuario solicitó cambiar a una empresa de la que no es miembro |
+| `COMPANY_INACTIVE` | 422 | `AuthController::switchCompany` | La empresa solicitada está en estado distinto a `active` |
+| `NO_ACTIVE_COMPANY` | 422 | `AuthController::selectBranch` | El usuario aún no eligió empresa activa |
+| `BRANCH_NOT_FOUND` | 404 | `AuthController::selectBranch`, `EnsureBranchAccess`, `AllowConsolidatedBranches`, `ChatController` | Sede inexistente bajo el scope actual |
+| `BRANCH_FORBIDDEN` | 403 | `AuthController::selectBranch`, `EnsureBranchAccess` | El rol no tiene acceso a la sede solicitada |
+| `BRANCH_COMPANY_MISMATCH` | 403 | `EnsureBranchAccess` | La sede pertenece a otra empresa |
+| `BRANCH_ARCHIVED` | 409 | `EnsureBranchAccess` | Sede archivada — operación bloqueada |
+| `BRANCH_NOT_ACCESSIBLE` | 403 | `ChatController` | El actor no puede operar sobre la sede destino de un chat |
+| `BRANCH_SWITCH_BLOCKED_CASH_OPEN` | 409 | `AuthController::selectBranch` | No se puede cambiar de sede mientras una caja propia está abierta |
+| `CONSOLIDATED_FORBIDDEN` | 403 | `AllowConsolidatedBranches` | El permiso `metrics.view_all_branches` no está asignado |
+| `BRANCH_FILTER_FORBIDDEN` | 403 | `AllowConsolidatedBranches` | El parámetro `?branch=` no está permitido en el contexto actual |
+| `BUSINESS_CAPABILITY_DENIED` | 403 | `EnsureBusinessCapability` | La capability requerida no está habilitada para el `business_type` de la sede |
 | `INVITATION_EXPIRED` | 422 | `InvitedEnrollmentController` | Token de invitación venció |
 | `INVITATION_ALREADY_ACCEPTED` | 409 | `InvitedEnrollmentController` | El token ya fue consumido |
 | `INVITATION_NOT_FOUND` | 404 | `InvitationController` | Token inexistente |
@@ -60,6 +70,23 @@ Todos los errores se devuelven como JSON con esta forma base:
 | `COUPON_NOT_FIRST_ORDER` | 422 | `CartCouponController::apply` | Cupón restringido al primer pedido del cliente |
 | `INVOICE_LOCKED` | 409 | `BillingController` | Facturas `paid` o `voided` no admiten cambios |
 | `DELIVERY_ALREADY_ACTIVE` | 409 | `DeliveryController::store` | El pedido ya tiene un domicilio activo |
+| `DELIVERY_NOT_OWNED` | 403 | `DeliveryController` | El repartidor no es dueño de la entrega que intenta operar |
+| `ORDER_OTHER_BRANCH` | 409 | `DeliveryController` | La orden pertenece a otra sede activa |
+| `ORDER_NOT_FOUND` | 404 | `DeliveryService::selfAssign` | Orden inexistente o fuera de scope al auto-asignar |
+| `ORDER_ALREADY_TAKEN` | 409 | `DeliveryService::selfAssign` | Otro repartidor ganó el race del self-assign |
+| `DELIVERY_INVALID_STATE` | 409 | `DeliveryService` | Transición de estado de entrega no permitida |
+| `DELIVERY_NOT_COMPLETED` | 422 | `DeliveryService::createReceipt` | No se puede emitir comprobante si la entrega no está completada |
+| `DELIVERY_HAS_RECEIPT` | 409 | `DeliveryService` | La entrega ya tiene un `payment_receipt` ligado |
+| `CHAT_REASSIGN_FORBIDDEN` | 403 | `ChatController` | El actor no puede reasignar el chat al destinatario indicado |
+| `DIAN_BLOB_NOT_AVAILABLE` | 404 | `Dian\ElectronicDocumentController` | El XML/PDF del documento DIAN aún no está disponible (en cola o sin generar) |
+| `DIAN_CREDIT_NOTE_ALREADY_EXISTS` | 409 | `Dian\ElectronicDocumentController` | Ya existe una nota crédito emitida para el documento origen |
+| `TRANSFER_CROSS_BRANCH_USE_DEDICATED_ENDPOINT` | 422 | `InventoryTransferController` | Los traslados entre sedes deben pasar por el endpoint específico (no el genérico) |
+| `LAST_ACTIVE_BRANCH` | 409 | `BranchController::archive` | No se puede archivar la última sede activa de la empresa |
+| `LAST_ACTIVE_WAREHOUSE` | 409 | `WarehouseController::archive` | No se puede archivar la última bodega activa de la sede |
+| `WAREHOUSE_HAS_STOCK` | 409 | `WarehouseController::archive` | La bodega aún tiene stock — vaciarla antes de archivar |
+| `USER_NOT_COMPANY_MEMBER` | 404 | `BranchController::attachUser` | El usuario destino no pertenece a la empresa actual |
+| `SOURCE_MENU_NOT_FOUND` | 404 | `BranchController::cloneMenu` | El menú origen no existe o está fuera de scope |
+| `BUSINESS_TYPE_UNCHANGED` | 422 | `BranchController::changeBusinessType` | El `business_type` solicitado coincide con el actual |
 
 ---
 
@@ -109,7 +136,7 @@ HTTP/1.1 422 Unprocessable Entity
 
 ## Comportamiento del frontend
 
-`apiFetch` (`resources/js/lib/api.ts`) trata los errores así:
+`apiFetch` (`application/frontend/src/lib/api.ts`) trata los errores así:
 
 | Caso | Acción |
 |------|--------|
@@ -125,3 +152,4 @@ HTTP/1.1 422 Unprocessable Entity
 - Los errores **nunca** revelan información de otra empresa. Si un usuario consulta un recurso fuera de su `active_company_nit`, el backend devuelve `404` (no `403`) para no filtrar existencia.
 - Los rate limits aplican por IP (OAuth) o por usuario (login). Cuando se exceden, devuelven `429` con `Retry-After`.
 - Los errores `500` se registran en logs (`storage/logs/laravel.log`) con el trace completo. En producción, `APP_DEBUG=false` oculta el trace al cliente.
+- El handler global vive en `application/backend/bootstrap/app.php` (closure `withExceptions`): cualquier `Throwable` no manejado en rutas que esperan JSON o que matchean `api/*` se serializa como `{"message": "..."}` con mensajes neutros por status (401/403/404/405/419/422/429/5xx). `ValidationException` y `AuthenticationException` siguen pasando al handler nativo para conservar `errors[]` y el redirect a `/auth`. Los códigos de aplicación (`code`) los emiten los controllers y middlewares enumerados arriba; el handler genérico **no** los inyecta.

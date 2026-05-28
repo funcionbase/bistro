@@ -11,52 +11,69 @@
 | Capa | Tecnología | Notas |
 |------|-----------|-------|
 | UI | React 19 (hooks, sin clases) | Strict mode |
-| SPA bridge | Inertia.js v2 | Routing server-side desde Laravel |
+| Routing/SPA | SPA puro contra API Laravel | Proyecto independiente (`application/frontend/`), build separado, deploy en Cloudflare Worker. Inertia v2 sigue presente para algunas pantallas server-driven, pero el grueso navega client-side |
 | Tipado | TypeScript 5.x | Strict |
-| Estilos | Tailwind CSS v4 | Variables CSS de [`FRONTEND_UI_GUIDELINES`](../../application/FRONTEND_UI_GUIDELINES.md) |
-| Bundler | Vite | Entry: `resources/js/app.tsx` |
+| Estilos | Tailwind CSS v4 | Variables CSS y DS v3.1 en [`FRONTEND_UI_GUIDELINES`](../../application/frontend/FRONTEND_UI_GUIDELINES.md) |
+| Bundler | Vite | Entry: `application/frontend/src/spa/main.tsx`; SW: `src/sw.ts` (workbox injectManifest) |
+| PWA | vite-plugin-pwa + Workbox | Service Worker custom con Web Push (#149) |
+| Tests | Vitest | `vitest.config.ts` + `vitest.setup.ts` |
 | Drag & Drop | @dnd-kit | Menú |
 | Iconos | lucide-react | Tamaño `size-4` (16px) o `size-5` |
 | Primitivas | Radix UI | Bajo `components/ui/` |
-| Markdown | react-markdown | Documentos legales |
+| Markdown | react-markdown + rehype-sanitize | Documentos legales (`components/ui/markdown.tsx`) |
 
 ---
 
 ## Arquitectura y estructura de carpetas
 
 ```
-resources/js/
-├── app.tsx                 # Punto de entrada: registra páginas y resuelve token de Inertia
-├── ssr.tsx                 # Server-side rendering (opcional)
-├── pages/                  # Páginas Inertia — un archivo por ruta del backend
-│   ├── auth/               # welcome, login, register, forgot-password, ...
+application/frontend/src/
+├── spa/                    # Bootstrap del SPA (entry main.tsx, router)
+├── sw.ts                   # Service Worker custom (Workbox injectManifest + Web Push)
+├── pages/                  # Páginas — un archivo por ruta
+│   ├── auth/               # login, register, forgot/reset/verify, company-selector, branch-selector, confirm-password
 │   ├── enrollment/         # user, company
-│   ├── company/            # settings, preferences
-│   ├── menu/               # index, show
-│   ├── deliveries/         # index, metrics
-│   ├── billing/            # index
+│   ├── company/            # settings, preferences, kds, branches/, tables/, warehouses/
+│   ├── menu/               # index, show, public
+│   ├── orders/             # tables/, table-sessions/, kanban
+│   ├── caja/               # cajero, cierres, recibos
+│   ├── kds/                # index (consolidado), station (standalone)
+│   ├── chats.tsx           # buzón de chats por sede
+│   ├── clients/            # CRM
+│   ├── deliveries/         # index, metrics, mis entregas
+│   ├── employees/          # nómina + estados
+│   ├── inventory/          # stock, transfers, recipes, food-cost
+│   ├── suppliers/          # proveedores
+│   ├── purchases/          # compras, adjuntos
+│   ├── planner/            # planeación operativa
+│   ├── dian/               # DIAN electronic documents
+│   ├── loyalty/            # programa de fidelización
+│   ├── billing/            # facturación de la plataforma
 │   ├── coupons/            # index, show
-│   ├── hours/              # index
 │   ├── metrics/            # index
 │   ├── reports/            # index
-│   ├── roles/              # Roles, RoleEditor
-│   ├── users/              # Users
-│   ├── settings/           # profile, password, appearance
+│   ├── roles/              # roles.tsx, role-editor.tsx
+│   ├── users/              # users.tsx
+│   ├── settings/           # profile, password, appearance, notifications
 │   ├── me/                 # index
-│   └── dashboard.tsx
+│   ├── table/              # vista pública QR (comensal)
+│   ├── error-boundary.tsx, not-found.tsx, welcome.tsx, hours.tsx, dashboard.tsx
 ├── components/             # Componentes reutilizables (kebab-case)
-│   ├── ui/                 # Primitivas (Button, Card, Dialog, ...) sobre Radix
-│   ├── menu/               # Específicos del dominio menú
-│   ├── deliveries/         # Específicos del dominio domicilios
-│   ├── coupons/            # Específicos del dominio cupones
-│   ├── billing/            # OverdueBanner, InvoiceList, SubscriptionCard
-│   ├── dashboard/          # LiveIndicator, HeatmapChart, TopItemsChart
-│   └── ...
+│   ├── ui/                 # Primitivas (Button, Card, Dialog, ...) sobre Radix + DS v3.1
+│   ├── alerts/, billing/, branches/, cash-register/, chats/, clients/,
+│   ├── company/, company-settings/, coupons/, dashboard/, deliveries/,
+│   ├── dian/, employees/, enrollment/, hours/, kds/, menu/, metrics/,
+│   ├── notifications/, offline/, orders/, order-tables/, planner/,
+│   ├── printing/, pwa/, reports/, whatsapp/
+│   └── shared widgets sueltos (RoleBadge, EmptyState, BusinessGate, etc.)
 ├── hooks/                  # Hooks personalizados (use-*)
-├── layouts/                # Layouts: app, auth, app-header
-├── lib/                    # api, token, utils, formatters
-└── types/                  # index.ts + dominios (billing, business-hours, coupon)
+├── layouts/                # app/, auth/, settings/, kds-standalone-layout.tsx, spa-app-layout.tsx
+├── lib/                    # api, api-client, api-routes, token, shared-data, route-map, schemas/, offline/, printing/, formatters, etc.
+├── css/                    # Theme tokens + globals
+└── types/                  # billing, business-hours, coupon, dian, inventory, purchases, recipes, suppliers, index
 ```
+
+> El paths antiguos `resources/js/...` corresponden al monolito Inertia previo. El frontend actual vive en `application/frontend/src/` como proyecto separado y se referencia con el alias `@/` que apunta a `src/`.
 
 **Convenciones de nombrado:**
 
@@ -79,7 +96,7 @@ resources/js/
 ## Convenciones Tailwind v4
 
 - Utility-first; cero CSS escrito a mano salvo `@theme` en `app.css`.
-- Variables CSS de `FRONTEND_UI_GUIDELINES.md` (paleta, espaciados, bordes).
+- Tokens semánticos del DS v3.1 (`application/frontend/FRONTEND_UI_GUIDELINES.md` §6.2 y §11): `bg-card`, `text-muted-foreground`, `border-border`, `var(--color-status-*)`. Cero hex hardcoded en paletas semánticas, cero `bg-red-50`/`text-blue-500`.
 - Modo oscuro: clase `dark` en `<html>`, controlada por `useAppearance()`.
 - Patrones comunes:
   - Card: `rounded-xl border border-border bg-card shadow-sm p-6`.
@@ -138,7 +155,7 @@ useEffect(() => {
 
 ## Patrón de token (clave del SPA multi-empresa)
 
-`lib/token.ts`:
+`src/lib/token.ts`:
 
 ```ts
 import { setToken, getToken, subscribeToken } from '@/lib/token';
@@ -148,7 +165,7 @@ const token = getToken();         // lee
 const unsub = subscribeToken(t => console.log('nuevo token', t));
 ```
 
-`lib/api.ts`:
+`src/lib/api.ts`:
 
 ```ts
 import { apiFetch } from '@/lib/api';
@@ -163,7 +180,7 @@ const data = await res.json();
 - En `401` con mensaje "revoc": limpia token y redirige a `/`.
 - `credentials: 'include'` para cookies Laravel en paralelo.
 
-`hooks/use-token.ts`:
+`src/hooks/use-token.ts`:
 
 ```tsx
 const token = useToken(); // string | null, reactivo a cambios
@@ -352,11 +369,15 @@ const { data, role, canCreate, canUpdate, canDelete } = useMenuDetail(menuId);
 
 ## Layouts
 
-| Layout | Cuándo usar |
-|--------|-------------|
-| `AppLayout` | Páginas autenticadas con sidebar |
-| `AuthLayout` (variantes simple/card/split) | Páginas de auth (login, register, forgot, reset) |
-| `AppHeaderLayout` | Páginas autenticadas que prefieren topbar a sidebar |
+| Layout | Archivo | Cuándo usar |
+|--------|---------|-------------|
+| `AppSidebarLayout` | `layouts/app/app-sidebar-layout.tsx` | Páginas autenticadas con sidebar (default) |
+| `AppHeaderLayout` | `layouts/app/app-header-layout.tsx` | Páginas autenticadas que prefieren topbar a sidebar |
+| `AuthSimpleLayout` | `layouts/auth/auth-simple-layout.tsx` | Auth básico (login, forgot, reset) |
+| `AuthHeroLayout` | `layouts/auth/auth-hero-layout.tsx` | Auth con hero/split (welcome, register) |
+| `SettingsLayout` | `layouts/settings/layout.tsx` | Sub-navegación de `/settings/*` (profile, password, appearance, notifications) |
+| `SpaAppLayout` | `layouts/spa-app-layout.tsx` | Wrapper de páginas SPA puras |
+| `KdsStandaloneLayout` | `layouts/kds-standalone-layout.tsx` | KDS por estación en kiosk-mode (`min-h-dvh w-screen`, sin sidebar) |
 
 ```tsx
 <AppLayout breadcrumbs={[
@@ -379,8 +400,18 @@ const { data, role, canCreate, canUpdate, canDelete } = useMenuDetail(menuId);
 
 ---
 
+## PWA y Web Push
+
+- Service Worker custom: `src/sw.ts` (vite-plugin-pwa con `strategies: 'injectManifest'`). Combina precaching de Workbox, runtime caching de APIs, y listeners de Web Push (#149).
+- Hooks: `use-push-subscription.ts` gestiona suscripción/permission; `components/notifications/push-prompt-banner.tsx` invita a activar push; `components/notifications/push-subscriptions-list.tsx` lista/revoca devices.
+- Página de gestión: `/settings/notifications` (`pages/settings/notifications.tsx`).
+- Install prompt: `components/pwa/install-pwa-prompt.tsx`, `ios-install-hint.tsx`, `update-available-toast.tsx`.
+
+---
+
 ## Notas
 
 - Todo cambio que toque navegación, permisos o nuevas pantallas debe actualizar `FRONTEND_FILES.md` y, si afecta funcionalidades visibles, `FUNCIONALIDADES_APP.md`.
-- Los hooks de polling deben limpiar su `interval` en `useEffect` cleanup.
+- Los hooks de polling deben limpiar su `interval` en `useEffect` cleanup. Para KDS se usan `use-live-polling` (con toggle) y `use-auto-polling` (auto-pause cuando la tab pierde foco).
 - Evitar fetch en componentes hoja; centralizar en hooks o en la página.
+- Sanitización de inputs (CLAUDE.md §5): usar `sanitizePlainText` de `src/lib/input-sanitize.ts` o el primitive `components/ui/sanitized-input.tsx`. `maxLength` del input = `maxBytes` del backend.

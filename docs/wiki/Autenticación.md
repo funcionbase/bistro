@@ -47,6 +47,8 @@ El frontend SPA opera con un **JWT custom** que viaja en `localStorage` y como `
 | `GET` | `/auth/google/callback` | — | Recibe el code, emite JWT |
 | `POST` | `/api/v1/auth/select-company` | `jwt` | Selección final de empresa activa |
 | `POST` | `/api/v1/auth/switch-company` | `jwt` | Cambio de empresa en sesión activa |
+| `GET` | `/api/v1/auth/branches-available` | `jwt` | Sedes accesibles en la empresa activa (alimenta el selector de sede) |
+| `POST` | `/api/v1/auth/switch-branch` | `jwt` | Cambio de sede activa (#117). Bloquea si hay caja abierta salvo `cash_register.bypass_switch_lock`. Reemite JWT con nueva `active_branch_id`. |
 | `POST` | `/api/v1/auth/logout` | `jwt` | Invalida JWT activo |
 
 ---
@@ -66,9 +68,11 @@ El JWT está compuesto por header (HS256), body (AES-256-CBC encriptado) y signa
 | `active_company_name` | `?string` | Nombre comercial de la empresa activa |
 | `active_company_logo_url` | `?string` | URL absoluta del logo (si hay) |
 | `active_company_plan` | `?string` | Plan: `free` \| `pro` \| `enterprise` |
+| `active_branch_id` | `?string` | UUID de sede activa (#117). `null` cuando el contexto es consolidado (`?branch=all`). |
 | `role` | `?{id,name,is_system}` | Rol en empresa activa |
 | `permissions` | `string[]` | Slugs de features con `can_read=true` |
 | `companies` | `array` | Lista de empresas accesibles `{nit, name, status, linked, logo_url, plan}` |
+| `branches` | `array` | Sedes accesibles en la empresa activa `{id, name, is_default, archived_at}` |
 | `iat`, `exp` | `int` | Timestamps Unix |
 | `issued_at`, `expires_at` | `string` | Mismas fechas en ISO 8601 |
 
@@ -92,9 +96,14 @@ El JWT está compuesto por header (HS256), body (AES-256-CBC encriptado) y signa
 | `jwt` | `App\Http\Middleware\ValidateJwt` | Verifica firma, expiración, blacklist; auto-refresca si <300 s |
 | `bot.jwt` | `App\Http\Middleware\ValidateBotJwt` | JWT separado para el bot (otra clave/TTL) |
 | `company.access` | `App\Http\Middleware\EnsureCompanyAccess` | Verifica membresía activa en `active_company_nit`; inyecta `active_company_nit`, `user_role`, `company_role_id`, `company_role_is_system` en el request |
+| `company.verified` | `App\Http\Middleware\EnsureCompanyVerified` | Exige `companies.status ∈ config('companies.verified')`. Bloquea `pending_activation`/`rejected`/`inactive`. |
+| `company.not_blocked` | `App\Http\Middleware\EnsureCompanyNotBlocked` | Bloquea `suspended` (#175/#193) en todas las rutas salvo whitelist de billing/comprobantes. |
+| `branch.access` | `App\Http\Middleware\EnsureBranchAccess` | Multi-sede #117. Verifica acceso a la sede del JWT (pivot `branch_users`; owner bypass) e inyecta `active_branch_id`. |
+| `branch.consolidate` | `App\Http\Middleware\AllowConsolidatedBranches` | Permite `?branch=all` o `?branch=<uuid>` cuando el actor tiene `metrics.view_all_branches`. |
 | `permission:{feature},{action}` | `App\Http\Middleware\EnsureFeaturePermission` | RBAC. Bypass si el rol activo es `is_system=true` |
 | — | `App\Http\Middleware\SecurityHeaders` | CSP, X-Frame-Options, X-Content-Type-Options |
-| — | `App\Http\Middleware\HandleInertiaRequests` | Comparte `auth.user`, `companies`, `activeCompany`, `role`, `permissions` con el SPA |
+| — | `App\Http\Middleware\NormalizeStrings` | NFC + strip de control chars en inputs antes de validar (whitelist de webhooks). |
+| — | `App\Http\Middleware\HandleInertiaRequests` | Comparte `auth.user`, `companies`, `activeCompany`, `role`, `permissions`, `branches`, `activeBranch` con el SPA |
 
 ---
 

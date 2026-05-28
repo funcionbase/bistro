@@ -130,12 +130,11 @@ HTTP/1.1 200 OK
 
 ## Configuración
 
-`config/business-hours.php`:
+`application/backend/config/business-hours.php`:
 
-| Clave | Descripción |
-|-------|-------------|
-| `default_buffer_minutes` | Tiempo de gracia antes del cierre para aceptar pedidos |
-| `timezone` | TZ usado para evaluar (default `app.timezone`) |
+| Clave | Default | Descripción |
+|-------|---------|-------------|
+| `timezone` | `env('BUSINESS_HOURS_TIMEZONE', env('APP_TIMEZONE', 'UTC'))` | TZ usado para evaluar. En PDN/QA debe apuntar a `America/Bogota` (todas las empresas operan en CO, UTC-5 sin DST) |
 
 ---
 

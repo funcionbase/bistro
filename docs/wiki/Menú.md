@@ -8,7 +8,9 @@
 
 ## Visión general
 
-Cada empresa puede tener varios menús; **solo uno puede estar `active`** simultáneamente. El menú activo se entrega públicamente al bot y al cliente final vía `GET /api/v1/public/menu/{companyNit}`. Cada menú se compone de categorías, y cada categoría de ítems (platos).
+Los menús son **recurso PER-SEDE** (#117): cada `branch` de la empresa maneja su carta de forma independiente. Dentro de una sede, **solo uno puede estar `active`** simultáneamente; los demás quedan en `draft` o `archived`. El menú activo de la sede se entrega públicamente al bot y al cliente final vía `GET /api/v1/public/menu/{companyNit}`. Cada menú se compone de categorías, y cada categoría de ítems (platos). Cada ítem puede tener una **receta (BOM)** asociada para descuento automático de inventario al pasar a cocina.
+
+Las rutas de gestión (`/api/v1/menus/*`) van protegidas con `branch.access` para que el `BranchScope` global filtre `RestaurantMenu` automáticamente. Sin esto, `GET /menus` mezclaba menús de todas las sedes.
 
 ---
 
@@ -57,7 +59,8 @@ El menú se almacena en `restaurant_menus.structure` como JSON v3 (única versi�
 | `PUT` | `/api/v1/menus/{id}` | `menu.update,update` | Renombra/edita metadatos |
 | `DELETE` | `/api/v1/menus/{id}` | `menu.delete,delete` | Elimina menú |
 | `POST` | `/api/v1/menus/{id}/duplicate` | `menu.create,create` | Clona como `draft` |
-| `PATCH` | `/api/v1/menus/{id}/activate` | `menu.update,update` | Activa (desactiva los demás) |
+| `PATCH` | `/api/v1/menus/{id}/activate` | `menu.update,update` | Activa (desactiva los demás de la sede) |
+| `PATCH` | `/api/v1/menus/{id}/deactivate` | `menu.update,update` | Desactiva sin activar otro |
 | `PATCH` | `/api/v1/menus/{id}/schedule` | `menu.update,update` | Define `active_days` |
 | `POST` | `/api/v1/menus/sync-schedule` | `menu.update,update` | Recalcula activación según día actual |
 
@@ -80,11 +83,23 @@ El menú se almacena en `restaurant_menus.structure` como JSON v3 (única versi�
 | `POST` | `/api/v1/menus/{id}/items/{itemId}/image` | `menu.update,update` |
 | `PATCH` | `/api/v1/menus/{id}/categories/{catId}/items/{itemId}/availability` | `menu.update,update` |
 
+### Recetas (BOM)
+
+| Método | Ruta | Permiso |
+|--------|------|---------|
+| `GET` | `/api/v1/menus/{menu}/items/{itemId}/recipe` | `menu.read,read` |
+| `GET` | `/api/v1/menus/{menu}/items/{itemId}/cost` | `menu.read,read` |
+| `PUT` | `/api/v1/menus/{menu}/items/{itemId}/recipe` | `menu.update,update` |
+
+`config('menu.recipe.units')` define la lista cerrada de unidades aceptadas (`kg`, `g`, `l`, `ml`, `un`) — validada en migración (CHECK), FormRequest y `UnitConverter`. `low_margin_threshold` (default 0.20) controla el badge "⚠ margen bajo" del editor (no bloquea guardar).
+
 ### Menú público
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | `GET` | `/api/v1/public/menu/{companyNit}` | `jwt` (sin `company.access`) | Devuelve solo ítems disponibles del menú activo. Usado por bot y app pública |
+| `POST` | `/api/v1/public/menu/{nit}/scan` | público + `throttle:menu-scan-public` | Telemetría del QR del menú (#95). Append-only en `menu_scan_events` |
+| `GET` | `/api/v1/public/menu/{nit}/table/{tableNumber}` | público + `throttle:menu-scan-public` | Resuelve si la mesa pertenece a la sede y el menú activo aplica (`TableResolveController`) |
 
 ---
 
@@ -145,9 +160,14 @@ Content-Type: application/json
 ## Imágenes de platos
 
 - Suben con `POST /menus/{id}/items/{itemId}/image` como `multipart/form-data`.
-- Validación: JPG/PNG, máx. 2 MB.
-- Almacenadas en el disco de `filesystems.php` (default `public`); ruta guardada en el ítem.
+- Validación: JPG/PNG, máx. `config('menu.image_max_size_kb')` (default 2048 KB ≈ 2 MB).
+- Disco: `config('menu.image_disk')` (default `public`; en QA/PDN el `.env` puede overridear a `s3`).
 - URL temporal de 60 min cuando el disco es S3.
+
+Topes de catálogo (configurables vía env):
+
+- `MENU_MAX_CATEGORIES` — default 20.
+- `MENU_MAX_ITEMS_PER_CATEGORY` — default 50.
 
 ---
 
@@ -159,6 +179,7 @@ Cada menú lleva `active_days: number[]` (0=domingo, 6=sábado). El comando prog
 
 ## Notas de seguridad
 
-- Solo un menú `active` por empresa.
+- Solo un menú `active` por **sede** (no por empresa — #117).
 - El menú público es accesible con cualquier JWT válido (incluido el del bot) **sin** verificar membresía — la única autenticación es la firma del JWT. No incluir información sensible en el menú.
-- El backend cachea el menú activo de cada empresa para reducir lecturas; cualquier mutación lo invalida.
+- El backend cachea el menú activo de cada sede para reducir lecturas; cualquier mutación lo invalida.
+- Telemetría de scans (`/public/menu/{nit}/scan`) y resolución de mesa son append-only y van protegidas con `throttle:menu-scan-public` para evitar abuso desde QRs públicos.

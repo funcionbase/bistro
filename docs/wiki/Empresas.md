@@ -6,15 +6,23 @@
 
 ---
 
-## Multi-tenancy
+## Multi-tenancy + multi-sede
 
-flexyflow es multi-empresa. Reglas clave:
+flexyflow es multi-empresa **y** multi-sede (#117). Reglas clave:
 
-- La PK de `companies` es el **NIT** (string), no un autoincremental.
-- Toda tabla operativa (orders, deliveries, coupons, etc.) lleva FK `company_nit`.
-- Un usuario puede pertenecer a varias empresas con roles distintos vía `company_users`.
-- El JWT siempre fija una `active_company_nit`; toda lectura/escritura está confinada a esa empresa.
-- El middleware `company.access` rechaza el request si el usuario no es miembro **activo** de la empresa.
+- La PK física de `companies` es `id` (UUID v7). El identificador tributario
+  **NIT** (UNIQUE, inmutable post-creación #193) es lo que se usa en FKs
+  (`company_nit`), JWT, URLs públicas y comprobantes.
+- Toda tabla operativa lleva FK `company_nit` **y** `branch_id` (UUID a
+  `branches.id`). Ver `docs/wiki/Multi-tenancy.md` para el aislamiento por sede
+  (trait `BelongsToBranch`, `BranchScope` global).
+- Un usuario puede pertenecer a varias empresas con roles distintos vía
+  `company_users`, y a varias sedes vía el pivot `branch_users` (owner bypass).
+- El JWT fija `active_company_nit` **y** `active_branch_id`; toda
+  lectura/escritura operativa está confinada a esa empresa+sede.
+- Stack canónico de gates: `jwt` → `company.access` → `company.verified` →
+  `company.not_blocked` → `branch.access` → (`branch.consolidate`) →
+  `permission:<slug>,<action>`.
 
 ---
 
@@ -22,7 +30,9 @@ flexyflow es multi-empresa. Reglas clave:
 
 | Tabla | Campos clave |
 |-------|--------------|
-| `companies` | `nit` (PK), `commercial_name`, `legal_name`, `bank_id`, `account_number`, `account_type` (`ahorros`/`corriente`), `breb_key`, `qr_code_path`, `logo_path`, `status` (`active`/`inactive`/`pending_activation`/`mora`/`delinquent`/`suspended`), `plan` (`free`/`pro`/`enterprise`) |
+| `companies` | `id` (UUID v7, PK), `nit` (UNIQUE, inmutable), `commercial_name`, `legal_name`, `bank_id`, `account_number`, `account_type` (`ahorros`/`corriente`), `breb_key`, `qr_code_path`, `logo_path`, `status` (`pending_activation`/`active`/`past_due`/`suspended`/`rejected`/`inactive`), `plan` (`free`/`pro`/`enterprise`), `tax_regime`, `default_tax_rate`, `default_tax_label`, `tax_included_in_price`, `past_due_started_at`, `expected_block_at`, `payment_blocked_at`, perfil fiscal DIAN (`dv`, `legal_representative_*`, `economic_activity_code`, `fiscal_responsibilities`, `tax_obligations`, `municipality_dane_code`, `billing_email`, `billing_phone`, `physical_address`, `country_code`) |
+| `branches` | `id` (UUID, PK), `company_nit`, `name`, `is_default`, `archived_at`, `business_type`, `address`, `phone`, `timestamps` — sede operativa (#117). FK desde toda tabla operativa. |
+| `branch_users` | `user_id`, `branch_id` — pivot de acceso a sede operativa (owner bypass). |
 | `company_users` | `user_id`, `company_nit`, `company_role_id`, `status` |
 | `company_roles` | `id`, `company_nit`, `name`, `description`, `color`, `is_system` |
 | `company_role_permissions` | `company_role_id`, `feature_id`, `can_read/create/update/delete` |
@@ -65,9 +75,12 @@ Claves válidas y validaciones se definen en `config/company_settings.php`. Ejem
 
 ### Reglas
 
-- El NIT debe ser único en todo el sistema.
-- Las invitaciones expiran en 7 días (configurable en `config/roles.php`).
+- El NIT debe ser único en todo el sistema y es **inmutable** post-creación (#193).
+- Las invitaciones expiran en 7 días (`now()->addDays(7)` hardcoded en
+  `InvitationController::store`).
 - Un usuario invitado con membresía existente en la misma empresa **no puede** ser re-invitado.
+- Al onboardear se crea también la sede `is_default=true` inicial (#117). Las
+  sedes adicionales se gestionan vía `/api/v1/company/branches`.
 
 ---
 
@@ -88,6 +101,9 @@ HTTP/1.1 200 OK
 }
 ```
 
+Existe también `POST /api/v1/auth/switch-company` para cambiar la empresa
+activa preservando la sesión existente.
+
 Códigos de error específicos:
 - `404` — Empresa no encontrada en la lista de membresías del usuario.
 - `422` — `La empresa está desactivada.`
@@ -95,16 +111,46 @@ Códigos de error específicos:
 
 ---
 
+## Cambio de sede activa (multi-sede #117)
+
+```http
+POST /api/v1/auth/switch-branch HTTP/1.1
+Authorization: Bearer <JWT actual>
+Content-Type: application/json
+
+{ "branch_id": "0190f1b8-..." }
+```
+
+Reglas:
+- Valida acceso vía pivot `branch_users` (owner bypass).
+- **Bloquea el switch si hay caja abierta** en la sede actual (#192 Fase 3.1)
+  salvo permiso `cash_register.bypass_switch_lock`.
+- Reemite JWT con la nueva sede activa.
+- Audita con `auth.branch.switched` (incluye `from_branch_id`, `to_branch_id`,
+  `was_owner_bypass`).
+
+Listado de sedes accesibles: `GET /api/v1/auth/branches-available` (alimenta el
+selector de sede del SPA).
+
+---
+
 ## Estados de empresa
 
-| Estado | Significado | Acciones permitidas |
-|--------|-------------|---------------------|
-| `active` | Operativa | Todas |
-| `pending_activation` | Recién registrada, aún sin pago | Limitado: solo settings y onboarding |
-| `mora` | Factura vencida pero dentro de meses de gracia | Operativo, banner de advertencia |
-| `delinquent` | Más de `BILLING_GRACE_MONTHS` en mora | Bloqueo progresivo |
-| `suspended` | Cancelada por incumplimiento o solicitud | Solo lectura, sin operaciones |
-| `inactive` | Inhabilitada manualmente | Sin acceso |
+Catálogo canónico en `application/backend/config/companies.php` +
+`application/backend/constants/COMPANY_STATUSES.md`. Enum BD definido en la
+migración foundation `0001_01_01_000100_create_companies_block.php`.
+
+| Estado | Bucket | Significado | Acciones permitidas |
+|--------|--------|-------------|---------------------|
+| `pending_activation` | `pending` | Default al crear empresa. JWT se emite pero `EnsureCompanyVerified` bloquea operativo. Espera workflow ops manual de verificación. | Selector + pantalla "Cuenta en revisión" |
+| `active` | `verified` | Operativa. Único estado completamente operativo. | Todas |
+| `past_due` | `verified` | ≥1 factura vencida, atraso ≤ 3 meses. Sigue operando, se muestra banner (#175). | Todas + banner |
+| `suspended` | `verified` + `fully_blocked` | Atraso > 3 meses (#175/#193). `EnsureCompanyNotBlocked` bloquea salvo `/billing`, `/dashboard`, settings personales y comprobante. | Solo billing y dashboard |
+| `rejected` | `blocked` | Workflow de verificación marcó la empresa como inválida. Owner puede reintentar enrollment. | Re-onboarding (`rejected → pending_activation`) |
+| `inactive` | `blocked` | Baja administrativa/voluntaria. No se usa por past_due. | Sin acceso |
+
+> Estados retirados: `verified` (ahora bucket semántico) y `delinquent`
+> (reemplazado por `past_due`) — ver `COMPANY_STATUSES.md`.
 
 ---
 
@@ -112,4 +158,6 @@ Códigos de error específicos:
 
 - Solo `owner` y `admin` pueden actualizar datos administrativos de la empresa (RBAC vía `permission:company.update,update`).
 - La actualización de `commercial_name` reemite el JWT (`active_company_name` cambia) para que el sidebar refleje el nuevo nombre sin recargar manualmente.
-- El logo y el QR se almacenan en `storage/public/companies/{logos|qr-codes}` y se sirven a través del disco público.
+- El logo y el QR se almacenan en `companies/logos` y `companies/qr-codes`
+  dentro del disco público (S3 en QA/PDN, local en dev). Los assets de S3 se
+  sirven firmados vía `GET /storage-proxy/{path}` con TTL de 60 min (#172).

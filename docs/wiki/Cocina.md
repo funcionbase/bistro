@@ -91,9 +91,11 @@ SLA visual con tokens semánticos del DS: `border-safe` / `border-warning`
 color de identidad de la estación (`#EF4444` etc.) sí se aplica al chip
 del header con `style={{backgroundColor: ...}}`.
 
-`useAutoPolling` con `intervalMs=2000` y `pauseWhenHidden=true` mantiene
-la pantalla viva sin esfuerzo manual; pausa automática si la tab pierde
-foco.
+`useAutoPolling` con `intervalMs=30_000` mantiene la pantalla viva sin
+esfuerzo manual; el hook pausa el polling cuando la tab pierde foco. La
+pantalla consolidada (`pages/kds/index.tsx`) usa `useLivePolling` con el
+mismo intervalo de 30s y expone el toggle `LivePollingToggle` para que el
+operador active/desactive la actualización en caliente.
 
 ---
 
@@ -138,17 +140,22 @@ sigue viendo `orders.status=ready` cuando la mesa está completa.
 
 ## Cross-references
 
-- Constants: `application/constants/KDS_STATIONS.md`,
+- Constants: `application/backend/constants/KDS_STATIONS.md`,
   `PERMISSIONS_CATALOG.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`,
   `ROLES_TEMPLATES.md`.
-- Backend: `app/Models/KdsStation.php`, `KdsDeviceToken.php`,
-  `app/Services/KdsTicketService.php`, `KdsDeviceTokenService.php`,
-  `app/Http/Controllers/Api/KdsController.php`, `KdsStationController.php`,
-  `KdsDeviceTokenController.php`,
+- Backend: `application/backend/app/Models/KdsStation.php`,
+  `KdsDeviceToken.php`, `app/Services/KdsTicketService.php`,
+  `KdsDeviceTokenService.php`,
+  `app/Http/Controllers/Api/KdsController.php`,
+  `KdsStationController.php`, `KdsDeviceTokenController.php`,
   `app/Http/Controllers/Web/KdsStandaloneController.php`,
   `app/Http/Middleware/EnsureKdsDeviceToken.php`.
-- Frontend: `resources/js/pages/kds/index.tsx` (consolidado),
-  `pages/kds/station.tsx` (standalone), `pages/company/kds.tsx`
-  (settings), `components/kds/kds-station-select.tsx`,
+- Frontend: `application/frontend/src/pages/kds/index.tsx`
+  (consolidado), `pages/kds/station.tsx` (standalone),
+  `pages/company/kds.tsx` (settings),
+  `components/kds/kds-station-select.tsx`,
   `components/kds/kds-station-ticket-card.tsx`,
-  `layouts/kds-standalone-layout.tsx`, `hooks/use-auto-polling.ts`.
+  `components/ui/kds-ticket-card.tsx`,
+  `components/ui/kds-skeleton.tsx`,
+  `layouts/kds-standalone-layout.tsx`, `hooks/use-auto-polling.ts`,
+  `hooks/use-live-polling.ts`.
