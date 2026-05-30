@@ -67,11 +67,10 @@ El JWT está compuesto por header (HS256), body (AES-256-CBC encriptado) y signa
 | `active_company_nit` | `?string` | NIT de empresa activa (null si no hay) |
 | `active_company_name` | `?string` | Nombre comercial de la empresa activa |
 | `active_company_logo_url` | `?string` | URL absoluta del logo (si hay) |
-| `active_company_plan` | `?string` | Plan: `free` \| `pro` \| `enterprise` |
 | `active_branch_id` | `?string` | UUID de sede activa (#117). `null` cuando el contexto es consolidado (`?branch=all`). |
 | `role` | `?{id,name,is_system}` | Rol en empresa activa |
 | `permissions` | `string[]` | Slugs de features con `can_read=true` |
-| `companies` | `array` | Lista de empresas accesibles `{nit, name, status, linked, logo_url, plan}` |
+| `companies` | `array` | Lista de empresas accesibles `{nit, name, status, linked, logo_url}`. El campo `plan` fue retirado en #257 — la fuente del plan es `GET /api/v1/billing/subscription` (snapshot inmutable de la `Subscription` activa). |
 | `branches` | `array` | Sedes accesibles en la empresa activa `{id, name, is_default, archived_at}` |
 | `iat`, `exp` | `int` | Timestamps Unix |
 | `issued_at`, `expires_at` | `string` | Mismas fechas en ISO 8601 |

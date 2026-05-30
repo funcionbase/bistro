@@ -570,7 +570,7 @@ Content-Type: multipart/form-data (porque tiene archivo)
 
 **Controller** (`CompanyEnrollmentController::store`):
 1. En transacción:
-   - **Insert `companies`** con `status='pending_activation'`, `plan='free'`.
+   - **Insert `companies`** con `status='pending_activation'`. La columna `plan` fue eliminada en #257 — el plan vive en `subscriptions` (snapshot inmutable) y se crea al aprobar el registro vía `php artisan companies:approve`.
    - **Crea 3 roles del sistema** copiando templates desde `permission_templates`:
      ```php
      foreach (['owner', 'admin', 'employee'] as $type) {

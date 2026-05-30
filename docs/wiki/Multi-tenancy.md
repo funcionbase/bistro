@@ -12,7 +12,7 @@
 
 | Eje | Identificador | Propósito |
 |-----|---------------|-----------|
-| Empresa | `companies.nit` (DIAN) | Identidad tributaria, plan, marca, legales, billing. Inmutable post-creación (#193). |
+| Empresa | `companies.nit` (DIAN) | Identidad tributaria, marca, legales, billing. Inmutable post-creación (#193). El plan vive en `subscriptions` (#257). |
 | Sede | `branches.id` (UUID) | Unidad operativa: caja, mesas, menú, inventario, KDS, reportes. |
 
 - Las tablas globales (`companies`, `users`, `company_roles`, `permissions`,

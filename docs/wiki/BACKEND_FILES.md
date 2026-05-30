@@ -1112,7 +1112,16 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 - `App\Services\Dian\SaaSInvoiceDispatchService` + `App\Jobs\EmitDianInvoiceJob` — emisión DIAN para invoices SaaS (CUFE + consecutivo, ShouldBeUnique).
 - `App\Support\Money` — banker's rounding (PHP_ROUND_HALF_EVEN), applyPercent, extractBase, sum.
 - `App\Support\Nit\DvCalculator` — DV NIT algoritmo DIAN (factores 3..71).
-- Comandos artisan: `billing:backfill-default-plan`, `promo:create`, `promo:toggle`, `promo:apply`, `promo:cancel`.
+- Comandos artisan: `billing:backfill-default-plan`, `promo:create`, `promo:toggle`, `promo:apply`, `promo:cancel`, `companies:approve` (#257 — activa empresa `pending_activation`, asegura `Subscription` con snapshot, audita `company.activated`, dispara `CompanyRegistrationApprovedNotification`).
+
+**Servicios y notificaciones #257:**
+- `App\Services\BillingPlanPresenter::forSubscription(Subscription): array` — fuente única de presentación del plan en correos billing. Lee snapshots inmutables; cae a `BillingPlan` vivo solo para `description`, `currency`, `billing_cycle`, `price_includes_tax`. Loggea `billing.subscription_snapshot_missing` y `billing.plan_feature_label_missing` para detectar drift.
+- `App\Notifications\CompanyRegistrationApprovedNotification` — disparada cuando una empresa pasa de `pending_activation → active`. Receptores: `Company::usersToNotifyForBilling()` (owners + admins activos). Cuerpo: nombre del plan, precio, capacidades amigables, noticia tributaria, fecha fin de trial.
+- `App\Notifications\Contracts\BillingNotificationContract` — contrato que TODAS las notifs billing implementan. Exige `idempotencyKey()`, `dispatchMetadata()`, `companyNit()`. Garantiza tracking + defensa contra duplicados.
+- `App\Services\NotificationDispatchTracker::dispatchOnce(User, Notification)` — envuelve `$user->notify()` con INSERT a `notification_dispatches` (UNIQUE compuesto). Si conflict → skip silencioso + log `notification.dispatch_skipped_duplicate`. Si otro error de BD → log + re-throw (no se envía sin tracking). Doble capa de proteccion sobre los markers `*_notified_at` (a nivel empresa).
+- `notification_dispatches` (tabla) — registro append-only de envíos. UUID id, `notification_class`, `idempotency_key`, `user_id` (uuid FK users), `company_nit`, `target_email` (snapshot), `sent_at`, `metadata` JSONB. Indexada por `(company_nit, notification_class, sent_at)` y `(user_id, sent_at)` para queries históricas. No se borra.
+- `config/billing_plan_features.php` — mapeo `slug → label amigable` de features y regímenes tributarios. Cuando un slug no tiene label, se omite + warn (no se muestra slug crudo).
+- `Company::usersToNotifyForBilling(): Collection<User>` — destinatarios canónicos de notifs billing: owners + admins activos, deduplicados. Filtro: `is_system=true` AND `LOWER(name) IN (Propietario, Administrador)`. Excluye empleados.
 
 ### Multi-sede / multi-bodega (#117, #120)
 
