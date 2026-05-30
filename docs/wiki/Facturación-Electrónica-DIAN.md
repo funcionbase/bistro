@@ -66,16 +66,19 @@ DEE POS (`prefix=PO`) y otra para FEV (`prefix=FE`).
 
 ## Configuración por empresa
 
-`Configuración → Facturación DIAN` (owner-only, slug `dian.config.read`):
+El **perfil fiscal del emisor** (DV, representante legal, CIIU, responsabilidades
+fiscales DIAN, municipio DANE, contacto fiscal del emisor) se edita desde
+`Mi Empresa → Información` (sección "Datos fiscales"), gateado con `company.fiscal_profile` (owner-only)
+— no desde la pantalla DIAN.
 
-1. **Perfil fiscal** — DV, representante legal, CIIU, responsabilidades
-   fiscales DIAN, municipio DANE, contacto fiscal del emisor.
-2. **Proveedor** — slug, credenciales encrypted at rest, ambiente
+`Configuración → Facturación DIAN` (owner-only, slug `dian.config.read`) cubre:
+
+1. **Proveedor** — slug, credenciales encrypted at rest, ambiente
    habilitación/producción, webhook_secret.
-3. **Resoluciones** — registra resoluciones autorizadas por DIAN
+2. **Resoluciones** — registra resoluciones autorizadas por DIAN
    (prefijo + rango + clave técnica). UNIQUE parcial: 1 activa por
    (company, document_type, environment).
-4. **Cliente por defecto** — override opcional del CONSUMIDOR FINAL DIAN
+3. **Cliente por defecto** — override opcional del CONSUMIDOR FINAL DIAN
    estándar (NIT 222222222222).
 
 ---

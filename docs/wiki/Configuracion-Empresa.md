@@ -54,7 +54,8 @@ Toda la configuración de empresa está scopeada por `EnsureCompanyAccess` (inye
 |------|-------|-------|-------|
 | `company.update` | RCUD | RCUD | Datos administrativos + preferencias |
 | `billing.read` | RCUD | RCUD | Lista de facturas + plan en `/company/settings` tab "Facturación" |
-| `dian.config` | RCUD | RCUD | Perfil fiscal, resoluciones, provider, default recipient (escritura) |
+| `company.fiscal_profile` | RCUD | ---- | Perfil fiscal del emisor (DV, representante legal, CIIU, responsabilidades, municipio, contacto/dirección de facturación). Se edita desde `/company/settings` → "Información". **Owner-only por template** (admin/operativos = ----); owner/admin/employee bypassean por `is_system`, los roles operativos quedan restringidos. |
+| `dian.config` | RCUD | RCUD | Resoluciones, provider, default recipient (escritura). **Ya no** cubre el perfil fiscal. |
 | `dian.default_recipient` | RCUD | RCUD | Update/delete del adquirente por defecto |
 | `dian.recipients` | RCUD | --U- | Lookup + completado DIAN-profile del cliente (operativo) |
 | `dian.documents` | RCUD | RCUD | CRUD de electronic documents |
@@ -194,8 +195,8 @@ Todas las rutas con prefijo `/api/v1/dian/`. Las globales de empresa no llevan `
 
 | Método | Ruta | Permission |
 |--------|------|------------|
-| `GET` | `/api/v1/dian/fiscal-profile` | `dian.config,read` |
-| `PUT` | `/api/v1/dian/fiscal-profile` | `dian.config,update` |
+| `GET` | `/api/v1/dian/fiscal-profile` | `company.fiscal_profile,read` (se edita desde `/company/settings` → "Información") |
+| `PUT` | `/api/v1/dian/fiscal-profile` | `company.fiscal_profile,update` (owner-only por template) |
 | `GET` | `/api/v1/dian/resolutions` | `dian.config,read` |
 | `POST` | `/api/v1/dian/resolutions` | `dian.config,create` |
 | `PUT` | `/api/v1/dian/resolutions/{resolution}` | `dian.config,update` |
@@ -259,8 +260,8 @@ Ver `WhatsApp-Bot.md` para flow completo (Embedded Signup, NaaS, OTP, webhook).
 
 ### Configurar DIAN (perfil fiscal + resolución)
 
-1. Owner abre `/company/dian`. UI llama `GET /api/v1/dian/fiscal-profile`, `/dian/resolutions`, `/dian/provider-config`, `/dian/default-recipient`.
-2. **Perfil fiscal**: `PUT /api/v1/dian/fiscal-profile` con razón social, dirección, régimen tributario, responsabilidades fiscales, código CIIU.
+1. **Perfil fiscal del emisor** (DV, representante legal, CIIU, responsabilidades, municipio, contacto/dirección de facturación): se completa desde `/company/settings` → "Información" (sección "Datos fiscales"), `PUT /api/v1/dian/fiscal-profile` gateado con `company.fiscal_profile` (owner-only por template; roles de sistema bypassean). NO está en `/company/dian`.
+2. Owner abre `/company/dian` para el resto: UI llama `GET /api/v1/dian/resolutions`, `/dian/provider-config`, `/dian/default-recipient`.
 3. **Resolución**: `POST /api/v1/dian/resolutions` con `prefix`, rango `from`–`to`, `valid_from`/`valid_until`, `technical_key`. El sistema valida no solapamiento con resoluciones activas.
 4. **Provider**: `PUT /api/v1/dian/provider-config` selecciona `provider` (whitelist en `DianProviderFactory`), credenciales y `environment` (`habilitacion` para pruebas, `produccion` para PDN).
 5. **Default recipient**: `PUT /api/v1/dian/default-recipient` define el adquirente genérico (cliente POS sin RUT).
