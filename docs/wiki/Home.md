@@ -29,7 +29,7 @@ Dominios funcionales principales:
 | Capa | Tecnología |
 |------|-----------|
 | Backend | Laravel 12 + PHP 8.2 |
-| SPA | React 19 + TypeScript + Inertia.js v2 (capa parcial) |
+| SPA | React 19 + TypeScript + React Router v7 + TanStack Query v5 (sin Inertia) |
 | Build SPA | Vite + Cloudflare Worker (entry `application/frontend/src/spa/main.tsx`) |
 | Estilos | Tailwind CSS v4 + Design System v3.1 |
 | Base de datos | PostgreSQL |

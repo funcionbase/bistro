@@ -1,8 +1,10 @@
 # Frontend
 
 > Estado: Estable
-> Versión React: 19 / Inertia: v2 / Tailwind: v4
+> Versión React: 19 / React Router: v7 / TanStack Query: v5 / Tailwind: v4
 > Owner: equipo de plataforma
+
+> **Arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query**, desacoplado de la API Laravel (`application/frontend/`, build y deploy propios en Cloudflare). **NO usa Inertia en el lado React** — `@inertiajs/react` ni siquiera está instalado. El backend solo sirve `/api/v1/*`. Quedan 4 controllers web que usan `Inertia::render` (dashboard legacy, kds-standalone, company-preferences, public-menu-page), pero el SPA no los consume y su `Inertia::defer()` está inerte. Cualquier referencia a "deferred props", `useForm`, `usePage` o `<Deferred>` de Inertia en este documento es **legacy** y no aplica al SPA actual.
 
 ---
 
@@ -105,51 +107,64 @@ application/frontend/src/
 
 ---
 
-## Patrones Inertia v2
+## Patrones de carga (React Router + React Query)
 
-### Deferred props con skeleton
+> Esta sección reemplaza a la antigua "Patrones Inertia v2". El SPA **no usa Inertia**: la navegación es client-side con React Router y los datos se cargan con TanStack React Query (`src/lib/query-client.ts`, defaults: `staleTime 30s`, sin refetch on focus).
 
-```tsx
-import { Deferred } from '@inertiajs/react';
+### Routing + skeleton al navegar
 
-<Deferred data="summary" fallback={<Skeleton className="h-32 w-full" />}>
-  <SummaryPanel />
-</Deferred>
-```
-
-### Recarga parcial
+Las páginas se importan `lazy()` (code-split por ruta) en `src/spa/router.tsx`. El `<Suspense>` vive en `src/layouts/spa-app-layout.tsx` y muestra el fallback de carga mientras llega el chunk de la ruta destino. El sidebar/header permanecen montados; solo el área de contenido cambia.
 
 ```tsx
-router.reload({ only: ['summary', 'heatmap', 'abandonment'] });
+// src/layouts/spa-app-layout.tsx
+<AppSidebarLayout>
+  <Suspense fallback={<RouteSkeleton />}>
+    <Outlet />
+  </Suspense>
+</AppSidebarLayout>
 ```
 
-Usado por `usePeriodFilter` para refrescar solo los props del dashboard al cambiar el período.
+> **Regla (#269):** el fallback de navegación debe calcar la silueta de la pantalla destino (skeleton del shell de página), no un spinner genérico. Cada ruta pesada expone su `*-skeleton.tsx` en `components/ui/`.
+
+### Carga progresiva por sección (equivalente SPA a "deferred")
+
+En vez de bloquear toda la página hasta que el último endpoint responda, se descompone en **una query crítica** (contenido principal) + **N queries secundarias** (KPIs, charts, agregados), cada una con su propio skeleton. Patrón de referencia: `src/pages/dashboard.tsx`.
+
+```tsx
+import { useQuery } from '@tanstack/react-query';
+
+const summary = useQuery({ queryKey: ['dashboard','summary', period], queryFn: ... });
+// ... render: {summary.isPending ? <MetricCardSkeleton /> : <KpiCard data={summary.data} />}
+```
+
+### Refetch / cambio de filtro
+
+```tsx
+// Re-ejecuta solo las queries cuyo queryKey incluye el filtro cambiado.
+const q = useQuery({ queryKey: ['inventory', branchFilter], queryFn: ... });
+// o invalidación explícita tras una mutación:
+queryClient.invalidateQueries({ queryKey: ['inventory'] });
+```
 
 ### Polling
 
 ```tsx
-router.reload({ only: ['active_orders'], preserveScroll: true });
-// invocado cada 30s vía useEffect + setInterval
+// Por query (preferido para freshness real: kanban, KDS, comanda):
+useQuery({ queryKey: ['orders'], queryFn: ..., refetchInterval: 30_000 });
+// Para widgets sueltos: useWidgetFetch (polling configurable, auto-pausa sin foco).
 ```
-
-Para datos del cliente (no de Inertia), usar `useWidgetFetch` con polling configurable.
 
 ### Prefetch al hover
 
-```tsx
-<Link href={`/menu/${id}`} prefetch>
-  Editar
-</Link>
-```
-
-### Flash data
+`AppLink` (`src/components/app-link.tsx`) mapea a `prefetch='intent'` de React Router. Para precalentar **datos** además del chunk, usar `queryClient.prefetchQuery` en el handler de hover (ver #269 Fase 4).
 
 ```tsx
-const { flash } = usePage().props;
-useEffect(() => {
-  if (flash.success) toast.success(flash.success);
-}, [flash]);
+<AppLink href={`/menu/${id}`} prefetch>Editar</AppLink>
 ```
+
+### Toasts / mensajes
+
+No hay `flash` de Inertia. Los mensajes de éxito/error se disparan tras la respuesta de `apiFetch`/mutación con el toaster del DS.
 
 ---
 
@@ -253,10 +268,13 @@ import RoleBadge from '@/components/role-badge';
 ### Sidebar item con permiso
 
 ```tsx
-const { permissions } = usePage<SharedData>().props;
+import { usePermissions } from '@/hooks/use-permissions';
+import { AppLink } from '@/components/app-link';
+
+const { permissions } = usePermissions();
 {permissions.includes('menu') && (
   <SidebarMenuButton asChild>
-    <Link href="/menu"><Utensils /> Menú</Link>
+    <AppLink href="/menu"><Utensils /> Menú</AppLink>
   </SidebarMenuButton>
 )}
 ```
@@ -265,27 +283,9 @@ const { permissions } = usePage<SharedData>().props;
 
 ## Patrón estándar de formulario
 
-Dos variantes usadas en el repo:
+El SPA usa un único patrón: **`apiFetch`/`useQuery` + `useState`** contra la API JSON. (El antiguo patrón Inertia `useForm` ya no aplica — `@inertiajs/react` no está instalado.)
 
-### A) Inertia `useForm` (cuando el endpoint redirige)
-
-```tsx
-import { useForm } from '@inertiajs/react';
-
-const { data, setData, post, processing, errors } = useForm({
-  email: '',
-  password: '',
-});
-
-function handleSubmit(e: FormEvent) {
-  e.preventDefault();
-  post(route('login'), {
-    onError: () => {/* errors[] poblado automáticamente */},
-  });
-}
-```
-
-### B) `apiFetch` + `useState` (cuando el endpoint devuelve JSON)
+### `apiFetch` + `useState` (el endpoint devuelve JSON)
 
 ```tsx
 const [errors, setErrors] = useState<FieldErrors>({});
@@ -357,7 +357,7 @@ const { data, role, canCreate, canUpdate, canDelete } = useMenuDetail(menuId);
 
 | Mecanismo | Dónde | Para qué |
 |-----------|-------|----------|
-| `permissions` array (JWT → Inertia shared props) | `usePage<SharedData>().props.permissions` | Mostrar/ocultar items del sidebar |
+| `permissions` array (vía `GET /api/v1/bootstrap` → `SpaSharedDataBridge`) | `usePermissions()` / `useSharedData().permissions` (`src/lib/shared-data.tsx`) | Mostrar/ocultar items del sidebar |
 | `NavItem.permission` en `app-sidebar.tsx` | Sidebar | Filtra rutas por feature |
 | Props `canCreate/canUpdate/canDelete` | Pasadas página → componente | Mostrar/ocultar botones |
 | `actorPermissions` + `disabledCheck` en `UserPermissionsEditor` | Edición de overrides | Limita al actor |
