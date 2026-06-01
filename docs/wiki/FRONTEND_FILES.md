@@ -1,8 +1,10 @@
 # FRONTEND_FILES.md — Inventario Técnico Frontend
 
-> Referencia técnica completa del frontend React 19 + TypeScript + Inertia.js v2 + Tailwind v4.
+> Referencia técnica completa del frontend React 19 + TypeScript + React Router v7 + TanStack Query v5 + Tailwind v4.
 > Documento canónico para desarrollo, troubleshooting y manuales operativos.
 > Cubre: páginas, componentes, hooks, layouts, librerías, tipos, autenticación, polling, RBAC y limitaciones conocidas.
+
+> ⚠️ **Corrección de arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query** en `application/frontend/src/`; **NO usa Inertia** (`@inertiajs/react` no está instalado). Las menciones a "Inertia", "deferred props Inertia", "Inertia shared props" y las rutas `resources/js/...` de este documento son **legacy** del monolito previo y están pendientes de limpieza. Hoy: rutas en `src/spa/router.tsx` (lazy + Suspense), datos vía `useQuery`/`apiFetch`, contexto global vía `GET /api/v1/bootstrap` → `SpaSharedDataBridge`/`useBootstrap()`. Ver `Frontend.md` para los patrones vigentes.
 
 ---
 
@@ -12,9 +14,10 @@
 |-----------|---------|-------|
 | React | 19 | Sólo function components + hooks; sin class components |
 | TypeScript | 5.x | strict mode |
-| Inertia.js | v2 | SPA con routing server-side; deferred props, polling Inertia, prefetching |
+| React Router | v7 | SPA client-side; rutas lazy + Suspense en `src/spa/router.tsx` |
+| TanStack React Query | v5 | Carga de datos, cache y polling (`src/lib/query-client.ts`) |
 | Tailwind CSS | v4 | Utility-first; tokens en `tailwind.config.ts` |
-| Vite | — | Bundler; entry `resources/js/app.tsx` |
+| Vite | — | Bundler; entry `application/frontend/src/spa/main.tsx` |
 | @dnd-kit | — | Drag-and-drop (menú, kanban) |
 | @tanstack/react-table | — | Tablas (parcial) |
 | lucide-react | — | Iconos |
