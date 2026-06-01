@@ -488,7 +488,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 | `branch-switcher.tsx` | Multi-sede (#117): dropdown bajo la identidad de empresa con todas las sedes accesibles del usuario. Muestra ícono `MapPin`, badge `Star` para la default. Si el usuario tiene `branches.manage`, incluye link "Gestionar sedes" → `/company/branches`. Persiste última sede en `localStorage` y refresca via `POST /api/v1/auth/switch-branch` |
 | `app-sidebar-header.tsx` | Header sticky con `backdrop-blur`. Trigger sidebar + breadcrumbs. Altura `h-14 sm:h-16` |
 | `nav-footer.tsx` | Footer del sidebar con enlaces externos |
-| `nav-main.tsx` | Lista de items recursiva (con sub-children) |
+| `nav-main.tsx` | Lista de items recursiva (con sub-children). **#268**: `filterByPermissions` es la única fuente de verdad de visibilidad RBAC — los items sin permiso se ocultan por completo (no se tachan) antes de renderizar; los componentes de render (`CollapsibleNavGroup`, `CollapsedFlyoutGroup`, etc.) asumen el árbol ya filtrado y no re-chequean permisos. `comingSoon` se conserva como "Pronto disponible". Owner (`is_system`) bypasea vía `canAccess` |
 | `nav-user.tsx` | Avatar + dropdown con Settings + Logout |
 | `user-menu-content.tsx` | Contenido del dropdown |
 | `user-info.tsx` | Avatar + nombre + email opcional |
