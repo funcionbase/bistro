@@ -573,7 +573,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 | `use-mobile.tsx` | `boolean` | `resize` listener | `true` si viewport < 768px |
 | `use-mobile-navigation.ts` | `{isOpen, toggle, close}` | — | Sidebar móvil |
 | `use-bottom-sheet.ts` | `{isOpen, open, close}` | — | Bottom sheet móvil |
-| `use-keyboard-shortcut.ts` | `void` | Listener global keydown | Registra atajos. Inactivo en inputs/textareas. Valida contra `CHROME_RESERVED_SHORTCUTS` |
+| `use-keyboard-shortcut.ts` | `useKeyboardShortcut`, `RESERVED_SHORTCUTS`, `isReserved`, `normalizeKeys`, `isFocusInInput` | Acorde con modificador + utilidades | Registra acordes puntuales (no la navegación — esa va por `GlobalShortcuts`). Valida contra `RESERVED_SHORTCUTS` (navegador + SO). Inactivo en inputs/textareas |
 
 ### Resumen de polling
 
@@ -605,27 +605,30 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 | `layouts/auth/auth-split-layout.tsx` | público | `children`, `title`, `description` | Dos columnas (decorativa + form) |
 | `layouts/settings/layout.tsx` | autenticado | `children` | Layout de subnavegación de `/settings/*` |
 
-### Atajos de teclado registrados en `AppLayout`
+### Atajos de teclado (motor `GlobalShortcuts`)
 
-| Atajo | Acción | Función |
-|-------|--------|---------|
-| `Alt + H` | Dashboard | `goDashboard` |
-| `Alt + I` | Mi Empresa › Información | `goCompanySettings` |
-| `Alt + G` | Mi Empresa › Preferencias | `goCompanyPrefs` |
-| `Alt + T` | Mi Empresa › Métricas | `goMetrics` |
-| `Alt + R` | Mi Empresa › Informes | `goReports` |
-| `Alt + U` | Identidades › Usuarios | `goUsers` |
-| `Alt + L` | Identidades › Roles | `goRoles` |
-| `Alt + J` | Órdenes › Caja | `goCaja` |
-| `Alt + O` | Órdenes › Tablero | `goBoard` |
-| `Alt + E` | Órdenes › Pedidos del día | `goDeliveries` |
-| `Alt + M` | Menú | `goMenu` |
-| `Alt + S` | Chats | `goChats` |
-| `Alt + P` | Cupones | `goCoupons` |
-| `Alt + B` | Horarios | `goHours` |
-| `?` | Modal de ayuda | `showHelp` |
+> Rediseño anti-conflictos (#50). Antes eran `Alt+<letra>` (chocaban con macOS Option-chars y mnemónicos de menú de Firefox/Windows) y además estaban inertes tras la migración SPA. Ahora la navegación usa **secuencias con tecla líder `G`** ("go to"): se pulsa `G` y luego la tecla del destino. Sin modificadores e inactivos en inputs → no se cruzan con navegador/SO.
 
-Mapa canónico en `resources/js/lib/shortcuts.ts` (`APP_SHORTCUTS`). Validados contra `CHROME_RESERVED_SHORTCUTS` (`hooks/use-keyboard-shortcut.ts`). Inactivos cuando el foco está en input/textarea/contenteditable.
+| Atajo | Acción | Ruta |
+|-------|--------|------|
+| `G` luego `D` | Dashboard | `/dashboard` |
+| `G` luego `O` | Órdenes › Tablero | `/orders/board` |
+| `G` luego `C` | Órdenes › Caja | `/orders/cashier` |
+| `G` luego `V` | Órdenes › Ventas del día | `/orders/deliveries` |
+| `G` luego `M` | Menú | `/menu` |
+| `G` luego `S` | Chats | `/chats` |
+| `G` luego `P` | Cupones | `/coupons` |
+| `G` luego `H` | Horarios | `/hours` |
+| `G` luego `E` | Mi Empresa › Información | `/company/settings` |
+| `G` luego `F` | Mi Empresa › Configuraciones | `/company/preferences` |
+| `G` luego `T` | Mi Empresa › Métricas | `/company/metrics` |
+| `G` luego `R` | Mi Empresa › Informes | `/company/reports` |
+| `G` luego `U` | Identidades › Usuarios | `/identities/users` |
+| `G` luego `L` | Identidades › Roles | `/identities/roles` |
+| `Ctrl/Cmd + .` | Toggle barra lateral | — (en `ui/sidebar.tsx`) |
+| `?` | Modal de ayuda | — |
+
+Mapa canónico en `src/lib/shortcuts.ts` (`APP_SHORTCUTS`). Motor de secuencias en `src/components/global-shortcuts.tsx`, montado en `src/layouts/spa-app-layout.tsx`. Acordes con modificador validados contra `RESERVED_SHORTCUTS` (`src/hooks/use-keyboard-shortcut.ts`). Inactivos cuando el foco está en input/textarea/contenteditable.
 
 ---
 
@@ -640,7 +643,7 @@ Mapa canónico en `resources/js/lib/shortcuts.ts` (`APP_SHORTCUTS`). Validados c
 | `lib/calculate-discount.ts` | `calculateDiscount(coupon, total)` | Cálculo monto descuento |
 | `lib/coupon-helpers.ts` | `getCouponStatus`, `getDiscountLabel`, `formatScheduleSummary`, `WEEKDAYS_ES` | Helpers de UI para cupones (formato tipo, valor, estado, resumen de programación happy hour #125) |
 | `lib/generate-coupon-code.ts` | `generateCouponCode()` | Random alfanumérico mayúscula |
-| `lib/shortcuts.ts` | `APP_SHORTCUTS`, `CHROME_RESERVED_SHORTCUTS` | Mapa canónico de atajos sidebar + lista de combinaciones reservadas por Chrome (evita conflictos) |
+| `lib/shortcuts.ts` | `APP_SHORTCUTS`, `LEADER_KEY`, `SEQUENCE_TIMEOUT_MS`, `TOOLTIP_DELAY_MS` | Mapa canónico de atajos (navegación por secuencias `G`+tecla). La lista de combinaciones reservadas (navegador+SO) vive en `hooks/use-keyboard-shortcut.ts` (`RESERVED_SHORTCUTS`) |
 | `lib/order-status.ts` | `ORDER_STATUS_FALLBACK`, `statusLabel`, `statusBadgeClass`, `isOperational`, `isRevenue`, `isTerminal` | SSoT de estados de orden en frontend. Fallback embebido espejo de `config/orders.php`. Consume shared props vía `useOrderStatuses()` |
 | `lib/tax.ts` | `calculateTaxLine(price, qty, rate, included)`, `aggregateTax(lines)` | Espejo del backend `TaxCalculator` para preview UX en caja/mesas. El backend recalcula al persistir |
 | `lib/datetime.ts` | `toBogotaDate`, `parseBogotaIso`, `formatBogotaTime`, `dayOfWeekShort` | Helpers timezone `America/Bogota`. Evita drift del navegador del operador |

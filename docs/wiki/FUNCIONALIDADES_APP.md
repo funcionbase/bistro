@@ -6144,27 +6144,29 @@ Vista **sólo lectura** — para acciones de edición se usa `/settings/profile`
 
 ---
 
-## 19. Atajos de teclado (sidebar)
+## 19. Atajos de teclado
 
-Mapa canónico en `resources/js/lib/shortcuts.ts`. Validados contra `CHROME_RESERVED_SHORTCUTS`. Inactivos cuando el foco está en input/textarea/contenteditable. Tooltips en sidebar muestran el atajo a los 3s de hover.
+Mapa canónico en `src/lib/shortcuts.ts`. Motor de secuencias en `src/components/global-shortcuts.tsx` (montado en el shell autenticado). Inactivos cuando el foco está en input/textarea/contenteditable.
+
+**Rediseño anti-conflictos (#50):** la navegación usa el patrón **"go to" con tecla líder `G`** — se pulsa `G` y, dentro de 1.5s, la tecla del destino (ej. `G` luego `D` → Dashboard). Antes era `Alt+<letra>`, que choca con comandos del navegador y del SO: en macOS `Option+<letra>` inserta caracteres especiales (µ, π…) y en Firefox/Windows `Alt+<letra>` activa los mnemónicos de menú. Al no usar modificadores, las secuencias no se cruzan con navegador, Windows/macOS ni otros programas. Los pocos acordes que quedan se validan contra `RESERVED_SHORTCUTS` (`hooks/use-keyboard-shortcut.ts`).
 
 | Atajo | Sección | Ruta |
 |-------|---------|------|
-| `Alt + H` | Dashboard | `/dashboard` |
-| `Alt + I` | Mi Empresa › Información | `/company/settings` |
-| `Alt + G` | Mi Empresa › Preferencias | `/company/preferences` |
-| `Alt + T` | Mi Empresa › Métricas | `/company/metrics` |
-| `Alt + R` | Mi Empresa › Informes | `/company/reports` |
-| `Alt + U` | Identidades › Usuarios | `/identities/users` |
-| `Alt + L` | Identidades › Roles | `/identities/roles` |
-| `Alt + J` | Órdenes › Caja | `/orders/cashier` |
-| `Alt + O` | Órdenes › Tablero | `/orders/board` |
-| `Alt + E` | Órdenes › Entregas | `/orders/deliveries` |
-| `Alt + M` | Menú | `/menu` |
-| `Alt + S` | Chats | `/chats` |
-| `Alt + P` | Cupones | `/coupons` |
-| `Alt + B` | Horarios | `/hours` |
-| `Ctrl + B` | Toggle sidebar | — |
+| `G` luego `D` | Dashboard | `/dashboard` |
+| `G` luego `O` | Órdenes › Tablero | `/orders/board` |
+| `G` luego `C` | Órdenes › Caja | `/orders/cashier` |
+| `G` luego `V` | Órdenes › Ventas del día | `/orders/deliveries` |
+| `G` luego `M` | Menú | `/menu` |
+| `G` luego `S` | Chats | `/chats` |
+| `G` luego `P` | Cupones | `/coupons` |
+| `G` luego `H` | Horarios | `/hours` |
+| `G` luego `E` | Mi Empresa › Información | `/company/settings` |
+| `G` luego `F` | Mi Empresa › Configuraciones | `/company/preferences` |
+| `G` luego `T` | Mi Empresa › Métricas | `/company/metrics` |
+| `G` luego `R` | Mi Empresa › Informes | `/company/reports` |
+| `G` luego `U` | Identidades › Usuarios | `/identities/users` |
+| `G` luego `L` | Identidades › Roles | `/identities/roles` |
+| `Ctrl/Cmd + .` | Toggle barra lateral | — |
 | `?` | Modal de ayuda | — |
 
 ---
@@ -6913,8 +6915,9 @@ Tabla larga con causa → comportamiento esperado → status code → ubicación
 | Pérdida de conexión durante drag-drop kanban | Estado revierte; toast "Error de conexión, intenta de nuevo" |
 | `lib/api.ts` recibe 401 con "revoc"/"invalid"/"expired" | `clearToken()` + `router.visit('/')` |
 | Cambio de empresa mientras hay un modal abierto | Modal se cierra; toda la app re-renderiza |
-| Atajo `Alt+H` con foco en input | **No** dispara (validación `use-keyboard-shortcut`) |
-| Atajo conflictivo con Chrome (`Alt+D`) | Bloqueado por `CHROME_RESERVED_SHORTCUTS` |
+| Secuencia `G` `D` con foco en input | **No** dispara (`GlobalShortcuts` ignora inputs/textarea/contenteditable) |
+| Líder `G` sin segunda tecla en 1.5s | Secuencia se cancela; no pasa nada |
+| Acorde reservado por navegador/SO (`Ctrl+B`, `Alt+D`…) | No se usa para atajos de la app; validado contra `RESERVED_SHORTCUTS` |
 | `usePoll` Inertia pierde la pestaña | Sigue (hasta unmount) — TODO pausar en hidden |
 | `useLivePolling` no se renueva tras 5 min | Se apaga solo (auto-off); operador debe re-activar |
 | `useImageUpload` validation falla | No envía request; muestra error en componente |
