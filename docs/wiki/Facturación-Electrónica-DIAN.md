@@ -213,7 +213,7 @@ El backend es la única autoridad de emisión:
 | Robo de tokens del provider | Cast `encrypted` en BD; jamás en GET. |
 | Webhook falso | HMAC inválido → 401. |
 | Webhook con provider no whitelist | Regex de ruta + check controller → 404. |
-| Robo de XML/PDF | URLs S3 firmadas TTL 15 min + endpoint con `permission:dian.documents,read`. |
+| Robo de XML/PDF | URLs S3 firmadas TTL 15 min + endpoint con `permission:dian.documents.read,read`. |
 
 ---
 

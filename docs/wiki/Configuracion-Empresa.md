@@ -16,7 +16,7 @@ Pantallas cubiertas:
 |------|-----------|--------------|
 | `/company/settings` | Información administrativa (banca, branding, fiscal) | `company.update,update` |
 | `/company/preferences` | Preferencias operativas (regional, pedidos, notificaciones, branding del menú público) | `company.update,read` / `update` |
-| `/company/dian` | Configuración de facturación electrónica DIAN | `dian.config,read` / `update` |
+| `/company/dian` | Configuración de facturación electrónica DIAN | `dian.config.read,read` / `dian.config.write,update` |
 | `/company/whatsapp` | Conexión y preferencias del número de WhatsApp Cloud API | `whatsapp.read` / `whatsapp.connect` / `whatsapp.swap_phone` / `whatsapp.disconnect` |
 | `/company/kds` | Estaciones KDS y tokens de tablet | `kds_stations,*` |
 | `/company/printers` | Impresoras térmicas por sede | `printers.manage,*` |
@@ -197,25 +197,25 @@ Todas las rutas con prefijo `/api/v1/dian/`. Las globales de empresa no llevan `
 |--------|------|------------|
 | `GET` | `/api/v1/dian/fiscal-profile` | `company.fiscal_profile,read` (se edita desde `/company/settings` → "Información") |
 | `PUT` | `/api/v1/dian/fiscal-profile` | `company.fiscal_profile,update` (owner-only por template) |
-| `GET` | `/api/v1/dian/resolutions` | `dian.config,read` |
-| `POST` | `/api/v1/dian/resolutions` | `dian.config,create` |
-| `PUT` | `/api/v1/dian/resolutions/{resolution}` | `dian.config,update` |
-| `DELETE` | `/api/v1/dian/resolutions/{resolution}` | `dian.config,delete` |
-| `GET` | `/api/v1/dian/provider-config` | `dian.config,read` |
-| `PUT` | `/api/v1/dian/provider-config` | `dian.config,update` |
-| `GET` | `/api/v1/dian/default-recipient` | `dian.config,read` |
-| `PUT` | `/api/v1/dian/default-recipient` | `dian.default_recipient,update` |
-| `DELETE` | `/api/v1/dian/default-recipient` | `dian.default_recipient,delete` |
-| `GET` | `/api/v1/dian/recipients/lookup` | `dian.recipients,read` (+ `branch.access`) |
-| `PUT` | `/api/v1/dian/recipients/{contact}/dian-profile` | `dian.recipients,update` (+ `branch.access`) |
-| `GET` | `/api/v1/dian/documents` | `dian.documents,read` (+ `branch.access` + `branch.consolidate`) |
-| `POST` | `/api/v1/dian/documents` | `dian.documents,create` |
-| `POST` | `/api/v1/dian/documents/{document}/retry` | `dian.documents,update` |
-| `POST` | `/api/v1/dian/documents/{document}/credit-note` | `dian.documents,update` |
-| `POST` | `/api/v1/dian/documents/{document}/convert-to-fev` | `dian.documents,update` |
+| `GET` | `/api/v1/dian/resolutions` | `dian.config.read,read` |
+| `POST` | `/api/v1/dian/resolutions` | `dian.config.write,update` |
+| `PUT` | `/api/v1/dian/resolutions/{resolution}` | `dian.config.write,update` |
+| `DELETE` | `/api/v1/dian/resolutions/{resolution}` | `dian.config.write,update` |
+| `GET` | `/api/v1/dian/provider-config` | `dian.config.read,read` |
+| `PUT` | `/api/v1/dian/provider-config` | `dian.config.write,update` |
+| `GET` | `/api/v1/dian/default-recipient` | `dian.config.read,read` |
+| `PUT` | `/api/v1/dian/default-recipient` | `dian.default_recipient.write,update` |
+| `DELETE` | `/api/v1/dian/default-recipient` | `dian.default_recipient.write,update` |
+| `GET` | `/api/v1/dian/recipients/lookup` | `dian.recipients.read,read` (+ `branch.access`) |
+| `PUT` | `/api/v1/dian/recipients/{contact}/dian-profile` | `dian.recipients.write,update` (+ `branch.access`) |
+| `GET` | `/api/v1/dian/documents` | `dian.documents.read,read` (+ `branch.access` + `branch.consolidate`) |
+| `POST` | `/api/v1/dian/documents` | `dian.documents.emit,create` |
+| `POST` | `/api/v1/dian/documents/{document}/retry` | `dian.documents.retry,update` |
+| `POST` | `/api/v1/dian/documents/{document}/credit-note` | `dian.documents.credit_note,create` |
+| `POST` | `/api/v1/dian/documents/{document}/convert-to-fev` | `dian.documents.emit,create` |
 | `POST` | `/api/v1/dian/documents/{document}/print` | `dian.print,update` |
-| `GET` | `/api/v1/dian/documents/{document}/xml` | `dian.documents,read` |
-| `GET` | `/api/v1/dian/documents/{document}/pdf` | `dian.documents,read` |
+| `GET` | `/api/v1/dian/documents/{document}/xml` | `dian.documents.read,read` |
+| `GET` | `/api/v1/dian/documents/{document}/pdf` | `dian.documents.read,read` |
 | `POST` | `/api/v1/webhooks/dian/{provider}` | público (HMAC validado) |
 
 Ver `Facturación-Electrónica-DIAN.md` para detalles del modelo, providers soportados (`facturalo`, `factus`), CUFE, ambientes (`habilitacion` / `produccion`) y notas crédito.
