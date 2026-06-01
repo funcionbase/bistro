@@ -6150,6 +6150,8 @@ Mapa canónico en `src/lib/shortcuts.ts`. Motor de secuencias en `src/components
 
 **Rediseño anti-conflictos (#50):** la navegación usa el patrón **"go to" con tecla líder `G`** — se pulsa `G` y, dentro de 1.5s, la tecla del destino (ej. `G` luego `D` → Dashboard). Antes era `Alt+<letra>`, que choca con comandos del navegador y del SO: en macOS `Option+<letra>` inserta caracteres especiales (µ, π…) y en Firefox/Windows `Alt+<letra>` activa los mnemónicos de menú. Al no usar modificadores, las secuencias no se cruzan con navegador, Windows/macOS ni otros programas. Los pocos acordes que quedan se validan contra `RESERVED_SHORTCUTS` (`hooks/use-keyboard-shortcut.ts`).
 
+**Palette al sostener `G` (`ShortcutPalette`):** si en vez de un tap rápido se **mantiene pulsada** la tecla `G` (~350ms), aparece un overlay que oscurece la UI y lista los destinos con su segunda tecla; se elige sin soltar `G`, o se cierra al soltar / con `Esc`. Cubre el caso de quien no recuerda el atajo. Maneja auto-repeat del teclado y el `blur` de ventana (Alt+Tab) para no quedar pegado.
+
 | Atajo | Sección | Ruta |
 |-------|---------|------|
 | `G` luego `D` | Dashboard | `/dashboard` |

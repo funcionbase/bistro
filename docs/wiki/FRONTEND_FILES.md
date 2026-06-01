@@ -628,7 +628,9 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 | `Ctrl/Cmd + .` | Toggle barra lateral | — (en `ui/sidebar.tsx`) |
 | `?` | Modal de ayuda | — |
 
-Mapa canónico en `src/lib/shortcuts.ts` (`APP_SHORTCUTS`). Motor de secuencias en `src/components/global-shortcuts.tsx`, montado en `src/layouts/spa-app-layout.tsx`. Acordes con modificador validados contra `RESERVED_SHORTCUTS` (`src/hooks/use-keyboard-shortcut.ts`). Inactivos cuando el foco está en input/textarea/contenteditable.
+Mapa canónico en `src/lib/shortcuts.ts` (`APP_SHORTCUTS`). Motor de secuencias en `src/components/global-shortcuts.tsx`, montado en `src/layouts/spa-app-layout.tsx`. Acordes con modificador validados contra `RESERVED_SHORTCUTS` (`src/hooks/use-keyboard-shortcut.ts`). Inactivos cuando el foco está en input/textarea/contenteditable (guard en `keydown` + `focusin` cancela cualquier secuencia armada al entrar a un campo).
+
+**Sostener `G`** (~350ms) abre `src/components/shortcut-palette.tsx`: overlay que oscurece la UI y lista los destinos con su segunda tecla (para elegir sin soltar `G`). Se cierra al soltar `G`, con `Esc`, o al perder foco la ventana.
 
 ---
 
