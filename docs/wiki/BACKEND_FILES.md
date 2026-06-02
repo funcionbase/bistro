@@ -657,6 +657,16 @@ Cálculo de `total`: siempre server-side desde el menú activo (línea 144 de `O
 
 `OrderController@appendItems` agrega ítems a una orden de mesa abierta (rechaza estados terminales). Lee precios del menú activo en DB y suma al `total` existente. Issue #89.
 
+**Notificaciones SMS al cliente (#275)** — Al mover una orden con `client_phone` a un estado relevante (`in_kitchen`, `ready`, `in_transit`, `completed`; lista en `config/order_notifications.php`, nunca hardcodeada) se envía **un** SMS vía Amazon SNS con nombre comercial + código corto de orden + estado.
+
+- **N-instance safe**: `OrderController::recordOrderStatusSmsIntent` hace `insertOrIgnore` en `order_sms_notifications` (UNIQUE `(order_id, to_status)`) **dentro** de la `DB::transaction` + `Order::lockForUpdate` de `updateStatus`/`closeWithPayment`. El segundo intento (otra EC2, doble click, reintento de cola) viola el unique y no reenvía. El publish se despacha con `SendOrderStatusSmsJob::dispatch(...)->afterCommit()` (cola `database`, `ShouldBeUnique`, guard por estado del registro).
+- **Teléfono**: `App\Support\PhoneNumber::toE164` normaliza a E.164 con default `+57`; inválido/ausente → no se envía (no rompe el flujo). El cuerpo se transifere a ASCII (GSM-7) en `SnsSmsSender` para mantener 1 segmento (costo).
+- **Identidad de origen**: envío internacional best-effort (CO no soporta Sender ID); el nombre comercial va en el cuerpo. `SMSType=Transactional`. Credenciales por IAM instance profile (`config/services.php` → `sns`); permiso `sns:Publish` en el app-role (IaC `02-security.yaml`). Master switch `SNS_SMS_ENABLED` (off en local/qa → registro `skipped`).
+- **Código corto de orden**: `Order::shortCode()` = dos primeros segmentos del UUID en mayúscula (ej. `019E7DA6-3C13`). Referencia visual, no clave única (UUIDv7 → segmentos = timestamp). Espejo frontend en `lib/order-code.ts`.
+- **Visibilidad por cliente (Fase 2)**: `App\Services\Sms\SmsChatLogger` persiste cada SMS (enviado o fallido) como `ChatMessage` (`sender='bot'`) en un `Chat` `source='sms'` (clave canónica = `contact.phone`); aparece en `/clients/{id}` (`CrmService::profile`) y `/chats`. Sin cambios de schema.
+- **Reportes (Fase 3)**: `GET /api/v1/metrics/sms/counts` (`MetricsController::smsCounts` → `MetricsService::getSmsCounts`) — total de empresa + desglose por sede (`COUNT(*) GROUP BY branch_id` en SQL), permiso `reports.read`, consolidación `branch.consolidate`. UI: `SmsSentCard` en `/company/reports`.
+- **Auditoría**: `order.sms_sent` / `order.sms_failed` (sin actor — system action de cola; teléfono enmascarado). Ver `constants/AUDIT_EVENTS.md`.
+
 #### Domicilios (`/api/v1/deliveries/*`)
 
 | Método | URL | Permiso |
