@@ -424,6 +424,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 | `cash-drawer-card.tsx` | Cierre de caja por fecha. Modo "Día específico" (default) con flechas ◀/▶ y atajos Hoy/Ayer; modo "Rango" con quick-buttons 7/30 días. Tabla por método (cobros/devoluciones/neto/propinas/conteo) + caja resaltada con efectivo esperado. Filtra por `paid_at` en TZ Bogotá. Botón Exportar PDF |
 | `cash-sessions-card.tsx` | Historial paginado de sesiones de caja (turnos). Estado, apertura/cierre con usuario, inicial/esperado/contado/diferencia. Diferencia coloreada (verde=cuadre, ámbar=sobrante, rojo=faltante) |
 | `export-pdf-button.tsx` | Botón con dropdown PDF/CSV; bloquea durante export y maneja errores |
+| `sms-sent-card.tsx` | SMS enviados al cliente por cambios de estado (#275). Total de empresa + desglose por sede en el período (Hoy/Semana/Mes/Rango); consume `GET /api/v1/metrics/sms/counts` (permiso `reports.read`, consolidación multi-sede). Monitorea gasto SNS |
 
 #### `components/deliveries/` (~9)
 

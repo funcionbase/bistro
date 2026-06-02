@@ -1491,6 +1491,10 @@ Página: `resources/js/pages/orders/tables/index.tsx`. Breadcrumb: `Dashboard �
 
 Página: `resources/js/pages/orders/board.tsx`. Breadcrumb: `Dashboard › Órdenes › Tablero`. Ruta: closure simple en `routes/web.php` con name `orders.board` (sin gate web — el gate efectivo está en la API).
 
+**Código corto de orden (#275)**: las tarjetas, el detalle y las mesas QR muestran `Orden #019E7DA6-3C13` (dos primeros segmentos del UUID en mayúscula vía `lib/order-code.ts`, espejo de `Order::shortCode()`) en lugar del UUID completo, que queda accesible en el tooltip. Es una referencia visual, no una clave única.
+
+**Notificación SMS al cliente (#275)**: al mover una orden con teléfono a `in_kitchen` / `ready` / `in_transit` / `completed` (o al cerrar con pago → `completed`), el cliente recibe **un** SMS (Amazon SNS) con nombre comercial + código corto + estado. Sin duplicados aún con N instancias EC2 (dedup por UNIQUE `(order_id, to_status)` dentro del lock de la transacción; publish en cola `database` afterCommit). Teléfono sin prefijo se asume `+57`. Cada SMS queda en el chat del cliente (`source='sms'`) visible en `/clients/{id}` y `/chats`, y se contabiliza por empresa/sede en `/company/reports` (card "SMS enviados"). Detalle técnico en `BACKEND_FILES.md` (Pedidos › Notificaciones SMS).
+
 ### 6.0 Estados de orden (modelo canónico)
 
 `orders.status` acepta 9 valores. **Fuente única de verdad: `config/orders.php`** (compartido al frontend vía `HandleInertiaRequests::share()` como prop `orderStatuses`). Frontend usa `useOrderStatuses()` y helpers de `lib/order-status.ts`.
