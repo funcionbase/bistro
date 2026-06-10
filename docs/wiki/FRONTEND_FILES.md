@@ -279,7 +279,7 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 
 | Archivo | URL | Permiso (gate web) | APIs | Notas |
 |---------|-----|---------------------|------|-------|
-| `company/warehouses/index.tsx` | `/company/warehouses` | `warehouses.manage` | `GET /api/v1/company/warehouses`, `POST/PATCH/DELETE` | Multi-bodega (#120). Lista por sede activa con tipo (cocina/barra/congelador/almacen) y `is_default`. Modal crear/editar. Archivar bloqueado si tiene stock > 0 |
+| `company/warehouses/index.tsx` | `/company/warehouses` | `warehouses.manage` | `GET /api/v1/company/warehouses`, `POST/PATCH/DELETE`, `POST/DELETE .../{warehouse}/branches/{branch?}`, `PUT .../{warehouse}/branches/{branch}/default` | Multibodega company-scoped (refactor multibodega). Las bodegas pertenecen a la empresa y se asignan a N sedes vía pivot (`branches[]`). Cada card muestra "Sedes asignadas" con acciones asignar / marcar predeterminada / desasignar (maneja `WAREHOUSE_USED_BY_RECIPES`). KPI "Sedes con bodega" deriva de `branches[]`. Modal crear/editar (nombre/slug/tipo) + asignación inicial opcional. Archivar bloqueado si tiene stock > 0 |
 | `company/printers.tsx` | `/company/printers` | `company.update` | `GET /api/v1/company/printers`, `POST/PATCH/DELETE` | Impresoras ESC/POS (#116). Listado por sede con `agent_uuid`, ancho de papel, target (cashier/kitchen/bar), is_active. Modal crear/editar con instrucciones del agente local |
 
 ### Configuración personal (`pages/settings/`)
@@ -920,7 +920,7 @@ Endpoints consumidos: `GET/POST/PUT/DELETE /api/v1/company/printers` y `POST /ap
 | `resources/js/types/recipes.ts` | `RecipeLine`, `RecipeResponse`, `RecipeUpsertPayload` |
 | `resources/js/types/index.ts` | `MenuItem` añade `cost_source` (`recipe|manual`) y `has_recipe` |
 | `resources/js/hooks/use-recipes.ts` | `fetchRecipe(menuId, itemId)` y `upsertRecipe(menuId, itemId, payload)` |
-| `resources/js/components/menu/recipe-editor-modal.tsx` *(nuevo)* | Modal con tabla editable de líneas, autocomplete de ingredientes (filtrado por unidades compatibles), recálculo en vivo de costo total + margen, badge `⚠ bajo` si margen < umbral. Reemplaza el set completo en backend. |
+| `resources/js/components/menu/recipe-editor-modal.tsx` *(nuevo)* | Modal con tabla editable de líneas, autocomplete de ingredientes (filtrado por unidades compatibles), recálculo en vivo de costo total + margen, badge `⚠ bajo` si margen < umbral. Reemplaza el set completo en backend. Costeo multibodega: cada línea tiene selector de **bodega** (limitado a las asignadas a la sede activa, default = bodega predeterminada de la sede) y envía `warehouse_id?` en el upsert; el costo unitario se toma del WAC por bodega (`stocks[].current_cost`); líneas sin stock en la bodega elegida se marcan con badge `Sin costo en esta bodega` (`misconfigured`). |
 | `resources/js/components/menu/item-card.tsx` | Botón con ícono `ChefHat` por ítem que abre el `RecipeEditorModal`. Verde si tiene receta, gris si no. |
 | `resources/js/components/menu/item-form-modal.tsx` | Campo `Costo (COP)` queda **read-only** + badge `desde receta` cuando `item.has_recipe`. La edición se delega al modal de receta. |
 

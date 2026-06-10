@@ -340,28 +340,33 @@ Esto permite reconstruir intentos cross-sede aunque ocurran entre sedes distinta
 
 ---
 
-## Multi-bodega (#120)
+## Multi-bodega (#120) + Costeo multi-sede (#costeo-multibodega)
 
-Cada sede puede tener N bodegas (`warehouses`): cocina, barra, congelador, almacén general. Los insumos no viven en la sede sino en una bodega específica de la sede. Stock y movimientos siempre cargan `(branch_id, warehouse_id)`.
+**Modelo actual (#costeo-multibodega).** La bodega es un **recurso de empresa** asignable a N sedes (pivot `branch_warehouses`). El insumo es **catálogo de empresa** (sin `branch_id`, único por `(company_nit, name)`). El stock y el **WAC viven por bodega** en `ingredient_stocks (quantity, current_cost)`. El costeo de recetas es **por sede + por bodega**: cada línea costea desde la bodega de la línea (`recipes.warehouse_id` NOT NULL). Ver `constants/ACCOUNTING_RULES.md` (sección "Inventario: WAC por bodega").
 
 ### Tablas
 
 | Tabla | Notas |
 |-------|-------|
-| `warehouses` | uuid PK, FK `branch_id`, FK `company_nit`, `name`, `type` (cocina/barra/congelador/almacen), `is_default` (informativo), `archived_at`. Unique `(branch_id, slug)`. |
-| `ingredient_stocks` | Migrado en `2026_05_11_000000_create_warehouses_block`: ahora `(ingredient_id, warehouse_id)` UNIQUE. `on_hand_qty decimal(12,4)`. Sin `branch_id` redundante (se infiere por `warehouse.branch_id`). |
-| `ingredient_movements` | FK `warehouse_id` NOT NULL. Para movimientos de transferencia entre bodegas, se generan **dos filas hermanas** (`transfer_out` desde origen, `transfer_in` hacia destino) con `reference_type='transfer'` y mismo `reference_id`. Total neto = 0 a nivel empresa. |
-| `warehouse_stock_snapshots` | uuid PK, FK `warehouse_id`, `snapshot_date date`, `total_value decimal(14,2)`, `currency varchar(3)`. Llenado por `inventory:snapshot-daily` (cron 02:30). Sirve para `InventoryHistoryController::series`. |
+| `warehouses` | uuid PK, FK `company_nit` (**sin `branch_id`** — company-scoped). `name`, `type`, `is_default` (informativo a nivel empresa), `archived_at`. Unique `(company_nit, slug)`. |
+| `branch_warehouses` | **Pivot sede↔bodega** (fuente de verdad de la relación). uuid PK, `company_nit`, `branch_id`, `warehouse_id`, `is_default` (default operativa por sede). Unique `(branch_id, warehouse_id)` + índice parcial único `is_default` por sede. |
+| `ingredients` | **Catálogo de empresa**: sin `branch_id`, sin `current_cost`. Unique `(company_nit, name)`. |
+| `ingredient_stocks` | `(ingredient_id, warehouse_id)` UNIQUE. `quantity decimal(12,3)`, `min_stock`, **`current_cost decimal(12,2)` = WAC por bodega**. |
+| `ingredient_movements` | append-only. FK `warehouse_id`. Transferencia = dos filas hermanas (`-`/`+`) con `dest_warehouse_id` cruzado y mismo `reference`. El WAC se recomputa leyéndolas, nunca mutándolas. |
+| `recipes` | `warehouse_id` **NOT NULL** (fuente de costo de la línea). Unique parcial `(company_nit, branch_id, menu_item_id, ingredient_id)`. |
+| `menu_item_cost_history` | Unique `(company_nit, branch_id, menu_item_id, snapshot_date)` — un snapshot por sede/día. |
+| `warehouse_stock_snapshots` | valoriza con `ingredient_stocks.current_cost` por bodega (`inventory:snapshot-daily`). |
 
-### Permiso
+### Permisos
 
-`warehouses.manage` (asignado a owner+admin). Sin granularidad CRUD: el mismo permiso cubre create/read/update/delete.
+- `warehouses.manage` (owner+admin) — CRUD de bodegas.
+- `warehouses.assign_branches` (owner+admin, acción `update`) — asignar/desasignar bodegas a sedes y marcar la default por sede.
 
 ### Aislamiento
 
-- Mutaciones de inventario reciben `warehouse_id` explícito desde el payload y validan que pertenezca a `active_branch_id` (vía `BranchScope` + check explícito en `InventoryService::recordMovement`).
-- Listados por defecto filtran a las bodegas accesibles para `active_branch_id`. Vista consolidada por sede agrupa por `warehouse.type`.
-- Reportes de food cost (#113) y menu engineering (#114) son por sede (suma todas las bodegas) — no se exponen costos por bodega individual (futuro).
+- Insumos y bodegas son **config de empresa** (sin `BranchScope`). El costeo y las recetas **sí** son por sede (filtran explícito por `branch_id`, incluso en crons sin `active_branch_id` — `RecipeCostService::compute($companyNit, $branchId, $itemId)`).
+- Mutaciones de inventario validan que la bodega esté **asignada a la sede** (pivot) — `assertWarehouseAssignedToBranch`. Sede sin bodega → bloqueo duro `BRANCH_HAS_NO_WAREHOUSE` (422).
+- Food cost por sede: el snapshot branch-keyed cubre todas las cartas (antes "ganaba la última sede" con cartas clonadas). El clonado de carta regenera `menu_item_id` (D4).
 
 ### Endpoints
 
