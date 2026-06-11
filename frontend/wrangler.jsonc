@@ -1,0 +1,33 @@
+{
+    // Config de Cloudflare para servir el SPA como Worker de assets estáticos.
+    // El build (`npm run build`) emite a ./dist; este Worker sirve esa carpeta.
+    // `not_found_handling: single-page-application` hace que cualquier ruta que
+    // no sea un archivo existente devuelva index.html — necesario para que
+    // React Router resuelva las rutas del cliente (/dashboard, /t/:qr, etc.).
+    //
+    // Cutover #239: el subdominio operativo migra a `panel.flexyflow.co`. Sin
+    // soporte dual ni redirect — el host anterior (`restaurante.flexyflow.co`)
+    // se apaga al deployar este Worker con el custom domain nuevo. Runbook en
+    // `docs/wiki/runbooks/panel-migration.md`.
+    "name": "panel-flexyflow-co",
+    "compatibility_date": "2026-05-20",
+    "assets": {
+        "directory": "./dist",
+        "not_found_handling": "single-page-application"
+    },
+    "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1,
+        "logs": {
+        "enabled": true,
+        "head_sampling_rate": 1,
+        "persist": true,
+        "invocation_logs": true
+        },
+        "traces": {
+        "enabled": true,
+        "persist": true,
+        "head_sampling_rate": 1
+        }
+    }
+}

@@ -1,0 +1,167 @@
+/*
+ * Fuente Tailwind del CSS de las páginas de error del backend Laravel.
+ *
+ * El backend (#220 — frontend desacoplado) ya no corre Vite ni Tailwind, pero
+ * sigue renderizando errors/*.blade.php cuando alguien golpea un endpoint de
+ * API directo. El frontend, dueño del toolchain de Tailwind, compila ese CSS
+ * y lo deja como artefacto estático en el backend.
+ *
+ * Regenerar tras editar una vista de backend/resources/views/errors/:
+ *
+ *   cd application/frontend && npm run gen:backend-error-css
+ *
+ * Salida: application/backend/public/css/errors.css (versionado; lo sirve
+ * layout.blade.php vía <link>). Espejo de tokens con app.css.
+ */
+/* source(none): desactiva el auto-scan de Tailwind — solo escanea las vistas
+   de error declaradas abajo, no todo el frontend. */
+@import 'tailwindcss' source(none);
+
+@source '../../../backend/resources/views/errors/**/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+    font-family: 'FlexyFont';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src:
+        url('/fonts/FlexyFont.woff2') format('woff2'),
+        url('/fonts/FlexyFont.otf') format('opentype');
+}
+@font-face {
+    font-family: 'FlexyFont';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src:
+        url('/fonts/FlexyFont.woff2') format('woff2'),
+        url('/fonts/FlexyFont.otf') format('opentype');
+}
+@font-face {
+    font-family: 'FlexyFont';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src:
+        url('/fonts/FlexyFont.woff2') format('woff2'),
+        url('/fonts/FlexyFont.otf') format('opentype');
+}
+
+@theme {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-brand: 'FlexyFont', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+*/
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+/* Design system tokens — espejo de app.css. */
+:root {
+    --color-status-warning: #f39c12;
+
+    --background: #f0f0f0;
+    --foreground: #1e232e;
+
+    --card: #ffffff;
+    --card-foreground: #1e232e;
+
+    --primary: #0052ff;
+    --primary-foreground: #ffffff;
+
+    --secondary: #e5e5e5;
+    --secondary-foreground: #1e232e;
+
+    --muted: #e5e5e5;
+    --muted-foreground: #6b7280;
+
+    --accent: #c0fd79;
+    --accent-foreground: #1e232e;
+
+    --destructive: #d9402a;
+    --destructive-foreground: #ffffff;
+
+    --border: #e5e5e5;
+    --input: #ffffff;
+    --ring: #0052ff;
+
+    --radius: 0.625rem;
+}
+
+.dark {
+    --color-status-warning: #fbbf24;
+
+    --background: #232733;
+    --foreground: #f0f0f0;
+
+    --card: #1e232e;
+    --card-foreground: #f0f0f0;
+
+    --primary: #0052ff;
+    --primary-foreground: #ffffff;
+
+    --secondary: #2a303c;
+    --secondary-foreground: #f0f0f0;
+
+    --muted: #2a303c;
+    --muted-foreground: #9ca3af;
+
+    --accent: #c0fd79;
+    --accent-foreground: #1e232e;
+
+    --destructive: #f0876b;
+    --destructive-foreground: #ffffff;
+
+    --border: #2a303c;
+    --input: #2a303c;
+    --ring: #0052ff;
+}
+
+@layer base {
+    body {
+        @apply bg-background text-foreground;
+    }
+}

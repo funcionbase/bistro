@@ -1,0 +1,8 @@
+# Ignore dompdf's auto-generated cache for built-in fonts (regenerated at runtime).
+Helvetica*.afm.json
+Times*.afm.json
+Courier*.afm.json
+Symbol*.afm.json
+ZapfDingbats*.afm.json
+DejaVu*.afm.json
+*.ufm.json

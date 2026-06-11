@@ -1,0 +1,18 @@
+node_modules
+/dist
+/dev-dist
+.vite
+*.local
+.env
+.env.backup
+# .env.production SÍ se versiona: solo contiene vars VITE_* públicas (host del
+# backend, branding) que el build del Worker necesita embebidas. Sin esto el
+# bundle no conoce VITE_API_URL y "Continuar con Google" cae al Worker → 404.
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+.DS_Store

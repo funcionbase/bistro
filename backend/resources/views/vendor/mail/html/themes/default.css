@@ -1,0 +1,410 @@
+/*
+ * flexyflow — tema de correo (publicado desde Laravel Mail).
+ *
+ * Referencia visual: frontend pages/welcome.tsx, pages/enrollment/user.tsx,
+ * pages/enrollment/company.tsx + FRONTEND_UI_GUIDELINES.md §3 (#220).
+ *
+ * Los hex de este archivo son los tokens reales del design system
+ * (frontend resources/css/app.css), NO la paleta por defecto de Tailwind:
+ *   --background        #F0F0F0   --foreground         #1E232E
+ *   --card              #FFFFFF   --border             #E5E5E5
+ *   --primary           #0052FF   --primary-foreground #FFFFFF
+ *   --accent (lime)     #C0FD79   --accent-foreground  #1E232E
+ *   --destructive       #D9402A   --muted-foreground   #6B7280
+ *   --color-theme-light #F6F5F3
+ *
+ * Los correos van SIEMPRE en tema claro (ver <meta color-scheme> del layout).
+ * Los clientes de email NO soportan CSS variables ni Tailwind — todo va con
+ * hex absolutos e inline. Tablas + hex para compatibilidad con Outlook.
+ */
+
+/* Base */
+
+body,
+body *:not(html):not(style):not(br):not(tr):not(code) {
+    box-sizing: border-box;
+    font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+        Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    position: relative;
+}
+
+body {
+    -webkit-text-size-adjust: none;
+    background-color: #F0F0F0;
+    color: #1E232E;
+    height: 100%;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+}
+
+p,
+ul,
+ol,
+blockquote {
+    line-height: 1.6;
+    text-align: left;
+}
+
+a {
+    color: #0052FF;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+a img {
+    border: none;
+}
+
+/* Typography */
+
+h1 {
+    color: #1E232E;
+    font-family: 'Unbounded', 'Instrument Sans', -apple-system, BlinkMacSystemFont,
+        'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.1;
+    margin-top: 0;
+    margin-bottom: 8px;
+    text-align: left;
+    letter-spacing: -0.025em;
+}
+
+h2 {
+    color: #1E232E;
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 0;
+    text-align: left;
+}
+
+h3 {
+    color: #1E232E;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 0;
+    text-align: left;
+}
+
+p {
+    color: #1E232E;
+    font-size: 15px;
+    line-height: 1.6em;
+    margin-top: 0;
+    text-align: left;
+}
+
+p.sub {
+    font-size: 12px;
+}
+
+img {
+    max-width: 100%;
+}
+
+/* Layout */
+
+.wrapper {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    background-color: #F0F0F0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.content {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+/* Header */
+
+.header {
+    padding: 28px 0;
+    text-align: center;
+}
+
+.header a {
+    color: #1E232E;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+}
+
+.logo {
+    height: 38px;
+    max-height: 38px;
+    width: 61px;
+}
+
+/* Body */
+
+.body {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    background-color: #F0F0F0;
+    border-bottom: 1px solid #F0F0F0;
+    border-top: 1px solid #F0F0F0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.inner-body {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 600px;
+    background-color: #FFFFFF;
+    border: 1px solid #E5E5E5;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(30, 35, 46, 0.05);
+    margin: 0 auto;
+    padding: 0;
+    width: 600px;
+}
+
+/* Subcopy */
+
+.subcopy {
+    border-top: 1px solid #E5E5E5;
+    margin-top: 28px;
+    padding-top: 18px;
+}
+
+.subcopy p {
+    font-size: 13px;
+    color: #6B7280;
+}
+
+/* Footer */
+
+.footer {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 600px;
+    margin: 0 auto;
+    padding: 0;
+    text-align: center;
+    width: 600px;
+}
+
+.footer p {
+    color: #6B7280;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.footer a {
+    color: #6B7280;
+    text-decoration: underline;
+    text-decoration-color: #E5E5E5;
+}
+
+/* Tables */
+
+.table table {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    margin: 30px auto;
+    width: 100%;
+}
+
+.table th {
+    border-bottom: 1px solid #E5E5E5;
+    margin: 0;
+    padding-bottom: 8px;
+    color: #6B7280;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.table td {
+    color: #1E232E;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 12px 0;
+}
+
+.content-cell {
+    max-width: 100vw;
+    padding: 36px;
+}
+
+/* Buttons */
+
+.action {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    margin: 30px auto;
+    padding: 0;
+    text-align: center;
+    width: 100%;
+}
+
+.button {
+    -webkit-text-size-adjust: none;
+    border-radius: 6px;
+    color: #FFFFFF;
+    display: inline-block;
+    overflow: hidden;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 24px;
+    letter-spacing: -0.01em;
+}
+
+/* primary — CTA azul del DS (Button variant="default"). */
+.button-primary,
+.button-blue {
+    background-color: #0052FF;
+    border-bottom: 8px solid #0052FF;
+    border-left: 18px solid #0052FF;
+    border-right: 18px solid #0052FF;
+    border-top: 8px solid #0052FF;
+    color: #FFFFFF;
+}
+
+/* dark — CTA oscuro de alto contraste (Button variant="dark"). */
+.button-dark {
+    background-color: #1E232E;
+    border-bottom: 8px solid #1E232E;
+    border-left: 18px solid #1E232E;
+    border-right: 18px solid #1E232E;
+    border-top: 8px solid #1E232E;
+    color: #FFFFFF;
+}
+
+/* success / accent — lime del DS, momento positivo (Button variant="accent").
+   Texto oscuro: el lime exige foreground oscuro para cumplir contraste. */
+.button-success,
+.button-green,
+.button-accent {
+    background-color: #C0FD79;
+    border-bottom: 8px solid #C0FD79;
+    border-left: 18px solid #C0FD79;
+    border-right: 18px solid #C0FD79;
+    border-top: 8px solid #C0FD79;
+    color: #1E232E;
+}
+
+/* error — terracota editorial del DS (Button variant="destructive"). */
+.button-error,
+.button-red {
+    background-color: #D9402A;
+    border-bottom: 8px solid #D9402A;
+    border-left: 18px solid #D9402A;
+    border-right: 18px solid #D9402A;
+    border-top: 8px solid #D9402A;
+    color: #FFFFFF;
+}
+
+/* Panels (destacados, alertas, recordatorios) */
+
+.panel {
+    border-left: 4px solid #C0FD79;
+    margin: 24px 0;
+}
+
+.panel-content {
+    background-color: #F6F5F3;
+    color: #1E232E;
+    padding: 18px 22px;
+    border-radius: 0 8px 8px 0;
+}
+
+.panel-content p {
+    color: #1E232E;
+}
+
+.panel-item {
+    padding: 0;
+}
+
+.panel-item p:last-of-type {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* Eyebrow (pill superior antes del H1) */
+
+.eyebrow {
+    display: inline-block;
+    background-color: #F6F5F3;
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    margin-bottom: 16px;
+}
+
+.eyebrow.eyebrow-accent {
+    background-color: #C0FD79;
+    color: #1E232E;
+}
+
+.eyebrow.eyebrow-warning {
+    background-color: #FDF0DB;
+    color: #F39C12;
+}
+
+/* Panel lime hero (espejo del HeroPanel del frontend) — moment editorial */
+
+.panel-accent {
+    border-left: none;
+    margin: 28px 0;
+}
+
+.panel-accent .panel-content {
+    background-color: #C0FD79;
+    color: #1E232E;
+    padding: 28px 32px;
+    border-radius: 24px;
+}
+
+.panel-accent .panel-content p {
+    color: #1E232E;
+}
+
+.panel-accent .panel-content strong {
+    color: #1E232E;
+}
+
+/* Panel oscuro (alertas internas / contexto denso) */
+
+.panel-dark {
+    border-left: 4px solid #1E232E;
+    margin: 24px 0;
+}
+
+.panel-dark .panel-content {
+    background-color: #F0F0F0;
+    color: #1E232E;
+    padding: 18px 22px;
+    border-radius: 0 10px 10px 0;
+}
+
+/* Utilities */
+
+.break-all {
+    word-break: break-all;
+}
