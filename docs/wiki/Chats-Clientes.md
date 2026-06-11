@@ -293,7 +293,7 @@ esté disponible.
 
 ## Componentes frontend
 
-Página principal: `application/frontend/src/pages/chats.tsx`. Hook `useChats`.
+Página principal: `bistro/frontend/src/pages/chats.tsx`. Hook `useChats`.
 
 Componentes destacados:
 - `ChatSourceBadge` (`components/chat-source-badge.tsx`): texto plano sin

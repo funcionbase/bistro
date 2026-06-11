@@ -1,7 +1,7 @@
 # INFRASTRUCTURE — DNS, hosts, certs, deploy
 
 > **Fuente de verdad ejecutable**: `aws/iac/cloudformation/parameters/*.json` +
-> `application/frontend/wrangler.jsonc` + `application/backend/config/app.php`.
+> `bistro/frontend/wrangler.jsonc` + `bistro/backend/config/app.php`.
 > Este archivo documenta el mapa de hosts y dependencias entre proveedores
 > para que cualquier cambio (rename de subdominio, rotación de cert, ALB
 > recreado) no requiera arqueología.
@@ -14,7 +14,7 @@
 |---|---|---|
 | Dominio raíz | GoDaddy | `flexyflow.co` (registrar). NS delegados a Cloudflare. |
 | DNS | Cloudflare | Zona `flexyflow.co` — todos los records. NO usamos Route53 a pesar de que el CFN tenga `Route53HostedZoneId` parametrizable. |
-| Frontend SPA | Cloudflare Workers | `npx wrangler deploy` desde `application/frontend/`. Worker: `panel-flexyflow-co`. |
+| Frontend SPA | Cloudflare Workers | `npx wrangler deploy` desde `bistro/frontend/`. Worker: `bistro-flexyflow-co`. |
 | Backend API | AWS (EC2 + ALB) | ASG `t3.micro` + ALB internet-facing. Cloudflare proxea `panel-api.flexyflow.co` delante del ALB en modo Full. |
 | TLS | ACM (us-east-1) | Wildcard `*.flexyflow.co` validado por DNS en Cloudflare. ARN en `pdn.json` → `CertificateArn`. |
 | Storage | AWS S3 | Buckets `flexyflow-panel-pdn-assets` (público vía storage-proxy firmado) y `flexyflow-panel-pdn-documents` (privado, DIAN 10 años). |
@@ -84,7 +84,7 @@ Cutover atómico, single-host, sin redirect ni soporte dual:
 | Frontend SPA | `restaurante.flexyflow.co` | `panel.flexyflow.co` |
 | Backend API | `restaurante-api.flexyflow.co` | `panel-api.flexyflow.co` |
 
-1. Deploy del Worker `panel-flexyflow-co` desde `application/frontend/dist`.
+1. Deploy del Worker `bistro-flexyflow-co` desde `bistro/frontend/dist`.
 2. Asociar custom domain `panel.flexyflow.co` desde Cloudflare → Workers → Triggers.
 3. Crear CNAME `panel-api` en Cloudflare apuntando al DNS-name del ALB (proxied).
 4. CFN apply de `05-alb` con `pdn.json` (`PublicHostname=panel-api.flexyflow.co`) — reescribe la host-header rule del ALB.
@@ -111,7 +111,7 @@ Los records vivos (a inspeccionar desde el dashboard Cloudflare):
 
 | Tipo | Nombre | Destino | Proxied? | Notas |
 |---|---|---|---|---|
-| CNAME | `panel` | Worker `panel-flexyflow-co` | Sí (naranja) | Frontend SPA. Creado por Cloudflare al asociar custom domain. |
+| CNAME | `panel` | Worker `bistro-flexyflow-co` | Sí (naranja) | Frontend SPA. Creado por Cloudflare al asociar custom domain. |
 | CNAME | `panel-api` | DNS-name del ALB | Sí (naranja) | API backend. |
 | CNAME | `panel-qa` | Worker QA | Sí | Frontend QA. |
 | CNAME | `panel-api-qa` | DNS-name del ALB QA | Sí | API backend QA. |
@@ -122,11 +122,11 @@ Los records vivos (a inspeccionar desde el dashboard Cloudflare):
 
 ## Pares espejo que deben mantenerse sincronizados
 
-- `application/backend/config/app.php` ↔ `application/backend/.env.example` (`FRONTEND_URL`).
-- `application/backend/config/cors.php` ↔ `config/app.php` (deriva la allowlist del frontend_url).
+- `bistro/backend/config/app.php` ↔ `bistro/backend/.env.example` (`FRONTEND_URL`).
+- `bistro/backend/config/cors.php` ↔ `config/app.php` (deriva la allowlist del frontend_url).
 - `aws/iac/cloudformation/parameters/{qa,pdn}.json` (`PublicHostname`, `AppDomain`, `AllowedCorsOrigins`, `CertificateArn`).
-- `application/frontend/wrangler.jsonc` — `name` y custom domain en Cloudflare.
-- `application/frontend/.env.production` (`VITE_API_URL`).
+- `bistro/frontend/wrangler.jsonc` — `name` y custom domain en Cloudflare.
+- `bistro/frontend/.env.production` (`VITE_API_URL`).
 - Google Cloud Console — Authorized redirect URI.
 
 > Última revisión: 2026-05-25 (#239 — cutover single-host sin redirect).

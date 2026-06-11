@@ -3,8 +3,8 @@
 > Estado: Estable
 > Versión API: v1
 > Owner: equipo de plataforma
-> Fuente única de estados: `application/backend/config/orders.php`
-> Constantes canónicas: `application/backend/constants/ORDER_STATUSES.md`
+> Fuente única de estados: `bistro/backend/config/orders.php`
+> Constantes canónicas: `bistro/backend/constants/ORDER_STATUSES.md`
 
 ---
 
@@ -247,7 +247,7 @@ Content-Type: application/json
 
 ## Reglas contables aplicables (resumen)
 
-Detalle completo en `CLAUDE.md` §13 + `application/backend/constants/ACCOUNTING_RULES.md`.
+Detalle completo en `CLAUDE.md` §13 + `bistro/backend/constants/ACCOUNTING_RULES.md`.
 
 - Columnas monetarias `decimal(12,2)` (`total`, `subtotal`, `tax_amount`, `tip_amount`, `discount_amount`). NUNCA `float`.
 - Mutaciones financieras envueltas en `DB::transaction` + `lockForUpdate`.

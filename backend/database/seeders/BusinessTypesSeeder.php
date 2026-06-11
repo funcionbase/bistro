@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\DB;
  *
  * Después de modificar este seeder, actualizar:
  *   - `constants/BUSINESS_TYPES.md` — tabla canónica y descripciones.
- *   - `application/frontend/src/hooks/use-business-types.ts` (sólo si cambia
+ *   - `bistro/frontend/src/hooks/use-business-types.ts` (sólo si cambia
  *     la shape del payload, no las labels — las labels las consume el frontend).
- *   - `application/frontend/src/components/business-type-selector.tsx` si
+ *   - `bistro/frontend/src/components/business-type-selector.tsx` si
  *     introducís un `icon_key` nuevo (mapearlo en `ICON_MAP`).
  */
 class BusinessTypesSeeder extends Seeder

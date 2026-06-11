@@ -9,7 +9,7 @@
     // soporte dual ni redirect — el host anterior (`restaurante.flexyflow.co`)
     // se apaga al deployar este Worker con el custom domain nuevo. Runbook en
     // `docs/wiki/runbooks/panel-migration.md`.
-    "name": "panel-flexyflow-co",
+    "name": "bistro-flexyflow-co",
     "compatibility_date": "2026-05-20",
     "assets": {
         "directory": "./dist",

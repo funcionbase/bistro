@@ -227,7 +227,7 @@ que apliquen en cualquier sede.
 
 ## Componentes frontend
 
-Página: `application/frontend/src/pages/clients/index.tsx` (listado) y
+Página: `bistro/frontend/src/pages/clients/index.tsx` (listado) y
 `pages/clients/show.tsx` (perfil). Hooks `useClients` y `useClient`.
 
 Componentes DS reutilizados:

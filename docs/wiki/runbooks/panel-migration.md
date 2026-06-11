@@ -38,7 +38,7 @@ Antes de iniciar el cutover:
 ### Fase A — Deploy del Worker `panel-flexyflow-co` (T-1 día)
 
 ```bash
-cd application/frontend
+cd bistro/frontend
 npm run build
 npx wrangler deploy
 ```

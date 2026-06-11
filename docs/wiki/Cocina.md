@@ -140,17 +140,17 @@ sigue viendo `orders.status=ready` cuando la mesa está completa.
 
 ## Cross-references
 
-- Constants: `application/backend/constants/KDS_STATIONS.md`,
+- Constants: `bistro/backend/constants/KDS_STATIONS.md`,
   `PERMISSIONS_CATALOG.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`,
   `ROLES_TEMPLATES.md`.
-- Backend: `application/backend/app/Models/KdsStation.php`,
+- Backend: `bistro/backend/app/Models/KdsStation.php`,
   `KdsDeviceToken.php`, `app/Services/KdsTicketService.php`,
   `KdsDeviceTokenService.php`,
   `app/Http/Controllers/Api/KdsController.php`,
   `KdsStationController.php`, `KdsDeviceTokenController.php`,
   `app/Http/Controllers/Web/KdsStandaloneController.php`,
   `app/Http/Middleware/EnsureKdsDeviceToken.php`.
-- Frontend: `application/frontend/src/pages/kds/index.tsx`
+- Frontend: `bistro/frontend/src/pages/kds/index.tsx`
   (consolidado), `pages/kds/station.tsx` (standalone),
   `pages/company/kds.tsx` (settings),
   `components/kds/kds-station-select.tsx`,

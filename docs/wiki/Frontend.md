@@ -4,7 +4,7 @@
 > Versión React: 19 / React Router: v7 / TanStack Query: v5 / Tailwind: v4
 > Owner: equipo de plataforma
 
-> **Arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query**, desacoplado de la API Laravel (`application/frontend/`, build y deploy propios en Cloudflare). **NO usa Inertia en el lado React** — `@inertiajs/react` ni siquiera está instalado. El backend solo sirve `/api/v1/*`. Quedan 4 controllers web que usan `Inertia::render` (dashboard legacy, kds-standalone, company-preferences, public-menu-page), pero el SPA no los consume y su `Inertia::defer()` está inerte. Cualquier referencia a "deferred props", `useForm`, `usePage` o `<Deferred>` de Inertia en este documento es **legacy** y no aplica al SPA actual.
+> **Arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query**, desacoplado de la API Laravel (`bistro/frontend/`, build y deploy propios en Cloudflare). **NO usa Inertia en el lado React** — `@inertiajs/react` ni siquiera está instalado. El backend solo sirve `/api/v1/*`. Quedan 4 controllers web que usan `Inertia::render` (dashboard legacy, kds-standalone, company-preferences, public-menu-page), pero el SPA no los consume y su `Inertia::defer()` está inerte. Cualquier referencia a "deferred props", `useForm`, `usePage` o `<Deferred>` de Inertia en este documento es **legacy** y no aplica al SPA actual.
 
 ---
 
@@ -13,10 +13,10 @@
 | Capa | Tecnología | Notas |
 |------|-----------|-------|
 | UI | React 19 (hooks, sin clases) | Strict mode |
-| Routing/SPA | SPA puro contra API Laravel | Proyecto independiente (`application/frontend/`), build separado, deploy en Cloudflare Worker. Inertia v2 sigue presente para algunas pantallas server-driven, pero el grueso navega client-side |
+| Routing/SPA | SPA puro contra API Laravel | Proyecto independiente (`bistro/frontend/`), build separado, deploy en Cloudflare Worker. Inertia v2 sigue presente para algunas pantallas server-driven, pero el grueso navega client-side |
 | Tipado | TypeScript 5.x | Strict |
-| Estilos | Tailwind CSS v4 | Variables CSS y DS v3.1 en [`FRONTEND_UI_GUIDELINES`](../../application/frontend/FRONTEND_UI_GUIDELINES.md) |
-| Bundler | Vite | Entry: `application/frontend/src/spa/main.tsx`; SW: `src/sw.ts` (workbox injectManifest) |
+| Estilos | Tailwind CSS v4 | Variables CSS y DS v3.1 en [`FRONTEND_UI_GUIDELINES`](../../bistro/frontend/FRONTEND_UI_GUIDELINES.md) |
+| Bundler | Vite | Entry: `bistro/frontend/src/spa/main.tsx`; SW: `src/sw.ts` (workbox injectManifest) |
 | PWA | vite-plugin-pwa + Workbox | Service Worker custom con Web Push (#149) |
 | Tests | Vitest | `vitest.config.ts` + `vitest.setup.ts` |
 | Drag & Drop | @dnd-kit | Menú |
@@ -29,7 +29,7 @@
 ## Arquitectura y estructura de carpetas
 
 ```
-application/frontend/src/
+bistro/frontend/src/
 ├── spa/                    # Bootstrap del SPA (entry main.tsx, router)
 ├── sw.ts                   # Service Worker custom (Workbox injectManifest + Web Push)
 ├── pages/                  # Páginas — un archivo por ruta
@@ -75,7 +75,7 @@ application/frontend/src/
 └── types/                  # billing, business-hours, coupon, dian, inventory, purchases, recipes, suppliers, index
 ```
 
-> El paths antiguos `resources/js/...` corresponden al monolito Inertia previo. El frontend actual vive en `application/frontend/src/` como proyecto separado y se referencia con el alias `@/` que apunta a `src/`.
+> El paths antiguos `resources/js/...` corresponden al monolito Inertia previo. El frontend actual vive en `bistro/frontend/src/` como proyecto separado y se referencia con el alias `@/` que apunta a `src/`.
 
 **Convenciones de nombrado:**
 
@@ -98,7 +98,7 @@ application/frontend/src/
 ## Convenciones Tailwind v4
 
 - Utility-first; cero CSS escrito a mano salvo `@theme` en `app.css`.
-- Tokens semánticos del DS v3.1 (`application/frontend/FRONTEND_UI_GUIDELINES.md` §6.2 y §11): `bg-card`, `text-muted-foreground`, `border-border`, `var(--color-status-*)`. Cero hex hardcoded en paletas semánticas, cero `bg-red-50`/`text-blue-500`.
+- Tokens semánticos del DS v3.1 (`bistro/frontend/FRONTEND_UI_GUIDELINES.md` §6.2 y §11): `bg-card`, `text-muted-foreground`, `border-border`, `var(--color-status-*)`. Cero hex hardcoded en paletas semánticas, cero `bg-red-50`/`text-blue-500`.
 - Modo oscuro: clase `dark` en `<html>`, controlada por `useAppearance()`.
 - Patrones comunes:
   - Card: `rounded-xl border border-border bg-card shadow-sm p-6`.

@@ -14,7 +14,7 @@ flexyflow autentica **únicamente con Google OAuth** desde HU #231. Las páginas
 - `POST /login`, `/register`, `/forgot-password`, `/reset-password`, `/email/verification-notification`, `PUT /settings/password`, `PUT /api/v1/account/password` → responden `410 Gone` con `{ code: "email_auth_disabled" }` y emiten `Log::info('auth.legacy_endpoint_hit', ...)`.
 - `verify-email/{id}/{hash}` (signed) y `POST /logout` se conservan operativos.
 
-El frontend de cada ruta legacy carga un único componente `GoogleOnlyAuthGate` (ver `application/frontend/src/components/auth/google-only-auth-gate.tsx`) que muestra mensaje contextual + CTA Google + auto-redirect 4s (respeta `prefers-reduced-motion`).
+El frontend de cada ruta legacy carga un único componente `GoogleOnlyAuthGate` (ver `bistro/frontend/src/components/auth/google-only-auth-gate.tsx`) que muestra mensaje contextual + CTA Google + auto-redirect 4s (respeta `prefers-reduced-motion`).
 
 El frontend SPA opera con un **JWT custom** que viaja en `localStorage` y como `Authorization: Bearer` o `?token=` en cada request a `/api/v1/*`. La sesión Laravel (cookie) sobrevive en paralelo y la usa Inertia para los props compartidos.
 

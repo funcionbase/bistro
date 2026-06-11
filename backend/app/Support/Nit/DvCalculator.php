@@ -12,7 +12,7 @@ namespace App\Support\Nit;
  * `mod 11`; DV = `mod` si `mod < 2`, sino `11 - mod`.
  *
  * Sin dependencias externas — todos los cálculos son locales. El espejo TS
- * vive en `application/frontend/src/lib/nit-dv.ts` para autocompletado en el
+ * vive en `bistro/frontend/src/lib/nit-dv.ts` para autocompletado en el
  * enrollment wizard.
  */
 final class DvCalculator

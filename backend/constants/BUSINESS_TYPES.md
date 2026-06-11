@@ -161,7 +161,7 @@ Pre-merge para cambios que afecten capabilities, vertical, o el seed:
   `app/Services/BusinessLabelService.php`.
 - `app/Http/Middleware/EnsureBusinessCapability.php`.
 - `app/Http/Controllers/Api/BusinessContextController.php`.
-- `application/frontend/src/lib/business-context.tsx`.
-- `application/frontend/src/components/business-type-selector.tsx`.
-- `application/frontend/src/components/business-gate.tsx`.
+- `bistro/frontend/src/lib/business-context.tsx`.
+- `bistro/frontend/src/components/business-type-selector.tsx`.
+- `bistro/frontend/src/components/business-gate.tsx`.
 - `constants/ORDER_STATUSES.md` — labels dinámicos de estados por vertical.

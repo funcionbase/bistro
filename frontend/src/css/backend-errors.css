@@ -8,9 +8,9 @@
  *
  * Regenerar tras editar una vista de backend/resources/views/errors/:
  *
- *   cd application/frontend && npm run gen:backend-error-css
+ *   cd bistro/frontend && npm run gen:backend-error-css
  *
- * Salida: application/backend/public/css/errors.css (versionado; lo sirve
+ * Salida: bistro/backend/public/css/errors.css (versionado; lo sirve
  * layout.blade.php vía <link>). Espejo de tokens con app.css.
  */
 /* source(none): desactiva el auto-scan de Tailwind — solo escanea las vistas

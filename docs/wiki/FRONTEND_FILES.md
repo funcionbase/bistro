@@ -4,7 +4,7 @@
 > Documento canónico para desarrollo, troubleshooting y manuales operativos.
 > Cubre: páginas, componentes, hooks, layouts, librerías, tipos, autenticación, polling, RBAC y limitaciones conocidas.
 
-> ⚠️ **Corrección de arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query** en `application/frontend/src/`; **NO usa Inertia** (`@inertiajs/react` no está instalado). Las menciones a "Inertia", "deferred props Inertia", "Inertia shared props" y las rutas `resources/js/...` de este documento son **legacy** del monolito previo y están pendientes de limpieza. Hoy: rutas en `src/spa/router.tsx` (lazy + Suspense), datos vía `useQuery`/`apiFetch`, contexto global vía `GET /api/v1/bootstrap` → `SpaSharedDataBridge`/`useBootstrap()`. Ver `Frontend.md` para los patrones vigentes.
+> ⚠️ **Corrección de arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query** en `bistro/frontend/src/`; **NO usa Inertia** (`@inertiajs/react` no está instalado). Las menciones a "Inertia", "deferred props Inertia", "Inertia shared props" y las rutas `resources/js/...` de este documento son **legacy** del monolito previo y están pendientes de limpieza. Hoy: rutas en `src/spa/router.tsx` (lazy + Suspense), datos vía `useQuery`/`apiFetch`, contexto global vía `GET /api/v1/bootstrap` → `SpaSharedDataBridge`/`useBootstrap()`. Ver `Frontend.md` para los patrones vigentes.
 
 ---
 
@@ -17,7 +17,7 @@
 | React Router | v7 | SPA client-side; rutas lazy + Suspense en `src/spa/router.tsx` |
 | TanStack React Query | v5 | Carga de datos, cache y polling (`src/lib/query-client.ts`) |
 | Tailwind CSS | v4 | Utility-first; tokens en `tailwind.config.ts` |
-| Vite | — | Bundler; entry `application/frontend/src/spa/main.tsx` |
+| Vite | — | Bundler; entry `bistro/frontend/src/spa/main.tsx` |
 | @dnd-kit | — | Drag-and-drop (menú, kanban) |
 | @tanstack/react-table | — | Tablas (parcial) |
 | lucide-react | — | Iconos |
@@ -803,7 +803,7 @@ antepone `VITE_API_URL` para que la navegación llegue al backend real.
 
 En dev `VITE_API_URL` queda vacío → `routeBackend()` devuelve un path relativo
 que resuelve el proxy de Vite (same-origin). El valor de PDN vive en
-`application/frontend/.env.production`.
+`bistro/frontend/.env.production`.
 
 ---
 

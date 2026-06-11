@@ -232,7 +232,7 @@ el ASG o re-launchar EC2 para que tome el nuevo `.env`.
 ### Local (driver `log`)
 
 ```bash
-cd application/backend
+cd bistro/backend
 php artisan tinker --execute '
     Mail::raw("Test SES setup", function ($m) {
         $m->to("cristian@gmail.com")->subject("Test desde local");
@@ -251,7 +251,7 @@ en SES → Verified identities → Create identity (Email) → confirmar link.
 SSH al EC2 del ASG y:
 
 ```bash
-cd /var/www/panel.flexyflow/application/backend
+cd /var/www/panel.flexyflow/bistro/backend
 sudo -u www-data php artisan tinker --execute '
     Mail::raw("Test SES desde QA", function ($m) {
         $m->to("cristian@gmail.com")->subject("Test QA → SES");
@@ -382,7 +382,7 @@ Correo transaccional al usuario tras `CompanyEnrollmentController::store`.
 Orquestado por `SendCompanyRegistrationWelcomeEmailJob` (`ShouldQueue` +
 `ShouldBeUnique`, `uniqueId="welcome_email:{user_id}:{company_nit}"`,
 `uniqueFor=86400`). Cuatro capas de protección contra envíos duplicados en
-el ASG N-instance — ver `application/backend/constants/AUDIT_EVENTS.md`
+el ASG N-instance — ver `bistro/backend/constants/AUDIT_EVENTS.md`
 sección "Enrolamiento" y el job propio para el detalle. Eventos auditados:
 `enrollment.welcome_email_sent` (OK), `enrollment.welcome_email_failed`
 (tras agotar `tries=3`).
@@ -402,7 +402,7 @@ cuatro capas que `SendCompanyRegistrationWelcomeEmailJob`, pero con
 `POST /api/v1/invitations/{id}/resend`. Eventos auditados:
 `invitation.email_sent` (OK), `invitation.email_failed` (tras agotar
 `tries=3`), `invitation.resent` (reencolado manual). Ver
-`application/backend/constants/AUDIT_EVENTS.md` sección "Invitaciones a
+`bistro/backend/constants/AUDIT_EVENTS.md` sección "Invitaciones a
 usuarios de empresa (#227)".
 
 El correo NO incluye token en URL: la aceptación es automática vía

@@ -58,7 +58,7 @@ con la app cerrada (siempre que la PWA esté instalada).
    │  ├── 410 Gone / 404 → sub.revoked_at = now()
    │  └── 5xx/red → log Sentry; cron seguirá intentando en próximo tick
    ▼
-[Browser SW (application/frontend/src/sw.ts)]
+[Browser SW (bistro/frontend/src/sw.ts)]
    │ Listener 'push' → showNotification(title, options)
    │ Listener 'notificationclick' → openWindow(url) o focus existente
    ▼

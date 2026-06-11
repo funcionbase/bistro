@@ -8,7 +8,7 @@
 
 Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio. Las marcadas como **Obligatoria** deben estar definidas en cualquier entorno; las **Opcionales** tienen valor por defecto y solo se sobrescriben para casos especiales.
 
-> Fuente canónica: `application/backend/.env.example`. El workflow
+> Fuente canónica: `bistro/backend/.env.example`. El workflow
 > `.github/workflows/sync-env-secret.yml` copia ese archivo literal a qa/pdn
 > y sobreescribe SOLO un subset corto desde GH Environments (#174 cleanup).
 > Si una variable nueva tiene que entrar a qa/pdn pero NO debe ir en el
@@ -412,14 +412,14 @@ El template es **neutral**. En qa/pdn las credenciales vienen del IAM instance p
 
 ---
 
-## Frontend (Vite — `application/frontend/.env`)
+## Frontend (Vite — `bistro/frontend/.env`)
 
-El frontend es un proyecto independiente (Vite + React + Cloudflare Worker). Vive en `application/frontend/`, NO dentro de Laravel.
+El frontend es un proyecto independiente (Vite + React + Cloudflare Worker). Vive en `bistro/frontend/`, NO dentro de Laravel.
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
 | `VITE_APP_NAME` | `${APP_NAME}` | Nombre en `<title>` |
-| `VITE_API_URL` | — (vacío en dev) | Origin del backend Laravel (ej. `https://panel-api.flexyflow.co`). Lo usan `apiFetch` y `routeBackend()`. Vacío en dev → paths relativos vía proxy de Vite. En pdn se define en `application/frontend/.env.production` para el build del Worker |
+| `VITE_API_URL` | — (vacío en dev) | Origin del backend Laravel (ej. `https://panel-api.flexyflow.co`). Lo usan `apiFetch` y `routeBackend()`. Vacío en dev → paths relativos vía proxy de Vite. En pdn se define en `bistro/frontend/.env.production` para el build del Worker |
 
 ---
 
