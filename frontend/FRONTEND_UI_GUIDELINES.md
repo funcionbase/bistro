@@ -1,5 +1,6 @@
 # flexyflow Panel — Guía de UI v3.4
 
+
 Esta guía define el sistema visual, de copy y técnico para **panel.flexyflow.co**. Adapta el lenguaje de la **Fase 2 del rediseño** del sitio marketing (`flexyflow.co` v2.1) a una aplicación SaaS operativa: POS, caja, planificador de turnos, reportes, PWA, modo offline.
 
 
