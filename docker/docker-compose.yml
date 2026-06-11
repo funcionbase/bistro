@@ -4,7 +4,7 @@ services:
     # pgcrypto (gen_random_uuid) viene built-in desde PG 13.
     #
     # Para usar desde el host: aplica este bloque al `.env` del backend
-    # (`application/backend/.env`):
+    # (`bistro/backend/.env`):
     #   DB_CONNECTION=pgsql
     #   DB_HOST=127.0.0.1
     #   DB_PORT=5432

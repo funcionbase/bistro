@@ -130,7 +130,7 @@ HTTP/1.1 200 OK
 
 ## Configuración
 
-`application/backend/config/business-hours.php`:
+`bistro/backend/config/business-hours.php`:
 
 | Clave | Default | Descripción |
 |-------|---------|-------------|

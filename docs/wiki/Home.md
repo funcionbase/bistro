@@ -30,7 +30,7 @@ Dominios funcionales principales:
 |------|-----------|
 | Backend | Laravel 12 + PHP 8.2 |
 | SPA | React 19 + TypeScript + React Router v7 + TanStack Query v5 (sin Inertia) |
-| Build SPA | Vite + Cloudflare Worker (entry `application/frontend/src/spa/main.tsx`) |
+| Build SPA | Vite + Cloudflare Worker (entry `bistro/frontend/src/spa/main.tsx`) |
 | Estilos | Tailwind CSS v4 + Design System v3.1 |
 | Base de datos | PostgreSQL |
 | Caché y colas | Redis (PDN) / Database (local) |
@@ -143,4 +143,4 @@ Los archivos `.md` viven bajo `docs/wiki/` en el repositorio principal y se vers
 
 Cuando una funcionalidad cambia en el código, la página correspondiente debe actualizarse en el **mismo PR**. La regla de drift es estricta: si la documentación no coincide con el código, **el código gana** — actualizá la documentación en el mismo cambio.
 
-Las fuentes canónicas para drift de RBAC, estados de orden, métodos de pago, middlewares, eventos de auditoría y catálogos viven en `application/backend/constants/*.md`. Consultá esos archivos antes de modificar permisos, roles, estados o reglas contables.
+Las fuentes canónicas para drift de RBAC, estados de orden, métodos de pago, middlewares, eventos de auditoría y catálogos viven en `bistro/backend/constants/*.md`. Consultá esos archivos antes de modificar permisos, roles, estados o reglas contables.

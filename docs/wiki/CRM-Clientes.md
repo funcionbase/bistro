@@ -87,7 +87,7 @@ Owner bypass por `role.is_system=true`. Cross-sede deliberado: no se valida
 `branch.access` (`Contact::withoutBranchScope()`), pero la query siempre se
 filtra por `company_nit` del JWT activo y `loadContactOrFail` aborta 404 si
 el contact pertenece a otra empresa. Ver
-`application/constants/PERMISSIONS_CATALOG.md`.
+`bistro/backend/constants/PERMISSIONS_CATALOG.md`.
 
 ---
 
@@ -227,7 +227,7 @@ que apliquen en cualquier sede.
 
 ## Componentes frontend
 
-Página: `application/frontend/src/pages/clients/index.tsx` (listado) y
+Página: `bistro/frontend/src/pages/clients/index.tsx` (listado) y
 `pages/clients/show.tsx` (perfil). Hooks `useClients` y `useClient`.
 
 Componentes DS reutilizados:
@@ -261,7 +261,7 @@ Emitidos por `ClientController` vía `AuditService::log`:
 
 `AuditService::log` agrega automáticamente `branch_id` y
 `actor_active_branch_id` del JWT. Ver
-`application/constants/AUDIT_EVENTS.md`.
+`bistro/backend/constants/AUDIT_EVENTS.md`.
 
 ---
 
@@ -300,7 +300,7 @@ Emitidos por `ClientController` vía `AuditService::log`:
 
 ## Cross-references
 
-- Constants: `application/constants/PERMISSIONS_CATALOG.md`,
+- Constants: `bistro/backend/constants/PERMISSIONS_CATALOG.md`,
   `BRANCH_RBAC.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`.
 - Backend: `app/Http/Controllers/Api/ClientController.php`,
   `app/Services/CrmService.php`,

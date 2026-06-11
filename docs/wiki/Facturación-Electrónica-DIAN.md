@@ -227,7 +227,7 @@ El backend es la única autoridad de emisión:
 
 ## RBAC
 
-Ver `application/backend/constants/PERMISSIONS_CATALOG.md` sección
+Ver `bistro/backend/constants/PERMISSIONS_CATALOG.md` sección
 "Facturación electrónica DIAN". 10 slugs nuevos en grupo
 'Facturación DIAN'. Owner-only por seeder: `dian.config.write` y
 `dian.default_recipient.write`.

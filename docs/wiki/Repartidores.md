@@ -3,7 +3,7 @@
 > Estado: Estable
 > Versión API: v1
 > Owner: equipo de plataforma
-> Fuente única: `application/backend/constants/DELIVERY_STATUSES.md`
+> Fuente única: `bistro/backend/constants/DELIVERY_STATUSES.md`
 
 ---
 
@@ -14,7 +14,7 @@ Los domicilios (`deliveries`) representan la asignación física de un pedido a 
 - Un pedido tiene **un domicilio activo (`pending`)** a la vez.
 - Un domicilio se asigna a un usuario con permiso `deliveries.*` (un repartidor o un mesero que también entrega).
 - Soporta **reasignación** con motivo cuando el repartidor original no puede completarlo: la `Delivery` original pasa a `cancelled` y se crea una nueva `pending` apuntando a la anterior con `previous_delivery_id`.
-- **Modo courier** (`deliveries.self_assign`): el domiciliario se auto-asigna pedidos en `ready` desde su pantalla (ver `application/backend/constants/COURIER_MODE.md`).
+- **Modo courier** (`deliveries.self_assign`): el domiciliario se auto-asigna pedidos en `ready` desde su pantalla (ver `bistro/backend/constants/COURIER_MODE.md`).
 - `SoftDeletes`: los domicilios eliminados se conservan para auditoría.
 
 ---
@@ -219,7 +219,7 @@ Períodos válidos: `today`, `week`, `month`.
 
 ## Configuración
 
-`application/backend/config/delivery.php`:
+`bistro/backend/config/delivery.php`:
 
 | Clave | Default | Descripción |
 |-------|---------|-------------|

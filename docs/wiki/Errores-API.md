@@ -136,7 +136,7 @@ HTTP/1.1 422 Unprocessable Entity
 
 ## Comportamiento del frontend
 
-`apiFetch` (`application/frontend/src/lib/api.ts`) trata los errores así:
+`apiFetch` (`bistro/frontend/src/lib/api.ts`) trata los errores así:
 
 | Caso | Acción |
 |------|--------|
@@ -152,4 +152,4 @@ HTTP/1.1 422 Unprocessable Entity
 - Los errores **nunca** revelan información de otra empresa. Si un usuario consulta un recurso fuera de su `active_company_nit`, el backend devuelve `404` (no `403`) para no filtrar existencia.
 - Los rate limits aplican por IP (OAuth) o por usuario (login). Cuando se exceden, devuelven `429` con `Retry-After`.
 - Los errores `500` se registran en logs (`storage/logs/laravel.log`) con el trace completo. En producción, `APP_DEBUG=false` oculta el trace al cliente.
-- El handler global vive en `application/backend/bootstrap/app.php` (closure `withExceptions`): cualquier `Throwable` no manejado en rutas que esperan JSON o que matchean `api/*` se serializa como `{"message": "..."}` con mensajes neutros por status (401/403/404/405/419/422/429/5xx). `ValidationException` y `AuthenticationException` siguen pasando al handler nativo para conservar `errors[]` y el redirect a `/auth`. Los códigos de aplicación (`code`) los emiten los controllers y middlewares enumerados arriba; el handler genérico **no** los inyecta.
+- El handler global vive en `bistro/backend/bootstrap/app.php` (closure `withExceptions`): cualquier `Throwable` no manejado en rutas que esperan JSON o que matchean `api/*` se serializa como `{"message": "..."}` con mensajes neutros por status (401/403/404/405/419/422/429/5xx). `ValidationException` y `AuthenticationException` siguen pasando al handler nativo para conservar `errors[]` y el redirect a `/auth`. Los códigos de aplicación (`code`) los emiten los controllers y middlewares enumerados arriba; el handler genérico **no** los inyecta.

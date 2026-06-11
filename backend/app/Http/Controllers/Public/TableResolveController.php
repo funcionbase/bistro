@@ -1,0 +1,115 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Public;
+
+use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Company;
+use App\Models\Order;
+use App\Models\Table;
+use App\Models\TableSession;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * Endpoint público (sin auth) que resuelve una mesa por NIT + número y
+ * reporta si hay una sesión grupal activa (#191).
+ *
+ * Usado por el menú público (`/menus/{nit}?table=N`) para decidir si
+ * ofrecer al cliente "Unirme a esta mesa" (flujo `/t/{qr_token}`).
+ *
+ * Resolución de sede: si la empresa tiene una `is_default=true` no
+ * archivada, se usa esa. Si no, la primera sede no archivada por
+ * `created_at`. Si la empresa no tiene sedes activas, 404.
+ */
+class TableResolveController extends Controller
+{
+    public function show(Request $request, string $nit, string $tableNumber): JsonResponse
+    {
+        unset($request);
+        $company = Company::query()->where('nit', $nit)->first();
+        if ($company === null) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        // Empresa bloqueada por mora — respuesta indistinguible de "no
+        // existe la mesa" para no revelar al comensal el motivo comercial.
+        if (! $company->canServePublic()) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        $branch = Branch::query()
+            ->where('company_nit', $nit)
+            ->whereNull('archived_at')
+            ->where('is_default', true)
+            ->first()
+            ?? Branch::query()
+                ->where('company_nit', $nit)
+                ->whereNull('archived_at')
+                ->orderBy('created_at')
+                ->first();
+
+        if ($branch === null) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        // Scope escape justificado (#192): endpoint público sin JWT. La sede
+        // se resolvió arriba a partir del NIT; el filtro explícito por
+        // branch_id ya garantiza el aislamiento que BranchScope normalmente
+        // haría desde el request.
+        $table = Table::withoutBranchScope()
+            ->where('branch_id', $branch->id)
+            ->where('number', $tableNumber)
+            ->whereNull('archived_at')
+            ->first();
+
+        if ($table === null) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        // Misma justificación: público sin JWT — el filtro por `table_id`
+        // ya delimita la sede correctamente.
+        $activeSession = TableSession::withoutBranchScope()
+            ->where('table_id', $table->id)
+            ->whereIn('status', config('tables.active_statuses'))
+            ->withCount('guests')
+            ->first();
+
+        // Detectar si el mesero tomó una orden manualmente (vía /orders/board
+        // o /orders/cashier) sin pasar por el flujo QR. Eso pasa cuando hay
+        // una orden con order_type=table y table_number coincidente pero SIN
+        // table_session_id — la mesa está físicamente ocupada por clientes
+        // que ya pidieron al mesero. En ese caso bloqueamos el pedido por QR
+        // para evitar duplicar comanda y le pedimos al cliente que hable con
+        // el mesero.
+        $waiterOrderActive = Order::withoutGlobalScopes()
+            ->where('company_nit', $nit)
+            ->where('branch_id', $branch->id)
+            ->where('order_type', 'table')
+            ->where('table_number', $table->number)
+            ->whereNull('table_session_id')
+            ->whereIn('status', ['pending', 'in_kitchen', 'ready', 'pending_approval'])
+            ->exists();
+
+        return response()->json([
+            'table_exists' => true,
+            'qr_token' => $table->qr_token,
+            'table_number' => $table->number,
+            'branch' => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+            ],
+            'active_session' => $activeSession ? [
+                'id' => $activeSession->id,
+                'guests_count' => (int) $activeSession->guests_count,
+                'accepts_new_guests' => (bool) $activeSession->accepts_new_guests,
+                'opened_at' => optional($activeSession->opened_at)?->toIso8601String(),
+            ] : null,
+            // Si true, la UI del QR debe mostrar un mensaje "contactá al
+            // mesero" en lugar del CTA para abrir o unirse a la mesa.
+            'waiter_order_active' => $waiterOrderActive,
+        ]);
+    }
+}

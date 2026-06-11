@@ -136,8 +136,8 @@ selector de sede del SPA).
 
 ## Estados de empresa
 
-Catálogo canónico en `application/backend/config/companies.php` +
-`application/backend/constants/COMPANY_STATUSES.md`. Enum BD definido en la
+Catálogo canónico en `bistro/backend/config/companies.php` +
+`bistro/backend/constants/COMPANY_STATUSES.md`. Enum BD definido en la
 migración foundation `0001_01_01_000100_create_companies_block.php`.
 
 | Estado | Bucket | Significado | Acciones permitidas |

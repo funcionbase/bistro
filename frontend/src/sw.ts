@@ -1,0 +1,169 @@
+/// <reference lib="webworker" />
+
+/**
+ * Service Worker custom de Flexyflow Restaurante (#149).
+ *
+ * Migración de `generateSW` (Workbox auto-genera) a `injectManifest`
+ * (escribimos el SW y Workbox inyecta el manifest de precaching). Necesario
+ * para poder agregar listeners `push`, `notificationclick` y
+ * `pushsubscriptionchange` que `generateSW` no permite cleanly.
+ *
+ * Estructura:
+ *  1. Precaching del shell (JS/CSS/woff2 de Vite vía `__WB_MANIFEST`).
+ *  2. Runtime caching idéntico al esquema previo (NetworkFirst APIs,
+ *     CacheFirst imágenes/fuentes).
+ *  3. Listeners de Web Push (`push`, `notificationclick`,
+ *     `pushsubscriptionchange`).
+ *  4. `skipWaiting` + `clientsClaim` para activar inmediatamente como antes.
+ */
+
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { registerRoute } from 'workbox-routing';
+import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+
+declare const self: ServiceWorkerGlobalScope & {
+    __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
+
+// 1. Precaching shell
+precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
+
+// Activación inmediata — el SW nuevo toma control sin esperar a cerrar tabs.
+self.skipWaiting();
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
+// 2. Runtime caching (espejo del esquema anterior en vite.config.js)
+registerRoute(
+    ({ url, request }) =>
+        request.method === 'GET' &&
+        /^\/api\/v1\/(menus|orders|cash-register\/current)/.test(url.pathname) &&
+        !/\/orders\/pending-(approvals|cancellations)$/.test(url.pathname) &&
+        !/\/orders\/tables$/.test(url.pathname) &&
+        !/\/table-sessions/.test(url.pathname),
+    new NetworkFirst({
+        cacheName: 'pos-api-get',
+        networkTimeoutSeconds: 5,
+        plugins: [new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 60 * 60 * 24 }), new CacheableResponsePlugin({ statuses: [0, 200] })],
+    }),
+);
+
+registerRoute(
+    ({ url, request }) =>
+        request.destination === 'image' &&
+        (url.pathname.startsWith('/storage/') || url.pathname.startsWith('/images/') || url.pathname.startsWith('/icons/')),
+    new CacheFirst({
+        cacheName: 'pos-images',
+        plugins: [new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }), new CacheableResponsePlugin({ statuses: [0, 200] })],
+    }),
+);
+
+registerRoute(
+    /^https:\/\/fonts\.bunny\.net\//,
+    new CacheFirst({
+        cacheName: 'fonts-bunny',
+        plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 30 }), new CacheableResponsePlugin({ statuses: [0, 200] })],
+    }),
+);
+
+// 3. Web Push listeners (#149)
+interface PushPayload {
+    title: string;
+    body: string;
+    url?: string;
+    tag?: string;
+    icon?: string;
+    badge?: string;
+    data?: Record<string, unknown>;
+}
+
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    let payload: PushPayload;
+    try {
+        payload = event.data.json() as PushPayload;
+    } catch {
+        // Si el payload no es JSON, mostramos texto plano sin URL.
+        payload = { title: 'Flexyflow', body: event.data.text() };
+    }
+
+    // `renotify` no está en el typing standard de NotificationOptions pero
+    // sí lo aceptan Chromium/Firefox; cast a record para evitar TS strict.
+    const options: NotificationOptions & Record<string, unknown> = {
+        body: payload.body,
+        icon: payload.icon ?? '/icons/icon-192.png',
+        badge: payload.badge ?? '/icons/icon-96-monochrome.png',
+        tag: payload.tag,
+        renotify: false,
+        data: {
+            url: payload.url ?? '/dashboard',
+            ...payload.data,
+        },
+    };
+
+    event.waitUntil(self.registration.showNotification(payload.title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const targetUrl: string = typeof event.notification.data?.url === 'string' ? event.notification.data.url : '/dashboard';
+
+    event.waitUntil(
+        (async () => {
+            const allClients = await self.clients.matchAll({
+                type: 'window',
+                includeUncontrolled: true,
+            });
+
+            for (const client of allClients) {
+                const clientUrl = new URL(client.url);
+                if (clientUrl.origin === self.location.origin) {
+                    await client.focus();
+                    if ('navigate' in client) {
+                        await client.navigate(targetUrl).catch(() => undefined);
+                    }
+                    return;
+                }
+            }
+
+            await self.clients.openWindow(targetUrl);
+        })(),
+    );
+});
+
+/**
+ * Re-suscripción automática cuando el navegador rota el endpoint
+ * (`pushsubscriptionchange`). Lee la clave pública VAPID del manifest del
+ * documento (insertado vía `<meta name="vapid-public-key">`) y POSTea la
+ * nueva sub al backend.
+ *
+ * Sin esto, una sub que el OS invalida silenciosamente queda zombie en BD
+ * hasta que el siguiente push falle con 410 y nuestro dispatcher la limpie.
+ */
+// `pushsubscriptionchange` no está aún en lib.webworker.d.ts mainstream;
+// cast del listener a EventListener y del evento a ExtendableEvent para
+// poder llamar `waitUntil` con el tipado correcto.
+self.addEventListener('pushsubscriptionchange', ((event: ExtendableEvent) => {
+    event.waitUntil(
+        (async () => {
+            try {
+                const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+                if (allClients.length === 0) return;
+
+                // Pedimos al primer cliente activo que reemita el endpoint
+                // a través de un MessageChannel — la subscripción anterior
+                // ya no es válida acá pero el cliente puede pedir una nueva
+                // vía `pushManager.subscribe` y hablar con el backend.
+                allClients[0].postMessage({ type: 'pwa:push:resubscribe' });
+            } catch {
+                // No interrumpe el SW; el próximo intento del usuario re-subscribe.
+            }
+        })(),
+    );
+}) as EventListener);

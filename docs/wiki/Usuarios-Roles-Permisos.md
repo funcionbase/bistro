@@ -67,7 +67,7 @@ renombrar / eliminar / ajustar permisos. Se crean opcionalmente por empresa vía
 
 > Los administrativos (`manager`, `accountant`, `marketing`,
 > `inventory_manager`, `supervisor`) se agregaron en #215 F4. Defaults exactos
-> en `application/backend/constants/ROLES_TEMPLATES.md`.
+> en `bistro/backend/constants/ROLES_TEMPLATES.md`.
 
 ## Roles demo (solo seeders de QA)
 
@@ -81,11 +81,11 @@ asignan a mano dentro del seeder:
 | `Domiciliario` | Demuestra el flujo *courier-only* (#119) — sidebar reducido + redirect post-login a `/my-deliveries`. |
 | `Cocina` | Demuestra el KDS con un rol pre-armado (alternativo a `cook` con set un poco más amplio). |
 
-> **Referencia completa para devs/agentes**: `application/backend/constants/` reúne
+> **Referencia completa para devs/agentes**: `bistro/backend/constants/` reúne
 > el modelo RBAC ejecutable del proyecto (catálogo de ~82 permisos, defaults
 > exactos por rol, modo *courier-only*, aislamiento por sede, checklist
 > accionable). Antes de tocar permisos o roles, consultar
-> `application/backend/constants/RBAC_CHECKLIST.md`.
+> `bistro/backend/constants/RBAC_CHECKLIST.md`.
 
 ---
 
@@ -93,8 +93,8 @@ asignan a mano dentro del seeder:
 
 Definidas en la tabla `features` (sembrada por `FeatureSeeder`) con `slug` único.
 A 2026-05 hay **~82 slugs activos** agrupados por dominio. La fuente de verdad
-ejecutable es `application/backend/database/seeders/FeatureSeeder.php`; el
-catálogo legible vive en `application/backend/constants/PERMISSIONS_CATALOG.md`.
+ejecutable es `bistro/backend/database/seeders/FeatureSeeder.php`; el
+catálogo legible vive en `bistro/backend/constants/PERMISSIONS_CATALOG.md`.
 
 Dominios principales (no exhaustivo):
 
@@ -254,4 +254,4 @@ Reglas:
 
 ---
 
-> Última revisión: 2026-05-18 (#201) — alineado con `application/backend/constants/` (8 archivos de referencia RBAC para devs y agentes).
+> Última revisión: 2026-05-18 (#201) — alineado con `bistro/backend/constants/` (8 archivos de referencia RBAC para devs y agentes).

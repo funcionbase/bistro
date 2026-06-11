@@ -106,7 +106,7 @@ El trait hookea `prepareForValidation()` y aplica la transformación según la c
 
 ---
 
-## Frontend — helpers (`application/resources/js/lib/input-sanitize.ts`)
+## Frontend — helpers (`bistro/frontend/src/lib/input-sanitize.ts`)
 
 ```ts
 sanitizePlainText(value: string, maxLength: number): string
@@ -121,7 +121,7 @@ El frontend no garantiza nada — el backend es la única fuente de verdad. Los 
 2. Bloquear caracteres invisibles en el `onChange` para que el usuario vea el feedback al pegar.
 3. Compartir las mismas reglas conceptualmente entre cliente y servidor (auditable).
 
-### Schemas zod (`application/resources/js/lib/schemas/`)
+### Schemas zod (`bistro/frontend/src/lib/schemas/`)
 
 Cada feature crítica declara su schema en `schemas/<feature>.ts`. El schema:
 
@@ -148,7 +148,7 @@ Componente genérico para renderizar markdown con allowlist estricta. Hoy sin co
 
 ### PDF (DomPDF)
 
-Todos los Blades en `application/resources/views/pdfs/**/*.blade.php` usan `{{ }}` exclusivamente. La auditoría de la Fase 3 confirma 0 uso de `{!! !!}` con campos de usuario.
+Todos los Blades en `bistro/backend/resources/views/pdfs/**/*.blade.php` usan `{{ }}` exclusivamente. La auditoría de la Fase 3 confirma 0 uso de `{!! !!}` con campos de usuario.
 
 ### Comanda térmica (ESC/POS)
 
@@ -156,7 +156,7 @@ Los bytes de control `\x1B` (ESC) y `\x1D` (GS) se filtran en cualquier texto qu
 
 ### Email
 
-Templates en `application/resources/views/emails/**/*.blade.php` usan `{{ }}`. El `subject` se sanitiza con `SafePlainText(maxBytes: 255)` si incluye nombre del cliente.
+Templates en `bistro/backend/resources/views/emails/**/*.blade.php` usan `{{ }}`. El `subject` se sanitiza con `SafePlainText(maxBytes: 255)` si incluye nombre del cliente.
 
 ---
 
@@ -223,7 +223,7 @@ Los documentos legales viven en el wiki externo (`config/legal.php` → `LEGAL_W
 
 - Issue de origen: [HU #200 — Sanitización transversal de inputs](https://github.com/cristianmarint/flexyflow.restaurante/issues/200).
 - `CLAUDE.md` (raíz) — sección "Sanitización de inputs".
-- `application/app/Http/Middleware/SecurityHeaders.php` — base para CSP + headers complementarios.
+- `bistro/backend/app/Http/Middleware/SecurityHeaders.php` — base para CSP + headers complementarios.
 - OWASP ASVS v4 §5.1 (validation), §5.2 (sanitization), §14.4 (HTTP security headers).
 - OWASP Cheat Sheet — Cross-Site Scripting Prevention.
 - Unicode Technical Report #36 — Security Considerations.

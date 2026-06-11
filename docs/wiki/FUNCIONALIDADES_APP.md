@@ -7018,7 +7018,7 @@ composer run dev         # backend + frontend en paralelo
 
 ### Política de documentación
 
-> **Cualquier cambio en frontend o backend** debe actualizar `application/FUNCIONALIDADES_APP.md`, `application/FRONTEND_FILES.md` y `application/BACKEND_FILES.md`.
+> **Cualquier cambio en frontend o backend** debe actualizar `docs/wiki/FUNCIONALIDADES_APP.md`, `docs/wiki/FRONTEND_FILES.md` y `docs/wiki/BACKEND_FILES.md`.
 
 (Regla en `CLAUDE.md` raíz del proyecto.)
 
@@ -7053,7 +7053,7 @@ La app es instalable como PWA en Android, iOS y desktop. La Fase 2 (modo offline
 
 ### Instalabilidad
 
-- Iconos en `public/icons/`: `icon-192.png`, `icon-512.png`, `icon-192-maskable.png`, `icon-512-maskable.png`, `apple-touch-icon-180.png` (generados por `application/scripts/generate-pwa-icons.mjs` desde el SVG fuente del logo).
+- Iconos en `public/icons/`: `icon-192.png`, `icon-512.png`, `icon-192-maskable.png`, `icon-512-maskable.png`, `apple-touch-icon-180.png` (generados por `bistro/frontend/scripts/generate-pwa-icons.mjs` desde el SVG fuente del logo).
 - Meta tags PWA inyectados en `resources/views/app.blade.php`: `theme-color`, `apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`.
 - Banner de instalación (`/dashboard`):
   - Android/desktop: `InstallPwaPrompt` captura `beforeinstallprompt`, banner sticky inferior con CTA "Instalar". Dismiss persiste 14 días en `localStorage` (`pwa_install_dismissed_at`).
@@ -7177,7 +7177,7 @@ Ahora el stack está listo para N=2+ instancias.
 
 ### Detalle técnico
 
-Ver `application/BACKEND_FILES.md` → sección "Escalado horizontal multi-EC2"
+Ver `docs/wiki/BACKEND_FILES.md` → sección "Escalado horizontal multi-EC2"
 para configuración de discos, env vars, comandos y guardas anti-fuga DIAN.
 
 ### Operación

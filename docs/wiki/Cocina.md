@@ -30,7 +30,7 @@ dedicadas por estación física.
 Cada sede recién creada (en `CompanyEnrollmentController` o
 `BranchController::store`) recibe las 4 estaciones automáticamente.
 Backfill para empresas existentes vía `KdsStationSeeder` en
-`ProductionSeeder`. Ver `application/constants/KDS_STATIONS.md` para la
+`ProductionSeeder`. Ver `bistro/backend/constants/KDS_STATIONS.md` para la
 referencia canónica completa.
 
 ---
@@ -45,7 +45,7 @@ referencia canónica completa.
 
 > `accountant`, `marketing` y `inventory_manager` no reciben KDS por
 > default; el owner puede asignarles manualmente. Ver
-> `application/constants/PERMISSIONS_CATALOG.md` y `ROLES_TEMPLATES.md`.
+> `bistro/backend/constants/PERMISSIONS_CATALOG.md` y `ROLES_TEMPLATES.md`.
 
 ---
 
@@ -118,7 +118,7 @@ Eventos emitidos por `KdsTicketService`, `KdsStationController` y
 
 `AuditService::log` agrega automáticamente `branch_id` (de la orden /
 estación / token) y `actor_active_branch_id` del request. Ver
-`application/constants/AUDIT_EVENTS.md` para la firma exacta del data.
+`bistro/backend/constants/AUDIT_EVENTS.md` para la firma exacta del data.
 
 ---
 
@@ -140,17 +140,17 @@ sigue viendo `orders.status=ready` cuando la mesa está completa.
 
 ## Cross-references
 
-- Constants: `application/backend/constants/KDS_STATIONS.md`,
+- Constants: `bistro/backend/constants/KDS_STATIONS.md`,
   `PERMISSIONS_CATALOG.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`,
   `ROLES_TEMPLATES.md`.
-- Backend: `application/backend/app/Models/KdsStation.php`,
+- Backend: `bistro/backend/app/Models/KdsStation.php`,
   `KdsDeviceToken.php`, `app/Services/KdsTicketService.php`,
   `KdsDeviceTokenService.php`,
   `app/Http/Controllers/Api/KdsController.php`,
   `KdsStationController.php`, `KdsDeviceTokenController.php`,
   `app/Http/Controllers/Web/KdsStandaloneController.php`,
   `app/Http/Middleware/EnsureKdsDeviceToken.php`.
-- Frontend: `application/frontend/src/pages/kds/index.tsx`
+- Frontend: `bistro/frontend/src/pages/kds/index.tsx`
   (consolidado), `pages/kds/station.tsx` (standalone),
   `pages/company/kds.tsx` (settings),
   `components/kds/kds-station-select.tsx`,

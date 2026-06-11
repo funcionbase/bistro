@@ -210,7 +210,7 @@ Devuelve los cupones `auto_apply=true` aplicables al carrito actual, sin pedir c
 
 ## Configuración
 
-`application/backend/config/coupons.php`:
+`bistro/backend/config/coupons.php`:
 
 | Clave | Default | Descripción |
 |-------|---------|-------------|

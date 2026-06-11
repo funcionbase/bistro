@@ -333,7 +333,7 @@ Tokens del DS obligatorios: `bg-card`, `text-muted-foreground`, `border-border`,
 | `whatsapp.disconnected` | `WhatsappAccountController::destroy` | `{phone_number_id}` |
 | `whatsapp.verification.sent` / `consumed` / `rejected` | `WhatsappVerificationController` | `{action, attempts}` |
 
-Catálogo canónico en `application/constants/AUDIT_EVENTS.md`.
+Catálogo canónico en `bistro/backend/constants/AUDIT_EVENTS.md`.
 
 ---
 
@@ -355,7 +355,7 @@ Catálogo canónico en `application/constants/AUDIT_EVENTS.md`.
 
 ## Cross-references
 
-- Constants: `application/constants/PERMISSIONS_CATALOG.md`, `BRANCH_RBAC.md`, `ACCOUNTING_RULES.md`, `MIDDLEWARE_MAP.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`.
+- Constants: `bistro/backend/constants/PERMISSIONS_CATALOG.md`, `BRANCH_RBAC.md`, `ACCOUNTING_RULES.md`, `MIDDLEWARE_MAP.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`.
 - Backend: `app/Http/Controllers/Api/{CompanyController,CompanySettingsController,WhatsappAccountController,WhatsappVerificationController,WhatsappWebhookController}.php`, `app/Http/Controllers/Api/Dian/*.php`, `app/Services/{CompanySettingsService,Whatsapp\*}.php`, `app/Policies/WhatsappAccountPolicy.php`, `app/Http/Middleware/{EnsureCompanyAccess,EnsureCompanyVerified,EnsureCompanyNotBlocked}.php`.
 - Frontend: `src/pages/company/{settings,preferences,dian,whatsapp,kds,printers,under-review}.tsx`, `src/pages/company/branches/`, `src/hooks/use-bootstrap.ts`, `src/components/billing/*`, `src/components/dian/*`, `src/components/whatsapp/*`.
 - Wiki relacionado: `Empresas.md`, `Onboarding.md`, `Facturación-Electrónica-DIAN.md`, `WhatsApp-Bot.md`, `Cocina.md`, `Multi-tenancy.md`, `Usuarios-Roles-Permisos.md`.

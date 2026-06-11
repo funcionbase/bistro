@@ -4,7 +4,7 @@
 > Documento canónico para desarrollo, troubleshooting y manuales operativos.
 > Cubre: páginas, componentes, hooks, layouts, librerías, tipos, autenticación, polling, RBAC y limitaciones conocidas.
 
-> ⚠️ **Corrección de arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query** en `application/frontend/src/`; **NO usa Inertia** (`@inertiajs/react` no está instalado). Las menciones a "Inertia", "deferred props Inertia", "Inertia shared props" y las rutas `resources/js/...` de este documento son **legacy** del monolito previo y están pendientes de limpieza. Hoy: rutas en `src/spa/router.tsx` (lazy + Suspense), datos vía `useQuery`/`apiFetch`, contexto global vía `GET /api/v1/bootstrap` → `SpaSharedDataBridge`/`useBootstrap()`. Ver `Frontend.md` para los patrones vigentes.
+> ⚠️ **Corrección de arquitectura (post #220):** el frontend es un **SPA standalone con React Router v7 + TanStack React Query** en `bistro/frontend/src/`; **NO usa Inertia** (`@inertiajs/react` no está instalado). Las menciones a "Inertia", "deferred props Inertia", "Inertia shared props" y las rutas `resources/js/...` de este documento son **legacy** del monolito previo y están pendientes de limpieza. Hoy: rutas en `src/spa/router.tsx` (lazy + Suspense), datos vía `useQuery`/`apiFetch`, contexto global vía `GET /api/v1/bootstrap` → `SpaSharedDataBridge`/`useBootstrap()`. Ver `Frontend.md` para los patrones vigentes.
 
 ---
 
@@ -17,7 +17,7 @@
 | React Router | v7 | SPA client-side; rutas lazy + Suspense en `src/spa/router.tsx` |
 | TanStack React Query | v5 | Carga de datos, cache y polling (`src/lib/query-client.ts`) |
 | Tailwind CSS | v4 | Utility-first; tokens en `tailwind.config.ts` |
-| Vite | — | Bundler; entry `application/frontend/src/spa/main.tsx` |
+| Vite | — | Bundler; entry `bistro/frontend/src/spa/main.tsx` |
 | @dnd-kit | — | Drag-and-drop (menú, kanban) |
 | @tanstack/react-table | — | Tablas (parcial) |
 | lucide-react | — | Iconos |
@@ -45,7 +45,7 @@
 
 ## Catálogos canónicos compartidos
 
-Antes de declarar uniones de strings literales para cualquier estado, tipo, método o acción RBAC, **consultar `application/constants/`** (fuente única documental — ver `BACKEND_FILES.md` para el inventario completo). Si el catálogo se sirve desde backend, leerlo vía Inertia shared props en lugar de hardcodearlo.
+Antes de declarar uniones de strings literales para cualquier estado, tipo, método o acción RBAC, **consultar `bistro/backend/constants/`** (fuente única documental — ver `BACKEND_FILES.md` para el inventario completo). Si el catálogo se sirve desde backend, leerlo vía Inertia shared props en lugar de hardcodearlo.
 
 | Catálogo | Shared prop | Hook frontend | Fallback embebido |
 |---|---|---|---|
@@ -803,7 +803,7 @@ antepone `VITE_API_URL` para que la navegación llegue al backend real.
 
 En dev `VITE_API_URL` queda vacío → `routeBackend()` devuelve un path relativo
 que resuelve el proxy de Vite (same-origin). El valor de PDN vive en
-`application/frontend/.env.production`.
+`bistro/frontend/.env.production`.
 
 ---
 
@@ -1030,7 +1030,7 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 ### Iconos
 
 - `public/icons/icon-{192,512}{,-maskable}.png`, `public/icons/apple-touch-icon-180.png`.
-- Generados con `application/scripts/generate-pwa-icons.mjs` (sharp + SVG fuente). Re-ejecutar si cambia el logo:
+- Generados con `bistro/frontend/scripts/generate-pwa-icons.mjs` (sharp + SVG fuente). Re-ejecutar si cambia el logo:
   ```bash
   cd application && node scripts/generate-pwa-icons.mjs
   ```
