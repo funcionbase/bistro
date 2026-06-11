@@ -15,7 +15,7 @@
 | Dominio raíz | GoDaddy | `flexyflow.co` (registrar). NS delegados a Cloudflare. |
 | DNS | Cloudflare | Zona `flexyflow.co` — todos los records. NO usamos Route53 a pesar de que el CFN tenga `Route53HostedZoneId` parametrizable. |
 | Frontend SPA | Cloudflare Workers | `npx wrangler deploy` desde `bistro/frontend/`. Worker: `bistro-flexyflow-co`. |
-| Backend API | AWS (EC2 + ALB) | ASG `t3.micro` + ALB internet-facing. Cloudflare proxea `panel-api.flexyflow.co` delante del ALB en modo Full. |
+| Backend API | AWS (EC2 + ALB) | ASG `t3.micro` + ALB internet-facing. Cloudflare proxea `bistro-api.flexyflow.co` delante del ALB en modo Full. |
 | TLS | ACM (us-east-1) | Wildcard `*.flexyflow.co` validado por DNS en Cloudflare. ARN en `pdn.json` → `CertificateArn`. |
 | Storage | AWS S3 | Buckets `flexyflow-panel-pdn-assets` (público vía storage-proxy firmado) y `flexyflow-panel-pdn-documents` (privado, DIAN 10 años). |
 | Email | AWS SES | Identidad `flexyflow.co` verificada. `From: noreply@flexyflow.co`. |
@@ -26,7 +26,7 @@
 |---|---|---|---|
 | Local | `http://localhost:5173` | `http://localhost` | — |
 | QA | `panel-qa.flexyflow.co` | `panel-api-qa.flexyflow.co` | output `LoadBalancerDnsName` del stack `05-alb` |
-| PDN | `panel.flexyflow.co` | `panel-api.flexyflow.co` | output `LoadBalancerDnsName` del stack `05-alb` |
+| PDN | `panel.flexyflow.co` | `bistro-api.flexyflow.co` | output `LoadBalancerDnsName` del stack `05-alb` |
 
 > En el cutover #239 ambos hosts anteriores (`restaurante.flexyflow.co` y
 > `restaurante-api.flexyflow.co`) se apagan sin redirect ni soporte dual.
@@ -46,7 +46,7 @@ Detalles importantes:
 2. **ALB termina TLS con el cert ACM** wildcard. Cloudflare habla HTTPS al
    origen (modo Full).
 3. **ALB filtra por `Host:` header**: solo deja pasar al TG el tráfico cuyo
-   `Host` coincida con `PublicHostname` (`panel-api.flexyflow.co`).
+   `Host` coincida con `PublicHostname` (`bistro-api.flexyflow.co`).
    Cualquier otro host recibe 403 sin tocar EC2.
 4. **Nginx** (en EC2) usa `server_name` = `AppDomain` del CFN. Si Cloudflare
    manda un Host distinto, nginx también devuelve 444/error.
@@ -72,7 +72,7 @@ Lo consume:
 ### Frontend (`.env.production`)
 
 ```dotenv
-VITE_API_URL=https://panel-api.flexyflow.co
+VITE_API_URL=https://bistro-api.flexyflow.co
 ```
 
 ## Migración #239 — rename de SPA y API
@@ -82,13 +82,13 @@ Cutover atómico, single-host, sin redirect ni soporte dual:
 | Componente | Antes | Después |
 |---|---|---|
 | Frontend SPA | `restaurante.flexyflow.co` | `panel.flexyflow.co` |
-| Backend API | `restaurante-api.flexyflow.co` | `panel-api.flexyflow.co` |
+| Backend API | `restaurante-api.flexyflow.co` | `bistro-api.flexyflow.co` |
 
 1. Deploy del Worker `bistro-flexyflow-co` desde `bistro/frontend/dist`.
 2. Asociar custom domain `panel.flexyflow.co` desde Cloudflare → Workers → Triggers.
 3. Crear CNAME `panel-api` en Cloudflare apuntando al DNS-name del ALB (proxied).
-4. CFN apply de `05-alb` con `pdn.json` (`PublicHostname=panel-api.flexyflow.co`) — reescribe la host-header rule del ALB.
-5. Google Cloud Console: reemplazar callback `restaurante-api.flexyflow.co/auth/google/callback` por `panel-api.flexyflow.co/auth/google/callback`.
+4. CFN apply de `05-alb` con `pdn.json` (`PublicHostname=bistro-api.flexyflow.co`) — reescribe la host-header rule del ALB.
+5. Google Cloud Console: reemplazar callback `restaurante-api.flexyflow.co/auth/google/callback` por `bistro-api.flexyflow.co/auth/google/callback`.
 6. Secrets Manager: cambiar `APP_URL`, `GOOGLE_REDIRECT_URI`, `SESSION_DOMAIN=.flexyflow.co`.
 7. `aws autoscaling start-instance-refresh` para que el ASG levante con el env y nginx `server_name` nuevos.
 8. Apagar custom domain del Worker viejo y eliminar el CNAME `restaurante-api`.

@@ -3,7 +3,7 @@ import { AUTH_MARKER, clearToken, getToken, markCookieMigrated } from './token';
 /**
  * Base del backend. En dev queda vacío → paths relativos que resuelve el
  * proxy de Vite. En producción cross-origin (#220) es `VITE_API_URL`
- * (ej. https://panel-api.flexyflow.co) — el frontend vive en otro
+ * (ej. https://bistro-api.flexyflow.co) — el frontend vive en otro
  * host (panel.flexyflow.co), así que los paths relativos no sirven.
  */
 const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL) ?? '';

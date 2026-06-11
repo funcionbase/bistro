@@ -9,7 +9,7 @@ $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 | Si no, se deriva de `FRONTEND_URL` + los orígenes de desarrollo locales.
 |
 | El deploy es cross-origin same-site: frontend en `panel.flexyflow.co`,
-| API en `panel-api.flexyflow.co`. Para que la cookie HttpOnly del JWT
+| API en `bistro-api.flexyflow.co`. Para que la cookie HttpOnly del JWT
 | (`flexyflow_jwt`) y la cookie de mesa (`tdt_*`) viajen entre ambos hay que:
 |   1. `supports_credentials => true` (abajo).
 |   2. Enumerar los orígenes exactos — `*` es inválido junto a credenciales.
