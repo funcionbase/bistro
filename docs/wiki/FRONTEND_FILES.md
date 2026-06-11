@@ -793,7 +793,7 @@ routeBackend('auth.google');   // → https://panel-api.flexyflow.co/auth/google
 | `route(name, params)` | Path relativo (`/dashboard`) | `<a href>` y navegación a rutas del SPA — las sirve el Worker de Cloudflare |
 | `routeBackend(name, params)` | URL absoluta al backend (prefija `VITE_API_URL`) | `<a href>` o `window.location.href` top-level que debe ir **cross-origin al backend Laravel**: hoy solo el flujo OAuth de Google (`auth.google`) |
 
-El SPA (`panel.flexyflow.co`) y la API (`panel-api.flexyflow.co`)
+El SPA (`bistro.flexyflow.co`) y la API (`panel-api.flexyflow.co`)
 viven en hosts distintos. Un `<a href>` con path relativo a `/auth/google`
 caería en el Worker SPA, que no maneja esa ruta → **404**. `routeBackend()`
 antepone `VITE_API_URL` para que la navegación llegue al backend real.

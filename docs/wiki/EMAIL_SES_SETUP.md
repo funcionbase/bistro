@@ -165,7 +165,7 @@ Para enviar a cualquier destinatario:
 1. SES Console → **Account dashboard** → **Request production access**.
 2. Llenar:
    - **Use case**: Transactional
-   - **Website**: `https://panel.flexyflow.co`
+   - **Website**: `https://bistro.flexyflow.co`
    - **Description**: "flexyflow es un SaaS de gestión para restaurantes en
      Colombia. Enviamos correos transaccionales: confirmación de cuenta,
      reset de contraseña, facturas mensuales, notificaciones operativas.

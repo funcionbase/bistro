@@ -33,7 +33,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `APP_MAINTENANCE_DRIVER` | No | `file` | Driver de modo mantenimiento (`file` \| `cache`) |
 | `PHP_CLI_SERVER_WORKERS` | No | `1` | Workers del servidor PHP CLI integrado |
 | `BCRYPT_ROUNDS` | No | `12` | Costo bcrypt de hashing de contraseñas |
-| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://panel.flexyflow.co`, `qa`→`https://panel-qa.flexyflow.co`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
+| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://bistro.flexyflow.co`, `qa`→`https://panel-qa.flexyflow.co`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
 
 ---
 
@@ -98,7 +98,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `SESSION_DRIVER` | No | `database` | `database` \| `file` \| `cookie` |
 | `SESSION_LIFETIME` | No | `120` | Minutos de vida de la sesión |
 | `SESSION_SECURE_COOKIE` | No | `false` | `true` en qa/pdn (HTTPS). Obligatorio `true` si `SESSION_SAME_SITE=none` |
-| `SESSION_SAME_SITE` | No | `none` | Política SameSite de las cookies (`flexyflow_jwt`, sesión, mesa). `none` es obligatorio en el deploy cross-origin — el SPA (`panel.flexyflow.co`) y la API (`panel-api.flexyflow.co`) viven en hosts distintos. En local sobre HTTP, `JwtService::buildCookie` degrada `none`→`lax` automáticamente y el dev no se rompe |
+| `SESSION_SAME_SITE` | No | `none` | Política SameSite de las cookies (`flexyflow_jwt`, sesión, mesa). `none` es obligatorio en el deploy cross-origin — el SPA (`bistro.flexyflow.co`) y la API (`panel-api.flexyflow.co`) viven en hosts distintos. En local sobre HTTP, `JwtService::buildCookie` degrada `none`→`lax` automáticamente y el dev no se rompe |
 | `SESSION_DOMAIN` | No | `null` | Dominio de la cookie. Vacío/`null` para que el navegador la asocie al host exacto |
 
 > **Cross-origin:** `SameSite=None` exige `Secure` — el navegador descarta una
