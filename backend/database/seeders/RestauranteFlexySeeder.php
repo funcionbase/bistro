@@ -326,7 +326,7 @@ class RestauranteFlexySeeder extends Seeder
     {
         // Colores de los roles del sistema leídos desde config/roles.php.
         // Se evita hardcodear para no introducir drift con `config('roles.role_colors')`,
-        // que es la fuente de verdad declarada en application/constants/ROLES_SYSTEM.md.
+        // que es la fuente de verdad declarada en bistro/backend/constants/ROLES_SYSTEM.md.
         $roles = [
             'owner' => $this->seedSystemRoleFromTemplate($companyNit, 'owner', config('roles.role_colors.owner')),
             'admin' => $this->seedSystemRoleFromTemplate($companyNit, 'admin', config('roles.role_colors.admin')),

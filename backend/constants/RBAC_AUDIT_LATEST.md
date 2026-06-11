@@ -28,7 +28,7 @@ Sin drift.
 
 ## Allow-list activa
 
-Ver `application/config/rbac.php` (sección `audit.public_routes`). 17
+Ver `bistro/backend/config/rbac.php` (sección `audit.public_routes`). 17
 entries cubriendo:
 
 - Webhooks externos firmados (HMAC): WhatsApp, CSP-report.

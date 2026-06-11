@@ -11,10 +11,10 @@
 
 ## Fuente de verdad ejecutable
 
-- `application/config/companies.php` — catálogo canónico
+- `bistro/backend/config/companies.php` — catálogo canónico
   (`all`, `verified`, `pending`, `blocked`, `fully_blocked`, `default`,
   `allowed_transitions`, `labels`).
-- `application/database/migrations/0001_01_01_000100_create_companies_block.php:73-80`
+- `bistro/backend/database/migrations/0001_01_01_000100_create_companies_block.php:73-80`
   — enum BD (default `'pending_activation'`).
 - `.github/workflows/company-ops.yml` (action `change_status`) — workflow ops
   manual que muta el status. Valida `from→to` contra `allowed_transitions`.

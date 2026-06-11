@@ -10,8 +10,8 @@
 - [ ] `docs/wiki/BACKEND_FILES.md` — mapa de archivos backend
 - [ ] `docs/wiki/FRONTEND_FILES.md` — mapa de archivos frontend
 - [ ] Wiki específico del módulo (`docs/wiki/<X>.md`)
-- [ ] `application/constants/PERMISSIONS_CATALOG.md` — permisos asociados
-- [ ] `application/constants/MIDDLEWARE_MAP.md` — middleware aplicable
+- [ ] `bistro/backend/constants/PERMISSIONS_CATALOG.md` — permisos asociados
+- [ ] `bistro/backend/constants/MIDDLEWARE_MAP.md` — middleware aplicable
 
 ---
 
@@ -116,11 +116,11 @@
 ## Cómo añadir un módulo funcional nuevo
 
 1. Crear el wiki del módulo en `docs/wiki/<Nombre>.md` (prosa narrativa, capturas, flujo del usuario).
-2. Si introduce permisos: actualizar `application/constants/PERMISSIONS_CATALOG.md`, `FeatureSeeder.php`, `PermissionTemplateSeeder.php`.
-3. Si introduce middleware: actualizar `application/constants/MIDDLEWARE_MAP.md`.
-4. Si introduce auditoría: actualizar `application/constants/AUDIT_EVENTS.md`.
-5. Si toca contabilidad: actualizar `application/constants/ACCOUNTING_RULES.md` + `CLAUDE.md` §12 + cross-ref a `PAYMENT_METHODS.md`.
-6. Si toca multi-tenancy: actualizar `application/constants/BRANCH_RBAC.md`.
+2. Si introduce permisos: actualizar `bistro/backend/constants/PERMISSIONS_CATALOG.md`, `FeatureSeeder.php`, `PermissionTemplateSeeder.php`.
+3. Si introduce middleware: actualizar `bistro/backend/constants/MIDDLEWARE_MAP.md`.
+4. Si introduce auditoría: actualizar `bistro/backend/constants/AUDIT_EVENTS.md`.
+5. Si toca contabilidad: actualizar `bistro/backend/constants/ACCOUNTING_RULES.md` + `CLAUDE.md` §12 + cross-ref a `PAYMENT_METHODS.md`.
+6. Si toca multi-tenancy: actualizar `bistro/backend/constants/BRANCH_RBAC.md`.
 7. Agregar fila al dominio correspondiente en este `.md`. Si no encaja en ninguno, abrir sección nueva.
 8. Actualizar `docs/wiki/FUNCIONALIDADES_APP.md`, `BACKEND_FILES.md`, `FRONTEND_FILES.md`.
 
@@ -136,5 +136,5 @@
 
 - `docs/wiki/Home.md` — entrada principal al wiki.
 - `docs/wiki/FUNCIONALIDADES_APP.md` — manual funcional consolidado.
-- `application/constants/PERMISSIONS_CATALOG.md` — permisos por dominio.
+- `bistro/backend/constants/PERMISSIONS_CATALOG.md` — permisos por dominio.
 - `CLAUDE.md` raíz §9 "Documentación viva".

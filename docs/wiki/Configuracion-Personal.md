@@ -294,7 +294,7 @@ Tokens del DS obligatorios. La página de notificaciones es mobile-first (apila 
 
 ## Eventos de auditoría
 
-Catálogo en `application/constants/AUDIT_EVENTS.md`:
+Catálogo en `bistro/backend/constants/AUDIT_EVENTS.md`:
 
 | Acción | Disparador | Data |
 |--------|-----------|------|
@@ -326,7 +326,7 @@ No hay evento para apariencia (cliente-only).
 
 ## Cross-references
 
-- Constants: `application/constants/AUDIT_EVENTS.md`, `FEATURES_INDEX.md`, `PERMISSIONS_CATALOG.md`.
+- Constants: `bistro/backend/constants/AUDIT_EVENTS.md`, `FEATURES_INDEX.md`, `PERMISSIONS_CATALOG.md`.
 - Backend: `app/Http/Controllers/Api/{AccountController,MeController,PushSubscriptionController}.php`, `app/Http/Controllers/Settings/{ProfileController,PasswordController}.php`, `app/Http/Controllers/Auth/{GoogleAuthController,VerifyEmailController}.php`, `routes/{auth.php,settings.php}`, `app/Models/{User,UserAcceptance,UserActiveToken,PushSubscription}.php`.
 - Frontend: `src/pages/settings/{profile,password,appearance,notifications}.tsx`, `src/pages/me/{index,perfil,agenda}.tsx`, `src/layouts/settings/layout.tsx`, `src/hooks/{use-appearance,use-push-subscription}.ts`, `src/components/{delete-user,appearance-tabs,appearance-dropdown,heading-small}.tsx`, `src/components/notifications/push-subscriptions-list.tsx`.
 - Wiki relacionado: `Autenticación.md`, `Onboarding.md`, `PWA-Push-Notifications.md`, `Usuarios-Roles-Permisos.md`.

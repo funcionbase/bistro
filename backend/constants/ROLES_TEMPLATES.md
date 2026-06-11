@@ -1,10 +1,10 @@
 # Roles de plantilla (operativos, no system)
 
 > **Fuente de verdad ejecutable**:
-> `application/config/roles.php` (`role_names`, `role_colors`) +
-> `application/database/seeders/PermissionTemplateSeeder.php` (maps de
+> `bistro/backend/config/roles.php` (`role_names`, `role_colors`) +
+> `bistro/backend/database/seeders/PermissionTemplateSeeder.php` (maps de
 > permisos por `role_type`) +
-> `application/app/Console/Commands/SyncRoleTemplatesCommand.php`
+> `bistro/backend/app/Console/Commands/SyncRoleTemplatesCommand.php`
 > (comando `roles:sync-templates` que crea/sincroniza los roles en empresas
 > existentes).
 > Este archivo es **espejo de referencia** — el código gana en caso de drift.
@@ -218,8 +218,8 @@ sección "Agregar un rol de plantilla nuevo". Resumen:
 
 ## Pares espejo que deben mantenerse sincronizados
 
-- `application/config/roles.php::role_names` ↔ `PermissionTemplateSeeder.php` (lista del `foreach`) ↔ tabla de arriba.
-- `application/config/roles.php::role_colors` ↔ tabla de arriba.
+- `bistro/backend/config/roles.php::role_names` ↔ `PermissionTemplateSeeder.php` (lista del `foreach`) ↔ tabla de arriba.
+- `bistro/backend/config/roles.php::role_colors` ↔ tabla de arriba.
 - `PermissionTemplateSeeder.php::$waiterMap/$cookMap/$cashierMap/$managerMap/$accountantMap/$marketingMap/$inventoryManagerMap/$supervisorMap` ↔ los 8 sub-bloques de defaults en este `.md`.
 - `SyncRoleTemplatesCommand::$signature` (default `--role`) ↔ catálogo arriba.
 

@@ -136,13 +136,13 @@ Todos los disparadores son N-instance safe en ASG con N EC2:
 
 ## Referencias cruzadas
 
-- `application/app/Services/WebPushDispatcher.php` — envío + soft-revoke 410.
-- `application/app/Jobs/Send{PendingApproval,PendingApprovalReminder,InventoryDigest}PushJob.php`.
-- `application/app/Listeners/NotifyPendingApprovalListener.php`.
-- `application/app/Console/Commands/RemindPendingApprovalsCommand.php`.
-- `application/config/notifications.php` — tuning (cooldown, throttle, kill-switch).
-- `application/resources/js/sw.ts` — Service Worker custom.
-- `application/resources/js/hooks/use-push-subscription.ts` — hook React.
-- `application/constants/PERMISSIONS_CATALOG.md` — slugs `notifications.*`.
-- `application/constants/AUDIT_EVENTS.md` — `notifications.{subscribed,revoked,pushed}`.
+- `bistro/backend/app/Services/WebPushDispatcher.php` — envío + soft-revoke 410.
+- `bistro/backend/app/Jobs/Send{PendingApproval,PendingApprovalReminder,InventoryDigest}PushJob.php`.
+- `bistro/backend/app/Listeners/NotifyPendingApprovalListener.php`.
+- `bistro/backend/app/Console/Commands/RemindPendingApprovalsCommand.php`.
+- `bistro/backend/config/notifications.php` — tuning (cooldown, throttle, kill-switch).
+- `bistro/frontend/src/sw.ts` — Service Worker custom.
+- `bistro/frontend/src/hooks/use-push-subscription.ts` — hook React.
+- `bistro/backend/constants/PERMISSIONS_CATALOG.md` — slugs `notifications.*`.
+- `bistro/backend/constants/AUDIT_EVENTS.md` — `notifications.{subscribed,revoked,pushed}`.
 - `docs/wiki/PWA-Push-Notifications.md` — guía de setup + browser matrix.

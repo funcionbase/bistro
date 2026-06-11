@@ -1,6 +1,6 @@
 # Roles del sistema (`is_system=true`)
 
-> **Fuente de verdad ejecutable**: `application/config/roles.php`
+> **Fuente de verdad ejecutable**: `bistro/backend/config/roles.php`
 > (`system_roles`, `role_names`, `role_colors`) + `database/migrations` que
 > crea `company_roles.is_system` + `database/seeders/PermissionTemplateSeeder.php`
 > (defaults por `role_type`).
@@ -64,8 +64,8 @@
 
 ## Pares espejo que deben mantenerse sincronizados
 
-- `application/config/roles.php` ↔ `application/database/seeders/RestauranteFlexySeeder.php` (colores leídos del config).
-- `application/app/Services/FeaturePermissionService.php` ↔ `application/app/Http/Middleware/EnsureFeaturePermission.php` ↔ `application/resources/js/hooks/use-permissions.ts` (regla bypass).
-- `application/config/roles.php::role_names` ↔ etiquetas en UI (`pages/identities/roles.tsx`, `role-badge.tsx`).
+- `bistro/backend/config/roles.php` ↔ `bistro/backend/database/seeders/RestauranteFlexySeeder.php` (colores leídos del config).
+- `bistro/backend/app/Services/FeaturePermissionService.php` ↔ `bistro/backend/app/Http/Middleware/EnsureFeaturePermission.php` ↔ `bistro/frontend/src/hooks/use-permissions.ts` (regla bypass).
+- `bistro/backend/config/roles.php::role_names` ↔ etiquetas en UI (`pages/identities/roles.tsx`, `role-badge.tsx`).
 
 > Última revisión: 2026-05-18 (#201)

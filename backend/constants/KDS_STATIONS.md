@@ -1,7 +1,7 @@
 # Estaciones KDS (Kitchen Display System) — #115
 
 > **Fuente de verdad ejecutable**: `App\Models\KdsStation::defaultDefinitions()`
-> (`application/app/Models/KdsStation.php`). Este `.md` es **espejo de
+> (`bistro/backend/app/Models/KdsStation.php`). Este `.md` es **espejo de
 > referencia humana** — si hay drift entre el modelo y este archivo, el código
 > gana y este archivo se corrige en el mismo PR.
 
@@ -89,9 +89,9 @@ el código gana y este archivo se corrige en el mismo PR.
 
 ## Cross-references
 
-- Modelo: `application/app/Models/KdsStation.php`
-- Migración: `application/database/migrations/2026_05_19_*_create_kds_stations_table.php`
-- Seeder: `application/database/seeders/KdsStationSeeder.php`
+- Modelo: `bistro/backend/app/Models/KdsStation.php`
+- Migración: `bistro/backend/database/migrations/2026_05_19_*_create_kds_stations_table.php`
+- Seeder: `bistro/backend/database/seeders/KdsStationSeeder.php`
 - Permisos: ver `PERMISSIONS_CATALOG.md` (sección "Cocina (KDS)").
 - Eventos de auditoría: ver `AUDIT_EVENTS.md` (slugs `kds.*`).
 - Wiki: `docs/wiki/Cocina.md` (flujo cocinero + screenshots).

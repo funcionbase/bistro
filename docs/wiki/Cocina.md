@@ -30,7 +30,7 @@ dedicadas por estación física.
 Cada sede recién creada (en `CompanyEnrollmentController` o
 `BranchController::store`) recibe las 4 estaciones automáticamente.
 Backfill para empresas existentes vía `KdsStationSeeder` en
-`ProductionSeeder`. Ver `application/constants/KDS_STATIONS.md` para la
+`ProductionSeeder`. Ver `bistro/backend/constants/KDS_STATIONS.md` para la
 referencia canónica completa.
 
 ---
@@ -45,7 +45,7 @@ referencia canónica completa.
 
 > `accountant`, `marketing` y `inventory_manager` no reciben KDS por
 > default; el owner puede asignarles manualmente. Ver
-> `application/constants/PERMISSIONS_CATALOG.md` y `ROLES_TEMPLATES.md`.
+> `bistro/backend/constants/PERMISSIONS_CATALOG.md` y `ROLES_TEMPLATES.md`.
 
 ---
 
@@ -118,7 +118,7 @@ Eventos emitidos por `KdsTicketService`, `KdsStationController` y
 
 `AuditService::log` agrega automáticamente `branch_id` (de la orden /
 estación / token) y `actor_active_branch_id` del request. Ver
-`application/constants/AUDIT_EVENTS.md` para la firma exacta del data.
+`bistro/backend/constants/AUDIT_EVENTS.md` para la firma exacta del data.
 
 ---
 

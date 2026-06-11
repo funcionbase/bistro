@@ -12,7 +12,7 @@
 
 ## Antes de empezar (cualquier cambio RBAC)
 
-- [ ] Leí [`README.md`](./README.md) de `application/constants/`.
+- [ ] Leí [`README.md`](./README.md) de `bistro/backend/constants/`.
 - [ ] Identifiqué qué `.md` cubre el dominio que estoy tocando
       (ROLES_SYSTEM / ROLES_TEMPLATES / ROLES_DEMO / PERMISSIONS_CATALOG /
       COURIER_MODE / BRANCH_RBAC).
@@ -34,8 +34,8 @@
 - [ ] **¿Afecta el sidebar o el courier-mode?**
   - Si la presencia del permiso indica que el usuario debe ver navegación
     completa → agregar a `FULL_NAV_PERMISSIONS` en **ambos**:
-    - [ ] `application/app/Support/PostLoginRedirect.php`
-    - [ ] `application/resources/js/lib/courier-mode.ts`
+    - [ ] `bistro/backend/app/Support/PostLoginRedirect.php`
+    - [ ] `bistro/frontend/src/lib/courier-mode.ts`
   - Si NO (es un permiso que un courier podría tener legítimamente) → no
     tocar courier-mode.
 - [ ] **Si el permiso es asignable manualmente** → verificar que aparece
@@ -68,8 +68,8 @@
 - [ ] Actualizar `FeatureSeeder.php` con el nuevo slug.
 - [ ] Actualizar `PermissionTemplateSeeder.php` (los `match` que usen el slug literal).
 - [ ] Buscar y reemplazar referencias literales:
-      `grep -rn "'<viejo>'" application/` y
-      `grep -rn '"<viejo>"' application/resources/js/`.
+      `grep -rn "'<viejo>'" bistro/` y
+      `grep -rn '"<viejo>"' bistro/frontend/src/`.
 - [ ] Si está en `FULL_NAV_PERMISSIONS` → renombrar en **ambos** archivos
       ([`COURIER_MODE.md`](./COURIER_MODE.md) pares espejo).
 - [ ] **Invalidar caches** post-deploy: el `JwtService` puede cachear el set
@@ -173,7 +173,7 @@
 ## Verificación final del PR (cualquier cambio RBAC)
 
 - [ ] `vendor/bin/pint --dirty --format agent` limpio.
-- [ ] `npx tsc --noEmit` limpio (en `application/`).
+- [ ] `npx tsc --noEmit` limpio (en `bistro/frontend/`).
 - [ ] `npx eslint resources/js` limpio si tocó archivos TS.
 - [ ] Si tocó schema/seeders: `php artisan migrate:fresh --seed --force` corre
       limpio localmente.
@@ -190,7 +190,7 @@
   `Schedule::command('roles:sync-templates')`), debe llevar
   `->onOneServer()->withoutOverlapping()` (regla raíz `CLAUDE.md`).
 - **Docker** (cuando exista): si en algún momento se introduce `Dockerfile`
-  que copie `application/` entera, agregar `application/constants/` al
+  que copie `bistro/backend/` entera, agregar `bistro/backend/constants/` al
   `.dockerignore`. Hoy no aplica.
 
 > Última revisión: 2026-05-18 (#201).

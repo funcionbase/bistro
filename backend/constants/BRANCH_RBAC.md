@@ -1,11 +1,11 @@
 # RBAC por sede (multi-tenant + multi-sede)
 
 > **Fuente de verdad ejecutable**:
-> `application/app/Models/Concerns/BelongsToBranch.php` (scope global) +
-> `application/app/Http/Middleware/EnsureBranchAccess.php` +
-> `application/app/Http/Middleware/AllowConsolidatedBranches.php` +
-> `application/app/Services/FeaturePermissionService.php::userCanViewConsolidated` +
-> `application/app/Services/AuditService.php` (auto-tag `branch_id`).
+> `bistro/backend/app/Models/Concerns/BelongsToBranch.php` (scope global) +
+> `bistro/backend/app/Http/Middleware/EnsureBranchAccess.php` +
+> `bistro/backend/app/Http/Middleware/AllowConsolidatedBranches.php` +
+> `bistro/backend/app/Services/FeaturePermissionService.php::userCanViewConsolidated` +
+> `bistro/backend/app/Services/AuditService.php` (auto-tag `branch_id`).
 > Doc operativa extendida: `docs/wiki/Multi-tenancy.md`.
 > Este archivo es **espejo de referencia** RBAC — el código gana en caso de drift.
 

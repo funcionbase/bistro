@@ -10,12 +10,12 @@
 
 ## Fuente de verdad ejecutable
 
-- `application/database/migrations/0001_01_01_001300_create_employees_block.php:83`
+- `bistro/backend/database/migrations/0001_01_01_001300_create_employees_block.php:83`
   — enum BD `('active', 'inactive', 'vacation', 'sick_leave', 'compensatory')`.
-- `application/config/employees.php` (#204) — catálogo canónico (`vinculation_statuses`,
+- `bistro/backend/config/employees.php` (#204) — catálogo canónico (`vinculation_statuses`,
   `labels`, `badges`). Lo consumen `Rule::in(...)` en backend y la prop
   compartida `employeeStatuses` en Inertia.
-- `application/app/Http/Middleware/HandleInertiaRequests.php` — expone
+- `bistro/backend/app/Http/Middleware/HandleInertiaRequests.php` — expone
   `props.employeeStatuses` a todas las páginas Inertia.
 
 > El `.md` es **referencia humana**. Si difiere del código, el código gana y

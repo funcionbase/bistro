@@ -1,9 +1,9 @@
 /**
  * Fuente única de verdad de `companies.status` en el frontend.
  *
- * Espejo de `application/config/companies.php` — cualquier cambio acá debe
+ * Espejo de `bistro/backend/config/companies.php` — cualquier cambio acá debe
  * replicarse allá (buckets, labels, transiciones). Ver
- * `application/constants/COMPANY_STATUSES.md` para la doctrina.
+ * `bistro/backend/constants/COMPANY_STATUSES.md` para la doctrina.
  *
  * Hoy el catálogo vive solo en este módulo porque `activeCompany.status` ya
  * llega en el contexto global de la SPA — pero si en el futuro se necesita
@@ -42,7 +42,7 @@ export interface CompanyStatusCatalog {
 
 /**
  * Fallback embebido. Debe coincidir con `config/companies.php`. Cualquier
- * cambio acá replicarlo allá. Ver `application/constants/COMPANY_STATUSES.md`.
+ * cambio acá replicarlo allá. Ver `bistro/backend/constants/COMPANY_STATUSES.md`.
  */
 export const COMPANY_STATUS_FALLBACK: CompanyStatusCatalog = {
     all: ['pending_activation', 'active', 'past_due', 'suspended', 'rejected', 'inactive'],

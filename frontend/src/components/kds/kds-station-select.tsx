@@ -23,7 +23,7 @@ interface KdsStationSelectProps {
  * Carga la lista vía `GET /api/v1/kds/stations` al montarse. El valor `null`
  * representa "sin asignar" — los items de la categoría caerán en la estación
  * `is_default=true` de la sede como fallback (regla de mapping definida en
- * `application/constants/KDS_STATIONS.md`).
+ * `bistro/backend/constants/KDS_STATIONS.md`).
  *
  * Reutilizable desde el modal de categoría del menú, la página de settings KDS
  * y cualquier otro contexto que necesite vincular algo a una estación.

@@ -6,7 +6,7 @@ import type { EmployeeStatus, EmployeeStatusBadge, EmployeeStatusesConfig } from
  * (e.g., primer render antes del bootstrap, pantallas sin JWT).
  *
  * Debe coincidir con `config/employees.php`. Cualquier cambio aquí debe
- * replicarse allá. Ver `application/constants/EMPLOYEE_STATUSES.md`.
+ * replicarse allá. Ver `bistro/backend/constants/EMPLOYEE_STATUSES.md`.
  */
 export const EMPLOYEE_STATUSES_FALLBACK: EmployeeStatusesConfig = {
     statuses: ['active', 'inactive', 'vacation', 'sick_leave', 'compensatory'],

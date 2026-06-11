@@ -6,7 +6,7 @@ import type { PaymentMethodsConfig, PaymentReceiptMethod } from '@/types';
  * (e.g., primer render antes del bootstrap o pantallas públicas sin JWT).
  *
  * Debe coincidir con `config/payments.php`. Cualquier cambio aquí debe
- * replicarse allá. Ver `application/constants/PAYMENT_METHODS.md`.
+ * replicarse allá. Ver `bistro/backend/constants/PAYMENT_METHODS.md`.
  */
 export const PAYMENT_METHODS_FALLBACK: PaymentMethodsConfig = {
     methods: ['cash', 'card', 'transfer'],

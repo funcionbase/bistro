@@ -6,12 +6,12 @@
 
 ## Archivos que deben quedar sincronizados
 
-- [ ] `application/app/Services/AuditService.php` — `log()` agrega `branch_id` + `actor_active_branch_id` auto
-- [ ] `application/app/Models/AuditLog.php` — modelo de la tabla
+- [ ] `bistro/backend/app/Services/AuditService.php` — `log()` agrega `branch_id` + `actor_active_branch_id` auto
+- [ ] `bistro/backend/app/Models/AuditLog.php` — modelo de la tabla
 - [ ] Migración `audit_logs` (columnas: `user_id`, `action`, `auditable_type/id`, `data` jsonb, `ip_address`, `user_agent`)
 - [ ] Controllers y services que emiten `AuditService::log`
-- [ ] `application/constants/ACCOUNTING_RULES.md` — toda mutación financiera audita
-- [ ] `application/constants/BRANCH_RBAC.md` — `actor_active_branch_id` + `branch_id` cross-sede
+- [ ] `bistro/backend/constants/ACCOUNTING_RULES.md` — toda mutación financiera audita
+- [ ] `bistro/backend/constants/BRANCH_RBAC.md` — `actor_active_branch_id` + `branch_id` cross-sede
 
 ---
 
@@ -35,7 +35,7 @@ audit_logs
 - `branch_id` = sede del recurso (si `$auditable` la tiene como atributo).
 - `actor_active_branch_id` = sede que el actor tenía activa al ejecutar.
 
-Fuente: `application/app/Services/AuditService.php:24-58`.
+Fuente: `bistro/backend/app/Services/AuditService.php:24-58`.
 
 ---
 
@@ -246,8 +246,8 @@ NO genera entradas en `audit_logs` por cada envío (sería ruidoso —
 
 ## Referencias cruzadas
 
-- `application/app/Services/AuditService.php:24-58` — implementación.
-- `application/app/Models/AuditLog.php` — modelo.
-- `application/constants/ACCOUNTING_RULES.md` — auditoría obligatoria en mutaciones financieras.
-- `application/constants/BRANCH_RBAC.md` — `branch_id` + `actor_active_branch_id` automáticos.
-- `application/constants/PERMISSIONS_CATALOG.md` — relación permiso↔acción (no 1:1).
+- `bistro/backend/app/Services/AuditService.php:24-58` — implementación.
+- `bistro/backend/app/Models/AuditLog.php` — modelo.
+- `bistro/backend/constants/ACCOUNTING_RULES.md` — auditoría obligatoria en mutaciones financieras.
+- `bistro/backend/constants/BRANCH_RBAC.md` — `branch_id` + `actor_active_branch_id` automáticos.
+- `bistro/backend/constants/PERMISSIONS_CATALOG.md` — relación permiso↔acción (no 1:1).

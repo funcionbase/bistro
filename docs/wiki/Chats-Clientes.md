@@ -80,7 +80,7 @@ dos restaurantes, son dos chats independientes.
 `chats.reassign_branch` solo cuenta cuando combinado con acceso real a la
 sede destino vía `branch_users`. Owner bypasa por `role.is_system=true`.
 
-Ver `application/constants/PERMISSIONS_CATALOG.md` y `BRANCH_RBAC.md`.
+Ver `bistro/backend/constants/PERMISSIONS_CATALOG.md` y `BRANCH_RBAC.md`.
 
 ---
 
@@ -322,7 +322,7 @@ Emitidos por `ChatController` vía `AuditService::log`:
 `AuditService::log` agrega `branch_id` y `actor_active_branch_id` del
 request. Mensajes entrantes del webhook NO emiten audit (alta cardinalidad);
 se mantienen en `chat_messages` como fuente. Ver
-`application/constants/AUDIT_EVENTS.md`.
+`bistro/backend/constants/AUDIT_EVENTS.md`.
 
 ---
 
@@ -377,7 +377,7 @@ CLAUDE.md §12 (N-instance safe).
 
 ## Cross-references
 
-- Constants: `application/constants/PERMISSIONS_CATALOG.md`,
+- Constants: `bistro/backend/constants/PERMISSIONS_CATALOG.md`,
   `BRANCH_RBAC.md`, `AUDIT_EVENTS.md`, `MIDDLEWARE_MAP.md`,
   `FEATURES_INDEX.md`.
 - Backend: `app/Http/Controllers/Api/ChatController.php`,

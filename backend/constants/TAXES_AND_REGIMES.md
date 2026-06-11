@@ -10,15 +10,15 @@
 
 ## Fuente de verdad ejecutable
 
-- `application/config/taxes.php` — catálogo canónico
+- `bistro/backend/config/taxes.php` — catálogo canónico
   (`regimes` con `rate`+`label` por slug, `available_regimes` plana).
-- `application/database/migrations/0001_01_01_000100_create_companies_block.php:66`
+- `bistro/backend/database/migrations/0001_01_01_000100_create_companies_block.php:66`
   — columna `companies.tax_regime` (default `'simple'`).
-- `application/database/migrations/0001_01_01_000700_create_orders_block.php:52`
+- `bistro/backend/database/migrations/0001_01_01_000700_create_orders_block.php:52`
   — columna `orders.tax_regime` (snapshot al cerrar la orden, nullable).
-- `application/app/Http/Requests/Company/UpdateCompanyRequest.php:61` —
+- `bistro/backend/app/Http/Requests/Company/UpdateCompanyRequest.php:61` —
   `Rule::in(config('taxes.available_regimes'))`.
-- `application/app/Http/Controllers/Company/CompanyController.php:60` — expone
+- `bistro/backend/app/Http/Controllers/Company/CompanyController.php:60` — expone
   `tax_presets` al frontend desde `config('taxes.regimes')`.
 
 > El `.md` es **referencia humana**. Si difiere del código, el código gana.

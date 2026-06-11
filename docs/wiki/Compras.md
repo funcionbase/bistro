@@ -178,7 +178,7 @@ service.
 ## Reglas contables
 
 Checklist canónico (alineado con §13 de `CLAUDE.md` y
-`application/constants/ACCOUNTING_RULES.md`):
+`bistro/backend/constants/ACCOUNTING_RULES.md`):
 
 1. **`decimal(12,2)` para dinero / `decimal(12,3)` para cantidades** —
    sin excepción.

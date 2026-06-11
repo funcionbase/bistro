@@ -6,12 +6,12 @@
 
 ## Archivos que deben quedar sincronizados
 
-- [ ] `application/config/orders.php` — **fuente única canónica**
-- [ ] `application/resources/js/lib/order-status.ts` — fallback embebido frontend (DEUDA TÉCNICA, ver §Deuda)
-- [ ] `application/types` / `application/resources/js/types/index.d.ts` — tipo `OrderStatus`, `OrderStatusesConfig`
-- [ ] `application/app/Http/Middleware/HandleInertiaRequests.php` — share de `orders` config a `auth/shared/orders.*`
-- [ ] `application/app/Models/Order.php` — invariantes y transiciones permitidas
-- [ ] `application/resources/js/pages/Orders/Kanban.tsx` — `kanban` + `kanban_rank`
+- [ ] `bistro/backend/config/orders.php` — **fuente única canónica**
+- [ ] `bistro/frontend/src/lib/order-status.ts` — fallback embebido frontend (DEUDA TÉCNICA, ver §Deuda)
+- [ ] `bistro/frontend/src/types` / `bistro/frontend/src/types/index.d.ts` — tipo `OrderStatus`, `OrderStatusesConfig`
+- [ ] `bistro/backend/app/Http/Middleware/HandleInertiaRequests.php` — share de `orders` config a `auth/shared/orders.*`
+- [ ] `bistro/backend/app/Models/Order.php` — invariantes y transiciones permitidas
+- [ ] `bistro/frontend/src/pages/Orders/Kanban.tsx` — `kanban` + `kanban_rank`
 - [ ] `docs/wiki/Pedidos.md` — manual narrativo
 - [ ] `CLAUDE.md` raíz §12 — `revenue_statuses` + estados terminales
 
@@ -104,7 +104,7 @@ Helper único: `OrderController::computeItemsTotal`. Llamarlo en cada mutación 
 
 ## DEUDA TÉCNICA — Fallback duplicado en frontend
 
-El archivo `application/resources/js/lib/order-status.ts` mantiene un **`ORDER_STATUS_FALLBACK` embebido** con un subset de `config/orders.php`, usado cuando los shared props de Inertia no están disponibles aún (primer render antes del hidrate).
+El archivo `bistro/frontend/src/lib/order-status.ts` mantiene un **`ORDER_STATUS_FALLBACK` embebido** con un subset de `config/orders.php`, usado cuando los shared props de Inertia no están disponibles aún (primer render antes del hidrate).
 
 ### Riesgo
 
@@ -184,9 +184,9 @@ cafe/bar y "Pantalla de horno" en bakery vía `labels.modules.kds`).
 
 ## Referencias cruzadas
 
-- `application/config/orders.php:1-201` — fuente canónica.
-- `application/resources/js/lib/order-status.ts:8-48` — fallback frontend (deuda).
+- `bistro/backend/config/orders.php:1-201` — fuente canónica.
+- `bistro/frontend/src/lib/order-status.ts:8-48` — fallback frontend (deuda).
 - `CLAUDE.md` raíz §12 "Estados de orden" + "Invariante orders.total".
 - `docs/wiki/Pedidos.md` — manual narrativo.
-- `application/constants/ACCOUNTING_RULES.md` — refunds, conservación, revenue.
-- `application/constants/PAYMENT_METHODS.md` — receipts asociados.
+- `bistro/backend/constants/ACCOUNTING_RULES.md` — refunds, conservación, revenue.
+- `bistro/backend/constants/PAYMENT_METHODS.md` — receipts asociados.

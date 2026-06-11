@@ -6,12 +6,12 @@
 
 ## Archivos que deben quedar sincronizados
 
-- [ ] `application/database/migrations/0001_01_01_000000_create_foundation_tables.php:33-34` — **fuente única canónica** (enum BD)
-- [ ] `application/app/Models/User.php:68-76` — helpers `isPendingEnrollment()`, `isActive()`
-- [ ] `application/resources/js/types/index.ts:340` — tipo `UserStatus`
-- [ ] `application/resources/js/components/users-table.tsx:32-44` — badge `userStatusBadge()`
-- [ ] `application/app/Http/Controllers/Enrollment/UserEnrollmentController.php:48` — transición `pending_enrollment → active`
-- [ ] `application/app/Http/Controllers/Api/Employees/EmployeeController.php:257+` — sincronización `users.status` con colaborador
+- [ ] `bistro/backend/database/migrations/0001_01_01_000000_create_foundation_tables.php:33-34` — **fuente única canónica** (enum BD)
+- [ ] `bistro/backend/app/Models/User.php:68-76` — helpers `isPendingEnrollment()`, `isActive()`
+- [ ] `bistro/frontend/src/types/index.ts:340` — tipo `UserStatus`
+- [ ] `bistro/frontend/src/components/users-table.tsx:32-44` — badge `userStatusBadge()`
+- [ ] `bistro/backend/app/Http/Controllers/Enrollment/UserEnrollmentController.php:48` — transición `pending_enrollment → active`
+- [ ] `bistro/backend/app/Http/Controllers/Api/Employees/EmployeeController.php:257+` — sincronización `users.status` con colaborador
 
 ---
 
@@ -47,7 +47,7 @@ El frontend pinta los dos por separado en `UsersTable`: columna "Estado" muestra
 
 - **Permiso para mutar**: `users.update` (slug del catálogo) — owner bypass siempre.
 - **Auto-desactivación bloqueada**: `user.id !== currentUserId` en frontend; backend valida lo mismo en el endpoint.
-- **Owner inviolable**: si el usuario es el **único owner** de la empresa, no se puede desactivar (regla "último-owner" — `application/constants/ROLES_SYSTEM.md`).
+- **Owner inviolable**: si el usuario es el **único owner** de la empresa, no se puede desactivar (regla "último-owner" — `bistro/backend/constants/ROLES_SYSTEM.md`).
 - **Auditoría**: cada cambio dispara `AuditService::log('user.status_changed', ...)` con `from`, `to`, `actor_id`, `actor_active_branch_id`.
 
 ---
@@ -72,11 +72,11 @@ El frontend pinta los dos por separado en `UsersTable`: columna "Estado" muestra
 
 ## Referencias cruzadas
 
-- `application/database/migrations/0001_01_01_000000_create_foundation_tables.php:33` — fuente canónica.
-- `application/app/Models/User.php:68-76` — helpers.
-- `application/resources/js/types/index.ts:340` — tipo TS.
-- `application/resources/js/components/users-table.tsx:32-44` — badge UI.
-- `application/constants/PERMISSIONS_CATALOG.md` — permiso `users.update`.
-- `application/constants/ROLES_SYSTEM.md` — regla último-owner.
+- `bistro/backend/database/migrations/0001_01_01_000000_create_foundation_tables.php:33` — fuente canónica.
+- `bistro/backend/app/Models/User.php:68-76` — helpers.
+- `bistro/frontend/src/types/index.ts:340` — tipo TS.
+- `bistro/frontend/src/components/users-table.tsx:32-44` — badge UI.
+- `bistro/backend/constants/PERMISSIONS_CATALOG.md` — permiso `users.update`.
+- `bistro/backend/constants/ROLES_SYSTEM.md` — regla último-owner.
 
 > Última revisión: 2026-05-18 (#203)

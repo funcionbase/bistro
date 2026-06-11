@@ -1,7 +1,7 @@
 # Roles demo (solo seeders de QA)
 
 > **Fuente de verdad ejecutable**:
-> `application/database/seeders/RestauranteFlexySeeder.php::seedRoles()`
+> `bistro/backend/database/seeders/RestauranteFlexySeeder.php::seedRoles()`
 > (Domiciliario, Cocina) + bloques `syncRolePermissions` que les asignan
 > el conjunto exacto de permisos.
 > Este archivo es **espejo de referencia** — el código gana en caso de drift.
@@ -82,6 +82,6 @@ syncRolePermissions(
 ## Pares espejo que deben mantenerse sincronizados
 
 - `RestauranteFlexySeeder::seedRoles` (bloques courier/kitchen) ↔ tablas arriba.
-- Lista de permisos del courier ↔ `application/resources/js/lib/courier-mode.ts` (el courier NUNCA debe quedar con un `FULL_NAV_PERMISSIONS` activo).
+- Lista de permisos del courier ↔ `bistro/frontend/src/lib/courier-mode.ts` (el courier NUNCA debe quedar con un `FULL_NAV_PERMISSIONS` activo).
 
 > Última revisión: 2026-05-18 (#201)

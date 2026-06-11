@@ -2,7 +2,7 @@
  * Helper de tracking analitico para la plataforma.
  *
  * Convencion (heredada de la guia marketing v2.1, ver
- * application/FRONTEND_UI_GUIDELINES.md §16):
+ * bistro/frontend/FRONTEND_UI_GUIDELINES.md §16):
  *
  *   <Button data-cta="abrir-caja" data-cta-location="dashboard">
  *

@@ -5,11 +5,11 @@
 
 ## Archivos que deben quedar sincronizados
 
-- [ ] `application/bootstrap/app.php` — registración y alias (Laravel 12)
-- [ ] `application/app/Http/Middleware/*` — implementaciones
-- [ ] `application/routes/web.php`, `application/routes/api.php` — uso de aliases
-- [ ] `application/constants/BRANCH_RBAC.md` — scopes activos
-- [ ] `application/constants/PERMISSIONS_CATALOG.md` — uso de `permission:<slug>,<action>`
+- [ ] `bistro/backend/bootstrap/app.php` — registración y alias (Laravel 12)
+- [ ] `bistro/backend/app/Http/Middleware/*` — implementaciones
+- [ ] `bistro/backend/routes/web.php`, `bistro/backend/routes/api.php` — uso de aliases
+- [ ] `bistro/backend/constants/BRANCH_RBAC.md` — scopes activos
+- [ ] `bistro/backend/constants/PERMISSIONS_CATALOG.md` — uso de `permission:<slug>,<action>`
 
 ---
 
@@ -117,7 +117,7 @@ Route::middleware([
 - Acciones válidas: `read | create | update | delete` (`EnsureFeaturePermission::VALID_ACTIONS`).
 - 403 si no tiene; 500 si la acción no es válida.
 
-Implementación: `application/app/Http/Middleware/EnsureFeaturePermission.php`.
+Implementación: `bistro/backend/app/Http/Middleware/EnsureFeaturePermission.php`.
 
 ### `ValidateBotJwt` (`bot.jwt`)
 
@@ -127,7 +127,7 @@ Implementación: `application/app/Http/Middleware/EnsureFeaturePermission.php`.
 ### `NormalizeStrings`
 
 - NFC normalization + strip de control chars en todos los strings del payload.
-- **NO se aplica a webhooks** (firma byte-exact requerida): allow-list en `application/app/Http/Middleware/NormalizeStrings.php`.
+- **NO se aplica a webhooks** (firma byte-exact requerida): allow-list en `bistro/backend/app/Http/Middleware/NormalizeStrings.php`.
 
 ### `ForceJsonResponse`
 
@@ -170,8 +170,8 @@ Implementación: `application/app/Http/Middleware/EnsureFeaturePermission.php`.
 
 ## Referencias cruzadas
 
-- `application/bootstrap/app.php:28-156` — registración Laravel 12.
-- `application/constants/PERMISSIONS_CATALOG.md` — uso de `permission:<slug>,<action>`.
-- `application/constants/BRANCH_RBAC.md` — orden empresa→sede.
+- `bistro/backend/bootstrap/app.php:28-156` — registración Laravel 12.
+- `bistro/backend/constants/PERMISSIONS_CATALOG.md` — uso de `permission:<slug>,<action>`.
+- `bistro/backend/constants/BRANCH_RBAC.md` — orden empresa→sede.
 - `docs/wiki/Errores-API.md` — manejo de errores cross-cutting.
 - `docs/wiki/SECURITY_INPUT_HANDLING.md` — `NormalizeStrings`, sanitización.

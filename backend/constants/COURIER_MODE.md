@@ -1,9 +1,9 @@
 # Courier-only mode
 
 > **Fuente de verdad ejecutable**:
-> `application/app/Support/PostLoginRedirect.php` (constantes `FULL_NAV_PERMISSIONS`
+> `bistro/backend/app/Support/PostLoginRedirect.php` (constantes `FULL_NAV_PERMISSIONS`
 > y `COURIER_PERMISSION`) +
-> `application/resources/js/lib/courier-mode.ts` (constantes idénticas).
+> `bistro/frontend/src/lib/courier-mode.ts` (constantes idénticas).
 > **Las dos listas deben mantenerse alineadas literalmente.**
 > Este archivo es **espejo de referencia** — el código gana en caso de drift.
 
@@ -27,7 +27,7 @@ externo", "Mensajero", etc.
 ## Constantes (valores literales al 2026-05-18)
 
 ```php
-// application/app/Support/PostLoginRedirect.php
+// bistro/backend/app/Support/PostLoginRedirect.php
 private const FULL_NAV_PERMISSIONS = [
     'reports.read',     // owner / admin / cashier ven reportes
     'company.update',   // admin / owner editan empresa
@@ -41,7 +41,7 @@ private const COURIER_PERMISSION = 'deliveries.self_assign';
 ```
 
 ```ts
-// application/resources/js/lib/courier-mode.ts
+// bistro/frontend/src/lib/courier-mode.ts
 const COURIER_PERMISSION = 'deliveries.self_assign';
 
 const FULL_NAV_PERMISSIONS = [
@@ -90,12 +90,12 @@ membresía desde BD y aplica la misma lógica.
 
 ## Pares espejo que deben mantenerse sincronizados
 
-- `application/app/Support/PostLoginRedirect.php` (`FULL_NAV_PERMISSIONS`,
+- `bistro/backend/app/Support/PostLoginRedirect.php` (`FULL_NAV_PERMISSIONS`,
   `COURIER_PERMISSION`).
-- `application/resources/js/lib/courier-mode.ts` (`FULL_NAV_PERMISSIONS`,
+- `bistro/frontend/src/lib/courier-mode.ts` (`FULL_NAV_PERMISSIONS`,
   `COURIER_PERMISSION`).
 - El rol demo `Domiciliario` en
-  `application/database/seeders/RestauranteFlexySeeder.php` (debe quedar
+  `bistro/backend/database/seeders/RestauranteFlexySeeder.php` (debe quedar
   con `deliveries.self_assign` + `deliveries.read` + `deliveries.update`
   únicamente — sin tocar `FULL_NAV_PERMISSIONS`). Ver
   [`ROLES_DEMO.md`](./ROLES_DEMO.md).

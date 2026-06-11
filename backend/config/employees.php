@@ -15,7 +15,7 @@ declare(strict_types=1);
  *  - `labels`: textos es-CO para UI/badges/PDFs.
  *  - `badges`: variante visual del Badge primitive (`safe`/`warning`/`critical`).
  *
- * Reglas operativas detalladas: ver `application/constants/EMPLOYEE_STATUSES.md`.
+ * Reglas operativas detalladas: ver `bistro/backend/constants/EMPLOYEE_STATUSES.md`.
  * Reglas de transición y policy: `EmployeeVinculationPolicy` + controller
  * `EmployeeController::changeVinculationState`.
  */

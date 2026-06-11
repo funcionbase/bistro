@@ -758,7 +758,7 @@ export type DeliveryStatus = 'pending' | 'completed' | 'cancelled';
  * - `reassigned`: la entrega se transfirió a otro domiciliario (vive sólo en
  *   `delivery_status_logs.reason`, NO en `deliveries.status_change_reason`).
  *
- * Ver `application/constants/DELIVERY_STATUSES.md` para reglas de aplicación.
+ * Ver `bistro/backend/constants/DELIVERY_STATUSES.md` para reglas de aplicación.
  */
 export type DeliveryReason = 'error_usuario' | 'pedido_rechazado' | 'reassigned';
 

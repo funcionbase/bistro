@@ -7,14 +7,14 @@
 
 ## Archivos que deben quedar sincronizados
 
-- [ ] `application/database/migrations/2026_05_18_143903_create_delivery_status_logs_table.php:53-56` — CHECK constraint `delivery_status_logs.reason`
-- [ ] `application/database/migrations/2026_05_18_143902_add_status_change_reason_to_deliveries.php:32-36` — CHECK constraint `deliveries.status_change_reason`
-- [ ] `application/app/Services/DeliveryService.php:33-37` — constantes `REASON_*`
-- [ ] `application/app/Models/Delivery.php:69-77` — scopes `pending()`, `completed()`
-- [ ] `application/app/Models/DeliveryStatusLog.php:27` — PHPDoc `reason`
-- [ ] `application/resources/js/types/index.ts:644` — tipo `Delivery.status_change_reason`
-- [ ] `application/resources/js/components/deliveries/my-delivery-card.tsx:155-163` — `reasonLabel()` helper
-- [ ] `application/resources/js/components/deliveries/reject-reason-sheet.tsx` — sheet para `pedido_rechazado`
+- [ ] `bistro/backend/database/migrations/2026_05_18_143903_create_delivery_status_logs_table.php:53-56` — CHECK constraint `delivery_status_logs.reason`
+- [ ] `bistro/backend/database/migrations/2026_05_18_143902_add_status_change_reason_to_deliveries.php:32-36` — CHECK constraint `deliveries.status_change_reason`
+- [ ] `bistro/backend/app/Services/DeliveryService.php:33-37` — constantes `REASON_*`
+- [ ] `bistro/backend/app/Models/Delivery.php:69-77` — scopes `pending()`, `completed()`
+- [ ] `bistro/backend/app/Models/DeliveryStatusLog.php:27` — PHPDoc `reason`
+- [ ] `bistro/frontend/src/types/index.ts:644` — tipo `Delivery.status_change_reason`
+- [ ] `bistro/frontend/src/components/deliveries/my-delivery-card.tsx:155-163` — `reasonLabel()` helper
+- [ ] `bistro/frontend/src/components/deliveries/reject-reason-sheet.tsx` — sheet para `pedido_rechazado`
 
 ---
 
@@ -68,7 +68,7 @@ Fuente:
 ## Impacto RBAC
 
 - **Permiso para crear/reasignar**: `deliveries.create` + `deliveries.update`.
-- **Permiso del propio domiciliario**: `deliveries.self_assign` (modo courier — `application/constants/COURIER_MODE.md`).
+- **Permiso del propio domiciliario**: `deliveries.self_assign` (modo courier — `bistro/backend/constants/COURIER_MODE.md`).
 - **Quién marca `completed`**: solo el domiciliario asignado (`Delivery.user_id == jwt.sub`) o admin con `deliveries.update`.
 - **Owner bypass**: `role.is_system=true` siempre permite.
 - **Auditoría**: cada transición dispara `AuditService::log('delivery.status_changed', ...)` o `'delivery.reassigned'` con `from_status`, `to_status`, `reason`, `actor_id`, `actor_active_branch_id`.
@@ -105,9 +105,9 @@ Fuente:
 
 ## Referencias cruzadas
 
-- `application/app/Services/DeliveryService.php` — orquestador de transiciones.
-- `application/constants/COURIER_MODE.md` — permiso del domiciliario.
-- `application/constants/AUDIT_EVENTS.md` — eventos `delivery.*`.
+- `bistro/backend/app/Services/DeliveryService.php` — orquestador de transiciones.
+- `bistro/backend/constants/COURIER_MODE.md` — permiso del domiciliario.
+- `bistro/backend/constants/AUDIT_EVENTS.md` — eventos `delivery.*`.
 - `docs/wiki/Domiciliarios.md` (#119) — manual narrativo.
 
 > Última revisión: 2026-05-18 (#203)

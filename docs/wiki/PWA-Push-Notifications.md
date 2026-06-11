@@ -4,7 +4,7 @@ Guía operativa para entender, configurar y testear el sistema de
 notificaciones push de flexyflow Restaurante.
 
 **Catálogo canónico de tipos / payloads / permisos**:
-[`application/constants/NOTIFICATIONS.md`](../../application/constants/NOTIFICATIONS.md).
+[`bistro/backend/constants/NOTIFICATIONS.md`](../../bistro/backend/constants/NOTIFICATIONS.md).
 
 ---
 
@@ -257,9 +257,9 @@ ni DynamoDB.
 
 ## Referencias
 
-- [`application/constants/NOTIFICATIONS.md`](../../application/constants/NOTIFICATIONS.md) — catálogo canónico de tipos.
-- [`application/constants/PERMISSIONS_CATALOG.md`](../../application/constants/PERMISSIONS_CATALOG.md) — slugs `notifications.*`.
-- [`application/constants/AUDIT_EVENTS.md`](../../application/constants/AUDIT_EVENTS.md) — `notifications.{subscribed,revoked,pushed}`.
+- [`bistro/backend/constants/NOTIFICATIONS.md`](../../bistro/backend/constants/NOTIFICATIONS.md) — catálogo canónico de tipos.
+- [`bistro/backend/constants/PERMISSIONS_CATALOG.md`](../../bistro/backend/constants/PERMISSIONS_CATALOG.md) — slugs `notifications.*`.
+- [`bistro/backend/constants/AUDIT_EVENTS.md`](../../bistro/backend/constants/AUDIT_EVENTS.md) — `notifications.{subscribed,revoked,pushed}`.
 - [Web Push standard (RFC 8030)](https://datatracker.ietf.org/doc/html/rfc8030).
 - [minishlink/web-push](https://github.com/web-push-libs/web-push-php) — librería PHP.
 - [Workbox docs — push](https://developer.chrome.com/docs/workbox/handling-service-worker-updates/).

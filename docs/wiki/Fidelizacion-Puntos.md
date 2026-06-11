@@ -93,7 +93,7 @@ Columnas añadidas por el módulo:
 
 Owner bypass por `role.is_system=true`. Otros roles (waiter, cashier, cook)
 NO reciben loyalty por default. Asignable manualmente desde
-`UserPermissionsEditor`. Ver `application/constants/PERMISSIONS_CATALOG.md`.
+`UserPermissionsEditor`. Ver `bistro/backend/constants/PERMISSIONS_CATALOG.md`.
 
 Reportes (`/loyalty/reports`) usan middleware adicional `branch.consolidate`
 para permitir vista cross-sede.
@@ -338,7 +338,7 @@ Emitidos por `LoyaltyService` vía `AuditService::log`:
 
 `AuditService::log` agrega `branch_id` (NULL para mutaciones cross-sede del
 módulo) y `actor_active_branch_id`. Ver
-`application/constants/AUDIT_EVENTS.md`.
+`bistro/backend/constants/AUDIT_EVENTS.md`.
 
 ---
 
@@ -395,7 +395,7 @@ Overrides en `company_settings` (todos opcionales — si faltan, se usa
 
 ## Cross-references
 
-- Constants: `application/constants/PERMISSIONS_CATALOG.md`,
+- Constants: `bistro/backend/constants/PERMISSIONS_CATALOG.md`,
   `ACCOUNTING_RULES.md`, `AUDIT_EVENTS.md`, `FEATURES_INDEX.md`.
 - Backend: `app/Http/Controllers/Api/LoyaltyController.php`,
   `LoyaltyReportController.php`, `PublicLoyaltyController.php`,

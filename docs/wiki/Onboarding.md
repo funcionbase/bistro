@@ -277,7 +277,7 @@ Emitidos por `AuditService::log` (agrega `branch_id` y `actor_active_branch_id` 
 | `auth.company.selected` | Reissue de JWT con `active_company_nit` | `{nit}` |
 | `company.status_changed_external` | Workflow `Company Status (per env)` | `{from, to, reason, source: 'github_action', workflow_run_url}` |
 
-Catálogo completo en `application/constants/AUDIT_EVENTS.md`.
+Catálogo completo en `bistro/backend/constants/AUDIT_EVENTS.md`.
 
 ---
 
@@ -297,7 +297,7 @@ Catálogo completo en `application/constants/AUDIT_EVENTS.md`.
 
 ## Cross-references
 
-- Constants: `application/constants/PERMISSIONS_CATALOG.md`, `ROLES_SYSTEM.md`, `ROLES_TEMPLATES.md`, `AUDIT_EVENTS.md`, `BRANCH_RBAC.md`, `FEATURES_INDEX.md`.
+- Constants: `bistro/backend/constants/PERMISSIONS_CATALOG.md`, `ROLES_SYSTEM.md`, `ROLES_TEMPLATES.md`, `AUDIT_EVENTS.md`, `BRANCH_RBAC.md`, `FEATURES_INDEX.md`.
 - Backend: `app/Http/Controllers/Enrollment/{UserEnrollmentController,CompanyEnrollmentController,InvitedEnrollmentController,EnrollmentProofController}.php`, `app/Http/Controllers/Auth/GoogleAuthController.php`, `app/Services/{EnrollmentProofService,CompanySettingsService,JwtService,PromoCodeService}.php`, `app/Http/Middleware/EnsureCompanyVerified.php`.
 - Frontend: `src/pages/enrollment/{user,company,company-guard}.tsx`, `src/pages/company/under-review.tsx`, `src/lib/company-status.ts`, `src/lib/api.ts`.
 - Wiki relacionado: `Empresas.md`, `Autenticación.md`, `Usuarios-Roles-Permisos.md`, `Multi-tenancy.md`.

@@ -1,4 +1,4 @@
-# `application/constants/` — Fuentes de verdad compartidas backend ↔ frontend
+# `bistro/backend/constants/` — Fuentes de verdad compartidas backend ↔ frontend
 
 > **Propósito**: documentar de forma canónica los conceptos del proyecto que
 > hoy viven replicados — RBAC (roles, permisos, modos de operación, aislamiento
@@ -99,21 +99,21 @@ middlewares de la familia `Ensure*Access`):
    el `.md` y dejás comentario en el issue raíz si fue intencional.
 
 La regla larga vive en [`CLAUDE.md`](../../CLAUDE.md) raíz — sección
-**FUENTES DE VERDAD COMPARTIDAS BACKEND/FRONTEND (`application/constants/`)**.
+**FUENTES DE VERDAD COMPARTIDAS BACKEND/FRONTEND (`bistro/backend/constants/`)**.
 
 ## Exclusión de builds — verificado
 
-Esta carpeta vive en `application/constants/`, fuera de cualquier ruta que
+Esta carpeta vive en `bistro/backend/constants/`, fuera de cualquier ruta que
 algún build incluya:
 
 | Build | Cómo se garantiza |
 |---|---|
-| **Vite** (`application/vite.config.js`) | `input` es `resources/css/app.css` + `resources/js/app.tsx` + ssr `resources/js/ssr.jsx`. `constants/` no se importa desde ningún módulo TS/JS. |
-| **Composer** (`application/composer.json`) | `autoload` PSR-4 mapea `app/`, `database/factories/`, `database/seeders/`. `autoload-dev` mapea `tests/`. `constants/` queda fuera. |
-| **PHPUnit / Pest** (`application/phpunit.xml`) | Única testsuite registrada: `tests/Feature/Architecture`. Sin glob recursivo. |
-| **Docker** | No hay `Dockerfile` en el repo a la fecha de creación de esta carpeta. Si se introduce en el futuro un deploy con Docker que copie `application/` entera, agregar `application/constants/` al `.dockerignore`. Documentado en `RBAC_CHECKLIST.md`. |
+| **Vite** (`bistro/frontend/vite.config.ts`) | `input` es `resources/css/app.css` + `resources/js/app.tsx` + ssr `resources/js/ssr.jsx`. `constants/` no se importa desde ningún módulo TS/JS. |
+| **Composer** (`bistro/backend/composer.json`) | `autoload` PSR-4 mapea `app/`, `database/factories/`, `database/seeders/`. `autoload-dev` mapea `tests/`. `constants/` queda fuera. |
+| **PHPUnit / Pest** (`bistro/backend/phpunit.xml`) | Única testsuite registrada: `tests/Feature/Architecture`. Sin glob recursivo. |
+| **Docker** | No hay `Dockerfile` en el repo a la fecha de creación de esta carpeta. Si se introduce en el futuro un deploy con Docker que copie `bistro/backend/` entera, agregar `bistro/backend/constants/` al `.dockerignore`. Documentado en `RBAC_CHECKLIST.md`. |
 
-Verificación inicial: `rm -rf application/constants && npm --prefix application run build && cd application && php artisan optimize` pasa limpio (probado en
+Verificación inicial: `rm -rf bistro/backend/constants && (cd bistro/frontend && npm run build) && (cd bistro/backend && php artisan optimize)` pasa limpio (probado en
 Fase 2 del issue #201; restaurado tras la prueba).
 
 ## Mantenimiento

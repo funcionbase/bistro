@@ -45,7 +45,7 @@
 
 ## Catálogos canónicos compartidos
 
-Antes de declarar uniones de strings literales para cualquier estado, tipo, método o acción RBAC, **consultar `application/constants/`** (fuente única documental — ver `BACKEND_FILES.md` para el inventario completo). Si el catálogo se sirve desde backend, leerlo vía Inertia shared props en lugar de hardcodearlo.
+Antes de declarar uniones de strings literales para cualquier estado, tipo, método o acción RBAC, **consultar `bistro/backend/constants/`** (fuente única documental — ver `BACKEND_FILES.md` para el inventario completo). Si el catálogo se sirve desde backend, leerlo vía Inertia shared props en lugar de hardcodearlo.
 
 | Catálogo | Shared prop | Hook frontend | Fallback embebido |
 |---|---|---|---|
@@ -1030,7 +1030,7 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 ### Iconos
 
 - `public/icons/icon-{192,512}{,-maskable}.png`, `public/icons/apple-touch-icon-180.png`.
-- Generados con `application/scripts/generate-pwa-icons.mjs` (sharp + SVG fuente). Re-ejecutar si cambia el logo:
+- Generados con `bistro/frontend/scripts/generate-pwa-icons.mjs` (sharp + SVG fuente). Re-ejecutar si cambia el logo:
   ```bash
   cd application && node scripts/generate-pwa-icons.mjs
   ```

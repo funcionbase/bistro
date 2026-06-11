@@ -6,20 +6,20 @@
 
 ## Archivos que deben quedar sincronizados
 
-- [ ] `application/config/payments.php` — **fuente única canónica** (#203): `methods`, `receipt_methods`, `labels`, `requires_reference`
-- [ ] `application/app/Http/Middleware/HandleInertiaRequests.php:208-217` — shared prop `paymentMethods`
-- [ ] `application/resources/js/types/index.ts` — `PaymentMethod`, `PaymentReceiptMethod`, `PaymentMethodsConfig`
-- [ ] `application/resources/js/hooks/use-payment-methods.ts` — hook `usePaymentMethods()` + fallback embebido
-- [ ] `application/config/cash_register.php:33` — `expense_payment_methods` (espejo)
-- [ ] `application/config/purchases.php:42` — `payment_methods` (espejo)
+- [ ] `bistro/backend/config/payments.php` — **fuente única canónica** (#203): `methods`, `receipt_methods`, `labels`, `requires_reference`
+- [ ] `bistro/backend/app/Http/Middleware/HandleInertiaRequests.php:208-217` — shared prop `paymentMethods`
+- [ ] `bistro/frontend/src/types/index.ts` — `PaymentMethod`, `PaymentReceiptMethod`, `PaymentMethodsConfig`
+- [ ] `bistro/frontend/src/hooks/use-payment-methods.ts` — hook `usePaymentMethods()` + fallback embebido
+- [ ] `bistro/backend/config/cash_register.php:33` — `expense_payment_methods` (espejo)
+- [ ] `bistro/backend/config/purchases.php:42` — `payment_methods` (espejo)
 - [ ] `CLAUDE.md` raíz §13 "Reglas contables (legislación colombiana)" — fuente narrativa primaria
-- [ ] `application/app/Models/PaymentReceipt.php` — enum/casts de `payment_method`
+- [ ] `bistro/backend/app/Models/PaymentReceipt.php` — enum/casts de `payment_method`
 - [ ] Migración de `payment_receipts` (`amount` signed `decimal(12,2)`, columnas `reference`, `paid_at`)
 - [ ] Controllers que crean receipts (`OrderController::closeWithPayment`, `OrderController::refund`)
-- [ ] `application/app/Http/Controllers/Reports/*` — agregación por `payment_method` con SUM(amount)
+- [ ] `bistro/backend/app/Http/Controllers/Reports/*` — agregación por `payment_method` con SUM(amount)
 - [ ] Componentes frontend consumers: `payment-method-picker.tsx`, `split-payment-sheet.tsx`, `expense-modal.tsx`, `cash-drawer-card.tsx`, `refund-summary-card.tsx`, `pages/caja/table-session.tsx`
-- [ ] `application/constants/ORDER_STATUSES.md` — transición a `refunded`
-- [ ] `application/constants/ACCOUNTING_RULES.md` — reglas DIAN cruzadas
+- [ ] `bistro/backend/constants/ORDER_STATUSES.md` — transición a `refunded`
+- [ ] `bistro/backend/constants/ACCOUNTING_RULES.md` — reglas DIAN cruzadas
 
 ---
 
@@ -157,7 +157,7 @@ Hoy el sistema no desglosa impuestos (`orders.total` = final). Al migrar, agrega
 3. Decidir signo: cobros positivos. ¿Existe variante "refund de este método"? Si sí, usar `refund` general; si requiere registro propio → otro slug.
 4. Decidir si exige `reference`: tarjeta/transferencia → sí; efectivo → no (pero audit con `actor_id`).
 5. Actualizar `PaymentReceipt` model (cast/enum).
-6. Actualizar TODOS los reportes financieros: `Reports/*Controller`, exports PDF, dashboards. Buscar `payment_method` en `application/app/` y agregar la nueva opción.
+6. Actualizar TODOS los reportes financieros: `Reports/*Controller`, exports PDF, dashboards. Buscar `payment_method` en `bistro/backend/app/` y agregar la nueva opción.
 7. Actualizar UI: `PaymentModal.tsx` con el nuevo selector.
 8. Actualizar la tabla canónica de este `.md`.
 9. PR debe declarar: "Nuevo `payment_method`: `<x>`. Signo: positivo/negativo. Reference: sí/no. Impacto reportes: actualizados en … ."
@@ -173,8 +173,8 @@ Hoy el sistema no desglosa impuestos (`orders.total` = final). Al migrar, agrega
 ## Referencias cruzadas
 
 - `CLAUDE.md` raíz §12 "Reglas contables (legislación colombiana)" — fuente narrativa primaria.
-- `application/constants/ACCOUNTING_RULES.md` — resumen estructurado.
-- `application/constants/ORDER_STATUSES.md` — transición a `refunded`.
-- `application/app/Models/PaymentReceipt.php` — modelo Eloquent (cast/enum).
-- `application/app/Http/Controllers/Api/OrderController.php` — `closeWithPayment`, `refund`.
+- `bistro/backend/constants/ACCOUNTING_RULES.md` — resumen estructurado.
+- `bistro/backend/constants/ORDER_STATUSES.md` — transición a `refunded`.
+- `bistro/backend/app/Models/PaymentReceipt.php` — modelo Eloquent (cast/enum).
+- `bistro/backend/app/Http/Controllers/Api/OrderController.php` — `closeWithPayment`, `refund`.
 - `docs/wiki/Facturación.md` — manual narrativo.

@@ -1,8 +1,8 @@
 # Catálogo de permisos (slugs)
 
 > **Fuente de verdad ejecutable**:
-> `application/database/seeders/FeatureSeeder.php` (catálogo) +
-> `application/database/seeders/PermissionTemplateSeeder.php` (defaults por
+> `bistro/backend/database/seeders/FeatureSeeder.php` (catálogo) +
+> `bistro/backend/database/seeders/PermissionTemplateSeeder.php` (defaults por
 > `role_type`).
 > Este archivo es **espejo de referencia humana** — se actualiza manualmente
 > en el mismo PR que agrega/renombra/elimina un slug. El código gana en caso
@@ -24,7 +24,7 @@
 ### Labels UI (presentación frontend)
 
 Los labels en es-CO de cada acción (`Crear`, `Leer`, `Actualizar`, `Eliminar`)
-viven en `application/config/rbac.php` (#203) y se exponen vía Inertia shared
+viven en `bistro/backend/config/rbac.php` (#203) y se exponen vía Inertia shared
 prop `rbacActions`. El componente `permissions-matrix.tsx` los consume desde
 ahí en lugar de declarar el array de tuplas (key, label) a mano. Si se agrega
 una columna nueva al modelo `permissions` (raro), actualizar:

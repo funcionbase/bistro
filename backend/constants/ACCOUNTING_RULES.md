@@ -10,12 +10,12 @@
 ## Archivos que deben quedar sincronizados
 
 - [ ] `CLAUDE.md` raíz §12 — fuente narrativa principal
-- [ ] `application/constants/PAYMENT_METHODS.md` — convención de signos y métodos
-- [ ] `application/constants/ORDER_STATUSES.md` — revenue_statuses, refunds, terminales
+- [ ] `bistro/backend/constants/PAYMENT_METHODS.md` — convención de signos y métodos
+- [ ] `bistro/backend/constants/ORDER_STATUSES.md` — revenue_statuses, refunds, terminales
 - [ ] Migraciones de columnas monetarias (`decimal(12,2)`)
 - [ ] Eloquent `casts()` (`'campo' => 'decimal:2'`)
-- [ ] `application/config/orders.php` (`timezone`, `revenue`)
-- [ ] `application/app/Services/AuditService.php` — toda mutación financiera audita
+- [ ] `bistro/backend/config/orders.php` (`timezone`, `revenue`)
+- [ ] `bistro/backend/app/Services/AuditService.php` — toda mutación financiera audita
 - [ ] Controllers financieros (`OrderController`, `CashRegisterController`, `PurchaseController`)
 
 ---
@@ -226,6 +226,6 @@ recomputa leyéndolos, nunca mutándolos.
 ## Referencias cruzadas
 
 - `CLAUDE.md` raíz §12 — narrativa primaria.
-- `application/constants/PAYMENT_METHODS.md` — lista cerrada de métodos.
-- `application/constants/ORDER_STATUSES.md` — revenue + terminales.
-- `application/constants/AUDIT_EVENTS.md` — qué se audita y con qué metadata.
+- `bistro/backend/constants/PAYMENT_METHODS.md` — lista cerrada de métodos.
+- `bistro/backend/constants/ORDER_STATUSES.md` — revenue + terminales.
+- `bistro/backend/constants/AUDIT_EVENTS.md` — qué se audita y con qué metadata.

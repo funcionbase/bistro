@@ -34,7 +34,7 @@ use Throwable;
  *
  * Diseñado para correrse local antes de cada PR. El output JSON
  * (`--json`) se guarda como snapshot baseline en
- * `application/constants/RBAC_AUDIT_LATEST.md`. Puede atarse a un
+ * `bistro/backend/constants/RBAC_AUDIT_LATEST.md`. Puede atarse a un
  * pre-commit hook o re-introducirse en CI con `--fail-on-gap` cuando
  * existan colaboradores externos o entorno de producción.
  *
