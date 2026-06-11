@@ -23,7 +23,7 @@ const MESSAGES = [
     'Lo que tu navegador hace dos veces, nosotros lo interceptamos una vez.',
     'Descargaste un .html. Tu disco duro te observa con tristeza.',
     'Aquí no hay secretos. Solo CSS bien puesto y este mensaje.',
-    'El producto de verdad vive en panel.flexyflow.co. Tampoco lo robas.',
+    'El producto de verdad vive en bistro.flexyflow.co. Tampoco lo robas.',
     'Querías el código. Te llevas la moraleja.',
     'Minificado, sin comentarios, sin source maps. Te ahorramos la lectura.',
     'Esto es lo único que vas a guardar hoy. De nada.',

@@ -26,7 +26,7 @@
 |---|---|---|---|
 | Local | `http://localhost:5173` | `http://localhost` | — |
 | QA | `panel-qa.flexyflow.co` | `panel-api-qa.flexyflow.co` | output `LoadBalancerDnsName` del stack `05-alb` |
-| PDN | `panel.flexyflow.co` | `bistro-api.flexyflow.co` | output `LoadBalancerDnsName` del stack `05-alb` |
+| PDN | `bistro.flexyflow.co` | `bistro-api.flexyflow.co` | output `LoadBalancerDnsName` del stack `05-alb` |
 
 > En el cutover #239 ambos hosts anteriores (`restaurante.flexyflow.co` y
 > `restaurante-api.flexyflow.co`) se apagan sin redirect ni soporte dual.
@@ -57,7 +57,7 @@ Detalles importantes:
 
 ```php
 'frontend_url' => env('FRONTEND_URL') ?: match (env('APP_ENV')) {
-    'pdn', 'production' => 'https://panel.flexyflow.co',
+    'pdn', 'production' => 'https://bistro.flexyflow.co',
     'qa'                => 'https://panel-qa.flexyflow.co',
     default             => 'http://localhost:5173',
 },
@@ -81,11 +81,11 @@ Cutover atómico, single-host, sin redirect ni soporte dual:
 
 | Componente | Antes | Después |
 |---|---|---|
-| Frontend SPA | `restaurante.flexyflow.co` | `panel.flexyflow.co` |
+| Frontend SPA | `restaurante.flexyflow.co` | `bistro.flexyflow.co` |
 | Backend API | `restaurante-api.flexyflow.co` | `bistro-api.flexyflow.co` |
 
 1. Deploy del Worker `bistro-flexyflow-co` desde `bistro/frontend/dist`.
-2. Asociar custom domain `panel.flexyflow.co` desde Cloudflare → Workers → Triggers.
+2. Asociar custom domain `bistro.flexyflow.co` desde Cloudflare → Workers → Triggers.
 3. Crear CNAME `panel-api` en Cloudflare apuntando al DNS-name del ALB (proxied).
 4. CFN apply de `05-alb` con `pdn.json` (`PublicHostname=bistro-api.flexyflow.co`) — reescribe la host-header rule del ALB.
 5. Google Cloud Console: reemplazar callback `restaurante-api.flexyflow.co/auth/google/callback` por `bistro-api.flexyflow.co/auth/google/callback`.

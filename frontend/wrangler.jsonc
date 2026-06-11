@@ -5,7 +5,7 @@
     // no sea un archivo existente devuelva index.html — necesario para que
     // React Router resuelva las rutas del cliente (/dashboard, /t/:qr, etc.).
     //
-    // Cutover #239: el subdominio operativo migra a `panel.flexyflow.co`. Sin
+    // Cutover #239: el subdominio operativo migra a `bistro.flexyflow.co`. Sin
     // soporte dual ni redirect — el host anterior (`restaurante.flexyflow.co`)
     // se apaga al deployar este Worker con el custom domain nuevo. Runbook en
     // `docs/wiki/runbooks/panel-migration.md`.

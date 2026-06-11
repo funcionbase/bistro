@@ -196,7 +196,7 @@ return [
     | take place, and can be used to mitigate CSRF attacks. By default, we
     | will set this value to "lax" to permit secure cross-site requests.
     |
-    | El deploy es cross-origin same-site (SPA en panel.flexyflow.co,
+    | El deploy es cross-origin same-site (SPA en bistro.flexyflow.co,
     | API en bistro-api.flexyflow.co): en PDN se requiere "none" para que
     | la cookie de sesión y el JWT viajen entre ambos hosts, junto con
     | SESSION_SECURE_COOKIE=true ("none" sin "secure" lo rechaza el navegador).

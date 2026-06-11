@@ -1,7 +1,7 @@
 # flexyflow Panel — Guía de UI v3.4
 
 
-Esta guía define el sistema visual, de copy y técnico para **panel.flexyflow.co**. Adapta el lenguaje de la **Fase 2 del rediseño** del sitio marketing (`flexyflow.co` v2.1) a una aplicación SaaS operativa: POS, caja, planificador de turnos, reportes, PWA, modo offline.
+Esta guía define el sistema visual, de copy y técnico para **bistro.flexyflow.co**. Adapta el lenguaje de la **Fase 2 del rediseño** del sitio marketing (`flexyflow.co` v2.1) a una aplicación SaaS operativa: POS, caja, planificador de turnos, reportes, PWA, modo offline.
 
 
 **Stack:** Laravel 12 · Inertia v2 · React 19 · Tailwind CSS 4 · shadcn/ui (Radix) · Ziggy · Vite.
@@ -27,7 +27,7 @@ Lo que **no** queremos: gradientes radiales tipo startup, glow effects, ilustrac
 
 ### Diferencias respecto al marketing
 
-| Aspecto | `flexyflow.co` | `panel.flexyflow.co` |
+| Aspecto | `flexyflow.co` | `bistro.flexyflow.co` |
 |---|---|---|
 | Tipo | Landing editorial | App SaaS operativa |
 | Bloques | Sections full-width | Páginas con sidebar |

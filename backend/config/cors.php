@@ -8,7 +8,7 @@ $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 | Fuente: `CORS_ALLOWED_ORIGINS` (lista separada por comas) si está definida.
 | Si no, se deriva de `FRONTEND_URL` + los orígenes de desarrollo locales.
 |
-| El deploy es cross-origin same-site: frontend en `panel.flexyflow.co`,
+| El deploy es cross-origin same-site: frontend en `bistro.flexyflow.co`,
 | API en `bistro-api.flexyflow.co`. Para que la cookie HttpOnly del JWT
 | (`flexyflow_jwt`) y la cookie de mesa (`tdt_*`) viajen entre ambos hay que:
 |   1. `supports_credentials => true` (abajo).

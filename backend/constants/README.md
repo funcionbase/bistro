@@ -81,7 +81,7 @@
 
 | Archivo | Cubre |
 |---|---|
-| [`INFRASTRUCTURE.md`](./INFRASTRUCTURE.md) | Mapa de hosts por entorno (frontend SPA en Cloudflare Workers, backend API en AWS ALB), TLS (ACM wildcard `*.flexyflow.co`), DNS (Cloudflare, no Route53), recursos críticos AWS, pares espejo backend ↔ frontend ↔ IaC. Plan de migración #239 (panel.flexyflow.co) con cross-ref al runbook. |
+| [`INFRASTRUCTURE.md`](./INFRASTRUCTURE.md) | Mapa de hosts por entorno (frontend SPA en Cloudflare Workers, backend API en AWS ALB), TLS (ACM wildcard `*.flexyflow.co`), DNS (Cloudflare, no Route53), recursos críticos AWS, pares espejo backend ↔ frontend ↔ IaC. Plan de migración #239 (bistro.flexyflow.co) con cross-ref al runbook. |
 
 ## Regla obligatoria
 
