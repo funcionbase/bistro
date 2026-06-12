@@ -14,7 +14,19 @@
  * El frontend NO conoce el JWT; la cookie HttpOnly viaja por `credentials: include`.
  */
 import { apiFetch } from '@/lib/api';
-import { appendSyncLog, countPendingOutboxOps, deletePendingOrder, getPendingOrders, type PendingOrder } from './db';
+import {
+    appendSyncLog,
+    countPendingOutboxOps,
+    deleteOutboxOp,
+    deletePendingOrder,
+    getConflictOutboxOps,
+    getPendingOrders,
+    getQueuedOutboxOps,
+    putIdMap,
+    putOutboxOp,
+    type OutboxOp,
+    type PendingOrder,
+} from './db';
 
 type SyncListener = (state: SyncState) => void;
 
@@ -22,6 +34,8 @@ export interface SyncState {
     online: boolean;
     syncing: boolean;
     pendingCount: number;
+    /** Ops marcadas en conflicto por el server — requieren atención del usuario. */
+    conflictCount: number;
     lastSyncAt: string | null;
     lastErrorAt: string | null;
     lastError: string | null;
@@ -32,6 +46,7 @@ let _state: SyncState = {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     syncing: false,
     pendingCount: 0,
+    conflictCount: 0,
     lastSyncAt: null,
     lastErrorAt: null,
     lastError: null,
@@ -67,12 +82,13 @@ export function setActiveCompanyForSync(nit: string | null): void {
 export async function refreshPendingCount(): Promise<number> {
     // Pendientes = órdenes legacy (`pending_orders`) + ops del outbox unificado
     // aún no aplicadas. Ambas cuentan para el banner y el bloqueo de cierre.
-    const [list, outboxCount] = await Promise.all([
+    const [list, outboxCount, conflicts] = await Promise.all([
         getPendingOrders(_activeCompanyNit ?? undefined),
         countPendingOutboxOps(_activeCompanyNit ?? undefined),
+        getConflictOutboxOps(_activeCompanyNit ?? undefined),
     ]);
     const total = list.length + outboxCount;
-    setState({ pendingCount: total });
+    setState({ pendingCount: total, conflictCount: conflicts.length });
     return total;
 }
 
@@ -90,9 +106,10 @@ function schedule(delayMs: number): void {
 }
 
 /**
- * Drena la cola para la empresa activa enviando un único batch. Si el batch
- * tiene errores parciales, las órdenes con `status=created|duplicate|warning`
- * se borran de IndexedDB; las `failed` se quedan para reintento.
+ * Drena ambas colas de la empresa activa: las órdenes legacy (`pending_orders`
+ * → `/orders/sync-batch`) y el outbox unificado (`/sync/batch`). Si algo falla
+ * por red se reintenta con backoff; los conflictos NO se reintentan auto (el
+ * usuario debe resolverlos en la pantalla de revisión, plan §8).
  */
 export async function runSync(): Promise<void> {
     if (_state.syncing) return;
@@ -102,53 +119,35 @@ export async function runSync(): Promise<void> {
     }
     if (!_activeCompanyNit) return;
 
-    const pending = await getPendingOrders(_activeCompanyNit);
-    if (pending.length === 0) {
-        setState({ pendingCount: 0 });
+    const [legacyPending, outboxOps] = await Promise.all([getPendingOrders(_activeCompanyNit), getQueuedOutboxOps(_activeCompanyNit)]);
+    if (legacyPending.length === 0 && outboxOps.length === 0) {
+        await refreshPendingCount();
         return;
     }
 
     setState({ syncing: true });
+    let okCount = 0;
+    let failCount = 0;
+    let conflictCount = 0;
+    let hadNetworkError = false;
+
     try {
-        const response = await apiFetch('/api/v1/orders/sync-batch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orders: pending }),
-        });
-
-        if (!response.ok) {
-            const text = await response.text().catch(() => '');
-            throw new Error(`Sync HTTP ${response.status}: ${text.slice(0, 200)}`);
+        if (legacyPending.length > 0) {
+            const r = await drainLegacyOrders(legacyPending);
+            okCount += r.ok;
+            failCount += r.fail;
         }
-
-        const data = (await response.json()) as { results: Array<{ client_uuid: string; status: string; error?: string }> };
-        let okCount = 0;
-        let failCount = 0;
-        for (const result of data.results ?? []) {
-            if (result.status === 'created' || result.status === 'duplicate' || result.status === 'warning') {
-                await deletePendingOrder(result.client_uuid);
-                okCount++;
-            } else {
-                failCount++;
-                // Reflejar error en el record para diagnóstico y bumpear attempts.
-                const order = pending.find((o) => o.client_uuid === result.client_uuid);
-                if (order) {
-                    const updated: PendingOrder = {
-                        ...order,
-                        attempts: (order.attempts ?? 0) + 1,
-                        last_attempt_at: new Date().toISOString(),
-                        last_error: result.error ?? 'unknown',
-                    };
-                    const { putPendingOrder } = await import('./db');
-                    await putPendingOrder(updated);
-                }
-            }
+        if (outboxOps.length > 0) {
+            const r = await drainOutbox(outboxOps);
+            okCount += r.ok;
+            failCount += r.fail;
+            conflictCount += r.conflicts;
         }
 
         await appendSyncLog({
             company_nit: _activeCompanyNit,
             event: failCount === 0 ? 'sync_ok' : 'sync_error',
-            detail: `synced=${okCount} failed=${failCount}`,
+            detail: `synced=${okCount} failed=${failCount} conflicts=${conflictCount}`,
             occurred_at: new Date().toISOString(),
         });
 
@@ -168,6 +167,7 @@ export async function runSync(): Promise<void> {
 
         await refreshPendingCount();
     } catch (e) {
+        hadNetworkError = true;
         const msg = e instanceof Error ? e.message : 'sync failed';
         setState({
             syncing: false,
@@ -180,9 +180,125 @@ export async function runSync(): Promise<void> {
             detail: msg.slice(0, 200),
             occurred_at: new Date().toISOString(),
         });
+        await refreshPendingCount();
+    }
+
+    if (hadNetworkError) {
         _attempt++;
         schedule(nextDelay());
     }
+}
+
+/**
+ * Drena las órdenes legacy vía `/orders/sync-batch`. Lanza ante error de red
+ * (se propaga al backoff del orquestador).
+ */
+async function drainLegacyOrders(pending: PendingOrder[]): Promise<{ ok: number; fail: number }> {
+    const response = await apiFetch('/api/v1/orders/sync-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orders: pending }),
+    });
+    if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Sync HTTP ${response.status}: ${text.slice(0, 200)}`);
+    }
+    const data = (await response.json()) as { results: Array<{ client_uuid: string; status: string; error?: string }> };
+    let ok = 0;
+    let fail = 0;
+    for (const result of data.results ?? []) {
+        if (result.status === 'created' || result.status === 'duplicate' || result.status === 'warning') {
+            await deletePendingOrder(result.client_uuid);
+            ok++;
+        } else {
+            fail++;
+            const order = pending.find((o) => o.client_uuid === result.client_uuid);
+            if (order) {
+                const { putPendingOrder } = await import('./db');
+                await putPendingOrder({
+                    ...order,
+                    attempts: (order.attempts ?? 0) + 1,
+                    last_attempt_at: new Date().toISOString(),
+                    last_error: result.error ?? 'unknown',
+                });
+            }
+        }
+    }
+    return { ok, fail };
+}
+
+interface SyncBatchResult {
+    op_id: string;
+    status: 'created' | 'warning' | 'duplicate' | 'conflict' | 'failed';
+    server_id?: string;
+    code?: string;
+    error?: string;
+    warnings?: unknown[];
+}
+
+/**
+ * Drena el outbox vía `/sync/batch`. Concilia por-op:
+ *  - applied/warning/duplicate → guarda id_map y borra la op.
+ *  - conflict → marca la op (no se reintenta auto; pantalla de revisión).
+ *  - failed → re-encola con backoff.
+ * Lanza ante error de red (se propaga al backoff del orquestador).
+ */
+async function drainOutbox(ops: OutboxOp[]): Promise<{ ok: number; fail: number; conflicts: number }> {
+    const body = {
+        ops: ops.map((op) => ({
+            op_id: op.op_id,
+            type: op.type,
+            company_nit: op.company_nit,
+            branch_id: op.branch_id,
+            payload: op.payload,
+            entity_ref: op.entity_ref,
+            depends_on: op.depends_on,
+            created_at_client: op.created_at_client,
+        })),
+    };
+    const response = await apiFetch('/api/v1/sync/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Sync outbox HTTP ${response.status}: ${text.slice(0, 200)}`);
+    }
+    const data = (await response.json()) as { results: SyncBatchResult[] };
+    let ok = 0;
+    let fail = 0;
+    let conflicts = 0;
+    for (const result of data.results ?? []) {
+        const op = ops.find((o) => o.op_id === result.op_id);
+        if (!op) continue;
+        if (result.status === 'created' || result.status === 'warning' || result.status === 'duplicate') {
+            if (op.entity_ref && result.server_id) {
+                await putIdMap(op.entity_ref, result.server_id, op.type);
+            }
+            await deleteOutboxOp(op.op_id);
+            ok++;
+        } else if (result.status === 'conflict') {
+            conflicts++;
+            await putOutboxOp({
+                ...op,
+                status: 'conflict',
+                conflict: { code: result.code ?? 'conflict', message: result.error, warnings: result.warnings },
+                last_error: result.code ?? result.error ?? 'conflict',
+                last_attempt_at: new Date().toISOString(),
+            });
+        } else {
+            fail++;
+            await putOutboxOp({
+                ...op,
+                status: 'queued',
+                attempts: (op.attempts ?? 0) + 1,
+                last_attempt_at: new Date().toISOString(),
+                last_error: result.error ?? 'unknown',
+            });
+        }
+    }
+    return { ok, fail, conflicts };
 }
 
 export function startSyncEngine(): () => void {

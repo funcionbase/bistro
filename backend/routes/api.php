@@ -67,6 +67,7 @@ use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SesNotificationController;
 use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\TableAdminController;
 use App\Http\Controllers\Api\TableCashierController;
 use App\Http\Controllers\Api\TableSessionController;
@@ -888,6 +889,12 @@ Route::prefix('v1')->group(function () {
                 Route::post('orders/sync-batch', [OrderSyncController::class, 'syncBatch'])
                     ->middleware('permission:orders.create,create')
                     ->name('api.orders.syncBatch');
+                // Sync unificado de la caja offline-first (plan-off.md §6.1).
+                // Drena el outbox (order.create, order.close, …). El permiso se
+                // valida POR operación dentro del controller (un lote mezcla
+                // tipos), por eso NO lleva middleware `permission:` a nivel ruta.
+                Route::post('sync/batch', [SyncController::class, 'batch'])
+                    ->name('api.sync.batch');
                 // Constraint regex: el `{id}` solo matchea integers para que
                 // Laravel NO capture rutas hermanas como `orders/pending-approvals`
                 // o `orders/pending-cancellations` (que también viven bajo el

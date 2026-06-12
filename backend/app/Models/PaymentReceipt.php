@@ -48,6 +48,7 @@ class PaymentReceipt extends Model
         'amount',
         'reference',
         'paid_at',
+        'occurred_at_client',
         'cash_session_id',
         'payment_data',
     ];
@@ -59,6 +60,7 @@ class PaymentReceipt extends Model
             'amount' => 'decimal:2',
             'created_at' => 'datetime',
             'paid_at' => 'datetime',
+            'occurred_at_client' => 'datetime',
         ];
     }
 

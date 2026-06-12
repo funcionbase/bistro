@@ -61,14 +61,18 @@ export function OfflineBanner() {
     }, []);
 
     if (!state) return null;
-    if (state.online && state.pendingCount === 0) return null;
+    const conflicts = state.conflictCount ?? 0;
+    if (state.online && state.pendingCount === 0 && conflicts === 0) return null;
 
     const offlineDuration = offlineSince ? Date.now() - offlineSince : 0;
     const atRisk = !state.online && offlineDuration > RISK_THRESHOLD_MS;
 
-    const tone = atRisk
-        ? 'bg-[color:var(--color-status-critical)]/10 border-[color:var(--color-status-critical)]/30 text-[color:var(--color-status-critical)]'
-        : 'bg-[color:var(--color-status-warning)]/10 border-[color:var(--color-status-warning)]/30 text-[color:var(--color-status-warning)]';
+    // Los conflictos (cobro ya pagado en server, dependencia fallida, etc.)
+    // requieren atención: tono crítico aunque haya conexión (plan §8).
+    const tone =
+        atRisk || conflicts > 0
+            ? 'bg-[color:var(--color-status-critical)]/10 border-[color:var(--color-status-critical)]/30 text-[color:var(--color-status-critical)]'
+            : 'bg-[color:var(--color-status-warning)]/10 border-[color:var(--color-status-warning)]/30 text-[color:var(--color-status-warning)]';
 
     return (
         <div className={`sticky top-0 z-40 flex items-center justify-between gap-2 border-b px-4 py-2 text-sm ${tone}`}>
@@ -87,6 +91,7 @@ export function OfflineBanner() {
                     <span className="text-xs opacity-80">
                         Última sync: {formatRelative(state.lastSyncAt)}
                         {state.lastError ? ` · ${state.lastError}` : ''}
+                        {conflicts > 0 ? ` · ${conflicts} conflicto${conflicts === 1 ? '' : 's'} requiere${conflicts === 1 ? '' : 'n'} tu atención` : ''}
                     </span>
                 </div>
             </div>

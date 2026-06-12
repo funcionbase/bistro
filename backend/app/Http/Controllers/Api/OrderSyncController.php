@@ -142,7 +142,7 @@ class OrderSyncController extends Controller
             }
         }
 
-        $this->recordEvents($companyNit, $actingUser?->id, $aggregateOrders, $aggregateReceipts, $aggregateFailed);
+        $this->recordEvents($companyNit, (string) $this->activeBranchId($request), $actingUser?->id, $aggregateOrders, $aggregateReceipts, $aggregateFailed);
 
         return response()->json([
             'results' => $results,
@@ -329,13 +329,13 @@ class OrderSyncController extends Controller
      * @param  array{count: int, amount: float}  $orders
      * @param  array{count: int, amount: float}  $receipts
      */
-    private function recordEvents(string $companyNit, ?string $userId, array $orders, array $receipts, int $failed): void
+    private function recordEvents(string $companyNit, string $branchId, ?string $userId, array $orders, array $receipts, int $failed): void
     {
         $now = now();
         if ($orders['count'] > 0) {
             OfflineSyncEvent::create([
                 'company_nit' => $companyNit,
-                'branch_id' => $this->activeBranchId($request),
+                'branch_id' => $branchId,
                 'user_id' => $userId,
                 'event_type' => 'order_synced',
                 'count' => $orders['count'],
@@ -346,7 +346,7 @@ class OrderSyncController extends Controller
         if ($receipts['count'] > 0) {
             OfflineSyncEvent::create([
                 'company_nit' => $companyNit,
-                'branch_id' => $this->activeBranchId($request),
+                'branch_id' => $branchId,
                 'user_id' => $userId,
                 'event_type' => 'receipt_synced',
                 'count' => $receipts['count'],
@@ -357,7 +357,7 @@ class OrderSyncController extends Controller
         if ($failed > 0) {
             OfflineSyncEvent::create([
                 'company_nit' => $companyNit,
-                'branch_id' => $this->activeBranchId($request),
+                'branch_id' => $branchId,
                 'user_id' => $userId,
                 'event_type' => 'sync_failed',
                 'count' => $failed,

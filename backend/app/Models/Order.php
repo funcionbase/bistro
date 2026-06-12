@@ -90,6 +90,10 @@ class Order extends Model
         'tax_regime',
         'tax_included_in_price',
         'tip_amount',
+        // Origen offline (caja offline-first): hora real de la venta en el
+        // dispositivo (cuadre por esta hora) + flag de auditoría.
+        'created_at_client',
+        'is_offline_origin',
         // Snapshot del adquirente DIAN al momento de emitir (#235).
         // Se congelan en la orden para que mutaciones futuras del Contact
         // del cliente no contaminen el documento emitido.
@@ -118,6 +122,8 @@ class Order extends Model
             'tip_amount' => 'decimal:2',
             'tax_included_in_price' => 'boolean',
             'ordered_at' => 'datetime',
+            'created_at_client' => 'datetime',
+            'is_offline_origin' => 'boolean',
             'sync_warnings' => 'array',
         ];
     }

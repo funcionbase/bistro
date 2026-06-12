@@ -26,7 +26,7 @@ interface UseTablePaymentArgs {
     /** Orden seleccionada actualmente (fuente de los totales). */
     selectedOrder: TableOrder | null;
     /** Cierra la orden con el pago (delegado a `useTables`). */
-    closeWithPayment: (orderId: string, payload: ClosePaymentInput) => Promise<void>;
+    closeWithPayment: (orderId: string, payload: ClosePaymentInput) => Promise<{ queued: boolean }>;
     /** Limpia la selección tras un cobro exitoso. */
     onPaid: () => void;
 }
@@ -115,7 +115,16 @@ export function useTablePayment({ selectedOrder, closeWithPayment, onPaid }: Use
 
         setPaymentState((p) => ({ ...p, submitting: true, error: null, dianEmissionError: null }));
         try {
-            await closeWithPayment(paymentState.orderId, payload);
+            const result = await closeWithPayment(paymentState.orderId, payload);
+
+            // Cobro encolado offline (sin red): tiquete provisional, NO fiscal.
+            // DIAN es online-only (plan §1/§10) — se difiere al sync. Cerramos el
+            // sheet; el banner offline refleja la operación en cola.
+            if (result.queued) {
+                setPaymentState((p) => ({ ...p, open: false, submitting: false }));
+                onPaid();
+                return;
+            }
 
             // HU #235 — emisión DIAN opt-in disparada por el cajero. FEV si
             // hay cliente identificado vía lookup (1er match completo); DEE
