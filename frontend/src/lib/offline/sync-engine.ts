@@ -20,6 +20,7 @@ import {
     deleteOutboxOp,
     deletePendingOrder,
     getConflictOutboxOps,
+    getOutboxOp,
     getPendingOrders,
     getQueuedOutboxOps,
     putIdMap,
@@ -89,6 +90,10 @@ export async function refreshPendingCount(): Promise<number> {
     ]);
     const total = list.length + outboxCount;
     setState({ pendingCount: total, conflictCount: conflicts.length });
+    // Si hay pendientes, pedir un wake en background (best-effort).
+    if (total > 0) {
+        void registerBackgroundSync();
+    }
     return total;
 }
 
@@ -314,6 +319,14 @@ export function startSyncEngine(): () => void {
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
 
+    // El SW (Background Sync) nos despierta para drenar con la pestaña en foco.
+    const onSwMessage = (event: MessageEvent) => {
+        if ((event.data as { type?: string } | null)?.type === 'pwa:flush-outbox' && navigator.onLine) {
+            void runSync();
+        }
+    };
+    navigator.serviceWorker?.addEventListener('message', onSwMessage);
+
     if (!_pollTimer) {
         _pollTimer = setInterval(() => {
             if (navigator.onLine && _state.pendingCount > 0 && !_state.syncing) {
@@ -331,6 +344,7 @@ export function startSyncEngine(): () => void {
     return () => {
         window.removeEventListener('online', onOnline);
         window.removeEventListener('offline', onOffline);
+        navigator.serviceWorker?.removeEventListener('message', onSwMessage);
         if (_pollTimer) {
             clearInterval(_pollTimer);
             _pollTimer = null;
@@ -358,4 +372,56 @@ export async function exportPendingsAsJson(): Promise<string> {
         null,
         2,
     );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Gestión de conflictos (pantalla de revisión, plan §7.5/§8)
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Ops marcadas en conflicto por el server para la empresa activa. */
+export async function listConflicts(): Promise<OutboxOp[]> {
+    return getConflictOutboxOps(_activeCompanyNit ?? undefined);
+}
+
+/**
+ * Reintenta un conflicto: vuelve la op a `queued` y dispara el sync. Útil
+ * cuando la causa se resolvió (p.ej. se reabrió la caja en server).
+ */
+export async function retryConflict(opId: string): Promise<void> {
+    const op = await getOutboxOp(opId);
+    if (!op) return;
+    await putOutboxOp({ ...op, status: 'queued', conflict: null, last_error: null });
+    await refreshPendingCount();
+    void runSync();
+}
+
+/**
+ * Descarta un conflicto: borra la op del outbox. Se usa cuando el conflicto es
+ * definitivo (p.ej. la orden ya fue cobrada en server: no hay nada que hacer).
+ * NO borra plata: el asiento contable ya vive (o no) en el server.
+ */
+export async function discardConflict(opId: string): Promise<void> {
+    await deleteOutboxOp(opId);
+    await refreshPendingCount();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Background Sync API (plan §14, best-effort)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Registra un `sync` tag para que el navegador drene el outbox aun con la
+ * pestaña cerrada (soporte parcial: Chromium). El SW despierta a los clientes
+ * abiertos vía postMessage; el engine en-foreground es el fallback real.
+ */
+async function registerBackgroundSync(): Promise<void> {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    try {
+        const reg = (await navigator.serviceWorker.ready) as ServiceWorkerRegistration & {
+            sync?: { register: (tag: string) => Promise<void> };
+        };
+        await reg.sync?.register('flush-outbox');
+    } catch {
+        // Background Sync no soportado / sin permiso → fallback foreground.
+    }
 }

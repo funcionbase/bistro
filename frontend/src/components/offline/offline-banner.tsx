@@ -8,6 +8,7 @@
  *  - Offline + N pending → banner naranja "Modo offline · N en cola".
  *  - Offline >5min O pending >5min antiguos → banner rojo con riesgo de pérdida.
  */
+import ConflictReviewDialog from '@/components/offline/conflict-review-dialog';
 import { Button } from '@/components/ui/button';
 import { exportPendingsAsJson, runSync, subscribeSyncState, type SyncState } from '@/lib/offline/sync-engine';
 import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
@@ -41,6 +42,7 @@ async function downloadExport(): Promise<void> {
 export function OfflineBanner() {
     const [state, setState] = useState<SyncState | null>(null);
     const [offlineSince, setOfflineSince] = useState<number | null>(null);
+    const [reviewOpen, setReviewOpen] = useState(false);
     const [, force] = useState(0);
 
     useEffect(() => {
@@ -96,6 +98,11 @@ export function OfflineBanner() {
                 </div>
             </div>
             <div className="flex items-center gap-2">
+                {conflicts > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => setReviewOpen(true)}>
+                        Revisar ({conflicts})
+                    </Button>
+                )}
                 {state.pendingCount > 0 && (
                     <Button size="sm" variant="outline" onClick={() => void downloadExport()}>
                         Exportar
@@ -106,6 +113,7 @@ export function OfflineBanner() {
                     Reintentar
                 </Button>
             </div>
+            <ConflictReviewDialog open={reviewOpen} onClose={() => setReviewOpen(false)} />
         </div>
     );
 }

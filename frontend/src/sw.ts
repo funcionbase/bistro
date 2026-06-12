@@ -81,6 +81,23 @@ registerRoute(
     }),
 );
 
+// 2b. Background Sync (caja offline-first, plan §14): cuando el navegador
+// recupera conectividad, dispara el tag `flush-outbox`. El SW no tiene la
+// lógica del outbox (vive en el bundle); despierta a los clientes abiertos
+// para que el sync-engine drene en foreground. Best-effort: soporte parcial
+// (Chromium) y solo útil si hay alguna pestaña/PWA viva.
+self.addEventListener('sync', ((event: ExtendableEvent & { tag?: string }) => {
+    if (event.tag !== 'flush-outbox') return;
+    event.waitUntil(
+        (async () => {
+            const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+            for (const client of clientsList) {
+                client.postMessage({ type: 'pwa:flush-outbox' });
+            }
+        })(),
+    );
+}) as EventListener);
+
 // 3. Web Push listeners (#149)
 interface PushPayload {
     title: string;
