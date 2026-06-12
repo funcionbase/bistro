@@ -22,11 +22,14 @@ class CashRegisterSession extends Model
     /** @var list<string> */
     protected $fillable = [
         'company_nit',
+        'client_uuid',
         'opened_by_user_id',
         'opened_at',
+        'opened_at_client',
         'opening_amount',
         'closed_by_user_id',
         'closed_at',
+        'closed_at_client',
         'closing_amount',
         'expected_cash',
         'cash_difference',
@@ -39,7 +42,9 @@ class CashRegisterSession extends Model
     {
         return [
             'opened_at' => 'datetime',
+            'opened_at_client' => 'datetime',
             'closed_at' => 'datetime',
+            'closed_at_client' => 'datetime',
             'opening_amount' => 'decimal:2',
             'closing_amount' => 'decimal:2',
             'expected_cash' => 'decimal:2',

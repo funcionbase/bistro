@@ -36,12 +36,14 @@ class CashRegisterExpense extends Model
     protected $fillable = [
         'cash_session_id',
         'company_nit',
+        'client_uuid',
         'amount',
         'category',
         'payment_method',
         'description',
         'created_by_user_id',
         'created_at',
+        'occurred_at_client',
     ];
 
     protected function casts(): array
@@ -49,6 +51,7 @@ class CashRegisterExpense extends Model
         return [
             'amount' => 'decimal:2',
             'created_at' => 'datetime',
+            'occurred_at_client' => 'datetime',
         ];
     }
 

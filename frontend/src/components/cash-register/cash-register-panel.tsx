@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CASH_EXPENSE_CATEGORIES, useCashRegister, type CashExpenseCategory, type CashSession } from '@/hooks/use-cash-register';
+import { CASH_EXPENSE_CATEGORIES, useCashRegister, type CashExpenseCategory, type CashSession, type CloseSessionResult } from '@/hooks/use-cash-register';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useToken } from '@/hooks/use-token';
 import type { PaymentMethod } from '@/types';
@@ -154,15 +154,7 @@ function ActiveSessionBanner({
     onRecordExpense,
 }: {
     session: CashSession;
-    onClose: (
-        closingAmount: number,
-        notes?: string,
-    ) => Promise<{
-        opening_amount: number;
-        closing_amount: number;
-        expected_cash: number;
-        cash_difference: number;
-    }>;
+    onClose: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
     onRefresh: () => Promise<void>;
     onRecordExpense: (input: {
         amount: number;
@@ -194,7 +186,7 @@ function ActiveSessionBanner({
             >
                 <div className="flex items-center gap-2 text-[color:var(--color-status-safe)]">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span className="font-medium">Caja abierta</span>
+                    <span className="font-medium">Caja abierta{session.provisional ? ' (provisional · sin sincronizar)' : ''}</span>
                     <span className="text-foreground/80 text-xs">
                         desde {openedAt}
                         {session.opened_by && <> · por {session.opened_by.name}</>}· inicial{' '}
@@ -242,15 +234,7 @@ function CloseSessionDialog({
 }: {
     session: CashSession;
     onClose: () => void;
-    onSubmit: (
-        closingAmount: number,
-        notes?: string,
-    ) => Promise<{
-        opening_amount: number;
-        closing_amount: number;
-        expected_cash: number;
-        cash_difference: number;
-    }>;
+    onSubmit: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
     onRefresh: () => Promise<void>;
 }) {
     const formatCurrency = useCurrencyFormatter();
@@ -258,12 +242,7 @@ function CloseSessionDialog({
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [result, setResult] = useState<{
-        opening_amount: number;
-        closing_amount: number;
-        expected_cash: number;
-        cash_difference: number;
-    } | null>(null);
+    const [result, setResult] = useState<CloseSessionResult | null>(null);
 
     const expected = session.live.expected_cash;
     const pendingOrders = session.live.pending_orders ?? 0;
@@ -292,6 +271,37 @@ function CloseSessionDialog({
     const cash = session.live.by_method.cash;
     const expenses = session.live.expenses;
     const cashExpensesTotal = expenses?.by_method?.cash ?? 0;
+
+    if (result?.provisional) {
+        return (
+            <Dialog open onOpenChange={(open) => !open && onClose()}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Cierre provisional registrado</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 text-sm">
+                        <Alert variant="warning">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Caja cerrada offline</AlertTitle>
+                            <AlertDescription className="text-xs">
+                                Registramos tu conteo físico ({formatCurrency(result.closing_amount)}). El cuadre (esperado y diferencia) se
+                                calcula al reconectar, cuando el servidor concilie todos los cobros sincronizados.
+                            </AlertDescription>
+                        </Alert>
+                        <Button
+                            onClick={() => {
+                                onClose();
+                                void onRefresh();
+                            }}
+                            className="w-full"
+                        >
+                            Entendido
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     if (result) {
         const diffExact = Math.abs(result.cash_difference) < 0.01;

@@ -59,6 +59,9 @@ class SyncController extends Controller
     private const OP_PERMISSIONS = [
         'order.create' => ['orders', 'create'],
         'order.close' => ['orders', 'update'],
+        'cash.open' => ['orders', 'create'],
+        'cash.expense' => ['orders', 'update'],
+        'cash.close' => ['orders', 'update'],
     ];
 
     public function __construct(
@@ -100,7 +103,6 @@ class SyncController extends Controller
         $company = Company::where('nit', $companyNit)->firstOrFail();
         $menu = RestaurantMenu::forCompany($companyNit)->active()->first();
         $catalog = $menu ? $this->orderController->buildMenuCatalog($menu) : collect();
-        $session = $this->cashRegister->activeSession($companyNit);
 
         /** @var array<string, string> $idMap mapa client_uuid(entity_ref) → server_id dentro del lote */
         $idMap = [];
@@ -131,10 +133,15 @@ class SyncController extends Controller
                 }
 
                 // Idempotencia N-instance: lock por op_id en store compartido.
-                $result = Cache::lock("sync:{$opId}", 10)->block(5, function () use ($op, $type, $companyNit, $branchId, $company, $catalog, $session, $actingUser, $request, &$idMap) {
+                // Las ops que necesitan sesión la re-resuelven adentro (puede
+                // haberse abierto por un `cash.open` anterior del mismo lote).
+                $result = Cache::lock("sync:{$opId}", 10)->block(5, function () use ($op, $type, $companyNit, $branchId, $company, $catalog, $actingUser, $request, &$idMap) {
                     return match ($type) {
                         'order.create' => $this->applyOrderCreate($op, $companyNit, $branchId, $company, $catalog, $actingUser, $request),
-                        'order.close' => $this->applyOrderClose($op, $companyNit, $session, $actingUser, $request, $idMap),
+                        'order.close' => $this->applyOrderClose($op, $companyNit, $branchId, $actingUser, $request, $idMap),
+                        'cash.open' => $this->applyCashOpen($op, $companyNit, $branchId, $actingUser),
+                        'cash.expense' => $this->applyCashExpense($op, $companyNit, $branchId, $actingUser),
+                        'cash.close' => $this->applyCashClose($op, $companyNit, $branchId, $actingUser, $request),
                         default => ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'unsupported_op_type'],
                     };
                 });
@@ -283,7 +290,7 @@ class SyncController extends Controller
      * @param  array<string, string>  $idMap
      * @return array<string, mixed>
      */
-    private function applyOrderClose(array $op, string $companyNit, $session, ?User $actingUser, Request $request, array $idMap): array
+    private function applyOrderClose(array $op, string $companyNit, string $branchId, ?User $actingUser, Request $request, array $idMap): array
     {
         $payload = $op['payload'];
 
@@ -308,6 +315,8 @@ class SyncController extends Controller
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'invalid_payment_method'];
         }
 
+        // Resuelta en vivo por sede: pudo abrirse por un cash.open del mismo lote.
+        $session = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
         if ($session === null) {
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_open_cash_session'];
         }
@@ -408,6 +417,143 @@ class SyncController extends Controller
                 'receipt_created' => true,
             ];
         });
+    }
+
+    /**
+     * Abre la caja offline idempotente por `client_uuid`. Si ya hay otra sesión
+     * abierta en la sede (otra terminal/dispositivo), NO abre una segunda:
+     * devuelve `session_already_open` con su id para que las ventas se reimputen
+     * a esa sesión (plan §8/§9).
+     *
+     * @param  array<string, mixed>  $op
+     * @return array<string, mixed>
+     */
+    private function applyCashOpen(array $op, string $companyNit, string $branchId, ?User $actingUser): array
+    {
+        if ($actingUser === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_actor'];
+        }
+        $payload = $op['payload'];
+        $clientUuid = $payload['client_uuid'] ?? null;
+        if (! is_string($clientUuid) || $clientUuid === '') {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'missing_client_uuid'];
+        }
+
+        // Idempotencia: esta apertura ya se aplicó → duplicate.
+        $existing = $this->cashRegister->sessionByClientUuid($companyNit, $branchId, $clientUuid);
+        if ($existing !== null) {
+            return ['op_id' => $op['op_id'], 'status' => 'duplicate', 'server_id' => $existing->id];
+        }
+
+        // Otra sesión abierta en la sede → reconciliar, no abrir otra.
+        $open = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        if ($open !== null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'session_already_open', 'server_id' => $open->id];
+        }
+
+        $openedAtClient = isset($op['created_at_client']) ? Carbon::parse($op['created_at_client']) : null;
+        $session = $this->cashRegister->openSession(
+            $companyNit,
+            $branchId,
+            $actingUser,
+            (float) ($payload['opening_amount'] ?? 0),
+            $payload['notes'] ?? null,
+            $clientUuid,
+            $openedAtClient,
+        );
+
+        return ['op_id' => $op['op_id'], 'status' => 'created', 'server_id' => $session->id];
+    }
+
+    /**
+     * Registra un egreso offline idempotente por `client_uuid` contra la sesión
+     * abierta de la sede.
+     *
+     * @param  array<string, mixed>  $op
+     * @return array<string, mixed>
+     */
+    private function applyCashExpense(array $op, string $companyNit, string $branchId, ?User $actingUser): array
+    {
+        if ($actingUser === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_actor'];
+        }
+        $payload = $op['payload'];
+        $clientUuid = $payload['client_uuid'] ?? null;
+        if (! is_string($clientUuid) || $clientUuid === '') {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'missing_client_uuid'];
+        }
+
+        $session = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        if ($session === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_open_cash_session'];
+        }
+
+        $occurredAtClient = isset($payload['occurred_at_client']) ? Carbon::parse($payload['occurred_at_client']) : null;
+        $expense = $this->cashRegister->recordExpense(
+            $session,
+            $actingUser,
+            (float) ($payload['amount'] ?? 0),
+            (string) ($payload['category'] ?? ''),
+            $payload['description'] ?? null,
+            (string) ($payload['payment_method'] ?? 'cash'),
+            $clientUuid,
+            $occurredAtClient,
+        );
+
+        return ['op_id' => $op['op_id'], 'status' => 'created', 'server_id' => $expense->id, 'amount' => (float) $expense->amount];
+    }
+
+    /**
+     * Cierre provisional offline: el server recalcula `expected_cash` desde los
+     * receipts ya aplicados; el `closing_amount` (conteo físico) lo capturó el
+     * cajero. Idempotente: si ya está cerrada (re-sync) → duplicate.
+     *
+     * @param  array<string, mixed>  $op
+     * @return array<string, mixed>
+     */
+    private function applyCashClose(array $op, string $companyNit, string $branchId, ?User $actingUser, Request $request): array
+    {
+        if ($actingUser === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_actor'];
+        }
+        $payload = $op['payload'];
+        $closedAtClient = isset($payload['closed_at_client']) ? Carbon::parse($payload['closed_at_client']) : null;
+
+        $outcome = $this->cashRegister->closeSessionFromSync(
+            $companyNit,
+            $branchId,
+            $actingUser,
+            (float) ($payload['closing_amount'] ?? 0),
+            $payload['notes'] ?? null,
+            $closedAtClient,
+        );
+
+        $session = $outcome['session'];
+        if ($session === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_session_to_close'];
+        }
+
+        if ($outcome['status'] === 'closed') {
+            $warnings = [];
+            $clientClose = (float) ($payload['closing_amount'] ?? 0);
+            if (abs($clientClose - (float) $session->expected_cash) > 0.009) {
+                // Diferencia entre conteo físico y esperado recomputado: revisión.
+                $warnings[] = ['type' => 'cash_close_recomputed', 'expected_cash' => (float) $session->expected_cash, 'closing_amount' => $clientClose];
+            }
+
+            $this->auditService->log('cash_register.closed_offline', $actingUser, $session, [
+                'session_id' => $session->id,
+                'op_id' => $op['op_id'],
+                'closing_amount' => $clientClose,
+                'expected_cash' => (float) $session->expected_cash,
+                'cash_difference' => (float) $session->cash_difference,
+                'offline' => true,
+            ], $request);
+
+            return ['op_id' => $op['op_id'], 'status' => $warnings ? 'warning' : 'created', 'server_id' => $session->id, 'warnings' => $warnings];
+        }
+
+        return ['op_id' => $op['op_id'], 'status' => 'duplicate', 'server_id' => $session->id];
     }
 
     /**

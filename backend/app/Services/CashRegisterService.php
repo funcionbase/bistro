@@ -9,6 +9,7 @@ use App\Models\CashRegisterSession;
 use App\Models\Order;
 use App\Models\PaymentReceipt;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -37,8 +38,24 @@ class CashRegisterService
         User $openedBy,
         float $openingAmount,
         ?string $notes = null,
+        ?string $clientUuid = null,
+        ?Carbon $openedAtClient = null,
     ): CashRegisterSession {
-        return DB::transaction(function () use ($companyNit, $branchId, $openedBy, $openingAmount, $notes) {
+        return DB::transaction(function () use ($companyNit, $branchId, $openedBy, $openingAmount, $notes, $clientUuid, $openedAtClient) {
+            // Idempotencia offline: si esta apertura (client_uuid) ya se aplicó,
+            // devolver la misma sesión — un reintento del sync no abre otra.
+            if ($clientUuid !== null) {
+                $byClient = CashRegisterSession::query()
+                    ->where('company_nit', $companyNit)
+                    ->where('branch_id', $branchId)
+                    ->where('client_uuid', $clientUuid)
+                    ->lockForUpdate()
+                    ->first();
+                if ($byClient) {
+                    return $byClient;
+                }
+            }
+
             $existing = CashRegisterSession::query()
                 ->where('company_nit', $companyNit)
                 ->where('branch_id', $branchId)
@@ -55,8 +72,10 @@ class CashRegisterService
             return CashRegisterSession::create([
                 'company_nit' => $companyNit,
                 'branch_id' => $branchId,
+                'client_uuid' => $clientUuid,
                 'opened_by_user_id' => $openedBy->id,
                 'opened_at' => now(),
+                'opened_at_client' => $openedAtClient,
                 'opening_amount' => round($openingAmount, 2),
                 'status' => 'open',
                 'opening_notes' => $notes,
@@ -140,6 +159,63 @@ class CashRegisterService
     }
 
     /**
+     * Cierre provisional desde el sync offline (plan-off.md §6.4). A diferencia
+     * del cierre online, NO bloquea por pendientes de sync (el sync ya drenó las
+     * ops previas: `cash.close` depende de todas las ops de la sesión) ni por
+     * órdenes operativas (el cajero ya cerró físicamente; el server reconcilia).
+     *
+     * El `closing_amount` (conteo físico) lo capturó el cajero offline y es
+     * inmutable; `expected_cash` y `cash_difference` los RECALCULA el server con
+     * su verdad (receipts ya aplicados). Idempotente: si ya no hay sesión abierta
+     * (re-sync), devuelve la última cerrada de la sede como `duplicate`.
+     *
+     * @return array{status: string, session: ?CashRegisterSession}
+     */
+    public function closeSessionFromSync(
+        string $companyNit,
+        string $branchId,
+        User $closedBy,
+        float $closingAmount,
+        ?string $notes = null,
+        ?Carbon $closedAtClient = null,
+    ): array {
+        return DB::transaction(function () use ($companyNit, $branchId, $closedBy, $closingAmount, $notes, $closedAtClient) {
+            $session = CashRegisterSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->where('status', 'open')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $session) {
+                $last = CashRegisterSession::query()
+                    ->where('company_nit', $companyNit)
+                    ->where('branch_id', $branchId)
+                    ->where('status', 'closed')
+                    ->orderByDesc('closed_at')
+                    ->first();
+
+                return ['status' => 'duplicate', 'session' => $last];
+            }
+
+            $expected = $this->computeExpectedCash($session);
+
+            $session->fill([
+                'closed_by_user_id' => $closedBy->id,
+                'closed_at' => now(),
+                'closed_at_client' => $closedAtClient,
+                'closing_amount' => round($closingAmount, 2),
+                'expected_cash' => round($expected, 2),
+                'cash_difference' => round($closingAmount - $expected, 2),
+                'status' => 'closed',
+                'closing_notes' => $notes,
+            ])->save();
+
+            return ['status' => 'closed', 'session' => $session];
+        });
+    }
+
+    /**
      * Calcula el efectivo esperado en caja al momento del cierre.
      *
      *   expected =
@@ -204,6 +280,8 @@ class CashRegisterService
         string $category,
         ?string $description = null,
         string $paymentMethod = 'cash',
+        ?string $clientUuid = null,
+        ?Carbon $occurredAtClient = null,
     ): CashRegisterExpense {
         $categories = array_keys(config('cash_register.expense_categories', []));
         $methods = config('cash_register.expense_payment_methods', ['cash', 'card', 'transfer']);
@@ -226,7 +304,15 @@ class CashRegisterService
             ]);
         }
 
-        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod) {
+        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod, $clientUuid, $occurredAtClient) {
+            // Idempotencia offline: egreso ya aplicado (client_uuid) → devolverlo.
+            if ($clientUuid !== null) {
+                $byClient = CashRegisterExpense::query()->where('client_uuid', $clientUuid)->lockForUpdate()->first();
+                if ($byClient) {
+                    return $byClient;
+                }
+            }
+
             $fresh = CashRegisterSession::whereKey($session->id)->lockForUpdate()->first();
 
             if (! $fresh || $fresh->status !== 'open') {
@@ -239,12 +325,14 @@ class CashRegisterService
                 'cash_session_id' => $fresh->id,
                 'company_nit' => $fresh->company_nit,
                 'branch_id' => $fresh->branch_id,
+                'client_uuid' => $clientUuid,
                 'amount' => round($amount, 2),
                 'category' => $category,
                 'payment_method' => $paymentMethod,
                 'description' => $description,
                 'created_by_user_id' => $createdBy->id,
                 'created_at' => now(),
+                'occurred_at_client' => $occurredAtClient,
             ]);
         });
     }
@@ -270,6 +358,26 @@ class CashRegisterService
     public function activeSession(string $companyNit): ?CashRegisterSession
     {
         return CashRegisterSession::forCompany($companyNit)->open()->first();
+    }
+
+    /** Sesión abierta de una sede específica (multi-sede). */
+    public function activeSessionForBranch(string $companyNit, string $branchId): ?CashRegisterSession
+    {
+        return CashRegisterSession::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->where('status', 'open')
+            ->first();
+    }
+
+    /** Sesión (de cualquier estado) que abrió una apertura offline concreta. */
+    public function sessionByClientUuid(string $companyNit, string $branchId, string $clientUuid): ?CashRegisterSession
+    {
+        return CashRegisterSession::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->where('client_uuid', $clientUuid)
+            ->first();
     }
 
     /**
