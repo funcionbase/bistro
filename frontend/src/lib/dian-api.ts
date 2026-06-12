@@ -36,10 +36,39 @@ function randomKey(): string {
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+/**
+ * Error de la API DIAN con el código de error del backend preservado.
+ *
+ * El backend responde `{ error|code: '<slug>', message: '<texto>' }` en los
+ * fallos 4xx. Antes propagábamos el cuerpo JSON crudo como mensaje (el usuario
+ * veía `{"error":"dian.resolution_unavailable",...}` literal). Ahora extraemos
+ * `message` para mostrar y `code` para que la UI lo mapee a un texto amigable.
+ */
+export class DianApiError extends Error {
+    constructor(
+        message: string,
+        public readonly code: string | null,
+        public readonly status: number,
+    ) {
+        super(message);
+        this.name = 'DianApiError';
+    }
+}
+
 async function handle<T>(res: Response): Promise<T> {
     if (!res.ok) {
-        const body = await res.text();
-        throw new Error(body || `HTTP ${res.status}`);
+        const raw = await res.text();
+        let code: string | null = null;
+        let message = '';
+        try {
+            const parsed = JSON.parse(raw) as { error?: string; code?: string; message?: string };
+            code = parsed.error ?? parsed.code ?? null;
+            message = parsed.message ?? '';
+        } catch {
+            // Respuesta no-JSON (HTML de error, texto plano): usar el cuerpo tal cual.
+            message = raw;
+        }
+        throw new DianApiError(message || `HTTP ${res.status}`, code, res.status);
     }
     return res.json() as Promise<T>;
 }

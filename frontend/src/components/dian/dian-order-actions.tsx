@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { usePermissions } from '@/hooks/use-permissions';
 import {
     convertToFev,
+    DianApiError,
     emitCreditNote,
     emitDocument,
     getDocumentPdfUrl,
@@ -299,7 +300,28 @@ export function DianOrderActions({ orderId, orderStatus, defaultDocumentType = '
     );
 }
 
+/**
+ * Mensajes amigables por código de error DIAN del backend. La clave es el slug
+ * que viaja en `error`/`code`; el valor es texto orientado al cajero/owner sin
+ * jerga técnica (nada de `empresa=11123`, `document_type=pos_equivalent`, etc.).
+ */
+const FRIENDLY_DIAN_ERRORS: Record<string, string> = {
+    'dian.resolution_unavailable':
+        'No hay una resolución DIAN activa y vigente para emitir este documento. Pedile al administrador que registre una en Configuración → Facturación DIAN → Resoluciones.',
+    'dian.order_not_emittable': 'Esta orden no se puede facturar todavía. Debe estar completada y cobrada antes de emitir el documento DIAN.',
+    'dian.retry_failed': 'No se pudo reenviar el documento a la DIAN. Esperá un momento y volvé a intentar.',
+    DIAN_CREDIT_NOTE_ALREADY_EXISTS: 'Este documento ya tiene una nota crédito emitida. No se puede duplicar.',
+    DIAN_BLOB_NOT_AVAILABLE: 'El archivo del documento no está disponible. Reemití la orden para regenerarlo.',
+};
+
 function extractError(e: unknown): string {
+    if (e instanceof DianApiError) {
+        if (e.code && FRIENDLY_DIAN_ERRORS[e.code]) {
+            return FRIENDLY_DIAN_ERRORS[e.code];
+        }
+        // Sin código mapeado: el `message` del backend ya viene en español y limpio.
+        return e.message || 'Ocurrió un error procesando la acción DIAN.';
+    }
     if (e instanceof Error) {
         return e.message;
     }
