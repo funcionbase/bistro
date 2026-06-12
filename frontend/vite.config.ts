@@ -82,7 +82,9 @@ export default defineConfig(({ mode }) => {
                     enabled: false,
                 },
                 injectManifest: {
-                    globPatterns: ['**/*.{js,css,woff2}'],
+                    // `html` incluido para precachear `index.html` y servir el
+                    // app-shell del SPA offline vía NavigationRoute (sw.ts).
+                    globPatterns: ['**/*.{js,css,woff2,html}'],
                     maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
                 },
             }),

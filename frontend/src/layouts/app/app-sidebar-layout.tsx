@@ -7,7 +7,7 @@ import OfflineBanner from '@/components/offline/offline-banner';
 import StorageQuotaWarning from '@/components/offline/storage-quota-warning';
 import SyncToast from '@/components/offline/sync-toast';
 import { ToastProvider } from '@/components/ui/toast';
-import { requestPersistentStorage } from '@/lib/offline/db';
+import { putCachedBootstrap, requestPersistentStorage } from '@/lib/offline/db';
 import { setActiveCompanyForSync, startSyncEngine } from '@/lib/offline/sync-engine';
 import { useSharedData } from '@/lib/shared-data';
 import { useEffect } from 'react';
@@ -45,7 +45,8 @@ function DynamicFavicon() {
 }
 
 function OfflineBootstrap() {
-    const { activeCompany } = useSharedData();
+    const shared = useSharedData();
+    const activeCompany = shared.activeCompany;
     useEffect(() => {
         const stop = startSyncEngine();
         void requestPersistentStorage();
@@ -54,6 +55,32 @@ function OfflineBootstrap() {
     useEffect(() => {
         setActiveCompanyForSync(activeCompany?.nit ?? null);
     }, [activeCompany?.nit]);
+
+    // Snapshot de RBAC/catálogos para operar offline (plan §7.3, §11). Los
+    // permisos llegan vía SharedData; al guardarlos, la caja puede leerlos tras
+    // una recarga sin red (best-effort: el server revalida cada op al sync).
+    useEffect(() => {
+        const nit = activeCompany?.nit;
+        if (!nit) return;
+        void putCachedBootstrap(nit, {
+            permissions: shared.permissions,
+            role: shared.role,
+            activeBranch: shared.activeBranch,
+            branches: shared.branches,
+            orderStatuses: shared.orderStatuses,
+            paymentMethods: shared.paymentMethods,
+            rbacActions: shared.rbacActions,
+        }).catch(() => undefined);
+    }, [
+        activeCompany?.nit,
+        shared.permissions,
+        shared.role,
+        shared.activeBranch,
+        shared.branches,
+        shared.orderStatuses,
+        shared.paymentMethods,
+        shared.rbacActions,
+    ]);
     return null;
 }
 

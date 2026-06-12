@@ -19,8 +19,8 @@
 
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
+import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope & {
@@ -30,6 +30,17 @@ declare const self: ServiceWorkerGlobalScope & {
 // 1. Precaching shell
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// 1b. Navigation fallback (caja offline-first, plan §14): toda navegación del
+// SPA (no-API, no-asset) se sirve con `index.html` precacheado. Sin esto, una
+// recarga offline de /caja devolvía el error de red del navegador. El denylist
+// excluye API/OAuth/storage para que esas rutas sigan yendo a la red.
+const navigationHandler = createHandlerBoundToURL('/index.html');
+registerRoute(
+    new NavigationRoute(navigationHandler, {
+        denylist: [/^\/api\//, /^\/auth\//, /^\/storage-proxy\//, /^\/storage\//],
+    }),
+);
 
 // Activación inmediata — el SW nuevo toma control sin esperar a cerrar tabs.
 self.skipWaiting();

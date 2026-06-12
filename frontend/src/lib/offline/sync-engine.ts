@@ -14,7 +14,7 @@
  * El frontend NO conoce el JWT; la cookie HttpOnly viaja por `credentials: include`.
  */
 import { apiFetch } from '@/lib/api';
-import { appendSyncLog, deletePendingOrder, getPendingOrders, type PendingOrder } from './db';
+import { appendSyncLog, countPendingOutboxOps, deletePendingOrder, getPendingOrders, type PendingOrder } from './db';
 
 type SyncListener = (state: SyncState) => void;
 
@@ -65,9 +65,15 @@ export function setActiveCompanyForSync(nit: string | null): void {
 }
 
 export async function refreshPendingCount(): Promise<number> {
-    const list = await getPendingOrders(_activeCompanyNit ?? undefined);
-    setState({ pendingCount: list.length });
-    return list.length;
+    // Pendientes = órdenes legacy (`pending_orders`) + ops del outbox unificado
+    // aún no aplicadas. Ambas cuentan para el banner y el bloqueo de cierre.
+    const [list, outboxCount] = await Promise.all([
+        getPendingOrders(_activeCompanyNit ?? undefined),
+        countPendingOutboxOps(_activeCompanyNit ?? undefined),
+    ]);
+    const total = list.length + outboxCount;
+    setState({ pendingCount: total });
+    return total;
 }
 
 function nextDelay(): number {

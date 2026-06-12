@@ -33,8 +33,10 @@ interface CartLine {
 export default function CajaPage() {
     const token = useToken();
     const formatCurrency = useCurrencyFormatter();
-    const activeCompany = useSharedData().activeCompany;
+    const sharedData = useSharedData();
+    const activeCompany = sharedData.activeCompany;
     const activeCompanyNit = activeCompany?.nit ?? null;
+    const activeBranchId = sharedData.activeBranch?.id ?? null;
     const taxRate = (activeCompany as { default_tax_rate?: number } | null)?.default_tax_rate ?? 0;
     const taxLabel = (activeCompany as { default_tax_label?: string } | null)?.default_tax_label ?? 'Impuesto';
     const taxIncluded = (activeCompany as { tax_included_in_price?: boolean } | null)?.tax_included_in_price ?? true;
@@ -150,6 +152,56 @@ export default function CajaPage() {
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);
     }, [fetchTables, fetchOccupiedTables]);
+
+    // ── Persistencia del carrito (caja offline-first, plan §7.2) ──────────
+    // Hidrata el carrito guardado al montar y lo persiste (debounced) en cada
+    // cambio, para que sobreviva una recarga offline sin perder la venta en curso.
+    const cartHydratedRef = useRef(false);
+    const cartPersistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (!activeBranchId) return;
+        let cancelled = false;
+        void (async () => {
+            try {
+                const { getCart } = await import('@/lib/offline/db');
+                const snap = await getCart(activeBranchId);
+                if (cancelled) return;
+                if (snap?.payload && typeof snap.payload === 'object') {
+                    setCart(snap.payload as Record<string, CartLine>);
+                }
+            } catch {
+                // best-effort; sin carrito persistido se arranca vacío
+            } finally {
+                cartHydratedRef.current = true;
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [activeBranchId]);
+
+    useEffect(() => {
+        if (!activeBranchId || !activeCompanyNit || !cartHydratedRef.current) return;
+        if (cartPersistTimer.current) clearTimeout(cartPersistTimer.current);
+        cartPersistTimer.current = setTimeout(() => {
+            void (async () => {
+                try {
+                    const { putCart, deleteCart } = await import('@/lib/offline/db');
+                    if (Object.keys(cart).length === 0) {
+                        await deleteCart(activeBranchId);
+                    } else {
+                        await putCart(activeBranchId, activeCompanyNit, cart);
+                    }
+                } catch {
+                    // best-effort
+                }
+            })();
+        }, 400);
+        return () => {
+            if (cartPersistTimer.current) clearTimeout(cartPersistTimer.current);
+        };
+    }, [cart, activeBranchId, activeCompanyNit]);
 
     const addItem = (item: MenuItem, category: string) => {
         if (!item.available) return;
