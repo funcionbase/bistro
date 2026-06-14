@@ -1,13 +1,20 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "flexyflow/backend-panel",
-    "version": "1.8.1",
+    "version": "1.9.0",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Bistro — API backend (Laravel 12) del SaaS de restaurantes FlexyFlow: pedidos y KDS, caja y cobros, facturación electrónica DIAN, inventario, RBAC multi-empresa/multi-sede y notificaciones (SMS/WhatsApp/push). El campo `version` es SemVer manual y es la fuente de verdad del release de backend (App Deploy a pdn taggea `bistro-backend-v<version>`); ver CLAUDE.md §14.",
     "keywords": [
+        "flexyflow",
+        "bistro",
+        "restaurante",
+        "saas",
+        "pos",
+        "dian",
         "laravel",
-        "framework"
+        "api"
     ],
+    "homepage": "https://flexyflow.co",
     "license": "proprietary",
     "require": {
         "php": "^8.2",

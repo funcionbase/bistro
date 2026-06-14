@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MenuEngineeringController;
 use App\Http\Controllers\Api\MetricsController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderSmsFailureController;
 use App\Http\Controllers\Api\OrderSyncController;
 use App\Http\Controllers\Api\PaymentProofController;
 use App\Http\Controllers\Api\PromoCodeController;
@@ -306,6 +307,14 @@ Route::prefix('v1')->group(function () {
             Route::match(['PUT', 'POST'], 'company', [CompanyController::class, 'update'])
                 ->middleware('permission:company.update,update')
                 ->name('api.company.update');
+
+            // SMS fallidos (#275 Fase 4): feedback al usuario que disparó el
+            // cambio de estado cuando el SMS al cliente falla async. Self-scoped
+            // (solo los del propio actor) → sin permiso nuevo, solo company.access.
+            Route::get('order-sms-failures', [OrderSmsFailureController::class, 'index'])
+                ->name('api.orders.smsFailures.index');
+            Route::post('order-sms-failures/seen', [OrderSmsFailureController::class, 'markSeen'])
+                ->name('api.orders.smsFailures.seen');
 
             // Sedes (multi-sede #117). Se gestionan a nivel de empresa, sin requerir branch.access.
             Route::prefix('company/branches')->group(function () {

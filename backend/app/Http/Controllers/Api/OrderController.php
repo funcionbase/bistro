@@ -914,7 +914,7 @@ class OrderController extends Controller
 
         // Atomicidad: bloquear la orden, validar estado, crear receipt y actualizar
         // status en una sola transacción. lockForUpdate evita doble cierre concurrente.
-        [$order, $paidAt, $paymentData, $smsIntentId] = DB::transaction(function () use ($id, $companyNit, $validated, $session) {
+        [$order, $paidAt, $paymentData] = DB::transaction(function () use ($id, $companyNit, $validated, $session) {
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
 
@@ -976,14 +976,12 @@ class OrderController extends Controller
             // a `served` para que salga del KDS y el estado quede consistente.
             $this->markOpenKitchenItemsServed($order);
 
-            // Notificación SMS al cliente (#275): cierre con pago lleva la orden
-            // a `completed` ("Entregado"). Dedup dentro del lock; publish afterCommit.
-            $smsIntentId = $this->recordOrderStatusSmsIntent($order, 'completed');
-
-            return [$order, $paidAt, $paymentData, $smsIntentId];
+            return [$order, $paidAt, $paymentData];
         });
 
-        $this->auditService->log('order.closed_with_payment', $this->actingUser($request), $order, [
+        $actor = $this->actingUser($request);
+
+        $this->auditService->log('order.closed_with_payment', $actor, $order, [
             'order_id' => $order->id,
             'method' => $paymentData['method'],
             'amount' => $paymentData['total'],
@@ -992,9 +990,9 @@ class OrderController extends Controller
             'change_returned' => $paymentData['change_returned'] ?? null,
         ]);
 
-        if ($smsIntentId !== null) {
-            SendOrderStatusSmsJob::dispatch($smsIntentId)->afterCommit();
-        }
+        // SMS al cliente FUERA de la txn de cobro: su fallo nunca revierte el
+        // pago ya commiteado (#275 Fase 4 / CLAUDE.md §13).
+        $this->dispatchOrderStatusSms($order, 'completed', $actor);
 
         // Fidelización (#122): award fuera de la transacción de cobro para que
         // un fallo del programa de puntos NUNCA reverse un cobro válido. El
@@ -1264,7 +1262,7 @@ class OrderController extends Controller
         $companyNit = $this->activeCompanyNit($request);
         $actor = $this->actingUser($request);
 
-        [$order, $previousStatus, $consumed, $smsIntentId] = DB::transaction(function () use ($id, $companyNit, $validated, $actor) {
+        [$order, $previousStatus, $consumed] = DB::transaction(function () use ($id, $companyNit, $validated, $actor) {
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
             $previous = $order->status;
@@ -1274,7 +1272,7 @@ class OrderController extends Controller
 
             if ($previous === $target) {
                 // No-op silencioso: idempotencia para drag-and-drop torpe.
-                return [$order, $previous, false, null];
+                return [$order, $previous, false];
             }
 
             $order->status = $target;
@@ -1298,11 +1296,7 @@ class OrderController extends Controller
             // todavía en "approved", o completada con tickets colgados).
             $this->syncItemsToOrderStatus($order, $target);
 
-            // Notificación SMS al cliente (#275). El registro dedup va dentro
-            // del lock; el publish se despacha afterCommit.
-            $smsIntentId = $this->recordOrderStatusSmsIntent($order, $target);
-
-            return [$order, $previous, $consumedNow, $smsIntentId];
+            return [$order, $previous, $consumedNow];
         });
 
         if ($previousStatus !== $order->status) {
@@ -1312,10 +1306,11 @@ class OrderController extends Controller
                 'to' => $order->status,
                 'inventory_consumed' => $consumed,
             ]);
-        }
 
-        if ($smsIntentId !== null) {
-            SendOrderStatusSmsJob::dispatch($smsIntentId)->afterCommit();
+            // SMS al cliente FUERA de la txn: su fallo nunca revierte el cambio
+            // de estado ya commiteado (#275 Fase 4). user_id = quien arrastró,
+            // para avisarle si el envío async falla.
+            $this->dispatchOrderStatusSms($order, $order->status, $actor);
         }
 
         return response()->json([
@@ -1332,17 +1327,20 @@ class OrderController extends Controller
      * cliente por SMS un cambio de estado de orden (#275) y devuelve el id del
      * registro a despachar, o null si no aplica / ya existía.
      *
-     * DEBE invocarse DENTRO de la `DB::transaction` + `Order::lockForUpdate`
-     * del cambio de estado: el lock de Postgres serializa las mutaciones de la
-     * misma orden y el UNIQUE(order_id, to_status) garantiza un único SMS aún
-     * con N instancias EC2, doble click o reintento de cola (CLAUDE.md §12.6).
-     * El publish real lo hace `SendOrderStatusSmsJob`, despachado afterCommit.
+     * Se invoca FUERA de la transacción del cambio de estado (vía
+     * dispatchOrderStatusSms, después del commit) para que ningún fallo del SMS
+     * pueda abortar/revertir la mutación de negocio. El dedup sigue siendo
+     * N-instance-safe sin el lock de la orden: `insertOrIgnore` sobre
+     * UNIQUE(order_id, to_status) es atómico, así un segundo intento (otra
+     * instancia EC2, doble click, reintento) viola el unique y devuelve null.
+     * El publish real lo hace `SendOrderStatusSmsJob` (cola `notifications`).
      *
-     * No envía si: el estado no es notificable (config), la orden no tiene
-     * teléfono, o el teléfono es inválido (se registra el motivo, sin romper el
-     * flujo de la orden).
+     * Guarda `user_id` (quien disparó) para poder avisarle si el envío async
+     * termina en `failed`. No registra si: el estado no es notificable (config),
+     * la orden no tiene teléfono, o el teléfono es inválido (se loguea el
+     * motivo, sin romper el flujo de la orden).
      */
-    private function recordOrderStatusSmsIntent(Order $order, string $toStatus): ?string
+    private function recordOrderStatusSmsIntent(Order $order, string $toStatus, ?User $user = null): ?string
     {
         $notifiable = (array) config('order_notifications.sms_statuses', []);
         if (! in_array($toStatus, $notifiable, true)) {
@@ -1378,12 +1376,42 @@ class OrderController extends Controller
             'branch_id' => $order->branch_id,
             'to_status' => $toStatus,
             'phone' => $e164,
+            'user_id' => $user?->id,
             'status' => 'queued',
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
         return $inserted === 1 ? $id : null;
+    }
+
+    /**
+     * Despacha el SMS de cambio de estado FUERA de la transacción del cambio de
+     * estado, de forma que ningún fallo del SMS (registro, encolado, etc.) pueda
+     * abortar la txn y revertir el cambio en el tablero (CLAUDE.md §12/§13: el
+     * efecto secundario nunca compromete la mutación de negocio ya commiteada).
+     *
+     * El dedup sigue siendo N-instance-safe: `insertOrIgnore` sobre
+     * UNIQUE(order_id, to_status) es atómico aún sin el lock de la orden. Se
+     * registra `user_id` para poder avisar al usuario que disparó la acción si
+     * el envío async (SendOrderStatusSmsJob) termina en `failed` (#275 Fase 4).
+     */
+    private function dispatchOrderStatusSms(Order $order, string $toStatus, ?User $user): void
+    {
+        try {
+            $intentId = $this->recordOrderStatusSmsIntent($order, $toStatus, $user);
+            if ($intentId !== null) {
+                SendOrderStatusSmsJob::dispatch($intentId);
+            }
+        } catch (\Throwable $e) {
+            // El SMS es best-effort: si el registro/encolado falla, lo dejamos
+            // logueado y seguimos. El cambio de estado YA commiteó.
+            Log::channel('single')->warning('order.sms.dispatch_failed', [
+                'order_id' => $order->id,
+                'to_status' => $toStatus,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

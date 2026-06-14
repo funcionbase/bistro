@@ -41,12 +41,14 @@ class OrderSmsNotification extends Model
         'branch_id',
         'to_status',
         'phone',
+        'user_id',
         'status',
         'provider_message_id',
         'segments',
         'error',
         'chat_message_id',
         'sent_at',
+        'user_notified_at',
     ];
 
     protected function casts(): array
@@ -54,6 +56,7 @@ class OrderSmsNotification extends Model
         return [
             'segments' => 'integer',
             'sent_at' => 'datetime',
+            'user_notified_at' => 'datetime',
         ];
     }
 
@@ -61,5 +64,11 @@ class OrderSmsNotification extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

@@ -6,6 +6,7 @@ import CashRegisterAlertBanner from '@/components/cash-register/cash-register-al
 import OfflineBanner from '@/components/offline/offline-banner';
 import StorageQuotaWarning from '@/components/offline/storage-quota-warning';
 import SyncToast from '@/components/offline/sync-toast';
+import OrderSmsFailureWatcher from '@/components/orders/order-sms-failure-watcher';
 import { ToastProvider } from '@/components/ui/toast';
 import { putCachedBootstrap, requestPersistentStorage } from '@/lib/offline/db';
 import { setActiveCompanyForSync, startSyncEngine } from '@/lib/offline/sync-engine';
@@ -91,6 +92,7 @@ export default function AppSidebarLayout({ children }: { children: React.ReactNo
                 <DynamicFavicon />
                 <OfflineBootstrap />
                 <SyncToast />
+                <OrderSmsFailureWatcher />
                 <AppSidebar />
                 <AppContent variant="sidebar">
                     <AppSidebarHeader />

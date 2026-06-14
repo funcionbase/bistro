@@ -397,11 +397,12 @@ Sin lógica de auth ni permisos. Todas presentacionales, accesibles (Radix donde
 
 Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `availability-toggle` aplica optimistic update con rollback. `dnd-kit` envuelve sortable-* para reordenar.
 
-#### `components/orders/` (~2)
+#### `components/orders/` (~3)
 
 | Archivo | Notas |
 |---------|-------|
 | `order-detail-modal.tsx` | Modal con detalle completo. Muestra items con notas, desglose tributario (Subtotal base gravable / Impuesto / Total), propinas como línea informativa separada, datos de pago (método, referencia, monto recibido, cambio) y devoluciones (incl. parciales: acumulado y remanente). Botones contextuales: Asignar/Reasignar repartidor (delivery), Cambiar estado, Cancelar pedido (sin pago), Devolver (con pago). Status-aware: bloquea acciones en estados terminales. Teléfono y "Ir a chat" se ocultan cuando `order_type === 'table'` (En sitio: cliente presente). En el card del tablero también se omite `client_phone` para órdenes En sitio |
+| `order-sms-failure-watcher.tsx` | Componente sin UI montado una vez en el layout autenticado (`app-sidebar-layout.tsx`, dentro de `ToastProvider`). Poll-ea `GET /api/v1/order-sms-failures` (cada 45s, pausa si la pestaña está oculta); si el SMS al cliente (#275) falló en el envío async, muestra un toast informativo **una sola vez** al usuario que disparó el cambio y hace ack vía `POST /api/v1/order-sms-failures/seen` (el "una vez" lo garantiza el servidor). No bloquea ni depende del flujo del tablero |
 
 #### `components/cash-register/` (~3)
 
