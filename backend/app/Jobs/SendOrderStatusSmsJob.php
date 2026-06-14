@@ -38,16 +38,16 @@ class SendOrderStatusSmsJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
-    /** @var string */
-    public $queue = 'notifications';
-
     /** @var int */
     public $tries = 3;
 
     /** @var int */
     public $backoff = 30;
 
-    public function __construct(public string $notificationId) {}
+    public function __construct(public string $notificationId)
+    {
+        $this->onQueue('notifications');
+    }
 
     public function uniqueId(): string
     {

@@ -34,16 +34,16 @@ class SendPendingApprovalPushJob implements ShouldQueue
 {
     use Queueable;
 
-    /** @var string */
-    public $queue = 'notifications';
-
     /** @var int */
     public $tries = 3;
 
     /** @var int */
     public $backoff = 30;
 
-    public function __construct(public string $orderItemId) {}
+    public function __construct(public string $orderItemId)
+    {
+        $this->onQueue('notifications');
+    }
 
     public function handle(WebPushDispatcher $dispatcher, AuditService $audit): void
     {
