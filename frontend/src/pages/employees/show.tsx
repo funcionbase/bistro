@@ -170,11 +170,17 @@ export default function EmployeesShow() {
 
     const archive = async () => {
         setArchiving(true);
+        setError(null);
         try {
             const res = await apiFetch(`/api/v1/employees/${id}/archive`, { method: 'POST' });
             if (res.ok) {
                 navigate('/employees');
+                return;
             }
+            const data = await res.json().catch(() => ({}));
+            setError(data.message ?? 'No se pudo archivar el colaborador.');
+        } catch {
+            setError('Error de conexión al archivar el colaborador.');
         } finally {
             setArchiving(false);
             setConfirmArchive(false);

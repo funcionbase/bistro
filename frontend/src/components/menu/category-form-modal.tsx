@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { MenuCategory } from '@/types';
 import { useState } from 'react';
 
@@ -68,7 +69,13 @@ export default function CategoryFormModal({ menuId, category, onClose, onSaved }
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="cat-name">Nombre *</Label>
-                        <Input id="cat-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Entradas" />
+                        <Input
+                            id="cat-name"
+                            value={name}
+                            onChange={(e) => setName(sanitizePlainText(e.target.value, 128, false, false))}
+                            maxLength={128}
+                            placeholder="Ej. Entradas"
+                        />
                         <InputError message={errors.name?.[0]} />
                     </div>
 
@@ -77,7 +84,8 @@ export default function CategoryFormModal({ menuId, category, onClose, onSaved }
                         <Input
                             id="cat-description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(sanitizePlainText(e.target.value, 512, false, false))}
+                            maxLength={512}
                             placeholder="Descripción opcional"
                         />
                         <InputError message={errors.description?.[0]} />

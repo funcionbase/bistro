@@ -39,7 +39,10 @@ export function useAppearance() {
         const savedAppearance = localStorage.getItem('appearance') as Appearance | null;
         updateAppearance(savedAppearance || 'system');
 
-        return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+        // El listener de cambios del tema del SO lo registra `initializeTheme`
+        // una sola vez por pestaña y es dueño de su ciclo de vida. El hook NO
+        // debe removerlo en su cleanup: hacerlo mataba el seguimiento de tema
+        // "system" para toda la pestaña al desmontar cualquier consumidor.
     }, []);
 
     return { appearance, updateAppearance };

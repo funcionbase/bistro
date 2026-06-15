@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/lib/api';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { useSharedData } from '@/lib/shared-data';
 import { Banknote, Briefcase, Clock, HeartPulse, IdCard, Info, LoaderCircle, Phone } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -164,7 +165,13 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                         <Label htmlFor="employee-doc-number">
                             Número documento <span className="text-destructive">*</span>
                         </Label>
-                        <Input id="employee-doc-number" value={values.doc_number} onChange={(e) => update('doc_number', e.target.value)} required />
+                        <Input
+                            id="employee-doc-number"
+                            value={values.doc_number}
+                            onChange={(e) => update('doc_number', e.target.value)}
+                            maxLength={32}
+                            required
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-birth-date">Fecha nacimiento</Label>
@@ -179,13 +186,25 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                         <Label htmlFor="employee-first-name">
                             Nombres <span className="text-destructive">*</span>
                         </Label>
-                        <Input id="employee-first-name" value={values.first_name} onChange={(e) => update('first_name', e.target.value)} required />
+                        <Input
+                            id="employee-first-name"
+                            value={values.first_name}
+                            onChange={(e) => update('first_name', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                            required
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-last-name">
                             Apellidos <span className="text-destructive">*</span>
                         </Label>
-                        <Input id="employee-last-name" value={values.last_name} onChange={(e) => update('last_name', e.target.value)} required />
+                        <Input
+                            id="employee-last-name"
+                            value={values.last_name}
+                            onChange={(e) => update('last_name', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                            required
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-blood-type">Tipo de sangre</Label>
@@ -212,30 +231,53 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                         <Label htmlFor="employee-email">
                             Email <span className="text-destructive">*</span>
                         </Label>
-                        <Input id="employee-email" type="email" value={values.email} onChange={(e) => update('email', e.target.value)} required />
+                        <Input
+                            id="employee-email"
+                            type="email"
+                            value={values.email}
+                            onChange={(e) => update('email', e.target.value)}
+                            maxLength={180}
+                            required
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-phone">Teléfono</Label>
-                        <Input id="employee-phone" value={values.phone} onChange={(e) => update('phone', e.target.value)} />
+                        <Input id="employee-phone" value={values.phone} onChange={(e) => update('phone', e.target.value)} maxLength={30} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-city">Ciudad</Label>
-                        <Input id="employee-city" value={values.city} onChange={(e) => update('city', e.target.value)} />
+                        <Input
+                            id="employee-city"
+                            value={values.city}
+                            onChange={(e) => update('city', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                        />
                     </div>
                     <div className="space-y-1.5 md:col-span-2">
                         <Label htmlFor="employee-address">Dirección</Label>
-                        <Input id="employee-address" value={values.address} onChange={(e) => update('address', e.target.value)} />
+                        <Input
+                            id="employee-address"
+                            value={values.address}
+                            onChange={(e) => update('address', sanitizePlainText(e.target.value, 255, false, false))}
+                            maxLength={255}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-uniform-size">Talla de uniforme</Label>
-                        <Input id="employee-uniform-size" value={values.uniform_size} onChange={(e) => update('uniform_size', e.target.value)} />
+                        <Input
+                            id="employee-uniform-size"
+                            value={values.uniform_size}
+                            onChange={(e) => update('uniform_size', sanitizePlainText(e.target.value, 20, false, false))}
+                            maxLength={20}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-emergency-name">Contacto emergencia</Label>
                         <Input
                             id="employee-emergency-name"
                             value={values.emergency_contact_name}
-                            onChange={(e) => update('emergency_contact_name', e.target.value)}
+                            onChange={(e) => update('emergency_contact_name', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
                         />
                     </div>
                     <div className="space-y-1.5">
@@ -244,6 +286,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             id="employee-emergency-phone"
                             value={values.emergency_contact_phone}
                             onChange={(e) => update('emergency_contact_phone', e.target.value)}
+                            maxLength={30}
                         />
                     </div>
                 </div>
@@ -291,19 +334,39 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-eps">EPS</Label>
-                        <Input id="employee-eps" value={values.eps} onChange={(e) => update('eps', e.target.value)} />
+                        <Input
+                            id="employee-eps"
+                            value={values.eps}
+                            onChange={(e) => update('eps', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-arl">ARL</Label>
-                        <Input id="employee-arl" value={values.arl} onChange={(e) => update('arl', e.target.value)} />
+                        <Input
+                            id="employee-arl"
+                            value={values.arl}
+                            onChange={(e) => update('arl', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-pension">Fondo de pensiones</Label>
-                        <Input id="employee-pension" value={values.pension_fund} onChange={(e) => update('pension_fund', e.target.value)} />
+                        <Input
+                            id="employee-pension"
+                            value={values.pension_fund}
+                            onChange={(e) => update('pension_fund', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-severance">Cesantías</Label>
-                        <Input id="employee-severance" value={values.severance_fund} onChange={(e) => update('severance_fund', e.target.value)} />
+                        <Input
+                            id="employee-severance"
+                            value={values.severance_fund}
+                            onChange={(e) => update('severance_fund', sanitizePlainText(e.target.value, 120, false, false))}
+                            maxLength={120}
+                        />
                     </div>
                 </div>
             </DashboardPanel>
@@ -351,7 +414,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             id="employee-pay-rate"
                             type="number"
                             min="0"
-                            step="0.01"
+                            step="1"
                             value={values.pay_rate}
                             onChange={(e) => update('pay_rate', e.target.value)}
                             required
@@ -392,6 +455,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             id="employee-account-number"
                             value={values.account_number}
                             onChange={(e) => update('account_number', e.target.value)}
+                            maxLength={32}
                         />
                     </div>
                     <div className="space-y-1.5">

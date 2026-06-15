@@ -20,6 +20,7 @@ export function useWidgetFetch<T>({ url, interval, enabled = true }: UseWidgetFe
     const [error, setError] = useState(false);
     const retryCount = useRef(0);
     const isMounted = useRef(true);
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchData = useCallback(
         async (isRetry = false) => {
@@ -41,7 +42,13 @@ export function useWidgetFetch<T>({ url, interval, enabled = true }: UseWidgetFe
                 retryCount.current++;
                 if (retryCount.current < 3) {
                     const delay = Math.pow(2, retryCount.current - 1) * 1000;
-                    setTimeout(() => void fetchData(true), delay);
+                    if (retryTimerRef.current) {
+                        clearTimeout(retryTimerRef.current);
+                    }
+                    retryTimerRef.current = setTimeout(() => {
+                        retryTimerRef.current = null;
+                        if (isMounted.current) void fetchData(true);
+                    }, delay);
                 } else {
                     setError(true);
                 }
@@ -63,6 +70,10 @@ export function useWidgetFetch<T>({ url, interval, enabled = true }: UseWidgetFe
         isMounted.current = true;
         return () => {
             isMounted.current = false;
+            if (retryTimerRef.current) {
+                clearTimeout(retryTimerRef.current);
+                retryTimerRef.current = null;
+            }
         };
     }, []);
 

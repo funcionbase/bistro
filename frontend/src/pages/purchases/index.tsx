@@ -390,6 +390,7 @@ export default function PurchasesIndex() {
                 onUpload={purchases.uploadAttachment}
                 onDelete={purchases.deleteAttachment}
                 getAttachmentUrl={purchases.attachmentUrl}
+                onRefetch={purchases.fetchOrder}
                 onChanged={onPOChanged}
             />
         </PageShell>

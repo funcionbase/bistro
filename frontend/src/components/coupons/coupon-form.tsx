@@ -169,7 +169,7 @@ export function CouponForm({ coupon, onSubmit, onCancel, submitting = false, err
                                     value={form.code}
                                     onChange={(e) => handleChange('code', e.target.value.toUpperCase())}
                                     placeholder="VERANO2024"
-                                    maxLength={32}
+                                    maxLength={20}
                                     className="uppercase"
                                     disabled={submitting}
                                 />
@@ -209,8 +209,8 @@ export function CouponForm({ coupon, onSubmit, onCancel, submitting = false, err
                             <Input
                                 id="value"
                                 type="number"
-                                min="0.01"
-                                step="0.01"
+                                min="1"
+                                step="1"
                                 value={form.value}
                                 onChange={(e) => handleChange('value', e.target.value)}
                                 placeholder={form.type === 'percentage' ? '10' : '5000'}

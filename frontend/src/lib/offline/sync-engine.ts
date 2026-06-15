@@ -124,13 +124,19 @@ export async function runSync(): Promise<void> {
     }
     if (!_activeCompanyNit) return;
 
+    // Guard síncrono: marcamos `syncing` ANTES del primer `await`. Si lo
+    // dejábamos después del `Promise.all`, dos invocaciones concurrentes
+    // (evento `online`, timer de poll, `schedule()`) pasaban ambas el chequeo
+    // `if (_state.syncing) return` y drenaban el mismo lote de ops.
+    setState({ syncing: true });
+
     const [legacyPending, outboxOps] = await Promise.all([getPendingOrders(_activeCompanyNit), getQueuedOutboxOps(_activeCompanyNit)]);
     if (legacyPending.length === 0 && outboxOps.length === 0) {
+        setState({ syncing: false });
         await refreshPendingCount();
         return;
     }
 
-    setState({ syncing: true });
     let okCount = 0;
     let failCount = 0;
     let conflictCount = 0;

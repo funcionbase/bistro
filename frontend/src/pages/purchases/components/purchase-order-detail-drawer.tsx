@@ -38,6 +38,7 @@ interface Props {
     onUpload: (id: string, file: File, type: string) => Promise<PurchaseOrderAttachment>;
     onDelete: (id: string, attachmentId: string) => Promise<void>;
     getAttachmentUrl: (id: string, attachmentId: string, disposition?: 'inline' | 'attachment') => Promise<string>;
+    onRefetch: (id: string) => Promise<PurchaseOrderDetail>;
     onChanged: (po: PurchaseOrderDetail) => void;
 }
 
@@ -55,6 +56,7 @@ export function PurchaseOrderDetailDrawer({
     onUpload,
     onDelete,
     getAttachmentUrl,
+    onRefetch,
     onChanged,
 }: Props) {
     const { showToast } = useToast();
@@ -165,8 +167,10 @@ export function PurchaseOrderDetailDrawer({
                             onDelete={onDelete}
                             getUrl={getAttachmentUrl}
                             onChange={async () => {
-                                // re-fetch handled by parent via onChanged after detail refresh.
-                                // Caller should re-open with updated PO; for simplicity skip here.
+                                // Tras subir/borrar un adjunto, re-fetch del detalle para
+                                // reflejar la lista actualizada en el drawer + la lista padre.
+                                const fresh = await onRefetch(po.id);
+                                onChanged(fresh);
                             }}
                         />
 

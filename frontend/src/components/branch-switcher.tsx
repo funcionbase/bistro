@@ -5,6 +5,7 @@ import { useActiveBranch } from '@/hooks/use-active-branch';
 import { useIsAnyDirty } from '@/hooks/use-dirty-state';
 import { apiFetch } from '@/lib/api';
 import { reloadContext } from '@/lib/navigate-compat';
+import { queryClient } from '@/lib/query-client';
 import { route } from '@/lib/route-compat';
 import { useSharedData } from '@/lib/shared-data';
 import { cn } from '@/lib/utils';
@@ -68,10 +69,17 @@ export function BranchSwitcher() {
                 } catch {
                     // si no hay JSON o falla, fallback a dashboard.
                 }
-                // El switch reemplaza la cookie JWT: refrescamos el contexto
-                // compartido (empresa, sede, permisos) antes de navegar para
-                // que la ruta destino monte con la sede recién elegida.
-                reloadContext();
+                // El switch reemplaza la cookie JWT con el nuevo
+                // `active_branch_id`. Toda la caché de React Query quedó bajo la
+                // sede anterior (las queries con scope de sede NO incluyen
+                // branch_id en su key porque la sede vive server-side en la
+                // cookie), así que la limpiamos entera para no servir datos de la
+                // sede previa dentro de la ventana de `staleTime`. Luego
+                // refrescamos el contexto compartido (empresa, sede, permisos) y
+                // esperamos antes de navegar para que la ruta destino monte con
+                // la sede recién elegida.
+                queryClient.clear();
+                await reloadContext();
                 navigate(route(target));
                 return;
             }

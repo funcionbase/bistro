@@ -8,6 +8,7 @@ import { UsersTableSkeleton } from '@/components/ui/users-table-skeleton';
 import UserDetailModal from '@/components/user-detail-modal';
 import UserPermissionsEditor from '@/components/user-permissions-editor';
 import UsersTable from '@/components/users-table';
+import { useToast } from '@/components/ui/toast';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
@@ -19,6 +20,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function Users() {
     const activeToken = useToken();
+    const { showToast } = useToast();
     const { activeCompany, auth } = useSharedData();
     const currentUser = auth?.user as User | undefined;
 
@@ -91,49 +93,87 @@ export default function Users() {
         setError(null);
     }, [activeCompany?.nit]);
 
-    const handleRoleChange = async (userId: string, roleId: string) => {
-        const res = await apiFetch(`/api/v1/users/${userId}/role`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ company_role_id: roleId }),
-        });
+    const reportError = async (res: Response, fallback: string) => {
+        let message = fallback;
+        try {
+            const data = await res.json();
+            if (typeof data?.message === 'string' && data.message) {
+                message = data.message;
+            }
+        } catch {
+            // respuesta sin cuerpo JSON — usar el fallback.
+        }
+        showToast('error', message);
+    };
 
-        if (res.ok) {
-            const updated = await res.json();
-            setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...updated.data } : m)));
+    const handleRoleChange = async (userId: string, roleId: string) => {
+        try {
+            const res = await apiFetch(`/api/v1/users/${userId}/role`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ company_role_id: roleId }),
+            });
+
+            if (res.ok) {
+                const updated = await res.json();
+                setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...updated.data } : m)));
+            } else {
+                await reportError(res, 'No se pudo cambiar el rol.');
+            }
+        } catch {
+            showToast('error', 'Error de conexión al cambiar el rol.');
         }
     };
 
     const handleRemoveUser = async (userId: string) => {
-        const res = await apiFetch(`/api/v1/users/${userId}`, { method: 'DELETE' });
-        if (res.ok) {
-            setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+        try {
+            const res = await apiFetch(`/api/v1/users/${userId}`, { method: 'DELETE' });
+            if (res.ok) {
+                setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+            } else {
+                await reportError(res, 'No se pudo remover al usuario.');
+            }
+        } catch {
+            showToast('error', 'Error de conexión al remover al usuario.');
         }
     };
 
     const handleToggleStatus = async (userId: string, newStatus: 'active' | 'inactive') => {
-        const res = await apiFetch(`/api/v1/users/${userId}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
-        });
+        try {
+            const res = await apiFetch(`/api/v1/users/${userId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            });
 
-        if (res.ok) {
-            setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, status: newStatus } : m)));
+            if (res.ok) {
+                setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, status: newStatus } : m)));
+            } else {
+                await reportError(res, 'No se pudo cambiar el estado del usuario.');
+            }
+        } catch {
+            showToast('error', 'Error de conexión al cambiar el estado.');
         }
     };
 
     const handleBulkBranchAssign = async (userIds: string[], branchId: string, action: 'attach' | 'detach') => {
-        await apiFetch('/api/v1/company/branches/bulk-assign', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ branch_id: branchId, user_ids: userIds, action }),
-        });
+        try {
+            const res = await apiFetch('/api/v1/company/branches/bulk-assign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ branch_id: branchId, user_ids: userIds, action }),
+            });
+            if (!res.ok) {
+                await reportError(res, 'No se pudo actualizar la asignación de sede.');
+            }
+        } catch {
+            showToast('error', 'Error de conexión al asignar la sede.');
+        }
         await fetchData();
     };
 
     const handleBulkRoleChange = async (userIds: string[], roleId: string) => {
-        await Promise.all(
+        const results = await Promise.allSettled(
             userIds.map((userId) =>
                 apiFetch(`/api/v1/users/${userId}/role`, {
                     method: 'PUT',
@@ -142,6 +182,10 @@ export default function Users() {
                 }),
             ),
         );
+        const failed = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)).length;
+        if (failed > 0) {
+            showToast('error', `${failed} de ${userIds.length} usuarios no se actualizaron.`);
+        }
         await fetchData();
     };
 

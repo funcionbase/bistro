@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { cn } from '@/lib/utils';
 import type { MenuItem } from '@/types';
 import { useState } from 'react';
@@ -121,7 +122,14 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-1.5">
                         <Label htmlFor="item-name">Nombre *</Label>
-                        <Input id="item-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Hamburguesa clásica" required />
+                        <Input
+                            id="item-name"
+                            value={name}
+                            onChange={(e) => setName(sanitizePlainText(e.target.value, 128, false, false))}
+                            maxLength={128}
+                            placeholder="Ej. Hamburguesa clásica"
+                            required
+                        />
                         <InputError message={errors.name?.[0]} />
                     </div>
 
@@ -130,7 +138,8 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                         <Input
                             id="item-description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(sanitizePlainText(e.target.value, 512, false, false))}
+                            maxLength={512}
                             placeholder="Descripción opcional"
                         />
                         <InputError message={errors.description?.[0]} />
@@ -142,7 +151,7 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                             id="item-price"
                             type="number"
                             min="0"
-                            step="0.01"
+                            step="1"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
                             placeholder="0"
@@ -164,7 +173,7 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                             id="item-cost"
                             type="number"
                             min="0"
-                            step="0.01"
+                            step="1"
                             value={cost}
                             onChange={(e) => setCost(e.target.value)}
                             placeholder={item?.has_recipe ? 'Calculado automáticamente' : 'Opcional — para calcular margen'}

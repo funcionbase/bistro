@@ -176,6 +176,12 @@ export default function MyDeliveriesPage() {
                 title: 'No se pudo tomar la entrega',
                 message: body?.message ?? 'Otra persona pudo haberla tomado primero.',
             });
+        } catch {
+            setFeedback({
+                kind: 'error',
+                title: 'Sin conexión',
+                message: 'No se pudo tomar la entrega. Revisa tu conexión e intenta de nuevo.',
+            });
         } finally {
             setBusyId(null);
         }
@@ -200,6 +206,12 @@ export default function MyDeliveriesPage() {
                 kind: 'error',
                 title: 'No se pudo completar',
                 message: body?.message ?? 'Intenta de nuevo en un momento.',
+            });
+        } catch {
+            setFeedback({
+                kind: 'error',
+                title: 'Sin conexión',
+                message: 'No se pudo completar la entrega. Revisa tu conexión e intenta de nuevo.',
             });
         } finally {
             setBusyId(null);
@@ -228,6 +240,12 @@ export default function MyDeliveriesPage() {
                 title: blockedByReceipt ? 'Cobro ya registrado' : 'No se pudo revertir',
                 message: body?.message ?? 'Intenta de nuevo o pídele ayuda a un admin.',
             });
+        } catch {
+            setFeedback({
+                kind: 'error',
+                title: 'Sin conexión',
+                message: 'No se pudo revertir la entrega. Revisa tu conexión e intenta de nuevo.',
+            });
         } finally {
             setBusyId(null);
         }
@@ -254,6 +272,8 @@ export default function MyDeliveriesPage() {
             }
             const body = await safeJson(res);
             setRejectError(body?.message ?? 'No se pudo registrar el rechazo.');
+        } catch {
+            setRejectError('Sin conexión. No se pudo registrar el rechazo, intenta de nuevo.');
         } finally {
             setRejectSubmitting(false);
         }
