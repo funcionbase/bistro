@@ -149,7 +149,7 @@ export default function DishFormModal({ menuId, categoryId, dish, onClose, onSav
                             id="dish-price"
                             type="number"
                             min="0"
-                            step="0.01"
+                            step="1"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
                             placeholder="0"
@@ -189,7 +189,7 @@ export default function DishFormModal({ menuId, categoryId, dish, onClose, onSav
                                     type="number"
                                     min="0"
                                     max="100"
-                                    step="0.01"
+                                    step="1"
                                     value={taxRateOverride}
                                     onChange={(e) => setTaxRateOverride(e.target.value)}
                                     placeholder={`${companyDefaultRate}`}

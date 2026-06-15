@@ -59,7 +59,7 @@ export function RecordWasteModal({ open, onClose, onSubmit, ingredient, submitti
                         <Input
                             id="waste_qty"
                             type="number"
-                            step="0.001"
+                            step="1"
                             min="0"
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}

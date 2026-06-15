@@ -297,9 +297,9 @@ export function PurchaseOrderEditor({
                                                 <Label>Cantidad{unit ? ` (${unit})` : ''}</Label>
                                                 <Input
                                                     type="number"
-                                                    step={discrete ? '1' : '0.001'}
+                                                    step="1"
                                                     min="0"
-                                                    inputMode={discrete ? 'numeric' : 'decimal'}
+                                                    inputMode="numeric"
                                                     value={l.quantity}
                                                     onChange={(e) => setLineQuantity(idx, e.target.value, discrete)}
                                                     required
@@ -310,7 +310,7 @@ export function PurchaseOrderEditor({
                                                 <Label>Costo unit. neto</Label>
                                                 <Input
                                                     type="number"
-                                                    step="0.01"
+                                                    step="1"
                                                     min="0"
                                                     value={l.unit_cost}
                                                     onChange={(e) => updateLine(idx, { unit_cost: e.target.value })}
@@ -322,7 +322,7 @@ export function PurchaseOrderEditor({
                                                 <Label>IVA %</Label>
                                                 <Input
                                                     type="number"
-                                                    step="0.01"
+                                                    step="1"
                                                     min="0"
                                                     max="100"
                                                     value={l.tax_rate}

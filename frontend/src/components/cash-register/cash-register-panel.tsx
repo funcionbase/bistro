@@ -99,9 +99,9 @@ function OpenSessionScreen({ onOpen, error }: { onOpen: (openingAmount: number, 
                             <Input
                                 id="opening_amount"
                                 type="number"
-                                inputMode="decimal"
+                                inputMode="numeric"
                                 min={0}
-                                step="0.01"
+                                step="1"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="0"
@@ -450,9 +450,9 @@ function CloseSessionDialog({
                         <Input
                             id="counted"
                             type="number"
-                            inputMode="decimal"
+                            inputMode="numeric"
                             min={0}
-                            step="0.01"
+                            step="1"
                             value={counted}
                             onChange={(e) => setCounted(e.target.value)}
                             placeholder="0"

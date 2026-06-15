@@ -119,10 +119,10 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
                             <Input
                                 id="refund-amount"
                                 type="number"
-                                inputMode="decimal"
-                                min={0.01}
+                                inputMode="numeric"
+                                min={1}
                                 max={remaining}
-                                step="0.01"
+                                step="1"
                                 value={partialAmount}
                                 onChange={(e) => setPartialAmount(e.target.value)}
                                 placeholder="0"

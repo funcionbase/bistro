@@ -180,7 +180,7 @@ export function AlertRulesConfig() {
                                             <Input
                                                 id={thresholdId}
                                                 type="number"
-                                                step="0.1"
+                                                step="1"
                                                 min={0}
                                                 value={displayThreshold}
                                                 onChange={(e) => handleField(type, 'threshold', meta.toApi(Number(e.target.value) || 0))}

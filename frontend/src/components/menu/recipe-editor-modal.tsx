@@ -297,7 +297,7 @@ export default function RecipeEditorModal({ open, onClose, menuId, itemId, itemN
                                                         <Input
                                                             type="number"
                                                             min="0"
-                                                            step="0.001"
+                                                            step="1"
                                                             className="w-28"
                                                             value={line.quantity}
                                                             onChange={(e) => updateLine(idx, { quantity: e.target.value })}

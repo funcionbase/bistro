@@ -85,9 +85,9 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                         <Input
                             id="expense_amount"
                             type="number"
-                            inputMode="decimal"
-                            min={0.01}
-                            step="0.01"
+                            inputMode="numeric"
+                            min={1}
+                            step="1"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0"

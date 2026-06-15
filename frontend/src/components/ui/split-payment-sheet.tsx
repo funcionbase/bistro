@@ -154,9 +154,9 @@ export function SplitPaymentSheet({
                         <Input
                             id="cash-received"
                             type="text"
-                            inputMode="decimal"
+                            inputMode="numeric"
                             value={cashReceivedInput}
-                            onChange={(e) => setCashReceivedInput(e.target.value)}
+                            onChange={(e) => setCashReceivedInput(e.target.value.replace(/[^\d]/g, ''))}
                             placeholder="Con cuánto paga el cliente"
                             className="mt-1.5"
                         />
@@ -201,9 +201,9 @@ export function SplitPaymentSheet({
                         <Input
                             id="tip"
                             type="text"
-                            inputMode="decimal"
+                            inputMode="numeric"
                             value={tipInput}
-                            onChange={(e) => setTipInput(e.target.value)}
+                            onChange={(e) => setTipInput(e.target.value.replace(/[^\d]/g, ''))}
                             placeholder="0"
                             className={cn('mt-1.5', tip > 0 && 'border-[color:var(--color-status-safe)]/50')}
                         />

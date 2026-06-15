@@ -168,12 +168,12 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
                         <Input
                             id="transfer_qty"
                             type="number"
-                            step="0.001"
-                            min="0.001"
+                            step="1"
+                            min="1"
                             required
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}
-                            placeholder={selectedIngredient ? `0.000 ${selectedIngredient.unit}` : '0.000'}
+                            placeholder={selectedIngredient ? `0 ${selectedIngredient.unit}` : '0'}
                         />
                     </div>
 

@@ -117,9 +117,9 @@ export function TablePaymentSheet({
                             <Input
                                 id="tip-amount"
                                 type="number"
-                                inputMode="decimal"
+                                inputMode="numeric"
                                 min={0}
-                                step="0.01"
+                                step="1"
                                 value={paymentState.tipAmount}
                                 onChange={(e) =>
                                     setPaymentState((p) => ({
@@ -160,9 +160,9 @@ export function TablePaymentSheet({
                                 <Input
                                     id="amount-received"
                                     type="number"
-                                    inputMode="decimal"
+                                    inputMode="numeric"
                                     min={0}
-                                    step="0.01"
+                                    step="1"
                                     value={paymentState.amountReceived}
                                     onChange={(e) =>
                                         setPaymentState((p) => ({

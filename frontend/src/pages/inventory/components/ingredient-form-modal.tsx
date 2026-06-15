@@ -152,9 +152,9 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                         <Input
                             id="min_stock"
                             type="number"
-                            step={isDiscreteUnit ? '1' : '0.001'}
+                            step="1"
                             min="0"
-                            inputMode={isDiscreteUnit ? 'numeric' : 'decimal'}
+                            inputMode="numeric"
                             value={minStock}
                             onChange={(e) => handleMinStockChange(e.target.value)}
                             placeholder="0 = sin alerta"
@@ -173,7 +173,7 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                                     <Input
                                         id="initial_stock"
                                         type="number"
-                                        step="0.001"
+                                        step="1"
                                         min="0"
                                         value={initialStock}
                                         onChange={(e) => setInitialStock(e.target.value)}
@@ -185,7 +185,7 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                                     <Input
                                         id="initial_cost"
                                         type="number"
-                                        step="0.01"
+                                        step="1"
                                         min="0"
                                         value={initialCost}
                                         onChange={(e) => setInitialCost(e.target.value)}
