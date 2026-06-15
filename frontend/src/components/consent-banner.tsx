@@ -1,45 +1,51 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useBootstrap } from '@/hooks/use-bootstrap';
 import { resolveGa4Id, updateGa4Consent } from '@/hooks/use-ga4';
+import { resolveTiktokPixelId } from '@/hooks/use-tiktok-pixel';
 import { getStoredConsent, setStoredConsent } from '@/lib/consent';
-import { useSharedData } from '@/lib/shared-data';
 import { useEffect, useState } from 'react';
 
 /**
- * Banner de consentimiento de cookies/analytics (Habeas Data CO), modelado
- * sobre el de flexyflow.co y adaptado al panel: categorías **esenciales**
- * (siempre activas) + **analíticas** (GA4). El panel no usa pixels de
- * marketing/ads, así que esa categoría se omite.
+ * Banner de consentimiento de cookies (Habeas Data CO), modelado sobre el de
+ * flexyflow.co: barra inferior no bloqueante con tres categorías —
+ * **esenciales** (siempre activas), **analíticas** (GTM + GA4) y **marketing**
+ * (TikTok Pixel). Mientras no haya decisión los trackers opcionales NO cargan.
  *
- * Modal no descartable (hay que elegir). Se monta en `SpaSharedDataBridge` y
- * solo aparece si GA4 está configurado y el usuario aún no decidió. La
- * decisión se persiste vía `lib/consent` y se aplica con Consent Mode v2
- * (`updateGa4Consent`).
+ * Desacoplado del bootstrap a propósito: se monta tanto en la landing pública
+ * (`Welcome`, sin sesión) como en el área autenticada (`SpaAppLayout`). Por eso
+ * la detección de "¿hay algo que medir?" usa el fallback build-time (`VITE_*`)
+ * vía `resolveGa4Id`/`resolveTiktokPixelId` en vez de props compartidas Inertia,
+ * y el link de privacidad es una constante (la URL pública pdn).
+ *
+ * La decisión se persiste vía `lib/consent` y se aplica:
+ * - analíticas → Consent Mode v2 (`updateGa4Consent`).
+ * - marketing  → `setStoredConsent` notifica a `useTiktokPixel` (carga el pixel).
  */
-export function ConsentBanner() {
-    const { gaMeasurementId } = useSharedData();
-    const bootstrap = useBootstrap();
-    const privacyUrl = bootstrap.data?.legalUrls?.privacy;
 
-    const ga4Enabled = Boolean(resolveGa4Id(gaMeasurementId));
+/** Política de privacidad pública (pdn). El banner solo aparece donde hay trackers (pdn). */
+const PRIVACY_URL = 'https://flexyflow.co/privacy-policy/';
+
+export function ConsentBanner() {
+    // ¿Hay algún tracker opcional configurado en este build? Si no, no preguntamos.
+    const trackingEnabled = Boolean(resolveGa4Id(null) || resolveTiktokPixelId());
 
     const [open, setOpen] = useState(false);
     const [customizing, setCustomizing] = useState(false);
     const [analytics, setAnalytics] = useState(true);
+    const [marketing, setMarketing] = useState(true);
 
     useEffect(() => {
-        // Solo preguntamos si hay algo que medir (GA4 on) y no hay decisión previa.
-        if (ga4Enabled && getStoredConsent() === null) {
+        // Solo preguntamos si hay algo que medir y no hay decisión previa.
+        if (trackingEnabled && getStoredConsent() === null) {
             setOpen(true);
         }
-    }, [ga4Enabled]);
+    }, [trackingEnabled]);
 
-    /** Persiste la decisión, la aplica a GA4 y cierra el modal. */
-    function decide(grantAnalytics: boolean): void {
-        setStoredConsent(grantAnalytics);
+    /** Persiste la decisión, la aplica a los trackers y cierra el banner. */
+    function decide(grantAnalytics: boolean, grantMarketing: boolean): void {
+        setStoredConsent(grantAnalytics, grantMarketing);
         updateGa4Consent(grantAnalytics);
+        // El pixel de TikTok reacciona vía `subscribeConsent` (lib/consent).
         setOpen(false);
     }
 
@@ -48,73 +54,74 @@ export function ConsentBanner() {
     }
 
     return (
-        <Dialog open={open}>
-            <DialogContent
-                // Modal obligatorio: ocultamos la X y bloqueamos cerrar sin elegir.
-                className="[&>button]:hidden sm:max-w-md"
-                onInteractOutside={(event) => event.preventDefault()}
-                onEscapeKeyDown={(event) => event.preventDefault()}
-            >
-                <DialogHeader>
-                    <DialogTitle>Cookies y privacidad</DialogTitle>
-                    <DialogDescription>
-                        Usamos cookies esenciales para que el panel funcione, y opcionales para medición (Google Analytics 4). Vos decidís cuáles.
-                    </DialogDescription>
-                </DialogHeader>
+        <div role="dialog" aria-modal="false" aria-label="Preferencias de cookies" className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4">
+            <div className="bg-card text-card-foreground border-border mx-auto w-full max-w-3xl rounded-xl border p-4 shadow-lg sm:p-5">
+                <div className="space-y-1">
+                    <h2 className="text-foreground text-base font-semibold">Cookies</h2>
+                    <p className="text-muted-foreground text-sm">
+                        Usamos cookies esenciales para que el panel funcione, y opcionales para medición y publicidad. Vos decidís cuáles.
+                    </p>
+                </div>
 
                 {customizing && (
-                    <div className="space-y-3">
-                        <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                    <div className="mt-4 space-y-3">
+                        <label className="border-border bg-muted/30 flex items-start gap-3 rounded-lg border p-3">
                             <Checkbox checked disabled className="mt-0.5" />
                             <span className="text-sm">
-                                <span className="font-medium text-foreground">Esenciales</span>
-                                <span className="block text-muted-foreground">Sesión, seguridad y preferencias. Sin estas el panel no funciona.</span>
+                                <span className="text-foreground font-medium">Esenciales</span>
+                                <span className="text-muted-foreground block">Sesión, seguridad y preferencias. Sin estas el panel no funciona.</span>
                             </span>
                         </label>
 
-                        <label className="flex items-start gap-3 rounded-lg border border-border p-3">
-                            <Checkbox
-                                checked={analytics}
-                                onCheckedChange={(value) => setAnalytics(value === true)}
-                                className="mt-0.5"
-                            />
+                        <label className="border-border flex items-start gap-3 rounded-lg border p-3">
+                            <Checkbox checked={analytics} onCheckedChange={(value) => setAnalytics(value === true)} className="mt-0.5" />
                             <span className="text-sm">
-                                <span className="font-medium text-foreground">Analíticas</span>
-                                <span className="block text-muted-foreground">
-                                    Google Analytics 4 — métricas de uso anónimas para mejorar el producto.
+                                <span className="text-foreground font-medium">Analíticas</span>
+                                <span className="text-muted-foreground block">
+                                    Google Tag Manager + Google Analytics 4. Nos dice qué páginas funcionan; ayuda a mejorar el producto.
+                                </span>
+                            </span>
+                        </label>
+
+                        <label className="border-border flex items-start gap-3 rounded-lg border p-3">
+                            <Checkbox checked={marketing} onCheckedChange={(value) => setMarketing(value === true)} className="mt-0.5" />
+                            <span className="text-sm">
+                                <span className="text-foreground font-medium">Marketing y publicidad</span>
+                                <span className="text-muted-foreground block">
+                                    TikTok Pixel. Mide nuestras campañas y conversiones para mostrarte anuncios relevantes.
                                 </span>
                             </span>
                         </label>
                     </div>
                 )}
 
-                {privacyUrl && (
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <a
-                        href={privacyUrl}
+                        href={PRIVACY_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-primary underline-offset-4 hover:underline"
+                        className="text-primary text-sm underline-offset-4 hover:underline"
                     >
                         Política de privacidad →
                     </a>
-                )}
 
-                <DialogFooter className="gap-2">
-                    {customizing ? (
-                        <Button onClick={() => decide(analytics)}>Guardar</Button>
-                    ) : (
-                        <>
-                            <Button variant="outline" onClick={() => setCustomizing(true)}>
-                                Personalizar
-                            </Button>
-                            <Button variant="outline" onClick={() => decide(false)}>
-                                Solo esenciales
-                            </Button>
-                            <Button onClick={() => decide(true)}>Aceptar todo</Button>
-                        </>
-                    )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        {customizing ? (
+                            <Button onClick={() => decide(analytics, marketing)}>Guardar</Button>
+                        ) : (
+                            <>
+                                <Button variant="outline" onClick={() => setCustomizing(true)}>
+                                    Personalizar
+                                </Button>
+                                <Button variant="outline" onClick={() => decide(false, false)}>
+                                    Solo esenciales
+                                </Button>
+                                <Button onClick={() => decide(true, true)}>Aceptar todo</Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

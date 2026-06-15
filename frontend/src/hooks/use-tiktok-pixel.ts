@@ -1,3 +1,4 @@
+import { getStoredConsent, subscribeConsent } from '@/lib/consent';
 import { useEffect } from 'react';
 
 /**
@@ -8,11 +9,11 @@ import { useEffect } from 'react';
  * visitas/conversiones de campañas de TikTok Ads que aterrizan en la portada;
  * el resto del panel (rutas autenticadas, carta pública, KDS) NO lo carga.
  *
- * Privacidad (Habeas Data CO): por decisión explícita del producto este pixel
- * carga sin gate de consentimiento. A diferencia de GA4 (Consent Mode v2 en
- * `denied` por defecto, ver `hooks/use-ga4.ts`), TikTok dispara `page` apenas
- * monta la landing. Si a futuro se exige consentimiento de marketing, hay que
- * envolver `loadTiktokPixel` tras la decisión del banner (`lib/consent.ts`).
+ * Privacidad (Habeas Data CO): el pixel está GATEADO por la categoría
+ * **marketing** del banner de consentimiento (`lib/consent.ts` + `consent-banner.tsx`).
+ * No se inyecta `events.js` hasta que el usuario acepta marketing. Si ya
+ * aceptó en una visita previa carga al montar; si acepta en el banner durante
+ * la visita, la suscripción a `subscribeConsent` lo carga sin recargar.
  *
  * El SDK se inyecta una sola vez por vida de la pestaña y solo cuando hay un
  * Pixel ID configurado (build de pdn). En local/qa queda inerte para no
@@ -126,6 +127,7 @@ export function resolveTiktokPixelId(): string | null {
 /**
  * Engancha el TikTok Pixel a la landing. Montar UNA vez, solo en `Welcome`.
  * No-op si no hay Pixel ID configurado (local/qa) ⇒ no inyecta `events.js`.
+ * Gateado por consentimiento de marketing: solo carga si el usuario lo aceptó.
  */
 export function useTiktokPixel(): void {
     useEffect(() => {
@@ -133,6 +135,15 @@ export function useTiktokPixel(): void {
         if (!pixelId) {
             return;
         }
-        loadTiktokPixel(pixelId);
+        // Carga solo con consentimiento de marketing. `subscribeConsent` cubre
+        // el caso de que el usuario acepte en el banner durante esta visita
+        // (el pixel se inyecta sin recargar); `loadTiktokPixel` es idempotente.
+        const loadIfConsented = (): void => {
+            if (getStoredConsent()?.marketing) {
+                loadTiktokPixel(pixelId);
+            }
+        };
+        loadIfConsented();
+        return subscribeConsent(loadIfConsented);
     }, []);
 }
