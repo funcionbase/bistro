@@ -69,6 +69,11 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const isMounted = useRef(true);
+    // Secuencia de peticiones del detalle: cada llamada a fetchChatDetail toma
+    // un número creciente; al volver, solo aplica el estado si sigue siendo la
+    // petición más reciente. Evita que un poll viejo (30s) pise el detalle
+    // fresco que devolvió el refetch tras enviar un mensaje (F14).
+    const detailReqSeq = useRef(0);
     // Auto-select solo en la PRIMERA carga. Si el usuario despues vuelve al
     // listado (botón atras en mobile o selectChat(null)), no queremos que el
     // polling re-seleccione el primer chat y devuelva al usuario al detalle.
@@ -111,9 +116,14 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
     const fetchChatDetail = useCallback(
         async (id: string): Promise<void> => {
             if (!token) return;
+            const seq = ++detailReqSeq.current;
             try {
                 const res = await apiFetch(`/api/v1/chats/${id}`);
                 if (!isMounted.current) return;
+                // Descarta respuestas obsoletas: si entre el request y su
+                // retorno ya se disparó otra petición (ej. el refetch tras
+                // enviar un mensaje), no pisamos el detalle fresco con el viejo.
+                if (seq !== detailReqSeq.current) return;
                 // 404: el chat dejo de existir (re-seed, soft-delete, etc.). Limpiamos
                 // la seleccion para parar el polling sobre un id muerto y mostrar la
                 // lista nuevamente.

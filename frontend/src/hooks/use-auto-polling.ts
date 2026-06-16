@@ -33,6 +33,7 @@ export function useAutoPolling({ intervalMs, onTick, pauseWhenHidden = true, ena
 
         let cancelled = false;
         let timer: ReturnType<typeof setInterval> | null = null;
+        let jitterTimer: ReturnType<typeof setTimeout> | null = null;
 
         const start = () => {
             if (timer !== null) return;
@@ -43,6 +44,13 @@ export function useAutoPolling({ intervalMs, onTick, pauseWhenHidden = true, ena
         };
 
         const stop = () => {
+            // Cancela también el jitter pendiente: si la pestaña se vuelve a
+            // ocultar dentro de la ventana de 0–500ms, su setTimeout dispararía
+            // un tick fantasma (start + onTick) con la pestaña ya oculta.
+            if (jitterTimer !== null) {
+                clearTimeout(jitterTimer);
+                jitterTimer = null;
+            }
             if (timer === null) return;
             clearInterval(timer);
             timer = null;
@@ -59,8 +67,9 @@ export function useAutoPolling({ intervalMs, onTick, pauseWhenHidden = true, ena
                 // mismo tiempo, todas hitearían el backend en el mismo tick.
                 // Lo suficientemente corto para no percibir la espera.
                 const jitterMs = Math.floor(Math.random() * 500);
-                window.setTimeout(() => {
-                    if (cancelled) return;
+                jitterTimer = setTimeout(() => {
+                    jitterTimer = null;
+                    if (cancelled || (pauseWhenHidden && typeof document !== 'undefined' && document.hidden)) return;
                     start();
                     void onTickRef.current();
                 }, jitterMs);

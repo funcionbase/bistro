@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { apiFetch } from '@/lib/api';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { isValidColombianMobile, stripCountryPrefix } from '@/lib/phone';
 import { Building2, LoaderCircle, User, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -295,7 +296,7 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                             id="new-client-name"
                             type="text"
                             value={form.name}
-                            onChange={(e) => setField('name', e.target.value)}
+                            onChange={(e) => setField('name', sanitizePlainText(e.target.value, 120, false, false))}
                             placeholder={isCompany ? 'Ej: Soluciones Andinas' : 'Ej: María Pérez'}
                             disabled={submitting}
                             autoFocus
@@ -368,7 +369,7 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                                 id="new-client-legal-name"
                                 type="text"
                                 value={form.legal_name}
-                                onChange={(e) => setField('legal_name', e.target.value)}
+                                onChange={(e) => setField('legal_name', sanitizePlainText(e.target.value, 160, false, false))}
                                 placeholder="SOLUCIONES ANDINAS SAS"
                                 disabled={submitting}
                                 maxLength={160}
@@ -425,7 +426,7 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                         <textarea
                             id="new-client-notes"
                             value={form.notes}
-                            onChange={(e) => setField('notes', e.target.value)}
+                            onChange={(e) => setField('notes', sanitizePlainText(e.target.value, 1000, true, false))}
                             placeholder="Preferencias, alergias, contexto…"
                             disabled={submitting}
                             maxLength={1000}

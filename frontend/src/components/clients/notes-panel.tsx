@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import type { ClientNote } from '@/hooks/use-client';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -68,7 +69,7 @@ export function NotesPanel({ notes, canEdit, canDelete, onAdd, onDelete }: Notes
                         maxLength={2000}
                         placeholder="Alergias, preferencias, observaciones..."
                         value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
+                        onChange={(e) => setDraft(sanitizePlainText(e.target.value, 2000, true, false))}
                         autoFocus
                     />
                     <div className="flex justify-end gap-2">

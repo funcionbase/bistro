@@ -133,6 +133,12 @@ export function useOrders(token: string | null): UseOrdersReturn {
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | undefined>(undefined);
     const isMounted = useRef(true);
+    // Época de mutación: cada update optimista la incrementa. Un fetch de
+    // polling captura la época al arrancar y, si cambió mientras estaba en
+    // vuelo, no aplica su resultado — así un tick viejo no pisa el estado
+    // optimista con el status anterior del server (F13). Auto-converge: el
+    // siguiente tick sin mutación intermedia sí aplica la verdad del server.
+    const mutationEpoch = useRef(0);
 
     useEffect(() => {
         isMounted.current = true;
@@ -143,6 +149,7 @@ export function useOrders(token: string | null): UseOrdersReturn {
 
     const fetchOrders = useCallback(async (): Promise<void> => {
         if (!token) return;
+        const epoch = mutationEpoch.current;
         try {
             const res = await apiFetch('/api/v1/orders');
             if (!isMounted.current) return;
@@ -152,6 +159,10 @@ export function useOrders(token: string | null): UseOrdersReturn {
                 return;
             }
             const json = await res.json();
+            // Si una mutación optimista ocurrió mientras este fetch estaba en
+            // vuelo, su payload trae el status anterior del server → no lo
+            // aplicamos para no provocar el rebote visual de la tarjeta.
+            if (epoch !== mutationEpoch.current) return;
             setOrders((json as { data: KanbanOrder[] }).data ?? []);
             setLastUpdated(new Date());
             setError(null);
@@ -164,7 +175,9 @@ export function useOrders(token: string | null): UseOrdersReturn {
 
     const updateStatus = useCallback(
         async (orderId: string, status: string): Promise<void> => {
-            // Actualización optimista
+            // Actualización optimista. Bump de época para que cualquier poll en
+            // vuelo descarte su payload (con el status viejo) al volver.
+            mutationEpoch.current += 1;
             setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
 
             const res = await apiFetch(`/api/v1/orders/${orderId}/status`, {
