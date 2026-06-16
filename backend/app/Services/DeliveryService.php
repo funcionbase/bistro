@@ -401,14 +401,17 @@ class DeliveryService
      * custom con el permiso. Excluye cajeros, cocineros, meseros, etc. que no
      * entregan. (Antes los pickers ofrecían a TODOS los miembros activos.)
      *
-     * Pendiente (refinamiento): filtrar además por acceso a la sede activa vía
-     * `branch_users` — requiere threadear `active_branch_id` a estos métodos y
-     * respetar el bypass de sede de los roles is_system. Se difiere para no
-     * sobre-filtrar owner/admin (que no tienen filas branch_users explícitas).
+     * Scope de sede (BK18): si se pasa `$activeBranchId`, además se filtra por
+     * acceso a esa sede. Roles `is_system` (owner/admin/employee) bypasean — no
+     * tienen filas `branch_users` pero acceden a todas las sedes de la empresa
+     * (espejo de `EnsureBranchAccess` + `User::accessibleBranches`). El resto
+     * debe tener acceso explícito a la sede activa vía `branch_users`. Si
+     * `$activeBranchId` es null (vista consolidada `?branch=all` o sin sede
+     * activa), no se aplica filtro de sede.
      *
      * @return \Illuminate\Support\Collection<int, string>
      */
-    private function deliveryCandidateUserIds(string $companyNit): \Illuminate\Support\Collection
+    private function deliveryCandidateUserIds(string $companyNit, ?string $activeBranchId = null): \Illuminate\Support\Collection
     {
         $courierRoleIds = DB::table('company_role_permissions as crp')
             ->join('company_roles as cr', 'cr.id', '=', 'crp.company_role_id')
@@ -418,9 +421,29 @@ class DeliveryService
             ->where('crp.can_read', true)
             ->pluck('cr.id');
 
-        return CompanyUser::where('company_nit', $companyNit)
+        $memberships = CompanyUser::where('company_nit', $companyNit)
             ->whereIn('company_role_id', $courierRoleIds)
-            ->pluck('user_id');
+            ->with('role:id,is_system')
+            ->get();
+
+        // Sin sede activa (consolidado / sin scope): comportamiento previo.
+        if ($activeBranchId === null) {
+            return $memberships->pluck('user_id')->unique()->values();
+        }
+
+        // Roles is_system acceden a todas las sedes (bypass): entran sin
+        // chequear branch_users. El resto requiere acceso explícito a la sede.
+        $systemUserIds = $memberships->filter(fn (CompanyUser $m): bool => (bool) $m->role?->is_system)->pluck('user_id');
+        $scopedUserIds = $memberships->reject(fn (CompanyUser $m): bool => (bool) $m->role?->is_system)->pluck('user_id');
+
+        $branchScopedUserIds = $scopedUserIds->isEmpty()
+            ? collect()
+            : DB::table('branch_users')
+                ->where('branch_id', $activeBranchId)
+                ->whereIn('user_id', $scopedUserIds->all())
+                ->pluck('user_id');
+
+        return $systemUserIds->merge($branchScopedUserIds)->unique()->values();
     }
 
     private function assertCourierCapacity(User $deliverer, string $companyNit): void
@@ -449,10 +472,10 @@ class DeliveryService
     }
 
     /** @return Collection<int, User> */
-    public function getCouriers(Company $company): Collection
+    public function getCouriers(Company $company, ?string $activeBranchId = null): Collection
     {
         $maxActive = config('delivery.max_active_per_courier', 3);
-        $memberIds = $this->deliveryCandidateUserIds($company->nit);
+        $memberIds = $this->deliveryCandidateUserIds($company->nit, $activeBranchId);
 
         $couriers = User::whereIn('id', $memberIds)
             ->where('status', 'active')
@@ -481,9 +504,9 @@ class DeliveryService
     }
 
     /** @return Collection<int, User> */
-    public function getAvailableDeliverers(Company $company): Collection
+    public function getAvailableDeliverers(Company $company, ?string $activeBranchId = null): Collection
     {
-        $memberIds = $this->deliveryCandidateUserIds($company->nit);
+        $memberIds = $this->deliveryCandidateUserIds($company->nit, $activeBranchId);
 
         return User::whereIn('id', $memberIds)
             ->where('status', 'active')

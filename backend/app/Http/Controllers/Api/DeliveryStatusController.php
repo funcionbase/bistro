@@ -37,7 +37,10 @@ class DeliveryStatusController extends Controller
         Order::forCompany($companyNit)->findOrFail($orderId);
 
         $company = Company::where('nit', $companyNit)->firstOrFail();
-        $deliverers = $this->deliveryService->getAvailableDeliverers($company);
+
+        // Filtra por acceso a la sede activa (branch_users), bypass is_system.
+        $activeBranchId = $request->attributes->get('active_branch_id');
+        $deliverers = $this->deliveryService->getAvailableDeliverers($company, $activeBranchId);
 
         return response()->json(['data' => $deliverers]);
     }

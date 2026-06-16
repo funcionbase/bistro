@@ -85,7 +85,10 @@ class DeliveryController extends Controller
         $companyNit = $request->attributes->get('active_company_nit');
         $company = Company::where('nit', $companyNit)->firstOrFail();
 
-        $couriers = $this->deliveryService->getCouriers($company);
+        // Filtra los couriers por acceso a la sede activa (branch_users), con
+        // bypass para roles is_system. Null en vista consolidada → sin filtro.
+        $activeBranchId = $request->attributes->get('active_branch_id');
+        $couriers = $this->deliveryService->getCouriers($company, $activeBranchId);
 
         return response()->json(['data' => $couriers]);
     }
