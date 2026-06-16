@@ -25,6 +25,16 @@ return [
 
     'default_environment' => env('DIAN_DEFAULT_ENVIRONMENT', 'habilitacion'),
 
+    /*
+     * Minutos tras los cuales un documento atascado en un estado NO terminal
+     * de transporte (`pending` / `sent`) se considera "stuck" y es elegible
+     * para recuperación vía re-submisión al provider (reusando consecutivo).
+     * Debe superar holgadamente la latencia del provider y el delay máximo del
+     * webhook async (`mock.async_delay_seconds_range`) para no pisar emisiones
+     * en vuelo ni webhooks que aún van a llegar. Default 15 min.
+     */
+    'stuck_recovery_minutes' => (int) env('DIAN_STUCK_RECOVERY_MINUTES', 15),
+
     'qr_base_url' => [
         'produccion' => 'https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=',
         'habilitacion' => 'https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=',

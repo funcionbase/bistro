@@ -80,7 +80,16 @@ class DianDispatchService
             ->first();
 
         if ($existing !== null) {
-            return $existing->canBeRetried() ? $this->retry($existing) : $existing;
+            // error/rejected → reintenta. Stuck en `pending`/`sent` (proceso
+            // murió o webhook async perdido, ya stale) → recupera re-sometiendo
+            // al provider con el MISMO consecutivo (idempotente por CUFE/CUDE).
+            // Pending/sent reciente (envío en vuelo o webhook que aún va a
+            // llegar) → se devuelve tal cual, sin interferir.
+            if ($existing->canBeRetried() || $this->isStuckDispatch($existing)) {
+                return $this->retry($existing);
+            }
+
+            return $existing;
         }
 
         return DB::transaction(function () use ($order, $payload) {
@@ -221,9 +230,17 @@ class DianDispatchService
             $document->refresh();
             $document->lockForUpdate();
 
-            if (! $document->canBeRetried()) {
+            // Reintenta error/rejected o recupera un stuck pending/sent stale.
+            // Se vuelve a evaluar tras el lock (el status pudo cambiar entre la
+            // selección y el lock por otra instancia).
+            if (! $document->canBeRetried() && ! $this->isStuckDispatch($document)) {
                 throw new RuntimeException("Documento id={$document->id} no es reintentar-able (status={$document->status}).");
             }
+
+            // Capturar ANTES del update: tras save(), Eloquent sincroniza el
+            // "original" al nuevo valor, así que getOriginal('status') ya no
+            // devolvería el status previo.
+            $previousStatus = $document->status;
 
             $providerConfig = DianProviderConfig::query()
                 ->where('company_nit', $document->company_nit)
@@ -246,8 +263,11 @@ class DianDispatchService
 
             $this->audit->log('dian.document.retry', null, $document, [
                 'retry_count' => $document->retry_count,
-                'previous_status' => $document->getOriginal('status'),
+                'previous_status' => $previousStatus,
                 'new_status' => $response->status,
+                // Marca explícita cuando el reintento es una recuperación de un
+                // documento atascado (no un reintento de error/rejected normal).
+                'recovered_from_stuck' => in_array($previousStatus, ['pending', 'sent'], true),
             ]);
 
             return $document;
@@ -257,6 +277,32 @@ class DianDispatchService
     public function cudeOrCufe(string $documentType): string
     {
         return in_array($documentType, ['pos_equivalent', 'pos_equivalent_credit_note'], true) ? 'cude' : 'cufe';
+    }
+
+    /**
+     * ¿El documento quedó atascado en un estado de transporte NO terminal
+     * (`pending`/`sent`) y ya es lo bastante viejo como para descartar que sea
+     * un envío en vuelo o un webhook async que aún va a llegar?
+     *
+     * `pending`: el proceso murió entre persistir la fila y procesar la
+     * respuesta del provider. `sent`: el provider aceptó async pero el webhook
+     * que debía llevarlo a accepted/rejected nunca llegó. En ambos casos la
+     * recuperación re-somete el MISMO documento (consecutivo/CUFE intactos) al
+     * provider vía `retry()` — el provider re-consulta por track_id o re-envía;
+     * DIAN deduplica por CUFE/CUDE, así que es idempotente y no quema
+     * numeración. El umbral `dian.stuck_recovery_minutes` evita tocar emisiones
+     * recientes.
+     */
+    private function isStuckDispatch(ElectronicDocument $document): bool
+    {
+        if (! in_array($document->status, ['pending', 'sent'], true)) {
+            return false;
+        }
+
+        $thresholdMinutes = (int) config('dian.stuck_recovery_minutes', 15);
+        $lastTouched = $document->updated_at ?? $document->created_at;
+
+        return $lastTouched !== null && $lastTouched->lte(now()->subMinutes($thresholdMinutes));
     }
 
     /**
