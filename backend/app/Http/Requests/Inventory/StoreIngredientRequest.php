@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Http\Requests\Concerns\SanitizesInput;
+use App\Rules\SafePlainText;
 use App\Services\InventoryService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,6 +19,15 @@ use Illuminate\Validation\Rule;
  */
 class StoreIngredientRequest extends FormRequest
 {
+    use SanitizesInput;
+
+    /** @var array<string, string> */
+    protected array $sanitize = [
+        'name' => 'plain_text_short',
+        'category' => 'plain_text_short',
+        'reference' => 'plain_text_short',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -32,17 +43,16 @@ class StoreIngredientRequest extends FormRequest
         return [
             'name' => [
                 'required',
-                'string',
-                'max:150',
+                new SafePlainText(maxBytes: 150, allowWhitespace: false),
                 Rule::unique('ingredients')->where('company_nit', $companyNit),
             ],
-            'category' => ['nullable', 'string', 'max:64'],
+            'category' => ['nullable', new SafePlainText(maxBytes: 64, allowWhitespace: false)],
             'unit' => ['required', 'string', Rule::in(InventoryService::VALID_UNITS)],
             'min_stock' => ['nullable', 'numeric', 'min:0'],
             'warehouse_id' => ['nullable', 'string', 'uuid'],
             'initial_stock' => ['nullable', 'numeric', 'gt:0'],
             'initial_cost' => ['nullable', 'numeric', 'gt:0', 'required_with:initial_stock'],
-            'reference' => ['nullable', 'string', 'max:255'],
+            'reference' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: false)],
         ];
     }
 }

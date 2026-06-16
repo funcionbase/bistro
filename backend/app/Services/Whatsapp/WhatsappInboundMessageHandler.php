@@ -302,6 +302,14 @@ class WhatsappInboundMessageHandler
             return false;
         }
 
+        // `failed` es TERMINAL: una vez fallido no se degrada a sent/delivered/
+        // read aunque Meta entregue un callback tardío fuera de orden (sucede).
+        // Sin esta guarda, un `delivered`(rank 2)/`read`(rank 3) tardío pasaba
+        // `newRank <= currentRank(0)` = false y sobreescribía el `failed`.
+        if ($message->status === 'failed') {
+            return false;
+        }
+
         // Orden monotonico: no degradar de read -> delivered, etc.
         $rank = ['sent' => 1, 'delivered' => 2, 'read' => 3, 'failed' => 0];
         $currentRank = $rank[$message->status] ?? 0;

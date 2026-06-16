@@ -2,11 +2,20 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\SanitizesInput;
+use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class PaymentProofUploadRequest extends FormRequest
 {
+    use SanitizesInput;
+
+    /** @var array<string, string> */
+    protected array $sanitize = [
+        'notes' => 'plain_text_long',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -21,7 +30,7 @@ class PaymentProofUploadRequest extends FormRequest
             'file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
             'invoice_ids' => ['nullable', 'array', 'max:50'],
             'invoice_ids.*' => ['uuid', Rule::exists('invoices', 'id')],
-            'notes' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ];
     }
 

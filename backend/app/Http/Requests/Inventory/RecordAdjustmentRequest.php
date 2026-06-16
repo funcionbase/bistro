@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Http\Requests\Concerns\SanitizesInput;
+use App\Rules\SafePlainText;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -15,6 +17,13 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class RecordAdjustmentRequest extends FormRequest
 {
+    use SanitizesInput;
+
+    /** @var array<string, string> */
+    protected array $sanitize = [
+        'reference' => 'plain_text_short',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -28,7 +37,7 @@ class RecordAdjustmentRequest extends FormRequest
         return [
             'quantity' => ['required', 'numeric', 'not_in:0'],
             'warehouse_id' => ['nullable', 'string', 'uuid'],
-            'reference' => ['required', 'string', 'min:3', 'max:255'],
+            'reference' => ['required', 'string', 'min:3', new SafePlainText(maxBytes: 255, allowWhitespace: false)],
         ];
     }
 }

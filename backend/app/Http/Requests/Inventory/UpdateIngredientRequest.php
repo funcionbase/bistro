@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Http\Requests\Concerns\SanitizesInput;
+use App\Rules\SafePlainText;
 use App\Services\InventoryService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,6 +18,14 @@ use Illuminate\Validation\Rule;
  */
 class UpdateIngredientRequest extends FormRequest
 {
+    use SanitizesInput;
+
+    /** @var array<string, string> */
+    protected array $sanitize = [
+        'name' => 'plain_text_short',
+        'category' => 'plain_text_short',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -36,11 +46,10 @@ class UpdateIngredientRequest extends FormRequest
             'name' => [
                 'sometimes',
                 'required',
-                'string',
-                'max:150',
+                new SafePlainText(maxBytes: 150, allowWhitespace: false),
                 Rule::unique('ingredients')->where('company_nit', $companyNit)->ignore($id),
             ],
-            'category' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'category' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 64, allowWhitespace: false)],
             'unit' => ['sometimes', 'required', 'string', Rule::in(InventoryService::VALID_UNITS)],
             'min_stock' => ['sometimes', 'required', 'numeric', 'min:0'],
         ];

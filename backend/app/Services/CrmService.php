@@ -457,6 +457,27 @@ class CrmService
 
         $hasPhone = $contact->phone !== null && $contact->phone !== '';
 
+        // Si el contacto no tiene teléfono, NO foldear órdenes legacy con
+        // `client_phone=''`: matchear solo por contact_id evita atribuir
+        // pedidos huérfanos (contact_id IS NULL + phone vacío) a este contacto.
+        // Consistente con buildClientList, que filtra phones no-vacíos.
+        $matchClause = $hasPhone
+            ? '(contact_id = ? OR (contact_id IS NULL AND client_phone = ?))'
+            : 'contact_id = ?';
+
+        $bindings = [
+            'completed',
+            'cancelled', 'refunded',
+            'completed',
+            $recurrentCutoff,
+            'completed', $recentCutoff,
+            $contact->company_nit, $contact->id,
+        ];
+
+        if ($hasPhone) {
+            $bindings[] = $contact->phone;
+        }
+
         $rows = DB::select(
             'SELECT
                 COUNT(*)::int                                                AS total_orders,
@@ -469,15 +490,8 @@ class CrmService
                 COALESCE(SUM(CASE WHEN status = ? AND ordered_at >= ?::timestamp THEN total ELSE 0 END), 0) AS spent_last_90d
             FROM orders
             WHERE company_nit = ?
-              AND (contact_id = ? OR (contact_id IS NULL AND client_phone = ?))',
-            [
-                'completed',
-                'cancelled', 'refunded',
-                'completed',
-                $recurrentCutoff,
-                'completed', $recentCutoff,
-                $contact->company_nit, $contact->id, $hasPhone ? $contact->phone : '',
-            ]
+              AND '.$matchClause,
+            $bindings
         );
 
         $row = $rows[0];

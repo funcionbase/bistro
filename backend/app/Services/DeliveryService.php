@@ -8,6 +8,7 @@ use App\Models\Delivery;
 use App\Models\DeliveryStatusLog;
 use App\Models\Order;
 use App\Models\PaymentReceipt;
+use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -389,11 +390,49 @@ class DeliveryService
         });
     }
 
+    /**
+     * IDs de usuarios candidatos a courier en la empresa: miembros cuyo rol
+     * concede EXPLÍCITAMENTE el permiso `deliveries.self_assign` (la permisología
+     * de courier — ver COURIER_MODE.md).
+     *
+     * Se filtra por la matriz explícita del rol (`company_role_permissions`),
+     * NO por el bypass `is_system`: así un `employee` (is_system=true pero sin el
+     * permiso) queda fuera, y entran owner/admin/Domiciliario + cualquier rol
+     * custom con el permiso. Excluye cajeros, cocineros, meseros, etc. que no
+     * entregan. (Antes los pickers ofrecían a TODOS los miembros activos.)
+     *
+     * Pendiente (refinamiento): filtrar además por acceso a la sede activa vía
+     * `branch_users` — requiere threadear `active_branch_id` a estos métodos y
+     * respetar el bypass de sede de los roles is_system. Se difiere para no
+     * sobre-filtrar owner/admin (que no tienen filas branch_users explícitas).
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    private function deliveryCandidateUserIds(string $companyNit): \Illuminate\Support\Collection
+    {
+        $courierRoleIds = DB::table('company_role_permissions as crp')
+            ->join('company_roles as cr', 'cr.id', '=', 'crp.company_role_id')
+            ->join('features as f', 'f.id', '=', 'crp.feature_id')
+            ->where('cr.company_nit', $companyNit)
+            ->where('f.slug', 'deliveries.self_assign')
+            ->where('crp.can_read', true)
+            ->pluck('cr.id');
+
+        return CompanyUser::where('company_nit', $companyNit)
+            ->whereIn('company_role_id', $courierRoleIds)
+            ->pluck('user_id');
+    }
+
     private function assertCourierCapacity(User $deliverer, string $companyNit): void
     {
         $maxActive = (int) config('delivery.max_active_per_courier', 3);
 
-        $active = Delivery::forCompany($companyNit)
+        // El courier es un recurso de EMPRESA, no de sede: el cap de entregas
+        // activas se cuenta cross-sede. Sin withoutBranchScope, BranchScope
+        // limitaría el conteo a la sede activa y el límite real sería N×cap
+        // (un courier con 3 activas en sede A podría tomar 3 más en sede B).
+        $active = Delivery::withoutBranchScope()
+            ->forCompany($companyNit)
             ->forUser($deliverer->id)
             ->where('status', 'pending')
             ->count();
@@ -413,15 +452,20 @@ class DeliveryService
     public function getCouriers(Company $company): Collection
     {
         $maxActive = config('delivery.max_active_per_courier', 3);
-        $memberIds = CompanyUser::where('company_nit', $company->nit)->pluck('user_id');
+        $memberIds = $this->deliveryCandidateUserIds($company->nit);
 
         $couriers = User::whereIn('id', $memberIds)
             ->where('status', 'active')
             ->withCount([
+                // Cross-sede: el courier es recurso de empresa. Sin escapar
+                // BranchScope el conteo se limitaría a la sede activa y el badge
+                // "disponible" no cuadraría con assertCourierCapacity.
                 'deliveries as active_deliveries_count' => fn ($q) => $q
+                    ->withoutGlobalScope(BranchScope::class)
                     ->where('company_nit', $company->nit)
                     ->where('status', 'pending'),
                 'deliveries as daily_completed_count' => fn ($q) => $q
+                    ->withoutGlobalScope(BranchScope::class)
                     ->where('company_nit', $company->nit)
                     ->where('status', 'completed')
                     ->whereDate('delivered_at', today()),
@@ -439,15 +483,18 @@ class DeliveryService
     /** @return Collection<int, User> */
     public function getAvailableDeliverers(Company $company): Collection
     {
-        $memberIds = CompanyUser::where('company_nit', $company->nit)->pluck('user_id');
+        $memberIds = $this->deliveryCandidateUserIds($company->nit);
 
         return User::whereIn('id', $memberIds)
             ->where('status', 'active')
             ->withCount([
+                // Cross-sede: ver getCouriers — el courier es recurso de empresa.
                 'deliveries as active_deliveries_count' => fn ($q) => $q
+                    ->withoutGlobalScope(BranchScope::class)
                     ->where('company_nit', $company->nit)
                     ->where('status', 'pending'),
                 'deliveries as daily_completed_count' => fn ($q) => $q
+                    ->withoutGlobalScope(BranchScope::class)
                     ->where('company_nit', $company->nit)
                     ->where('status', 'completed')
                     ->whereDate('delivered_at', today()),

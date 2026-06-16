@@ -379,10 +379,16 @@ class ChatController extends Controller
      * con acceso a esa sede lo ven en su bandeja (BranchScope natural).
      *
      * Reglas de autorización:
-     *  - Owner (`role.is_system=true`): siempre puede reasignar.
-     *  - Otros roles: requieren permiso `chats.reassign_branch` Y tener
-     *    acceso (vía `branch_users`) a la sede destino. No se puede
-     *    "tomar" un chat hacia una sede a la que el actor no llega.
+     *  - Owner (rol cuyo nombre == `config('roles.role_names.owner')`):
+     *    siempre puede reasignar. OJO: `role.is_system=true` cobija owner,
+     *    admin Y employee (los 3 roles institucionales), así que NO sirve como
+     *    señal de "owner" para este permiso sensible de sede — `admin`/`employee`
+     *    deben pasar por el permiso explícito. Se detecta el owner por nombre,
+     *    igual que `UserRoleController::authorizeManagerRole` (#192).
+     *  - Otros roles (incl. admin/employee): requieren permiso
+     *    `chats.reassign_branch` Y tener acceso (vía `branch_users`) a la sede
+     *    destino. No se puede "tomar" un chat hacia una sede a la que el actor
+     *    no llega.
      *
      * Auditoría: `chat.reassigned` con `from_branch_id`, `to_branch_id`,
      * `reason`. `AuditService::log` agrega `branch_id` y
@@ -392,7 +398,10 @@ class ChatController extends Controller
     {
         $companyNit = (string) $request->attributes->get('active_company_nit');
         $payload = (array) $request->attributes->get('jwt_payload', []);
-        $isOwner = ($payload['role']['is_system'] ?? false) === true;
+        // `is_system` es true para owner, admin Y employee → no distingue al
+        // owner. Para este permiso sensible de sede el bypass es owner-only:
+        // se detecta por nombre del rol (patrón canónico UserRoleController).
+        $isOwner = ($payload['role']['name'] ?? null) === config('roles.role_names.owner');
         $permissions = (array) ($payload['permissions'] ?? []);
 
         if (! $isOwner && ! in_array('chats.reassign_branch', $permissions, true)) {

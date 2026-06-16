@@ -20,17 +20,12 @@ use Illuminate\Http\Request;
  * Devuelve los dos movimientos generados (origen − / destino +) con su
  * referencia compartida (TRF-YYYYMMDDHHMMSS-<ingredient_id>).
  *
- * Aislamiento por sede (#192): ambas bodegas deben pertenecer a
- * `active_branch_id`. El scope natural de `BelongsToBranch` ya filtra a la
- * sede activa; si el cliente envía un uuid de bodega de otra sede, el
- * `firstOrFail()` la marca como inexistente para esa sesión y responde 404.
- * Además se valida explícitamente antes de invocar `InventoryService` por
- * defensa en profundidad.
- *
- * Las transferencias entre sedes (depósito central → locales) NO pasan por
- * este endpoint: deben implementarse en uno dedicado con doble asiento y
- * permiso `inventory.transfer_cross_branch`. Hasta entonces se rechazan
- * con 422 TRANSFER_CROSS_BRANCH_USE_DEDICATED_ENDPOINT.
+ * Aislamiento (#costeo-multibodega): tras el refactor multibodega las bodegas
+ * son **company-scoped** (una bodega abastece N sedes vía pivot), así que este
+ * endpoint permite transferir entre cualquier par de bodegas de la MISMA
+ * empresa. Ambos `firstOrFail()` filtran por `company_nit`: un uuid de bodega de
+ * otra empresa responde 404. (El docblock previo describía el modelo per-sede
+ * anterior — quedó stale tras el refactor ya desplegado a pdn; drift §7.)
  */
 class InventoryTransferController extends Controller
 {
@@ -45,7 +40,7 @@ class InventoryTransferController extends Controller
         $validated = $request->validate([
             'from_warehouse_id' => ['required', 'string', 'uuid'],
             'to_warehouse_id' => ['required', 'string', 'uuid', 'different:from_warehouse_id'],
-            'ingredient_id' => ['required', 'integer'],
+            'ingredient_id' => ['required', 'string', 'uuid'],
             'quantity' => ['required', 'numeric', 'gt:0'],
             'reference' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
         ]);

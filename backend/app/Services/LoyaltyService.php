@@ -227,7 +227,12 @@ class LoyaltyService
             // canjes públicos sin sede activa, se inscribe en la primera sede
             // de la empresa por compatibilidad con la FK NOT NULL branch_id.
             $branchId = request()?->attributes->get('active_branch_id')
-                ?? DB::table('branches')->where('company_nit', $companyNit)->orderBy('created_at')->value('id');
+                ?? DB::table('branches')
+                    ->where('company_nit', $companyNit)
+                    ->whereNull('archived_at')
+                    ->orderByDesc('is_default')
+                    ->orderBy('created_at')
+                    ->value('id');
 
             // scope='company' para que el cupón aplique en cualquier sede de la
             // empresa — consistente con la decisión cross-sede del programa.

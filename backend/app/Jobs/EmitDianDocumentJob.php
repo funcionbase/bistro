@@ -19,10 +19,13 @@ use Illuminate\Queue\SerializesModels;
  *
  * N-instance safe (add-on §5):
  *  - ShouldBeUnique por (order_id, document_type) — si la queue re-encola
- *    por crash mid-job, no se duplica.
+ *    por crash mid-job, no se duplica. `uniqueFor` (3900s) cubre el peor
+ *    backoff (3600s) + margen, para que el lock de dedup sobreviva todo el
+ *    schedule de reintentos del job y el cron no encole un duplicado.
  *  - Backoff exponencial 1m/3m/5m/15m/30m/1h (6 intentos máximo).
- *  - DianDispatchService::emit ya hace lock + idempotencia interna —
- *    el job es defensa adicional.
+ *  - DianDispatchService::emit es idempotente por (order_id, document_type):
+ *    si ya hay un documento no-borrador, reintenta el existente (reusa
+ *    consecutivo) o lo devuelve — nunca quema un consecutivo nuevo.
  */
 class EmitDianDocumentJob implements ShouldBeUnique, ShouldQueue
 {
@@ -43,7 +46,10 @@ class EmitDianDocumentJob implements ShouldBeUnique, ShouldQueue
 
     public function uniqueFor(): int
     {
-        return 300;
+        // Debe superar el peor backoff (3600s) para que el lock de unicidad
+        // sobreviva el schedule completo de reintentos y el cron no encole un
+        // 2º job para el mismo (order_id, document_type) mientras uno reintenta.
+        return 3900;
     }
 
     /**

@@ -1245,14 +1245,12 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:clients.update,update')
                     ->name('api.clients.notes.store');
                 Route::delete('{contact}/notes/{id}', [ClientController::class, 'destroyNote'])
-                    ->where(['contact' => '[0-9]+', 'id' => '[0-9]+'])
                     ->middleware('permission:clients.delete,delete')
                     ->name('api.clients.notes.destroy');
                 Route::post('{contact}/tags', [ClientController::class, 'storeTag'])
                     ->middleware('permission:clients.update,update')
                     ->name('api.clients.tags.store');
                 Route::delete('{contact}/tags/{id}', [ClientController::class, 'destroyTag'])
-                    ->where(['contact' => '[0-9]+', 'id' => '[0-9]+'])
                     ->middleware('permission:clients.delete,delete')
                     ->name('api.clients.tags.destroy');
             });

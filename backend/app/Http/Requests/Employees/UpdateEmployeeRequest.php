@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Employees;
 
+use App\Http\Requests\Concerns\SanitizesInput;
+use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -11,6 +13,25 @@ use Illuminate\Validation\Rule;
  */
 class UpdateEmployeeRequest extends FormRequest
 {
+    use SanitizesInput;
+
+    /** @var array<string, string> */
+    protected array $sanitize = [
+        'doc_number' => 'plain_text_short',
+        'first_name' => 'plain_text_short',
+        'last_name' => 'plain_text_short',
+        'address' => 'plain_text_long',
+        'city' => 'plain_text_short',
+        'eps' => 'plain_text_short',
+        'arl' => 'plain_text_short',
+        'pension_fund' => 'plain_text_short',
+        'severance_fund' => 'plain_text_short',
+        'bank' => 'plain_text_short',
+        'account_number' => 'plain_text_short',
+        'emergency_contact_name' => 'plain_text_short',
+        'uniform_size' => 'plain_text_short',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -23,25 +44,25 @@ class UpdateEmployeeRequest extends FormRequest
             'primary_branch_id' => ['sometimes', 'uuid'],
             'position_id' => ['nullable', 'uuid'],
             'doc_type' => ['sometimes', Rule::in(['CC', 'CE', 'PA', 'PEP', 'TI'])],
-            'doc_number' => ['sometimes', 'string', 'max:32'],
-            'first_name' => ['sometimes', 'string', 'max:120'],
-            'last_name' => ['sometimes', 'string', 'max:120'],
+            'doc_number' => ['sometimes', new SafePlainText(maxBytes: 32, allowWhitespace: false)],
+            'first_name' => ['sometimes', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
+            'last_name' => ['sometimes', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'email' => ['sometimes', 'email:rfc', 'max:180'],
             'phone' => ['nullable', 'string', 'max:30'],
             'birth_date' => ['nullable', 'date'],
             'blood_type' => ['nullable', Rule::in(['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'])],
-            'address' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:120'],
-            'eps' => ['nullable', 'string', 'max:120'],
-            'arl' => ['nullable', 'string', 'max:120'],
-            'pension_fund' => ['nullable', 'string', 'max:120'],
-            'severance_fund' => ['nullable', 'string', 'max:120'],
-            'bank' => ['nullable', 'string', 'max:120'],
+            'address' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
+            'city' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
+            'eps' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
+            'arl' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
+            'pension_fund' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
+            'severance_fund' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
+            'bank' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'account_type' => ['nullable', Rule::in(['ahorros', 'corriente'])],
-            'account_number' => ['nullable', 'string', 'max:32'],
-            'emergency_contact_name' => ['nullable', 'string', 'max:120'],
+            'account_number' => ['nullable', new SafePlainText(maxBytes: 32, allowWhitespace: false)],
+            'emergency_contact_name' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
-            'uniform_size' => ['nullable', 'string', 'max:20'],
+            'uniform_size' => ['nullable', new SafePlainText(maxBytes: 20, allowWhitespace: false)],
             'contract_type' => ['nullable', Rule::in(['fijo', 'indefinido', 'OPS', 'aprendizaje'])],
             'base_salary' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'pay_type' => ['sometimes', Rule::in(['hora', 'diario', 'semanal', 'quincenal', 'mensual'])],

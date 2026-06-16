@@ -179,11 +179,19 @@ class EscposBuilder
     /**
      * Convierte UTF-8 → CP437/CP850. Las térmicas más comunes en Colombia
      * traen Code Page PC850 (Latin-1). Tildes y eñe se preservan.
+     *
+     * Defensa en profundidad (§5): strip-ea bytes de control ESC/POS antes de
+     * bufferizar — sobre todo `\x1B` (ESC) y `\x1D` (GS), que sobrevivirían la
+     * conversión a CP850 (son < 0x80) e inyectarían comandos a la impresora
+     * (cambiar formato, cortar papel, abrir el cajón). Preserva `\t` (\x09) y
+     * `\n` (\x0A) porque los métodos públicos los usan para layout. Los comandos
+     * legítimos se emiten por `raw()` con literales, no por esta vía.
      */
     private function encode(string $text): string
     {
-        $converted = @iconv('UTF-8', 'CP850//TRANSLIT//IGNORE', $text);
+        $clean = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text) ?? $text;
+        $converted = @iconv('UTF-8', 'CP850//TRANSLIT//IGNORE', $clean);
 
-        return $converted === false ? $text : $converted;
+        return $converted === false ? $clean : $converted;
     }
 }

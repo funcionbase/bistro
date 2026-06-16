@@ -60,6 +60,29 @@ class DianDispatchService
      */
     public function emit(Order $order, array $payload): ElectronicDocument
     {
+        $documentType = (string) $payload['document_type'];
+
+        // Idempotencia (§13 — inmutabilidad/numeración DIAN): si ya existe un
+        // documento (no-borrador) para este (order, tipo), NO se asigna un
+        // consecutivo nuevo. Esto de-duplica el cron `dian:dispatch-pending`,
+        // que re-despacha EmitDianDocumentJob para docs en `pending`/`error`:
+        // antes `emit()` creaba un documento nuevo con consecutivo NUEVO en cada
+        // tick (cada 5 min), quemando numeración DIAN autorizada. Ahora se
+        // reintenta el existente (reusa el consecutivo vía `retry()`) o se
+        // devuelve tal cual. Se excluye `needs_recipient_data` porque ese
+        // borrador SÍ se re-emite con consecutivo nuevo al completar los datos
+        // del adquirente (ver persistNeedsRecipient + NeedsRecipientDataException).
+        $existing = ElectronicDocument::query()
+            ->where('order_id', $order->getKey())
+            ->where('document_type', $documentType)
+            ->where('status', '!=', 'needs_recipient_data')
+            ->latest('created_at')
+            ->first();
+
+        if ($existing !== null) {
+            return $existing->canBeRetried() ? $this->retry($existing) : $existing;
+        }
+
         return DB::transaction(function () use ($order, $payload) {
             $order->refresh();
             $order->lockForUpdate();

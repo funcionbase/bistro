@@ -42,7 +42,28 @@ class LoyaltyExpireStale extends Command
 
         $totalAccounts = 0;
         $totalPoints = 0;
-        $totalRedemptionsExpired = 0;
+
+        // Expiración de cupones de canje vencidos: es global por naturaleza
+        // (basada en `expires_at < now`), así que se corre UNA sola vez fuera
+        // del loop por-empresa — el código anterior la ejecutaba sin scope de
+        // empresa N veces (una por cada empresa iterada) y, peor, ANTES del
+        // check de --dry-run (mutaba BD incluso en dry-run). Se scopea por
+        // empresa solo si se pasó --company. Los puntos NO se devuelven: el
+        // canje ya consumió el balance al crearse (regla contable, no bug).
+        $expiredQuery = LoyaltyRedemption::where('status', 'issued')
+            ->where('expires_at', '<', now());
+
+        if ($companyNit) {
+            $expiredQuery->whereHas('account', fn ($q) => $q->where('company_nit', $companyNit));
+        }
+
+        $totalRedemptionsExpired = $dryRun
+            ? $expiredQuery->count()
+            : DB::transaction(fn () => $expiredQuery->update(['status' => 'expired', 'updated_at' => now()]));
+
+        if ($dryRun) {
+            $this->info("[dry-run] redemptions a expirar: {$totalRedemptionsExpired}");
+        }
 
         foreach ($companies as $company) {
             if (! $this->loyaltyService->isEnabledFor($company->nit)) {
@@ -50,13 +71,6 @@ class LoyaltyExpireStale extends Command
             }
 
             $this->line("→ {$company->nit}");
-
-            $expired = DB::transaction(function () {
-                return LoyaltyRedemption::where('status', 'issued')
-                    ->where('expires_at', '<', now())
-                    ->update(['status' => 'expired', 'updated_at' => now()]);
-            });
-            $totalRedemptionsExpired += $expired;
 
             if ($dryRun) {
                 $this->info('   [dry-run] saltando expireStale');
@@ -68,7 +82,7 @@ class LoyaltyExpireStale extends Command
             $totalAccounts += $result['accounts_expired'];
             $totalPoints += $result['points_expired'];
 
-            $this->info("   accounts_expired={$result['accounts_expired']} points_expired={$result['points_expired']} redemptions_expired={$expired}");
+            $this->info("   accounts_expired={$result['accounts_expired']} points_expired={$result['points_expired']}");
         }
 
         $this->info("DONE accounts={$totalAccounts} points={$totalPoints} redemptions={$totalRedemptionsExpired}");
