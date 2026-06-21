@@ -80,7 +80,7 @@ Route::middleware([
 
 ## Permisos sensibles owner-only por default (#192)
 
-Tres permisos quedan en `[false,false,false,false]` para `admin` por
+Cinco permisos quedan en `[false,false,false,false]` para `admin` por
 `PermissionTemplateSeeder`. NO llevan `is_owner_only=true` (sí aparecen en
 `UserPermissionsEditor`), pero el owner debe asignarlos manualmente si
 quiere delegarlos:
@@ -89,6 +89,8 @@ quiere delegarlos:
 |---|---|
 | `chats.reassign_branch` | Mover un chat de una sede a otra (`POST /api/v1/chats/{id}/reassign-branch`). |
 | `cash_register.bypass_switch_lock` | Cambiar de sede activa cuando hay caja abierta (default: bloqueado). |
+| `cash_register.manage` | Crear / renombrar / archivar cajas del catálogo de la sede (#117 Fase 3). |
+| `cash_register.operate_others` | Cerrar la sesión abierta por otro cajero — "turno anterior no cerró, supervisor cierra" (#117 Fase 3). |
 | `inventory.transfer_cross_branch` | Crear transferencias de ingredientes entre sedes (`POST /api/v1/inventory/transfers`). |
 
 > Si en el futuro se introduce otro permiso *cross-branch* con riesgo
@@ -111,7 +113,7 @@ quiere delegarlos:
 ## Pares espejo que deben mantenerse sincronizados
 
 - Lista de permisos sensibles cross-branch en este `.md` ↔
-  `PermissionTemplateSeeder::handle()` (las 3 entradas que retornan
+  `PermissionTemplateSeeder::handle()` (las 5 entradas que retornan
   `[false,false,false,false]` para admin).
 - Comportamiento de `metrics.view_all_branches` ↔
   `FeaturePermissionService::userCanViewConsolidated` ↔

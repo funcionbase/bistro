@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesActiveContext;
 use App\Http\Controllers\Concerns\ResolvesJwtActor;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CashRegister\StoreCashRegisterRequest;
+use App\Http\Requests\CashRegister\UpdateCashRegisterRequest;
+use App\Models\CashRegister;
 use App\Models\CashRegisterExpense;
 use App\Models\CashRegisterSession;
 use App\Models\RestaurantMenu;
@@ -43,8 +46,21 @@ class CashRegisterController extends Controller
     {
         $this->permissionService->assertPermission($request, 'orders', 'read');
         $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
 
-        $session = $this->service->activeSession($companyNit);
+        // Multi-caja (#117): si el cliente indica `cash_session_id`, devolvemos
+        // el estado de ESA caja; si no, fallback a la única caja abierta de la
+        // sede (sede mono-caja / cliente legacy). El catálogo completo de cajas
+        // vive en GET cash-register/registers.
+        $requestedSessionId = (string) $request->query('cash_session_id', '');
+        $session = $requestedSessionId !== ''
+            ? CashRegisterSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->where('id', $requestedSessionId)
+                ->where('status', 'open')
+                ->first()
+            : $this->service->activeSessionForBranch($companyNit, $branchId);
 
         // Contexto operativo para el banner global del panel: si la caja está
         // cerrada Y el restaurante debería estar funcionando (horario hábil +
@@ -65,7 +81,7 @@ class CashRegisterController extends Controller
         ];
 
         if ($session) {
-            $session->load(['openedBy:id,name']);
+            $session->load(['openedBy:id,name', 'cashRegister:id,name']);
             $live = $this->service->liveSummary($session);
             $payload['session'] = [
                 'id' => $session->id,
@@ -77,6 +93,8 @@ class CashRegisterController extends Controller
                     'name' => $session->openedBy->name,
                 ] : null,
                 'opening_notes' => $session->opening_notes,
+                'cash_register_id' => $session->cash_register_id,
+                'cash_register_name' => $session->cashRegister?->name,
                 'live' => $live,
             ];
         }
@@ -92,6 +110,9 @@ class CashRegisterController extends Controller
         $validated = $request->validate([
             'opening_amount' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
+            // Multi-caja (#117): qué caja abre. Opcional para retrocompat
+            // (mono-caja → "Caja principal" por defecto en el service).
+            'cash_register_id' => ['nullable', 'uuid'],
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
@@ -113,10 +134,12 @@ class CashRegisterController extends Controller
             openedBy: $user,
             openingAmount: (float) $validated['opening_amount'],
             notes: $validated['notes'] ?? null,
+            cashRegisterId: $validated['cash_register_id'] ?? null,
         );
 
         $this->auditService->log('cash_register.opened', $user, $session, [
             'opening_amount' => (float) $session->opening_amount,
+            'cash_register_id' => $session->cash_register_id,
             'notes' => $session->opening_notes,
         ]);
 
@@ -134,6 +157,9 @@ class CashRegisterController extends Controller
             // tiene en su IndexedDB sin sincronizar. Si > 0, el service
             // bloquea el cierre (decisión: bloqueo duro sin escape).
             'pending_sync_count' => ['nullable', 'integer', 'min:0'],
+            // Multi-caja (#117): qué caja se cierra. Opcional para retrocompat
+            // (si hay una sola abierta en la sede, esa).
+            'cash_session_id' => ['nullable', 'uuid'],
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
@@ -149,20 +175,47 @@ class CashRegisterController extends Controller
         // debe cerrar la caja (ambos bypasean el guard).
         $this->shiftGuard->assertActiveShift($user, $companyNit, $branchId);
 
+        // Resolver sesión antes del cierre para verificar autoría (#117 Fase 3).
+        // El lockForUpdate real ocurre dentro de closeSession; este resolve previo
+        // es solo para el chequeo de permiso — TOCTOU aceptable en este flujo.
+        $pendingSession = $this->service->resolveSessionForCharge(
+            $companyNit,
+            $branchId,
+            $validated['cash_session_id'] ?? null,
+        );
+
+        // Cerrar la caja de otro cajero requiere `cash_register.operate_others`.
+        // Cubre el caso "turno anterior no cerró, supervisor cierra" (#117 Fase 3).
+        // is_system=true (owner/admin/employee) bypasea automáticamente vía hasPermission.
+        $isOthersCash = $pendingSession->opened_by_user_id !== $user->id;
+        if ($isOthersCash && ! $this->permissionService->hasPermission($request, 'cash_register', 'operate_others')) {
+            return response()->json([
+                'message' => 'No tenés permiso para cerrar la caja de otro cajero. Pedí el permiso "Operar caja de otro cajero".',
+            ], 403);
+        }
+
         $session = $this->service->closeSession(
             companyNit: $companyNit,
+            branchId: $branchId,
             closedBy: $user,
             closingAmount: (float) $validated['closing_amount'],
             notes: $validated['notes'] ?? null,
             pendingSyncCount: (int) ($validated['pending_sync_count'] ?? 0),
+            cashSessionId: $pendingSession->id,
         );
 
-        $this->auditService->log('cash_register.closed', $user, $session, [
+        $auditAction = $isOthersCash ? 'cash_register.taken_over' : 'cash_register.closed';
+        $auditMeta = [
             'opening_amount' => (float) $session->opening_amount,
             'closing_amount' => (float) $session->closing_amount,
             'expected_cash' => (float) $session->expected_cash,
             'cash_difference' => (float) $session->cash_difference,
-        ]);
+        ];
+        if ($isOthersCash) {
+            $auditMeta['original_opened_by_user_id'] = $pendingSession->opened_by_user_id;
+        }
+
+        $this->auditService->log($auditAction, $user, $session, $auditMeta);
 
         return response()->json([
             'data' => [
@@ -184,7 +237,7 @@ class CashRegisterController extends Controller
         $perPage = min((int) $request->input('per_page', 25), 100);
 
         $paginated = CashRegisterSession::forCompany($companyNit)
-            ->with(['openedBy:id,name', 'closedBy:id,name'])
+            ->with(['openedBy:id,name', 'closedBy:id,name', 'cashRegister:id,name'])
             ->orderByDesc('opened_at')
             ->paginate($perPage);
 
@@ -205,7 +258,7 @@ class CashRegisterController extends Controller
         $companyNit = $this->activeCompanyNit($request);
 
         $session = CashRegisterSession::forCompany($companyNit)
-            ->with(['openedBy:id,name', 'closedBy:id,name'])
+            ->with(['openedBy:id,name', 'closedBy:id,name', 'cashRegister:id,name'])
             ->findOrFail($id);
 
         $live = $session->isOpen() ? $this->service->liveSummary($session) : null;
@@ -221,6 +274,8 @@ class CashRegisterController extends Controller
         return [
             'id' => $s->id,
             'status' => $s->status,
+            'cash_register_id' => $s->cash_register_id,
+            'cash_register_name' => $s->relationLoaded('cashRegister') ? $s->cashRegister?->name : null,
             'opened_at' => $s->opened_at?->toIso8601String(),
             'closed_at' => $s->closed_at?->toIso8601String(),
             'opening_amount' => (float) $s->opening_amount,
@@ -249,16 +304,23 @@ class CashRegisterController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01'],
             'category' => ['required', 'string', 'in:'.implode(',', $categories)],
             'payment_method' => ['nullable', 'string', 'in:'.implode(',', $methods)],
-            'description' => ['nullable', 'string', 'max:500'],
+            'description' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
+            // Multi-caja (#117): contra qué caja se carga el egreso.
+            'cash_session_id' => ['nullable', 'uuid'],
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
         $user = $this->actingUser($request);
         if (! $user) {
             return response()->json(['message' => 'Usuario no autenticado.'], 401);
         }
 
-        $session = $this->service->requireActiveSession($companyNit);
+        $session = $this->service->resolveSessionForCharge(
+            $companyNit,
+            $branchId,
+            $validated['cash_session_id'] ?? null,
+        );
 
         $expense = $this->service->recordExpense(
             session: $session,
@@ -322,6 +384,134 @@ class CashRegisterController extends Controller
             'description' => $e->description,
             'created_at' => $e->created_at?->toIso8601String(),
             'created_by' => $e->createdBy ? ['id' => $e->createdBy->id, 'name' => $e->createdBy->name] : null,
+        ];
+    }
+
+    /**
+     * Catálogo de cajas de la sede activa con su sesión abierta (si la hay).
+     * Lo consume el selector "¿qué caja operás?" y el panel supervisor.
+     */
+    public function registers(Request $request): JsonResponse
+    {
+        // Ver el estado de cajas es prerrequisito de operar; mismo permiso de
+        // lectura de órdenes (cualquier cajero lo necesita para elegir caja).
+        $this->permissionService->assertPermission($request, 'orders', 'read');
+        $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
+
+        $includeArchived = $request->boolean('all');
+        $registers = $this->service->registersForBranch($companyNit, $branchId, $includeArchived);
+
+        return response()->json([
+            'data' => $registers->map(fn (CashRegister $r) => $this->serializeRegister($r))->all(),
+            'can_manage' => $this->permissionService->hasPermission($request, 'cash_register', 'manage'),
+        ]);
+    }
+
+    /**
+     * Crea una caja en la sede activa. Permiso `cash_register.manage` validado
+     * en la ruta (sensible de sede — admin no auto, ver Fase 3 RBAC).
+     */
+    public function storeRegister(StoreCashRegisterRequest $request): JsonResponse
+    {
+        $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
+        $user = $this->actingUser($request);
+        if (! $user) {
+            return response()->json(['message' => 'Usuario no autenticado.'], 401);
+        }
+
+        $register = CashRegister::create([
+            'company_nit' => $companyNit,
+            'branch_id' => $branchId,
+            'name' => $request->validated('name'),
+            'is_active' => true,
+            'sort_order' => (int) ($request->validated('sort_order') ?? 0),
+        ]);
+
+        $this->auditService->log('cash_register.created', $user, $register, [
+            'name' => $register->name,
+        ]);
+
+        return response()->json(['data' => $this->serializeRegister($register)], 201);
+    }
+
+    /**
+     * Renombra / (des)activa / archiva una caja. Archivar es el "borrado"
+     * contable: no se elimina físicamente para preservar FKs de sesiones y
+     * receipts históricos. No se puede archivar una caja con sesión abierta.
+     */
+    public function updateRegister(UpdateCashRegisterRequest $request, string $id): JsonResponse
+    {
+        $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
+        $user = $this->actingUser($request);
+        if (! $user) {
+            return response()->json(['message' => 'Usuario no autenticado.'], 401);
+        }
+
+        /** @var CashRegister $register */
+        $register = CashRegister::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->findOrFail($id);
+
+        $data = $request->validated();
+
+        if (array_key_exists('name', $data)) {
+            $register->name = $data['name'];
+        }
+        if (array_key_exists('is_active', $data)) {
+            $register->is_active = (bool) $data['is_active'];
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $register->sort_order = (int) $data['sort_order'];
+        }
+
+        if (! empty($data['archived']) && ! $register->isArchived()) {
+            $hasOpen = CashRegisterSession::query()
+                ->where('cash_register_id', $register->id)
+                ->where('status', 'open')
+                ->exists();
+            if ($hasOpen) {
+                return response()->json([
+                    'message' => 'No se puede archivar una caja con una sesión abierta. Ciérrala primero.',
+                ], 422);
+            }
+            $register->archived_at = now();
+            $register->is_active = false;
+        } elseif (isset($data['archived']) && $data['archived'] === false) {
+            $register->archived_at = null;
+        }
+
+        $register->save();
+
+        $this->auditService->log('cash_register.updated', $user, $register, [
+            'name' => $register->name,
+            'is_active' => $register->is_active,
+            'archived' => $register->isArchived(),
+        ]);
+
+        return response()->json(['data' => $this->serializeRegister($register->fresh())]);
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeRegister(CashRegister $r): array
+    {
+        $open = $r->relationLoaded('sessions') ? $r->sessions->firstWhere('status', 'open') : null;
+
+        return [
+            'id' => $r->id,
+            'name' => $r->name,
+            'is_active' => (bool) $r->is_active,
+            'sort_order' => (int) $r->sort_order,
+            'archived' => $r->isArchived(),
+            'open_session' => $open ? [
+                'id' => $open->id,
+                'opened_at' => $open->opened_at?->toIso8601String(),
+                'opening_amount' => (float) $open->opening_amount,
+                'opened_by' => $open->openedBy ? ['id' => $open->openedBy->id, 'name' => $open->openedBy->name] : null,
+            ] : null,
         ];
     }
 }

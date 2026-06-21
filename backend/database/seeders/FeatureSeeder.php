@@ -349,6 +349,18 @@ class FeatureSeeder extends Seeder
                 'group' => 'Caja',
             ],
             [
+                'slug' => 'cash_register.manage',
+                'name' => 'Configurar cajas de la sede',
+                'description' => 'Permite crear, renombrar y archivar las cajas registradoras de la sede (multi-caja). Sensible de sede: se asigna manual.',
+                'group' => 'Caja',
+            ],
+            [
+                'slug' => 'cash_register.operate_others',
+                'name' => 'Operar caja de otro cajero',
+                'description' => 'Permite cerrar la caja que abrió otro cajero (toma de turno / supervisión). Se audita. Sensible de sede: se asigna manual.',
+                'group' => 'Caja',
+            ],
+            [
                 'slug' => 'inventory.transfer_cross_branch',
                 'name' => 'Transferir inventario entre sedes',
                 'description' => 'Permite registrar transferencias de inventario con doble asiento entre sedes distintas. (Endpoint dedicado, fuera de scope de #192 — habilitado para asignación previa.)',

@@ -240,6 +240,8 @@ class PermissionTemplateSeeder extends Seeder
                         in_array($slug, [
                             'chats.reassign_branch',
                             'cash_register.bypass_switch_lock',
+                            'cash_register.manage',
+                            'cash_register.operate_others',
                             'inventory.transfer_cross_branch',
                             'kds_stations.read',
                             'kds_stations.create',

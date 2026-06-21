@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\CashRegister;
 use App\Models\CashRegisterExpense;
 use App\Models\CashRegisterSession;
 use App\Models\Order;
 use App\Models\PaymentReceipt;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -40,8 +42,16 @@ class CashRegisterService
         ?string $notes = null,
         ?string $clientUuid = null,
         ?Carbon $openedAtClient = null,
+        ?string $cashRegisterId = null,
     ): CashRegisterSession {
-        return DB::transaction(function () use ($companyNit, $branchId, $openedBy, $openingAmount, $notes, $clientUuid, $openedAtClient) {
+        return DB::transaction(function () use ($companyNit, $branchId, $openedBy, $openingAmount, $notes, $clientUuid, $openedAtClient, $cashRegisterId) {
+            // Multi-caja (#117): toda sesión cuelga de una caja. Si el caller no
+            // especifica cuál (cliente legacy / sede mono-caja), se usa la "Caja
+            // principal" de la sede. El selector explícito lo envía Fase 2.
+            $register = $cashRegisterId !== null
+                ? $this->requireRegister($companyNit, $branchId, $cashRegisterId)
+                : $this->defaultRegister($companyNit, $branchId);
+
             // Idempotencia offline: si esta apertura (client_uuid) ya se aplicó,
             // devolver la misma sesión — un reintento del sync no abre otra.
             if ($clientUuid !== null) {
@@ -56,22 +66,24 @@ class CashRegisterService
                 }
             }
 
+            // Unicidad por CAJA (no por sede): una sede puede tener N cajas
+            // abiertas a la vez, pero cada caja máximo una sesión `open`.
             $existing = CashRegisterSession::query()
-                ->where('company_nit', $companyNit)
-                ->where('branch_id', $branchId)
+                ->where('cash_register_id', $register->id)
                 ->where('status', 'open')
                 ->lockForUpdate()
                 ->first();
 
             if ($existing) {
                 throw ValidationException::withMessages([
-                    'cash_register' => 'Ya hay una sesión de caja abierta en esta sede.',
+                    'cash_register' => 'Ya hay una sesión de caja abierta en esta caja.',
                 ]);
             }
 
             return CashRegisterSession::create([
                 'company_nit' => $companyNit,
                 'branch_id' => $branchId,
+                'cash_register_id' => $register->id,
                 'client_uuid' => $clientUuid,
                 'opened_by_user_id' => $openedBy->id,
                 'opened_at' => now(),
@@ -84,14 +96,84 @@ class CashRegisterService
     }
 
     /**
-     * Cierra la sesión activa: calcula expected_cash y cash_difference, persiste.
+     * Caja por defecto de una sede ("Caja principal"). La crea si la sede aún
+     * no tiene ninguna caja vigente (onboarding / sede nueva). Resiliente a
+     * carreras N-instance vía el UNIQUE parcial por nombre.
+     */
+    public function defaultRegister(string $companyNit, string $branchId): CashRegister
+    {
+        $existing = CashRegister::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->whereNull('archived_at')
+            ->orderBy('sort_order')
+            ->orderBy('created_at')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        try {
+            return CashRegister::create([
+                'company_nit' => $companyNit,
+                'branch_id' => $branchId,
+                'name' => 'Caja principal',
+                'is_active' => true,
+                'sort_order' => 0,
+            ]);
+        } catch (QueryException $e) {
+            // Carrera: otra request sembró la caja al mismo tiempo (UNIQUE
+            // parcial por nombre). Re-resolvemos la existente.
+            return CashRegister::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->whereNull('archived_at')
+                ->orderBy('sort_order')
+                ->orderBy('created_at')
+                ->firstOrFail();
+        }
+    }
+
+    /**
+     * Resuelve una caja por id validando empresa + sede (defensa anti-tampering)
+     * y que esté vigente. Lanza ValidationException si no cuadra.
+     */
+    public function requireRegister(string $companyNit, string $branchId, string $cashRegisterId): CashRegister
+    {
+        $register = CashRegister::query()
+            ->where('id', $cashRegisterId)
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->whereNull('archived_at')
+            ->first();
+
+        if (! $register) {
+            throw ValidationException::withMessages([
+                'cash_register_id' => 'La caja seleccionada no existe en esta sede o fue archivada.',
+            ]);
+        }
+
+        return $register;
+    }
+
+    /**
+     * Cierra la sesión activa de una sede: calcula expected_cash y
+     * cash_difference, persiste.
+     *
+     * Multi-sede (#117): la sesión a cerrar y el conteo de pedidos operativos
+     * que bloquean el cierre se resuelven por SEDE (no por empresa). Sin el
+     * filtro de sede, en una empresa con varias sedes abiertas `first()` podía
+     * cerrar la sesión equivocada y el bloqueo contaba pedidos de otras sedes.
      */
     public function closeSession(
         string $companyNit,
+        string $branchId,
         User $closedBy,
         float $closingAmount,
         ?string $notes = null,
         int $pendingSyncCount = 0,
+        ?string $cashSessionId = null,
     ): CashRegisterSession {
         // Modo offline (#140): el cliente envía cuántas órdenes/cobros tiene aún
         // sin sincronizar en su IndexedDB. Política decidida: bloqueo duro sin
@@ -109,11 +191,24 @@ class CashRegisterService
             ]);
         }
 
-        return DB::transaction(function () use ($companyNit, $closedBy, $closingAmount, $notes) {
-            $session = CashRegisterSession::forCompany($companyNit)
-                ->open()
-                ->lockForUpdate()
-                ->first();
+        return DB::transaction(function () use ($companyNit, $branchId, $closedBy, $closingAmount, $notes, $cashSessionId) {
+            // Multi-caja (#117): se cierra la caja indicada por `cashSessionId`.
+            // Fallback legacy: si no se indica y hay exactamente una abierta en
+            // la sede, esa; si hay varias, se exige elegir.
+            $query = CashRegisterSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->where('status', 'open');
+
+            if ($cashSessionId !== null && $cashSessionId !== '') {
+                $query->where('id', $cashSessionId);
+            } elseif ($this->openSessionsForBranch($companyNit, $branchId)->count() > 1) {
+                throw ValidationException::withMessages([
+                    'cash_session_id' => 'Hay varias cajas abiertas en esta sede. Indica cuál vas a cerrar.',
+                ]);
+            }
+
+            $session = $query->lockForUpdate()->first();
 
             if (! $session) {
                 throw ValidationException::withMessages([
@@ -124,8 +219,22 @@ class CashRegisterService
             // No se puede cerrar caja con pedidos operativos en el tablero. El
             // cajero debe completarlos, cancelarlos o devolverlos primero —
             // si no, los pedidos quedan huérfanos entre sesiones y la
-            // conciliación contable se complica.
-            $pendingCount = Order::forCompany($companyNit)
+            // conciliación contable se complica. El conteo es POR SEDE.
+            //
+            // Multi-caja (#117, decisión de producto): cerrar UNA caja no se
+            // bloquea por pedidos operativos si quedan OTRAS cajas abiertas en
+            // la sede (esas los cobran). Solo se bloquea el cierre de la ÚLTIMA
+            // caja abierta de la sede.
+            $otherOpen = CashRegisterSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->where('status', 'open')
+                ->where('id', '!=', $session->id)
+                ->exists();
+
+            $pendingCount = $otherOpen ? 0 : Order::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
                 ->whereIn('status', config('orders.operational'))
                 ->count();
 
@@ -352,22 +461,104 @@ class CashRegisterService
     }
 
     /**
-     * Devuelve la sesión `open` actual de la empresa o null. Usado por
-     * controllers que requieren caja abierta para operar (defensa profunda).
+     * Sesión abierta de una sede específica. Multi-caja (#117): si la sede tiene
+     * varias cajas abiertas devuelve la primera por `opened_at` — solo apto para
+     * flujos legacy mono-caja. Para cobros usar `resolveSessionForCharge`.
      */
-    public function activeSession(string $companyNit): ?CashRegisterSession
-    {
-        return CashRegisterSession::forCompany($companyNit)->open()->first();
-    }
-
-    /** Sesión abierta de una sede específica (multi-sede). */
     public function activeSessionForBranch(string $companyNit, string $branchId): ?CashRegisterSession
     {
         return CashRegisterSession::query()
             ->where('company_nit', $companyNit)
             ->where('branch_id', $branchId)
             ->where('status', 'open')
+            ->orderBy('opened_at')
             ->first();
+    }
+
+    /**
+     * Sesiones abiertas de una sede (una por caja). @return Collection<int, CashRegisterSession>
+     */
+    public function openSessionsForBranch(string $companyNit, string $branchId): Collection
+    {
+        return CashRegisterSession::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->where('status', 'open')
+            ->get();
+    }
+
+    /**
+     * Resuelve la sesión sobre la que recae un cobro/egreso/cierre.
+     *
+     * - Si el cliente envía `cashSessionId`, se valida (open + empresa + sede).
+     * - Si no (cliente legacy / sede mono-caja) y hay EXACTAMENTE una caja
+     *   abierta en la sede, se usa esa (retrocompatibilidad).
+     * - Si hay varias abiertas y no se especifica, se exige elegir (la
+     *   ambigüedad descuadraría cajas).
+     */
+    public function resolveSessionForCharge(string $companyNit, string $branchId, ?string $cashSessionId): CashRegisterSession
+    {
+        if ($cashSessionId !== null && $cashSessionId !== '') {
+            return $this->requireSession($companyNit, $branchId, $cashSessionId);
+        }
+
+        $open = $this->openSessionsForBranch($companyNit, $branchId);
+
+        if ($open->isEmpty()) {
+            throw ValidationException::withMessages([
+                'cash_register' => 'La caja está cerrada. Debes abrirla antes de operar.',
+            ]);
+        }
+
+        if ($open->count() > 1) {
+            throw ValidationException::withMessages([
+                'cash_session_id' => 'Hay varias cajas abiertas en esta sede. Indica en cuál se registra la operación.',
+            ]);
+        }
+
+        return $open->first();
+    }
+
+    /**
+     * Valida que una sesión exista, esté abierta y pertenezca a la empresa+sede
+     * indicadas (defensa anti-tampering). Lanza ValidationException si no cuadra.
+     */
+    public function requireSession(string $companyNit, string $branchId, string $cashSessionId): CashRegisterSession
+    {
+        $session = CashRegisterSession::query()
+            ->where('id', $cashSessionId)
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->where('status', 'open')
+            ->first();
+
+        if (! $session) {
+            throw ValidationException::withMessages([
+                'cash_session_id' => 'La caja seleccionada no está abierta en esta sede.',
+            ]);
+        }
+
+        return $session;
+    }
+
+    /**
+     * Catálogo de cajas de una sede con su sesión abierta (si la hay). Usado por
+     * el selector y el panel supervisor. @return Collection<int, CashRegister>
+     */
+    public function registersForBranch(string $companyNit, string $branchId, bool $includeArchived = false): Collection
+    {
+        $query = CashRegister::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->with(['sessions' => fn ($q) => $q->where('status', 'open')->with('openedBy:id,name')])
+            ->orderBy('sort_order')
+            ->orderBy('created_at');
+
+        if (! $includeArchived) {
+            $query->whereNull('archived_at');
+        }
+
+        return $query->get();
     }
 
     /** Sesión (de cualquier estado) que abrió una apertura offline concreta. */
@@ -381,12 +572,17 @@ class CashRegisterService
     }
 
     /**
-     * Garantiza que haya una sesión abierta o lanza ValidationException. Devuelve
-     * la sesión activa para que el caller la asocie al receipt creado.
+     * Garantiza que haya una sesión abierta en la SEDE indicada o lanza
+     * ValidationException. Devuelve la sesión activa para que el caller la
+     * asocie al receipt creado.
+     *
+     * Multi-sede (#117): resuelve por `(company_nit, branch_id)` — no por
+     * empresa. En empresas con varias sedes abiertas, resolver solo por empresa
+     * podía atribuir el cobro a la sesión de otra sede y descuadrar ambas cajas.
      */
-    public function requireActiveSession(string $companyNit): CashRegisterSession
+    public function requireActiveSession(string $companyNit, string $branchId): CashRegisterSession
     {
-        $session = $this->activeSession($companyNit);
+        $session = $this->activeSessionForBranch($companyNit, $branchId);
 
         if (! $session) {
             throw ValidationException::withMessages([
@@ -471,8 +667,11 @@ class CashRegisterService
 
         // Pedidos en estados operativos (pending/in_kitchen/ready/in_transit) —
         // bloquean el cierre de caja. El frontend lee este número para
-        // mostrar un aviso preventivo en el modal de cierre.
-        $pendingOrders = (int) Order::forCompany($session->company_nit)
+        // mostrar un aviso preventivo en el modal de cierre. Conteo POR SEDE:
+        // coherente con el bloqueo real de `closeSession`.
+        $pendingOrders = (int) Order::query()
+            ->where('company_nit', $session->company_nit)
+            ->where('branch_id', $session->branch_id)
             ->whereIn('status', config('orders.operational'))
             ->count();
 

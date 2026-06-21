@@ -616,6 +616,20 @@ Route::prefix('v1')->group(function () {
                 Route::get('current', [CashRegisterController::class, 'current'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.cashRegister.current');
+
+                // Catálogo de cajas de la sede + estado (selector multi-caja #117).
+                Route::get('registers', [CashRegisterController::class, 'registers'])
+                    ->middleware('permission:orders.read,read')
+                    ->name('api.cashRegister.registers.index');
+                // Config de cajas: crear / renombrar / archivar. Permiso sensible
+                // de sede `cash_register.manage` (admin no auto — ver Fase 3 RBAC).
+                Route::post('registers', [CashRegisterController::class, 'storeRegister'])
+                    ->middleware('permission:cash_register.manage,create')
+                    ->name('api.cashRegister.registers.store');
+                Route::patch('registers/{id}', [CashRegisterController::class, 'updateRegister'])
+                    ->middleware('permission:cash_register.manage,update')
+                    ->name('api.cashRegister.registers.update');
+
                 Route::post('open', [CashRegisterController::class, 'open'])
                     ->middleware('permission:orders.create,create')
                     ->name('api.cashRegister.open');

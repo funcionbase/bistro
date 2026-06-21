@@ -22,6 +22,7 @@ class CashRegisterSession extends Model
     /** @var list<string> */
     protected $fillable = [
         'company_nit',
+        'cash_register_id',
         'client_uuid',
         'opened_by_user_id',
         'opened_at',
@@ -56,6 +57,12 @@ class CashRegisterSession extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_nit', 'nit');
+    }
+
+    /** @return BelongsTo<CashRegister, $this> */
+    public function cashRegister(): BelongsTo
+    {
+        return $this->belongsTo(CashRegister::class, 'cash_register_id');
     }
 
     /** @return BelongsTo<User, $this> */

@@ -244,7 +244,7 @@ class TableCashierService
                 );
             }
 
-            $cashSession = $this->cashRegister->requireActiveSession($lockedSession->company_nit);
+            $cashSession = $this->cashRegister->resolveSessionForCharge($lockedSession->company_nit, $lockedSession->branch_id, $input['cash_session_id'] ?? null);
 
             $now = Carbon::now();
 
@@ -376,7 +376,7 @@ class TableCashierService
                 );
             }
 
-            $cashSession = $this->cashRegister->requireActiveSession($lockedSession->company_nit);
+            $cashSession = $this->cashRegister->resolveSessionForCharge($lockedSession->company_nit, $lockedSession->branch_id, $input['cash_session_id'] ?? null);
 
             $now = Carbon::now();
             $tipDelta = isset($input['tip_amount']) ? round((float) $input['tip_amount'], 2) : 0;
@@ -551,7 +551,7 @@ class TableCashierService
                 );
             }
 
-            $cashSession = $this->cashRegister->requireActiveSession($lockedSession->company_nit);
+            $cashSession = $this->cashRegister->resolveSessionForCharge($lockedSession->company_nit, $lockedSession->branch_id, $input['cash_session_id'] ?? null);
 
             $negativeAmount = -1 * $expectedAmount;
 

@@ -167,10 +167,11 @@ class OrderController extends Controller
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
 
-        // Caja debe estar abierta para crear órdenes (la sesión es transversal
-        // por empresa). Cualquier usuario con permiso comparte la misma sesión.
-        $this->cashRegister->requireActiveSession($companyNit);
+        // Caja debe estar abierta para crear órdenes. La sesión se resuelve por
+        // SEDE (#117): cada sede tiene su propia caja abierta.
+        $this->cashRegister->requireActiveSession($companyNit, $branchId);
 
         $menu = RestaurantMenu::forCompany($companyNit)->active()->first();
         if (! $menu) {
@@ -724,9 +725,10 @@ class OrderController extends Controller
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
 
         // Caja debe estar abierta para agregar ítems a una mesa (afecta total a cobrar).
-        $this->cashRegister->requireActiveSession($companyNit);
+        $this->cashRegister->requireActiveSession($companyNit, $branchId);
 
         $menu = RestaurantMenu::forCompany($companyNit)->active()->first();
         if (! $menu) {
@@ -904,13 +906,17 @@ class OrderController extends Controller
             // impuesto. Si la pagan en efectivo el cliente entrega total + tip y la
             // devuelta se calcula contra ese expectedTotal.
             'tip_amount' => ['nullable', 'numeric', 'min:0'],
+            // Multi-caja (#117): contra qué caja se cobra. Opcional para
+            // retrocompat (sede mono-caja → única caja abierta).
+            'cash_session_id' => ['nullable', 'uuid'],
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
 
-        // Caja debe estar abierta. La sesión activa se asocia al receipt para
-        // que el cierre de caja calcule correctamente el efectivo esperado.
-        $session = $this->cashRegister->requireActiveSession($companyNit);
+        // Caja debe estar abierta. La sesión (la caja operada) se asocia al
+        // receipt para que el cierre de caja calcule el efectivo esperado.
+        $session = $this->cashRegister->resolveSessionForCharge($companyNit, $branchId, $validated['cash_session_id'] ?? null);
 
         // Atomicidad: bloquear la orden, validar estado, crear receipt y actualizar
         // status en una sola transacción. lockForUpdate evita doble cierre concurrente.
@@ -1086,10 +1092,18 @@ class OrderController extends Controller
         $this->permissionService->assertPermission($request, 'orders', 'update');
 
         $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
+        $cashSessionId = $request->input('cash_session_id');
 
         // Las devoluciones también afectan la caja física (efectivo o no), por
-        // lo que requieren caja abierta para asociarlas a una sesión auditable.
-        $session = $this->cashRegister->requireActiveSession($companyNit);
+        // lo que requieren caja abierta (de esta sede) para asociarlas a una
+        // sesión auditable. Multi-caja (#117): la caja operada se recibe
+        // explícita o se infiere si la sede tiene una sola abierta.
+        $session = $this->cashRegister->resolveSessionForCharge(
+            $companyNit,
+            $branchId,
+            is_string($cashSessionId) ? $cashSessionId : null,
+        );
 
         // Pre-flight: identificamos el método original ANTES de la transacción
         // para validar `reference` (regla condicional sobre `card|transfer`).

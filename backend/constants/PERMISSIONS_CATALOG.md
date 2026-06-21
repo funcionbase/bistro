@@ -194,6 +194,8 @@ por owner — mismo patrón que `cash_register.bypass_switch_lock`,
 | Slug | owner | admin | employee | owner_only |
 |---|---|---|---|---|
 | `cash_register.bypass_switch_lock` | RCUD | ---- | ---- | (sensible de sede #192 — asignable manualmente) |
+| `cash_register.manage` | RCUD | ---- | ---- | (sensible de sede #117 Fase 3 — crear/renombrar/archivar cajas; asignable manualmente) |
+| `cash_register.operate_others` | RCUD | ---- | ---- | (sensible de sede #117 Fase 3 — cerrar caja de otro cajero; asignable manualmente) |
 
 ## Sedes (multi-sede #117 / #192)
 

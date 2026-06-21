@@ -753,7 +753,12 @@ class MenuController extends Controller
         // puede recibir órdenes (los receipts requieren sesión activa, validado
         // en OrderController). Coherente con el flujo: si los cobros fallarían,
         // ofrecer el menú genera frustración al cliente.
-        if (! $this->cashRegister->activeSession($company->nit)) {
+        //
+        // Multi-sede (#117): se evalúa por SEDE (la resuelta arriba). Ruta
+        // pública sin `active_branch_id` → el BranchScope global NO aplica, así
+        // que el filtro de sede DEBE ser explícito; si no, una sede con caja
+        // abierta dejaría el menú de otra sede (cerrada) disponible por error.
+        if ($branchScope === null || ! $this->cashRegister->activeSessionForBranch($company->nit, $branchScope)) {
             return response()->json([
                 'data' => null,
                 'restaurant' => $restaurant,

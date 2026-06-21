@@ -100,7 +100,9 @@ class OrderSyncController extends Controller
             }
         }
 
-        $session = $this->cashRegister->activeSession($companyNit);
+        // Multi-sede (#117): la sesión de caja se resuelve por SEDE activa, no
+        // por empresa (evita atribuir cobros offline a la caja de otra sede).
+        $session = $this->cashRegister->activeSessionForBranch($companyNit, $this->activeBranchId($request));
         $company = Company::where('nit', $companyNit)->firstOrFail();
         $menu = RestaurantMenu::forCompany($companyNit)->active()->first();
         $catalog = $menu ? $this->orderController->buildMenuCatalog($menu) : collect();

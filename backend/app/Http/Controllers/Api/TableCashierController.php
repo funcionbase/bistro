@@ -43,6 +43,7 @@ class TableCashierController extends Controller
             'reference' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'tip_amount' => ['nullable', 'numeric', 'min:0'],
             'client_uuid' => ['required', 'string', 'uuid'],
+            'cash_session_id' => ['nullable', 'uuid'],
         ]);
 
         try {
@@ -75,6 +76,7 @@ class TableCashierController extends Controller
             'tip_amount' => ['nullable', 'numeric', 'min:0'],
             'client_uuid' => ['required', 'string', 'uuid'],
             'payer_guest_id' => ['nullable', 'integer'],
+            'cash_session_id' => ['nullable', 'uuid'],
         ]);
 
         try {
@@ -104,6 +106,7 @@ class TableCashierController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
             'reference' => ['required', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'client_uuid' => ['required', 'string', 'uuid'],
+            'cash_session_id' => ['nullable', 'uuid'],
         ]);
 
         try {
