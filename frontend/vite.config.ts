@@ -24,21 +24,23 @@ import { VitePWA } from 'vite-plugin-pwa';
  * selfDefending. `node_modules` y el service worker quedan fuera.
  */
 
-// Opciones balanceadas: ofuscación fuerte sin el peso del modo máximo
-// (deadCodeInjection off, control-flow flattening moderado al 50%).
+// Opciones balanceadas: ofuscación fuerte sin las opciones que rompen PWA.
+// selfDefending y debugProtection usan Function.toString() / setInterval con
+// lógica de timing que produce falsos positivos en modo standalone (homescreen)
+// causando un loop infinito → pantalla en blanco. controlFlowFlattening también
+// se desactiva: genera switches complejos que el JIT móvil ejecuta muy lento.
+// ponytail: selfDefending/debugProtection removidos por compat PWA standalone
 const obfuscatorOptions: ObfuscatorOptions = {
     compact: true,
-    controlFlowFlattening: true,
-    controlFlowFlatteningThreshold: 0.3,
+    controlFlowFlattening: false,
     deadCodeInjection: false,
-    debugProtection: true,
-    debugProtectionInterval: 4000,
+    debugProtection: false,
     disableConsoleOutput: false,
     identifierNamesGenerator: 'hexadecimal',
     ignoreImports: true,
     numbersToExpressions: true,
     renameGlobals: false,
-    selfDefending: true,
+    selfDefending: false,
     simplify: true,
     splitStrings: false,
     stringArray: true,
@@ -85,7 +87,8 @@ export default defineConfig(({ mode }) => {
                     // `html` incluido para precachear `index.html` y servir el
                     // app-shell del SPA offline vía NavigationRoute (sw.ts).
                     globPatterns: ['**/*.{js,css,woff2,html}'],
-                    maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+                    // ponytail: 5MB para que chunks obfuscados queden en precache
+                    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
                 },
             }),
             // Ofuscación anti-reversing. `apply: 'build'` => no corre en dev.

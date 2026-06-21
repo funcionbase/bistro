@@ -7,8 +7,8 @@
 [![Bistro App Deploy](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/bistro-app-deploy.yml/badge.svg)](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/bistro-app-deploy.yml)
 [![License](https://img.shields.io/badge/license-proprietary-red)](../LICENSE)
 
-[![Backend release](https://img.shields.io/badge/backend-v1.11.0-FF2D20?logo=laravel&logoColor=white)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
-[![Frontend release](https://img.shields.io/badge/frontend-v1.22.5-61DAFB?logo=react&logoColor=black)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
+[![Backend release](https://img.shields.io/badge/backend-v1.13.0-FF2D20?logo=laravel&logoColor=white)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
+[![Frontend release](https://img.shields.io/badge/frontend-v1.22.6-61DAFB?logo=react&logoColor=black)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
 
 **Backend** &nbsp; ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white) ![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white) ![Pest](https://img.shields.io/badge/Pest-3-5A67D8) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)
 

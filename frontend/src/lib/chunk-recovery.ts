@@ -77,22 +77,27 @@ export function attemptChunkRecovery(): boolean {
  */
 export function installChunkRecoveryHandlers(): void {
     // Vite-specific: el evento se dispara antes que el rejection propague.
+    // Solo prevenimos el default si realmente vamos a recuperar — si el flag ya
+    // está puesto y no recargamos, dejar que el navegador muestre el error.
     window.addEventListener('vite:preloadError', (event) => {
-        event.preventDefault();
-        attemptChunkRecovery();
+        if (attemptChunkRecovery()) {
+            event.preventDefault();
+        }
     });
 
     window.addEventListener('unhandledrejection', (event) => {
         if (isChunkLoadError(event.reason)) {
-            event.preventDefault();
-            attemptChunkRecovery();
+            if (attemptChunkRecovery()) {
+                event.preventDefault();
+            }
         }
     });
 
     window.addEventListener('error', (event) => {
         if (isChunkLoadError(event.error)) {
-            event.preventDefault();
-            attemptChunkRecovery();
+            if (attemptChunkRecovery()) {
+                event.preventDefault();
+            }
         }
     });
 
