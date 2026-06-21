@@ -4,15 +4,13 @@ import type { PaymentMethod, PaymentReceiptMethod } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Polling de la sesión de caja activa de la empresa. La caja es transversal:
- * cualquier usuario que la abre o cierra cambia el estado para todos. El
- * polling cada 10s asegura que el resto del equipo vea el estado al instante.
+ * Polling de cajas de la sede activa. Cada caja puede tener una sesión abierta
+ * (turno). En sedes mono-caja el comportamiento es idéntico al original; en
+ * multi-caja el usuario elige qué caja opera (persistido en localStorage).
  *
- * Modo offline (caja offline-first, plan-off.md §9): abrir/egreso/cerrar caja
- * funcionan sin red encolando ops en el outbox. La sesión se cachea para que la
- * caja siga visible tras recargar offline; la apertura offline crea una sesión
- * PROVISIONAL local (el server la concilia al sync). El cierre offline es
- * provisional: el server recalcula `expected_cash` con su verdad al reconectar.
+ * Modo offline (plan-off.md §9): abrir/egreso/cerrar funcionan sin red
+ * encolando ops en el outbox. La sesión se cachea para que la caja siga visible
+ * tras recargar offline.
  */
 
 export interface CashSessionUser {
@@ -51,9 +49,25 @@ export interface CashSession {
     opening_amount: number;
     opened_by: CashSessionUser | null;
     opening_notes: string | null;
+    cash_register_id: string | null;
+    cash_register_name: string | null;
     live: CashSessionLiveSummary;
     /** true si fue abierta offline y aún no se sincronizó (sesión local). */
     provisional?: boolean;
+}
+
+export interface CashRegister {
+    id: string;
+    name: string;
+    is_active: boolean;
+    sort_order: number;
+    archived: boolean;
+    open_session: {
+        id: string;
+        opened_at: string | null;
+        opening_amount: number;
+        opened_by: CashSessionUser | null;
+    } | null;
 }
 
 export interface CashRegisterContext {
@@ -72,20 +86,34 @@ export interface CloseSessionResult {
     provisional?: boolean;
 }
 
+const POLL_INTERVAL_MS = 30_000;
+const SELECTED_REGISTER_KEY = 'flexyflow.selected_register_id';
+
+function selectedRegisterKey(branchId: string): string {
+    return `${SELECTED_REGISTER_KEY}:${branchId}`;
+}
+
 interface UseCashRegisterReturn {
     session: CashSession | null;
     context: CashRegisterContext | null;
+    /** true cuando NO hay ninguna caja abierta Y el local debería estar operando. */
+    shouldAlert: boolean;
     loading: boolean;
     error: string | null;
+    /** Catálogo de cajas de la sede activa. */
+    registers: CashRegister[];
+    /** ID de la caja que el usuario eligió operar en este dispositivo. */
+    selectedRegisterId: string | null;
+    /** Caja seleccionada (desde el catálogo). */
+    selectedRegister: CashRegister | null;
+    selectRegister: (id: string | null) => void;
     refresh: () => Promise<void>;
-    openSession: (openingAmount: number, notes?: string) => Promise<void>;
+    openSession: (openingAmount: number, notes?: string, cashRegisterId?: string) => Promise<void>;
     closeSession: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
     recordExpense: (input: { amount: number; category: CashExpenseCategory; description?: string; payment_method?: PaymentMethod }) => Promise<void>;
 }
 
-const POLL_INTERVAL_MS = 30_000;
-
-/** Resumen `live` en cero para una sesión provisional offline (el server lo recalcula al sync). */
+/** Resumen `live` en cero para una sesión provisional offline. */
 function emptyLiveSummary(): CashSessionLiveSummary {
     const zeroMethod = { gross: 0, refunds: 0, net: 0, tips: 0, count: 0 };
     return {
@@ -108,11 +136,23 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
     const { activeCompany, activeBranch, auth } = useSharedData();
     const companyNit = activeCompany?.nit ?? null;
     const branchId = activeBranch?.id ?? null;
+
+    const [registers, setRegisters] = useState<CashRegister[]>([]);
+    const [selectedRegisterId, setSelectedRegisterId] = useState<string | null>(() => {
+        if (!branchId) return null;
+        return localStorage.getItem(selectedRegisterKey(branchId));
+    });
     const [session, setSession] = useState<CashSession | null>(null);
     const [context, setContext] = useState<CashRegisterContext | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const isMounted = useRef(true);
+    // Refs allow refresh to always read fresh values without being recreated on
+    // every state change (which would restart the polling interval).
+    const registersRef = useRef<CashRegister[]>([]);
+    const selectedRegisterIdRef = useRef<string | null>(null);
+    registersRef.current = registers;
+    selectedRegisterIdRef.current = selectedRegisterId;
 
     useEffect(() => {
         isMounted.current = true;
@@ -121,21 +161,68 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         };
     }, []);
 
+    // Cuando cambia la sede, resetear la selección a la guardada en localStorage.
+    useEffect(() => {
+        if (!branchId) return;
+        const saved = localStorage.getItem(selectedRegisterKey(branchId));
+        setSelectedRegisterId(saved);
+    }, [branchId]);
+
+    const selectRegister = useCallback(
+        (id: string | null) => {
+            if (!branchId) return;
+            if (id) {
+                localStorage.setItem(selectedRegisterKey(branchId), id);
+                setSelectedRegisterId(id);
+            } else {
+                localStorage.removeItem(selectedRegisterKey(branchId));
+                setSelectedRegisterId(null);
+            }
+        },
+        [branchId],
+    );
+
     const refresh = useCallback(async () => {
         if (!token) return;
         try {
-            const res = await apiFetch('/api/v1/cash-register/current');
+            // 1. Catálogo de cajas de la sede (estado + sesiones abiertas).
+            const regsRes = await apiFetch('/api/v1/cash-register/registers');
             if (!isMounted.current) return;
-            if (!res.ok) {
-                const json = await res.json().catch(() => ({}));
+
+            let updatedRegisters = registersRef.current;
+            if (regsRes.ok) {
+                const regsJson = await regsRes.json();
+                updatedRegisters = ((regsJson as { data: CashRegister[] }).data ?? []).filter((r) => !r.archived);
+                setRegisters(updatedRegisters);
+
+                // Auto-selección: si hay exactamente 1 caja activa → elegirla.
+                if (updatedRegisters.length === 1 && !selectedRegisterIdRef.current) {
+                    const onlyId = updatedRegisters[0].id;
+                    if (branchId) localStorage.setItem(selectedRegisterKey(branchId), onlyId);
+                    setSelectedRegisterId(onlyId);
+                }
+            }
+
+            // 2. Sesión activa: para la caja elegida ó fallback mono-caja.
+            const selected = updatedRegisters.find((r) => r.id === selectedRegisterIdRef.current);
+            const openSessionId = selected?.open_session?.id ?? null;
+            const currentUrl = openSessionId
+                ? `/api/v1/cash-register/current?cash_session_id=${openSessionId}`
+                : '/api/v1/cash-register/current';
+
+            const curRes = await apiFetch(currentUrl);
+            if (!isMounted.current) return;
+            if (!curRes.ok) {
+                const json = await curRes.json().catch(() => ({}));
                 setError((json as { message?: string }).message ?? 'Error al consultar la caja.');
                 return;
             }
-            const json = await res.json();
-            const body = (json as { data: { session: CashSession | null; context: CashRegisterContext } }).data;
+            const curJson = await curRes.json();
+            const body = (curJson as { data: { session: CashSession | null; context: CashRegisterContext } }).data;
             setSession(body?.session ?? null);
             setContext(body?.context ?? null);
             setError(null);
+
             // Snapshot para operar offline tras recargar (plan §7.3).
             if (companyNit) {
                 const { putCachedCashSession } = await import('@/lib/offline/db');
@@ -143,7 +230,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
             }
         } catch {
             if (!isMounted.current) return;
-            // Sin red: caer al snapshot cacheado para que la caja siga visible.
+            // Sin red: caer al snapshot cacheado.
             if (companyNit) {
                 const { getCachedCashSession } = await import('@/lib/offline/db');
                 const cached = await getCachedCashSession(companyNit);
@@ -157,16 +244,20 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         } finally {
             if (isMounted.current) setLoading(false);
         }
-    }, [token, companyNit]);
+    }, [token, companyNit, branchId]);
 
     const openSession = useCallback(
-        async (openingAmount: number, notes?: string) => {
+        async (openingAmount: number, notes?: string, cashRegisterId?: string) => {
             let status: number | null = null;
             try {
                 const res = await apiFetch('/api/v1/cash-register/open', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ opening_amount: openingAmount, notes: notes ?? null }),
+                    body: JSON.stringify({
+                        opening_amount: openingAmount,
+                        notes: notes ?? null,
+                        cash_register_id: cashRegisterId ?? null,
+                    }),
                 });
                 status = res.status;
                 if (res.ok) {
@@ -193,7 +284,12 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 type: 'cash.open',
                 company_nit: companyNit,
                 branch_id: branchId,
-                payload: { client_uuid: clientUuid, opening_amount: openingAmount, notes: notes ?? null },
+                payload: {
+                    client_uuid: clientUuid,
+                    opening_amount: openingAmount,
+                    notes: notes ?? null,
+                    cash_register_id: cashRegisterId ?? null,
+                },
                 created_at_client: nowIso,
                 attempts: 0,
                 status: 'queued',
@@ -207,6 +303,8 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 opening_amount: openingAmount,
                 opened_by: auth?.user ? { id: auth.user.id, name: auth.user.name } : null,
                 opening_notes: notes ?? null,
+                cash_register_id: cashRegisterId ?? null,
+                cash_register_name: registers.find((r) => r.id === cashRegisterId)?.name ?? null,
                 live: emptyLiveSummary(),
                 provisional: true,
             };
@@ -214,12 +312,12 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
             setSession(provisional);
             await refreshPendingCount();
         },
-        [refresh, companyNit, branchId, auth?.user, context],
+        [refresh, companyNit, branchId, auth?.user, context, registers],
     );
 
     const closeSession = useCallback(
         async (closingAmount: number, notes?: string): Promise<CloseSessionResult> => {
-            // Online: exige 0 pendientes de sync (drenar primero, plan §6.4).
+            // Online: exige 0 pendientes de sync.
             if (navigator.onLine) {
                 const pendingSyncCount = await countAllPending();
                 if (pendingSyncCount > 0) {
@@ -232,7 +330,12 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                     const res = await apiFetch('/api/v1/cash-register/close', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ closing_amount: closingAmount, notes: notes ?? null, pending_sync_count: pendingSyncCount }),
+                        body: JSON.stringify({
+                            closing_amount: closingAmount,
+                            notes: notes ?? null,
+                            pending_sync_count: pendingSyncCount,
+                            cash_session_id: session?.id ?? null,
+                        }),
                     });
                     status = res.status;
                     const json = await res.json().catch(() => ({}));
@@ -240,17 +343,13 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                         await refresh();
                         return (json as { data: CloseSessionResult }).data;
                     }
-                    // 4xx = error real de negocio → no encolar.
                     if (status < 500) throw new Error((json as { message?: string }).message ?? 'No se pudo cerrar la caja.');
-                    // 5xx → cae al cierre offline.
                 } catch (e) {
                     if (status !== null && status < 500) throw e;
-                    // error de red → cae al cierre offline.
                 }
             }
 
-            // Cierre provisional offline (plan §6.4/§9): encola cash.close. El
-            // server recalcula expected_cash y la diferencia al reconectar.
+            // Cierre provisional offline.
             if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede cerrar caja offline.');
             const { putOutboxOp, deleteCart } = await import('@/lib/offline/db');
             const { uuidv4 } = await import('@/lib/offline/uuid');
@@ -261,20 +360,25 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 type: 'cash.close',
                 company_nit: companyNit,
                 branch_id: branchId,
-                payload: { client_uuid: uuidv4(), closing_amount: closingAmount, notes: notes ?? null, closed_at_client: nowIso },
+                payload: {
+                    client_uuid: uuidv4(),
+                    closing_amount: closingAmount,
+                    notes: notes ?? null,
+                    closed_at_client: nowIso,
+                    cash_session_id: session?.id ?? null,
+                },
                 created_at_client: nowIso,
                 attempts: 0,
                 status: 'queued',
                 last_error: null,
                 conflict: null,
             });
-            // Caja cerrada provisionalmente: limpiamos sesión local + carrito de la sede.
             setSession(null);
             if (branchId) void deleteCart(branchId);
             await refreshPendingCount();
             return { opening_amount: 0, closing_amount: closingAmount, expected_cash: 0, cash_difference: 0, provisional: true };
         },
-        [refresh, companyNit, branchId],
+        [refresh, companyNit, branchId, session?.id],
     );
 
     const recordExpense = useCallback(
@@ -289,6 +393,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                         category: input.category,
                         description: input.description ?? null,
                         payment_method: input.payment_method ?? 'cash',
+                        cash_session_id: session?.id ?? null,
                     }),
                 });
                 status = res.status;
@@ -304,7 +409,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 if (status !== null && status < 500) throw e;
             }
 
-            // Egreso offline (plan §9): encola cash.expense (server resuelve la sesión).
+            // Egreso offline.
             if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede registrar egreso offline.');
             const { putOutboxOp } = await import('@/lib/offline/db');
             const { uuidv4 } = await import('@/lib/offline/uuid');
@@ -322,6 +427,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                     description: input.description ?? null,
                     payment_method: input.payment_method ?? 'cash',
                     occurred_at_client: nowIso,
+                    cash_session_id: session?.id ?? null,
                 },
                 created_at_client: nowIso,
                 attempts: 0,
@@ -331,7 +437,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
             });
             await refreshPendingCount();
         },
-        [refresh, companyNit, branchId],
+        [refresh, companyNit, branchId, session?.id],
     );
 
     useEffect(() => {
@@ -340,5 +446,27 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         return () => clearInterval(interval);
     }, [refresh]);
 
-    return { session, context, loading, error, refresh, openSession, closeSession, recordExpense };
+    // shouldAlert: ninguna caja abierta en la sede + debería estar operando.
+    const noOpenRegisters = registers.length > 0
+        ? registers.filter((r) => r.is_active && !r.archived).every((r) => !r.open_session)
+        : !session;
+    const shouldAlert = noOpenRegisters && (context?.menu_active ?? false) && (context?.in_business_hours ?? false);
+
+    const selectedRegister = registers.find((r) => r.id === selectedRegisterId) ?? null;
+
+    return {
+        session,
+        context,
+        shouldAlert,
+        loading,
+        error,
+        registers,
+        selectedRegisterId,
+        selectedRegister,
+        selectRegister,
+        refresh,
+        openSession,
+        closeSession,
+        recordExpense,
+    };
 }

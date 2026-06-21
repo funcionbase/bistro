@@ -17,10 +17,10 @@ import { AlertTriangle, ArrowRight, Lock } from 'lucide-react';
  */
 export default function CashRegisterAlertBanner() {
     const token = useToken();
-    const { context, session } = useCashRegister(token);
+    // shouldAlert ya considera multi-caja: true solo si NINGUNA caja está abierta.
+    const { shouldAlert } = useCashRegister(token);
 
-    // Sólo mostrar si: caja cerrada Y menú activo Y horario hábil.
-    if (!context?.should_alert || session) {
+    if (!shouldAlert) {
         return null;
     }
 

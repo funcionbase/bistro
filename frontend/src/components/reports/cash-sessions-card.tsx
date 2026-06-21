@@ -23,6 +23,8 @@ interface SessionUser {
 interface CashSessionRow {
     id: string;
     status: 'open' | 'closed';
+    cash_register_id: string | null;
+    cash_register_name: string | null;
     opened_at: string | null;
     closed_at: string | null;
     opening_amount: number;
@@ -138,6 +140,7 @@ export default function CashSessionsCard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Estado</TableHead>
+                                    <TableHead>Caja</TableHead>
                                     <TableHead>Apertura</TableHead>
                                     <TableHead>Cierre</TableHead>
                                     <TableHead className="text-right">Inicial</TableHead>
@@ -163,6 +166,9 @@ export default function CashSessionsCard() {
                                                         Cerrada
                                                     </Badge>
                                                 )}
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">
+                                                {s.cash_register_name ?? '—'}
                                             </TableCell>
                                             <TableCell className="text-xs">
                                                 <div>{formatDateTime(s.opened_at)}</div>

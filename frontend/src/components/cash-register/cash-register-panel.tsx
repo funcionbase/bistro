@@ -1,3 +1,4 @@
+import CashRegisterPicker from '@/components/cash-register/cash-register-picker';
 import ExpenseModal from '@/components/cash-register/expense-modal';
 import { AchievementMark } from '@/components/ui/achievement-mark';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -6,24 +7,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CASH_EXPENSE_CATEGORIES, useCashRegister, type CashExpenseCategory, type CashSession, type CloseSessionResult } from '@/hooks/use-cash-register';
+import {
+    CASH_EXPENSE_CATEGORIES,
+    useCashRegister,
+    type CashExpenseCategory,
+    type CashRegister,
+    type CashSession,
+    type CloseSessionResult,
+} from '@/hooks/use-cash-register';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useToken } from '@/hooks/use-token';
 import type { PaymentMethod } from '@/types';
-import { AlertCircle, CheckCircle2, Lock, MinusCircle, Unlock } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lock, MinusCircle, RotateCcw, Unlock } from 'lucide-react';
 import { useState } from 'react';
 
 /**
  * Panel de sesión de caja. Muestra:
- *  - Si NO hay sesión activa: pantalla de "Abrir caja" con input de monto inicial.
- *  - Si SÍ hay sesión activa: banner compacto con info + botón "Cerrar caja".
+ *  - Si la sede tiene >1 caja y el usuario no ha elegido → selector de cajas.
+ *  - Si no hay sesión activa en la caja elegida → "Abrir caja".
+ *  - Si hay sesión activa → banner compacto con info + botón "Cerrar caja".
  *
- * Comparte estado a través de useCashRegister (poll cada 10s — refleja apertura
- * o cierre hechos por otros usuarios de la empresa al instante).
- *
- * Props:
- *  - children: el contenido normal (caja) que solo se renderiza cuando hay
- *    sesión activa. Si no hay sesión, se reemplaza por la pantalla de apertura.
+ * En sedes mono-caja el comportamiento es transparente (auto-selección).
  */
 
 interface Props {
@@ -32,25 +36,76 @@ interface Props {
 
 export default function CashRegisterPanel({ children }: Props) {
     const token = useToken();
-    const { session, loading, error, openSession, closeSession, refresh, recordExpense } = useCashRegister(token);
+    const { session, loading, error, registers, selectedRegisterId, selectedRegister, selectRegister, openSession, closeSession, refresh, recordExpense } =
+        useCashRegister(token);
 
-    if (loading && !session) {
+    if (loading && !session && registers.length === 0) {
         return <div className="text-muted-foreground flex items-center justify-center py-16 text-sm">Cargando estado de caja…</div>;
     }
 
-    if (!session) {
-        return <OpenSessionScreen onOpen={openSession} error={error} />;
+    // Multi-caja: mostrar picker si hay >1 caja activa y el usuario no ha elegido,
+    // o si la elegida no existe en el catálogo actual (fue archivada, etc.).
+    const activeRegisters = registers.filter((r) => r.is_active && !r.archived);
+    const needsPicker = activeRegisters.length > 1 && !selectedRegisterId;
+    const selectedIsValid = selectedRegisterId ? activeRegisters.some((r) => r.id === selectedRegisterId) : false;
+
+    if (needsPicker || (activeRegisters.length > 1 && !selectedIsValid)) {
+        return (
+            <CashRegisterPicker
+                registers={activeRegisters}
+                onSelect={(r: CashRegister) => selectRegister(r.id)}
+            />
+        );
     }
+
+    // Caja elegida (o auto-seleccionada en mono-caja) pero sin sesión → Abrir caja.
+    if (!session) {
+        return (
+            <OpenSessionScreen
+                onOpen={(amount, notes) => openSession(amount, notes, selectedRegisterId ?? undefined)}
+                registerName={selectedRegister?.name ?? null}
+                error={error}
+                showChangeCaja={activeRegisters.length > 1}
+                onChangeCaja={() => selectRegister(null)}
+            />
+        );
+    }
+
+    // Backend only blocks close on the LAST open register; if others are open,
+    // pending_orders come from other sessions and the close should be allowed.
+    const hasOtherOpenRegisters = registers.some(
+        (r) => r.is_active && !r.archived && !!r.open_session && r.id !== selectedRegisterId,
+    );
 
     return (
         <>
-            <ActiveSessionBanner session={session} onClose={closeSession} onRefresh={refresh} onRecordExpense={recordExpense} />
+            <ActiveSessionBanner
+                session={session}
+                onClose={closeSession}
+                onRefresh={refresh}
+                onRecordExpense={recordExpense}
+                showChangeCaja={activeRegisters.length > 1}
+                onChangeCaja={() => selectRegister(null)}
+                hasOtherOpenRegisters={hasOtherOpenRegisters}
+            />
             {children}
         </>
     );
 }
 
-function OpenSessionScreen({ onOpen, error }: { onOpen: (openingAmount: number, notes?: string) => Promise<void>; error: string | null }) {
+function OpenSessionScreen({
+    onOpen,
+    registerName,
+    error,
+    showChangeCaja,
+    onChangeCaja,
+}: {
+    onOpen: (openingAmount: number, notes?: string) => Promise<void>;
+    registerName: string | null;
+    error: string | null;
+    showChangeCaja: boolean;
+    onChangeCaja: () => void;
+}) {
     const formatCurrency = useCurrencyFormatter();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
@@ -87,7 +142,9 @@ function OpenSessionScreen({ onOpen, error }: { onOpen: (openingAmount: number, 
                         <span className="bg-secondary text-secondary-foreground inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.18em] uppercase">
                             Inicio de turno
                         </span>
-                        <h1 className="text-foreground text-3xl leading-[1.05] font-semibold tracking-[-0.02em] md:text-4xl">Abrir caja</h1>
+                        <h1 className="text-foreground text-3xl leading-[1.05] font-semibold tracking-[-0.02em] md:text-4xl">
+                            Abrir{registerName ? ` ${registerName}` : ' caja'}
+                        </h1>
                         <p className="text-muted-foreground mx-auto max-w-md text-base">
                             Cuenta el efectivo que hay en la caja y ábrela con ese monto. El cierre del turno se concilia contra esa cifra.
                         </p>
@@ -140,6 +197,13 @@ function OpenSessionScreen({ onOpen, error }: { onOpen: (openingAmount: number, 
                             <Unlock className="mr-2 h-4 w-4" />
                             {submitting ? 'Abriendo…' : 'Abrir caja'}
                         </Button>
+
+                        {showChangeCaja && (
+                            <Button variant="ghost" size="sm" className="w-full" onClick={onChangeCaja}>
+                                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                                Elegir otra caja
+                            </Button>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -152,6 +216,9 @@ function ActiveSessionBanner({
     onClose,
     onRefresh,
     onRecordExpense,
+    showChangeCaja,
+    onChangeCaja,
+    hasOtherOpenRegisters,
 }: {
     session: CashSession;
     onClose: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
@@ -162,6 +229,9 @@ function ActiveSessionBanner({
         description?: string;
         payment_method?: PaymentMethod;
     }) => Promise<void>;
+    showChangeCaja: boolean;
+    onChangeCaja: () => void;
+    hasOtherOpenRegisters: boolean;
 }) {
     const formatCurrency = useCurrencyFormatter();
     const [showClose, setShowClose] = useState(false);
@@ -177,6 +247,7 @@ function ActiveSessionBanner({
 
     const expenses = session.live.expenses;
     const cashExpensesTotal = expenses?.by_method?.cash ?? 0;
+    const registerLabel = session.cash_register_name ? ` · ${session.cash_register_name}` : '';
 
     return (
         <>
@@ -186,7 +257,10 @@ function ActiveSessionBanner({
             >
                 <div className="flex items-center gap-2 text-[color:var(--color-status-safe)]">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span className="font-medium">Caja abierta{session.provisional ? ' (provisional · sin sincronizar)' : ''}</span>
+                    <span className="font-medium">
+                        Caja abierta{registerLabel}
+                        {session.provisional ? ' (provisional · sin sincronizar)' : ''}
+                    </span>
                     <span className="text-foreground/80 text-xs">
                         desde {openedAt}
                         {session.opened_by && <> · por {session.opened_by.name}</>}· inicial{' '}
@@ -216,10 +290,16 @@ function ActiveSessionBanner({
                         <Lock className="mr-1.5 h-3.5 w-3.5" />
                         Cerrar caja
                     </Button>
+                    {showChangeCaja && (
+                        <Button size="sm" variant="ghost" onClick={onChangeCaja}>
+                            <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                            Cambiar caja
+                        </Button>
+                    )}
                 </div>
             </div>
 
-            {showClose && <CloseSessionDialog session={session} onClose={() => setShowClose(false)} onSubmit={onClose} onRefresh={onRefresh} />}
+            {showClose && <CloseSessionDialog session={session} onClose={() => setShowClose(false)} onSubmit={onClose} onRefresh={onRefresh} hasOtherOpenRegisters={hasOtherOpenRegisters} />}
 
             {showExpense && <ExpenseModal onClose={() => setShowExpense(false)} onSubmit={onRecordExpense} />}
         </>
@@ -231,11 +311,13 @@ function CloseSessionDialog({
     onClose,
     onSubmit,
     onRefresh,
+    hasOtherOpenRegisters,
 }: {
     session: CashSession;
     onClose: () => void;
     onSubmit: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
     onRefresh: () => Promise<void>;
+    hasOtherOpenRegisters: boolean;
 }) {
     const formatCurrency = useCurrencyFormatter();
     const [counted, setCounted] = useState('');
@@ -248,7 +330,8 @@ function CloseSessionDialog({
     const pendingOrders = session.live.pending_orders ?? 0;
     const parsed = parseFloat(counted);
     const isValid = Number.isFinite(parsed) && parsed >= 0;
-    const canClose = isValid && pendingOrders === 0;
+    // ponytail: backend only blocks close when this is the last open register
+    const canClose = isValid && (pendingOrders === 0 || hasOtherOpenRegisters);
     const projectedDiff = isValid ? parsed - expected : null;
 
     const submit = async () => {
@@ -383,7 +466,9 @@ function CloseSessionDialog({
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Cerrar caja</DialogTitle>
+                    <DialogTitle>
+                        Cerrar{session.cash_register_name ? ` ${session.cash_register_name}` : ' caja'}
+                    </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="border-border bg-muted/30 space-y-1 rounded-md border p-3 text-sm">
@@ -433,14 +518,15 @@ function CloseSessionDialog({
                     </div>
 
                     {pendingOrders > 0 && (
-                        <Alert variant="warning">
+                        <Alert variant={hasOtherOpenRegisters ? 'default' : 'warning'}>
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>
-                                Hay {pendingOrders} pedido{pendingOrders === 1 ? '' : 's'} sin terminar en el tablero.
+                                Hay {pendingOrders} pedido{pendingOrders === 1 ? '' : 's'} pendiente{pendingOrders === 1 ? '' : 's'} en el tablero.
                             </AlertTitle>
                             <AlertDescription className="text-xs">
-                                Complétalo{pendingOrders === 1 ? '' : 's'}, cancélalo{pendingOrders === 1 ? '' : 's'} o devuélvelo
-                                {pendingOrders === 1 ? '' : 's'} antes de cerrar la caja.
+                                {hasOtherOpenRegisters
+                                    ? 'Quedan asignados a la(s) otra(s) caja(s) abierta(s).'
+                                    : `Completalo${pendingOrders === 1 ? '' : 's'}, cancelalo${pendingOrders === 1 ? '' : 's'} o devolvelo${pendingOrders === 1 ? '' : 's'} antes de cerrar.`}
                             </AlertDescription>
                         </Alert>
                     )}
