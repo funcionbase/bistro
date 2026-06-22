@@ -6,13 +6,16 @@ import { AddItemsSheet } from '@/components/order-tables/add-items-sheet';
 import { TableDetailSheet } from '@/components/order-tables/table-detail-sheet';
 import { TablePaymentSheet } from '@/components/order-tables/table-payment-sheet';
 import { TablesGrid } from '@/components/order-tables/tables-grid';
+import { NewOrderSheet } from '@/components/orders/new-order-sheet';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PageHeader } from '@/components/ui/page-header';
 import { TablesGridSkeleton } from '@/components/ui/tables-grid-skeleton';
 import { useAddItems } from '@/hooks/use-add-items';
+import { useCashRegister } from '@/hooks/use-cash-register';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useOrderStatuses } from '@/hooks/use-order-statuses';
 import { useTableGrid, type ActiveSession } from '@/hooks/use-table-grid';
@@ -21,7 +24,8 @@ import { useTables, type TableOrder } from '@/hooks/use-tables';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 
-import { AlertCircle, Cog, RefreshCw } from 'lucide-react';
+import { BottomSheetDialog } from '@/components/ui/bottom-sheet-dialog';
+import { AlertCircle, ArrowRight, Cog, RefreshCw, Store, Unlock } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -58,6 +62,7 @@ export default function TablesPage() {
     const formatCurrency = useCurrencyFormatter();
     const orderStatuses = useOrderStatuses();
     const { tableOrders, loading, error, lastUpdated, refresh, appendItems, closeWithPayment } = useTables(token);
+    const { session: cashSession, selectedRegister } = useCashRegister(token);
 
     const [companyQrUrl, setCompanyQrUrl] = useState<string | null>(null);
     // HU #235 — contactId pendiente de completar perfil DIAN (modal).
@@ -115,6 +120,7 @@ export default function TablesPage() {
         selectedOrder,
         closeWithPayment,
         onPaid: () => setSelectedOrderId(null),
+        cashSessionId: cashSession?.id ?? null,
     });
 
     const ordersByTable = useMemo(() => {
@@ -153,8 +159,11 @@ export default function TablesPage() {
         return result;
     }, [definedTables, tablesEndpointFailed, tableOrders]);
 
+    const [newOrderTable, setNewOrderTable] = useState<string | null>(null);
+    const [sessionAction, setSessionAction] = useState<{ session: ActiveSession; tableNumber: string } | null>(null);
+
     const openCashierForTable = (tableNumber: string) => {
-        navigate(`/orders/cashier?table=${encodeURIComponent(tableNumber)}`);
+        setNewOrderTable(tableNumber);
     };
 
     return (
@@ -173,6 +182,12 @@ export default function TablesPage() {
                             description="Visualiza el estado de cada mesa, agrega productos a la cuenta abierta y ciérrala al cobrar."
                             actions={
                                 <div className="flex flex-wrap items-center gap-2">
+                                    {selectedRegister && (
+                                        <Badge variant="secondary" className="gap-1">
+                                            <Store className="h-3 w-3" />
+                                            {selectedRegister.name}
+                                        </Badge>
+                                    )}
                                     <LiveIndicator timestamp={lastUpdated} isLive={!loading && !error} />
                                     <Button variant="outline" size="sm" onClick={() => void refresh()} className="w-full sm:w-auto">
                                         <RefreshCw className="mr-1 h-4 w-4" /> Refrescar
@@ -199,7 +214,7 @@ export default function TablesPage() {
                             activeSessionByTable={activeSessionByTable}
                             orderStatuses={orderStatuses}
                             formatCurrency={formatCurrency}
-                            onOpenSession={(sessionId) => navigate(`/orders/table-sessions/${sessionId}`)}
+                            onSessionAction={(session, tableNumber) => setSessionAction({ session, tableNumber })}
                             onOpenOrder={(orderId) => setSelectedOrderId(orderId)}
                             onOpenCashier={openCashierForTable}
                             onRequestRelease={(request) => {
@@ -296,6 +311,71 @@ export default function TablesPage() {
                         />
                     );
                 })()}
+
+            <NewOrderSheet
+                isOpen={newOrderTable !== null}
+                onClose={() => setNewOrderTable(null)}
+                initialTableNumber={newOrderTable ?? ''}
+                onSuccess={() => void refresh()}
+            />
+
+            {sessionAction && (() => {
+                const { session, tableNumber } = sessionAction;
+                const canRelease =
+                    session.items_consumable_count === 0 ||
+                    session.order_status === 'completed' ||
+                    session.order_status === 'cancelled' ||
+                    session.order_status === 'refunded';
+                const releaseReason = canRelease
+                    ? undefined
+                    : 'Hay platos en cocina o sin pagar — pasa primero por caja.';
+                return (
+                    <BottomSheetDialog
+                        isOpen
+                        onClose={() => setSessionAction(null)}
+                        title={`Mesa ${tableNumber}`}
+                    >
+                        <div className="space-y-3 pb-2">
+                            {session.order_id && (
+                                <Button
+                                    type="button"
+                                    className="w-full justify-between"
+                                    onClick={() => {
+                                        setSessionAction(null);
+                                        navigate(`/caja/table-sessions/${session.id}`);
+                                    }}
+                                >
+                                    Cobrar mesa
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full justify-between"
+                                disabled={!canRelease}
+                                title={releaseReason}
+                                onClick={() => {
+                                    setSessionAction(null);
+                                    setReleaseError(null);
+                                    setReleaseConfirm({
+                                        sessionId: session.id,
+                                        tableNumber,
+                                        canRelease,
+                                        reason: releaseReason,
+                                    });
+                                }}
+                            >
+                                Liberar mesa
+                                <Unlock className="h-4 w-4" />
+                            </Button>
+                            {!canRelease && (
+                                <p className="text-muted-foreground text-center text-xs">{releaseReason}</p>
+                            )}
+                        </div>
+                    </BottomSheetDialog>
+                );
+            })()}
 
             <ConfirmDialog
                 open={!!releaseConfirm}

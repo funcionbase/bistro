@@ -22,8 +22,8 @@ interface TablesGridProps {
     activeSessionByTable: Map<string, ActiveSession>;
     orderStatuses: ReturnType<typeof useOrderStatuses>;
     formatCurrency: (value: number) => string;
-    /** Navega al detalle de una sesión grupal. */
-    onOpenSession: (sessionId: string) => void;
+    /** Abre el menú de acciones de una sesión grupal (cobrar / liberar). */
+    onSessionAction: (session: ActiveSession, tableNumber: string) => void;
     /** Abre el modal de detalle de una orden de mesa tradicional. */
     onOpenOrder: (orderId: string) => void;
     /** Abre la caja para una mesa libre. */
@@ -43,7 +43,7 @@ export function TablesGrid({
     activeSessionByTable,
     orderStatuses,
     formatCurrency,
-    onOpenSession,
+    onSessionAction,
     onOpenOrder,
     onOpenCashier,
     onRequestRelease,
@@ -93,7 +93,7 @@ export function TablesGrid({
                             occupied
                             total={order ? formatCurrency(order.total) : undefined}
                             statusLabel={session.order_status ? statusLabel(orderStatuses, session.order_status) : undefined}
-                            onClick={session.order_id ? () => onOpenSession(session.id) : undefined}
+                            onClick={() => onSessionAction(session, n)}
                             groupSession={{
                                 guestsCount: session.guests_count,
                                 hasActiveOrder,

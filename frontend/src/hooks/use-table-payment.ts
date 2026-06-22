@@ -29,6 +29,8 @@ interface UseTablePaymentArgs {
     closeWithPayment: (orderId: string, payload: ClosePaymentInput) => Promise<{ queued: boolean }>;
     /** Limpia la selección tras un cobro exitoso. */
     onPaid: () => void;
+    /** ID de la sesión de caja activa (multi-caja: evita ambigüedad). */
+    cashSessionId?: string | null;
 }
 
 interface UseTablePaymentReturn {
@@ -72,7 +74,7 @@ const INITIAL_PAYMENT_STATE: PaymentState = {
  * el error se expone como `paymentState.dianEmissionError` y el cajero
  * puede reintentar desde el detalle de la orden ("Emitir documento DIAN").
  */
-export function useTablePayment({ selectedOrder, closeWithPayment, onPaid }: UseTablePaymentArgs): UseTablePaymentReturn {
+export function useTablePayment({ selectedOrder, closeWithPayment, onPaid, cashSessionId }: UseTablePaymentArgs): UseTablePaymentReturn {
     const [paymentState, setPaymentState] = useState<PaymentState>(INITIAL_PAYMENT_STATE);
 
     const openPayment = useCallback((order: TableOrder) => {
@@ -100,6 +102,7 @@ export function useTablePayment({ selectedOrder, closeWithPayment, onPaid }: Use
         const payload: ClosePaymentInput = { payment_method: paymentState.method };
         if (paymentState.reference.trim()) payload.reference = paymentState.reference.trim();
         if (tipParsed > 0) payload.tip_amount = tipParsed;
+        if (cashSessionId) payload.cash_session_id = cashSessionId;
 
         if (paymentState.method === 'cash') {
             const received = parseFloat(paymentState.amountReceived);
@@ -168,6 +171,7 @@ export function useTablePayment({ selectedOrder, closeWithPayment, onPaid }: Use
         selectedOrder,
         tipParsed,
         expectedTotal,
+        cashSessionId,
         closeWithPayment,
         onPaid,
     ]);

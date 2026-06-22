@@ -40,7 +40,7 @@ export default function CashRegisterPanel({ children }: Props) {
         useCashRegister(token);
 
     if (loading && !session && registers.length === 0) {
-        return <div className="text-muted-foreground flex items-center justify-center py-16 text-sm">Cargando estado de caja…</div>;
+        return <div className="mb-3 h-10 animate-pulse rounded-md bg-muted" />;
     }
 
     // Multi-caja: mostrar picker si hay >1 caja activa y el usuario no ha elegido,

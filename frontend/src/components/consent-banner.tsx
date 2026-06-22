@@ -3,7 +3,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { resolveGa4Id, updateGa4Consent } from '@/hooks/use-ga4';
 import { resolveTiktokPixelId } from '@/hooks/use-tiktok-pixel';
 import { getStoredConsent, setStoredConsent } from '@/lib/consent';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Banner de consentimiento de cookies (Habeas Data CO), modelado sobre el de
@@ -27,19 +27,14 @@ const PRIVACY_URL = 'https://flexyflow.co/privacy-policy/';
 
 export function ConsentBanner() {
     // ¿Hay algún tracker opcional configurado en este build? Si no, no preguntamos.
-    const trackingEnabled = Boolean(resolveGa4Id(null) || resolveTiktokPixelId());
-
-    const [open, setOpen] = useState(false);
+    // La inicialización es síncrona (localStorage + variables de build) para que el
+    // banner esté presente desde el primer frame y no cause CLS.
+    const [open, setOpen] = useState(
+        () => Boolean(resolveGa4Id(null) || resolveTiktokPixelId()) && getStoredConsent() === null,
+    );
     const [customizing, setCustomizing] = useState(false);
     const [analytics, setAnalytics] = useState(true);
     const [marketing, setMarketing] = useState(true);
-
-    useEffect(() => {
-        // Solo preguntamos si hay algo que medir y no hay decisión previa.
-        if (trackingEnabled && getStoredConsent() === null) {
-            setOpen(true);
-        }
-    }, [trackingEnabled]);
 
     /** Persiste la decisión, la aplica a los trackers y cierra el banner. */
     function decide(grantAnalytics: boolean, grantMarketing: boolean): void {

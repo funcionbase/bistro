@@ -16,7 +16,7 @@ interface ItemForCashier {
 }
 
 interface GuestBreakdown {
-    id: string;
+    id: string | null;
     display_name: string;
     phone: string;
     subtotal: string;

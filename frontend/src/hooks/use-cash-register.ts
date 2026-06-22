@@ -219,7 +219,11 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
             }
             const curJson = await curRes.json();
             const body = (curJson as { data: { session: CashSession | null; context: CashRegisterContext } }).data;
-            setSession(body?.session ?? null);
+            // Multi-caja: si elegimos una caja libre el backend devuelve la
+            // sesión de OTRA caja (activeSessionForBranch). La descartamos para
+            // que OpenSessionScreen aparezca con el monto inicial.
+            const effectiveSession = selectedRegisterIdRef.current && !openSessionId ? null : (body?.session ?? null);
+            setSession(effectiveSession);
             setContext(body?.context ?? null);
             setError(null);
 

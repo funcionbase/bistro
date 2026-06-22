@@ -14,7 +14,7 @@ import { apiFetch } from '@/lib/api';
 import { shortOrderCode } from '@/lib/order-code';
 import { getOrderTypeMeta } from '@/lib/order-type';
 import type { PaymentMethod } from '@/types';
-import { Link2, MapPin, MessageCircle, Package, Phone, Store, Tag, Truck, UserCheck, UserPlus } from 'lucide-react';
+import { ExternalLink, Link2, MapPin, MessageCircle, Package, Phone, Store, Tag, Truck, UserCheck, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -137,6 +137,16 @@ export function OrderDetailModal({
         navigate(`/chats?${params.toString()}`);
     };
 
+    const goToFullDetail = () => {
+        if (!order) return;
+        if (order.table_session_id) {
+            navigate(`/caja/table-sessions/${order.table_session_id}`);
+        } else {
+            navigate(`/orders/board`);
+        }
+        onClose();
+    };
+
     const formattedDate = order?.ordered_at
         ? new Intl.DateTimeFormat('es-CO', {
               dateStyle: 'medium',
@@ -171,7 +181,13 @@ export function OrderDetailModal({
                                 </Badge>
                             )}
                         </div>
-                        <OrderStatusBadge status={order.status} />
+                        <div className="flex items-center gap-2">
+                            <OrderStatusBadge status={order.status} />
+                            <Button type="button" size="sm" variant="outline" onClick={goToFullDetail}>
+                                <ExternalLink className="mr-1.5 h-3 w-3" />
+                                Ver detalle
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Cambiar estado: forward-only. Imprescindible en mobile, donde el

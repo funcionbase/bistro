@@ -38,6 +38,7 @@ export interface ClosePaymentInput {
     amount_received?: number;
     reference?: string;
     tip_amount?: number;
+    cash_session_id?: string;
 }
 
 interface UseTablesReturn {
@@ -161,6 +162,7 @@ export function useTables(token: string | null): UseTablesReturn {
                     amount_received: payload.amount_received,
                     tip_amount: payload.tip_amount,
                     reference: payload.reference,
+                    cash_session_id: payload.cash_session_id ?? null,
                     paid_at: nowIso,
                     occurred_at_client: nowIso,
                 },

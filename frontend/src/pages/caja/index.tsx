@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useActiveAutoApply } from '@/hooks/use-active-auto-apply';
+import { useCashRegister } from '@/hooks/use-cash-register';
 import { useCouponValidation } from '@/hooks/use-coupon-validation';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useToken } from '@/hooks/use-token';
@@ -20,7 +21,7 @@ import { useSharedData } from '@/lib/shared-data';
 import { aggregateTax, calculateTaxLine } from '@/lib/tax';
 import type { MenuItem, RestaurantMenu } from '@/types';
 
-import { AlertCircle, Check, Minus, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, Minus, Plus, Store, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface CartLine {
@@ -33,6 +34,7 @@ interface CartLine {
 export default function CajaPage() {
     const token = useToken();
     const formatCurrency = useCurrencyFormatter();
+    const { selectedRegister } = useCashRegister(token);
     const sharedData = useSharedData();
     const activeCompany = sharedData.activeCompany;
     const activeCompanyNit = activeCompany?.nit ?? null;
@@ -392,7 +394,17 @@ export default function CajaPage() {
                                 <PageHeader
                                     title={menu ? menu.name : 'Caja'}
                                     eyebrow="POS"
-                                    actions={menu ? <Badge variant="secondary">Menú activo</Badge> : undefined}
+                                    actions={
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {selectedRegister && (
+                                                <Badge variant="secondary" className="gap-1">
+                                                    <Store className="h-3 w-3" />
+                                                    {selectedRegister.name}
+                                                </Badge>
+                                            )}
+                                            {menu && <Badge variant="secondary">Menú activo</Badge>}
+                                        </div>
+                                    }
                                 />
 
                                 {error && (
