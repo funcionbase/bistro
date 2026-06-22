@@ -24,12 +24,14 @@ import { VitePWA } from 'vite-plugin-pwa';
  * selfDefending. `node_modules` y el service worker quedan fuera.
  */
 
-// Opciones balanceadas: ofuscación fuerte sin las opciones que rompen PWA.
+// Opciones balanceadas: ofuscación fuerte sin las opciones que rompen PWA/Rolldown.
 // selfDefending y debugProtection usan Function.toString() / setInterval con
 // lógica de timing que produce falsos positivos en modo standalone (homescreen)
 // causando un loop infinito → pantalla en blanco. controlFlowFlattening también
 // se desactiva: genera switches complejos que el JIT móvil ejecuta muy lento.
-// ponytail: selfDefending/debugProtection removidos por compat PWA standalone
+// stringArrayCallsTransform y transformObjectKeys generan helpers cross-chunk que
+// Rolldown (Vite 8) inicializa en orden diferente a Rollup → `undefined.S` en runtime.
+// ponytail: selfDefending/debugProtection/stringArrayCallsTransform/transformObjectKeys removidos por compat PWA+Rolldown
 const obfuscatorOptions: ObfuscatorOptions = {
     compact: true,
     controlFlowFlattening: false,
@@ -44,7 +46,7 @@ const obfuscatorOptions: ObfuscatorOptions = {
     simplify: true,
     splitStrings: false,
     stringArray: true,
-    stringArrayCallsTransform: true,
+    stringArrayCallsTransform: false,
     stringArrayCallsTransformThreshold: 0.5,
     stringArrayEncoding: ['base64'],
     stringArrayIndexShift: true,
@@ -55,7 +57,7 @@ const obfuscatorOptions: ObfuscatorOptions = {
     stringArrayWrappersParametersMaxCount: 4,
     stringArrayWrappersType: 'function',
     stringArrayThreshold: 0.75,
-    transformObjectKeys: true,
+    transformObjectKeys: false,
     unicodeEscapeSequence: false,
 };
 
