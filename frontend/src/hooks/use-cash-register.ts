@@ -147,6 +147,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const isMounted = useRef(true);
+    const hasMountedRef = useRef(false);
     // Refs allow refresh to always read fresh values without being recreated on
     // every state change (which would restart the polling interval).
     const registersRef = useRef<CashRegister[]>([]);
@@ -168,6 +169,18 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         setSelectedRegisterId(saved);
     }, [branchId]);
 
+    // Sincroniza selectedRegisterId entre instancias del hook en la misma página.
+    useEffect(() => {
+        if (!branchId) return;
+        const handler = (e: Event) => {
+            const { branchId: evBranch, id } = (e as CustomEvent<{ branchId: string; id: string | null }>).detail;
+            if (evBranch !== branchId) return;
+            setSelectedRegisterId(id);
+        };
+        window.addEventListener('flexyflow:register-changed', handler);
+        return () => window.removeEventListener('flexyflow:register-changed', handler);
+    }, [branchId]);
+
     const selectRegister = useCallback(
         (id: string | null) => {
             if (!branchId) return;
@@ -178,6 +191,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 localStorage.removeItem(selectedRegisterKey(branchId));
                 setSelectedRegisterId(null);
             }
+            window.dispatchEvent(new CustomEvent('flexyflow:register-changed', { detail: { branchId, id } }));
         },
         [branchId],
     );
@@ -449,6 +463,17 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         const interval = setInterval(() => void refresh(), POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [refresh]);
+
+    // Al cambiar de caja, refrescar inmediatamente (sin setLoading para no flashear "Abrir caja").
+    useEffect(() => {
+        if (!hasMountedRef.current) {
+            hasMountedRef.current = true;
+            return;
+        }
+        void refresh();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedRegisterId]);
+
 
     // shouldAlert: ninguna caja abierta en la sede + debería estar operando.
     const noOpenRegisters = registers.length > 0
