@@ -1054,6 +1054,9 @@ Route::prefix('v1')->group(function () {
                 Route::get('caja/table-sessions/{id}', [TableCashierController::class, 'show'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.caja.table-sessions.show');
+                Route::get('caja/table-sessions/{id}/timeline', [TableCashierController::class, 'timeline'])
+                    ->middleware('permission:orders.read,read')
+                    ->name('api.caja.table-sessions.timeline');
                 Route::post('caja/table-sessions/{id}/pay-partial', [TableCashierController::class, 'payPartial'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.caja.table-sessions.pay-partial');
