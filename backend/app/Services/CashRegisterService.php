@@ -666,10 +666,17 @@ class CashRegisterService
             ->count();
 
         // Pedidos en estados operativos (pending/in_kitchen/ready/in_transit) —
-        // bloquean el cierre de caja. El frontend lee este número para
-        // mostrar un aviso preventivo en el modal de cierre. Conteo POR SEDE:
-        // coherente con el bloqueo real de `closeSession`.
-        $pendingOrders = (int) Order::query()
+        // bloquean el cierre de la ÚLTIMA caja de la sede. Si hay otras cajas
+        // abiertas, esos pedidos los cobran ellas; el bloqueo es 0 (espejo
+        // exacto de la lógica de `closeSession`).
+        $otherOpen = CashRegisterSession::query()
+            ->where('company_nit', $session->company_nit)
+            ->where('branch_id', $session->branch_id)
+            ->where('status', 'open')
+            ->where('id', '!=', $session->id)
+            ->exists();
+
+        $pendingOrders = $otherOpen ? 0 : (int) Order::query()
             ->where('company_nit', $session->company_nit)
             ->where('branch_id', $session->branch_id)
             ->whereIn('status', config('orders.operational'))

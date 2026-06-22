@@ -1331,7 +1331,9 @@ class OrderController extends Controller
             'data' => [
                 'id' => $order->id,
                 'status' => $order->status,
-                'inventory_consumed_at' => $order->inventory_consumed_at?->toIso8601String(),
+                'inventory_consumed_at' => $order->inventory_consumed_at
+                    ? Carbon::parse($order->inventory_consumed_at)->toIso8601String()
+                    : null,
             ],
         ]);
     }

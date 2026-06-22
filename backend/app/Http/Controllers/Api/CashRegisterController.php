@@ -206,6 +206,8 @@ class CashRegisterController extends Controller
 
         $auditAction = $isOthersCash ? 'cash_register.taken_over' : 'cash_register.closed';
         $auditMeta = [
+            'cash_session_id' => $session->id,
+            'cash_register_id' => $session->cash_register_id,
             'opening_amount' => (float) $session->opening_amount,
             'closing_amount' => (float) $session->closing_amount,
             'expected_cash' => (float) $session->expected_cash,

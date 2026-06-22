@@ -73,6 +73,13 @@ class TableCashierService
         if ($orders->isEmpty()) {
             return [
                 'order' => null,
+                'session' => [
+                    'id' => $session->id,
+                    'status' => $session->status,
+                    'table_number' => $session->table?->number,
+                    'order_type' => null,
+                ],
+                'orders' => [],
                 'guests' => [],
                 'unpaid_total' => '0.00',
                 'paid_total' => '0.00',
@@ -124,7 +131,7 @@ class TableCashierService
                     'unit_price' => (string) $i->unit_price,
                     'subtotal' => number_format($sub, 2, '.', ''),
                     'status' => $i->status,
-                    'paid_at' => optional($i->paid_at)?->toIso8601String(),
+                    'paid_at' => optional($i->paid_at)->toIso8601String(),
                     'paid_receipt_id' => $i->paid_receipt_id,
                 ];
             })->values()->all();
@@ -139,8 +146,45 @@ class TableCashierService
             ];
         })->values();
 
+        // Items sin guest (creados por cajero desde /orders/cashier): agrupar
+        // bajo un card "Mesa" para que sean visibles. Solo cobrables via payAll.
+        $guestlessItems = $itemsByGuest->get(null, collect());
+        if ($guestlessItems->isNotEmpty()) {
+            $subtotal = 0.0;
+            $unpaid = 0.0;
+            $mappedItems = $guestlessItems->map(function (OrderItem $i) use (&$subtotal, &$unpaid) {
+                $sub = (float) $i->unit_price * (int) $i->quantity;
+                $subtotal += $sub;
+                if ($i->paid_at === null) {
+                    $unpaid += $sub;
+                }
+
+                return [
+                    'id' => $i->id,
+                    'name' => $i->name,
+                    'quantity' => (int) $i->quantity,
+                    'unit_price' => (string) $i->unit_price,
+                    'subtotal' => number_format($sub, 2, '.', ''),
+                    'status' => $i->status,
+                    'paid_at' => optional($i->paid_at)->toIso8601String(),
+                    'paid_receipt_id' => $i->paid_receipt_id,
+                ];
+            })->values()->all();
+            $guestBreakdowns->prepend([
+                'id' => null,
+                'display_name' => 'Mesa',
+                'phone' => '',
+                'subtotal' => number_format($subtotal, 2, '.', ''),
+                'unpaid_amount' => number_format($unpaid, 2, '.', ''),
+                'items' => $mappedItems,
+            ]);
+        }
+
         $paidTotal = $receipts->sum(fn ($r) => (float) $r->amount);
-        $unpaidTotal = $items->where('paid_at', null)->sum(fn ($i) => (float) $i->unit_price * (int) $i->quantity);
+        $unpaidTotal = $items
+            ->filter(fn (OrderItem $i) => $i->paid_at === null)
+            ->sum(fn (OrderItem $i) => (float) $i->unit_price * (int) $i->quantity);
+
         // Propinas: suma de todas las órdenes operativas de la sesión.
         $tipTotal = $orders->sum(fn (Order $o) => (float) $o->tip_amount);
         // Total facturable agregado: suma de `orders.total` de cada orden
@@ -158,6 +202,8 @@ class TableCashierService
             'session' => [
                 'id' => $session->id,
                 'status' => $session->status,
+                'table_number' => $session->table?->number,
+                'order_type' => $primaryOrder->order_type,
             ],
             'orders' => $orders->values()->map(fn (Order $o) => [
                 'id' => $o->id,
@@ -186,7 +232,7 @@ class TableCashierService
      * método. Crea un PaymentReceipt con `guest_id`. Marca cada item con
      * `paid_at` + `paid_receipt_id`. Idempotente por `client_uuid`.
      *
-     * @param  array{guest_id:int, item_ids:list<int>, payment_method:string, amount:string|float, reference?:?string, tip_amount?:string|float|null, client_uuid:string}  $input
+     * @param  array{guest_id:?string, item_ids:list<string>, payment_method:string, amount:string|float, reference?:?string, tip_amount?:string|float|null, client_uuid:string}  $input
      */
     public function payPartial(
         TableSession $session,
@@ -212,17 +258,31 @@ class TableCashierService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            /** @var Order $order */
-            $order = Order::query()
+            // Lock ALL operational orders for this session (not just one).
+            // A session can have N orders (QR tandas + cashier orders). If we
+            // picked only the first, we'd filter items to the wrong order and
+            // get an empty set when the items belong to another.
+            $orders = Order::query()
                 ->withoutGlobalScopes()
                 ->where('table_session_id', $lockedSession->id)
+                ->where('status', '!=', 'pending_approval')
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->get();
+
+            if ($orders->isEmpty()) {
+                throw new InvalidArgumentException('Esta mesa no tiene órdenes operativas.');
+            }
+
+            $orderIds = $orders->pluck('id')->all();
 
             $items = OrderItem::query()
                 ->whereIn('id', $input['item_ids'])
-                ->where('order_id', $order->id)
-                ->where('guest_id', $input['guest_id'])
+                ->whereIn('order_id', $orderIds)
+                ->when(
+                    $input['guest_id'] === null,
+                    fn ($q) => $q->whereNull('guest_id'),
+                    fn ($q) => $q->where('guest_id', $input['guest_id']),
+                )
                 ->whereNull('paid_at')
                 ->lockForUpdate()
                 ->get();
@@ -245,6 +305,12 @@ class TableCashierService
             }
 
             $cashSession = $this->cashRegister->resolveSessionForCharge($lockedSession->company_nit, $lockedSession->branch_id, $input['cash_session_id'] ?? null);
+
+            // Determine the actual order the paid items belong to. In practice
+            // all selected items will share the same order, so firstOrFail is safe
+            // here (after we already confirmed items exist).
+            $order = $orders->first(fn (Order $o) => in_array($o->id, $items->pluck('order_id')->all()))
+                ?? $orders->first();
 
             $now = Carbon::now();
 
@@ -310,7 +376,7 @@ class TableCashierService
      * Cobro completo: marca todos los items no pagados como cubiertos por
      * UN receipt único, cierra la sesión y libera la mesa.
      *
-     * @param  array{payment_method:string, amount:string|float, reference?:?string, tip_amount?:string|float|null, client_uuid:string, payer_guest_id?:?int}  $input
+     * @param  array{payment_method:string, amount:string|float, reference?:?string, tip_amount?:string|float|null, client_uuid:string, payer_guest_id?:?string}  $input
      */
     public function payAll(
         TableSession $session,
@@ -498,7 +564,7 @@ class TableCashierService
      * negativo y mismo `guest_id`. El item pasa a `cancelled` con
      * `cancellation_reason='refunded'`.
      *
-     * @param  array{item_id:int, payment_method:string, amount:string|float, reference:string, client_uuid:string}  $input
+     * @param  array{item_id:string, payment_method:string, amount:string|float, reference:string, client_uuid:string}  $input
      */
     public function refundItem(
         TableSession $session,

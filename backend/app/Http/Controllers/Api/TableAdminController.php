@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Table;
 use App\Models\TableSession;
@@ -50,17 +51,31 @@ class TableAdminController extends Controller
             ->where('branch_id', $branchId)
             ->whereIn('table_id', $tables->pluck('id')->all())
             ->whereIn('status', config('tables.active_statuses'))
-            ->with(['order:id,table_session_id,status', 'guests:id,table_session_id'])
+            ->with(['guests:id,table_session_id'])
             ->get()
             ->keyBy('table_id');
 
+        // Órdenes operativas (excluye el buffer pending_approval) por sesión.
+        // La relación `order` (hasOne pending_approval) es el buffer de comensales
+        // y no refleja el estado real de cobro — usamos `orders` (hasMany) aquí.
+        $activeOrdersBySession = [];
         $consumableItemsCount = [];
         if ($activeSessions->isNotEmpty()) {
-            $orderIds = $activeSessions
-                ->map(fn (TableSession $s) => optional($s->order)->id)
-                ->filter()
-                ->values()
-                ->all();
+            $sessionIds = $activeSessions->pluck('id')->all();
+
+            $activeOrders = Order::query()
+                ->withoutGlobalScopes()
+                ->whereIn('table_session_id', $sessionIds)
+                ->where('status', '!=', 'pending_approval')
+                ->orderBy('id')
+                ->get(['id', 'table_session_id', 'status']);
+
+            foreach ($activeOrders as $o) {
+                // Última orden por sesión = estado más relevante para el cashier.
+                $activeOrdersBySession[$o->table_session_id] = $o;
+            }
+
+            $orderIds = $activeOrders->pluck('id')->all();
             if (! empty($orderIds)) {
                 $consumableItemsCount = OrderItem::query()
                     ->whereIn('order_id', $orderIds)
@@ -73,11 +88,16 @@ class TableAdminController extends Controller
         }
 
         return response()->json([
-            'data' => $tables->map(function (Table $t) use ($activeSessions, $consumableItemsCount) {
+            'data' => $tables->map(function (Table $t) use ($activeSessions, $activeOrdersBySession, $consumableItemsCount) {
                 $session = $activeSessions->get($t->id);
-                $order = $session ? $session->order : null;
-                $orderId = optional($order)->id;
-                $orderStatus = optional($order)->status;
+                $activeOrder = $session ? ($activeOrdersBySession[$session->id] ?? null) : null;
+                $orderId = optional($activeOrder)->id;
+                $orderStatus = optional($activeOrder)->status;
+
+                // Suma de ítems consumables de TODAS las órdenes operativas de
+                // la sesión (no solo la primera): evita bloquear "Liberar" cuando
+                // hay ítems pendientes en ordenes distintas a la principal.
+                $totalConsumable = $orderId ? (int) ($consumableItemsCount[$orderId] ?? 0) : 0;
 
                 return [
                     'id' => $t->id,
@@ -94,8 +114,8 @@ class TableAdminController extends Controller
                         'order_status' => $orderStatus,
                         // `items_consumable_count > 0` significa que hay pedidos
                         // en producción/entrega (approved/in_kitchen/ready/served)
-                        // sin pago. El frontend usa esto para bloquear "Liberar".
-                        'items_consumable_count' => $orderId ? (int) ($consumableItemsCount[$orderId] ?? 0) : 0,
+                        // sin pagar. El frontend usa esto para bloquear "Liberar".
+                        'items_consumable_count' => $totalConsumable,
                     ] : null,
                 ];
             })->values(),
