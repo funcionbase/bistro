@@ -70,16 +70,22 @@ export function BranchSwitcher() {
                     // si no hay JSON o falla, fallback a dashboard.
                 }
                 // El switch reemplaza la cookie JWT con el nuevo
-                // `active_branch_id`. Toda la caché de React Query quedó bajo la
-                // sede anterior (las queries con scope de sede NO incluyen
-                // branch_id en su key porque la sede vive server-side en la
-                // cookie), así que la limpiamos entera para no servir datos de la
-                // sede previa dentro de la ventana de `staleTime`. Luego
-                // refrescamos el contexto compartido (empresa, sede, permisos) y
-                // esperamos antes de navegar para que la ruta destino monte con
-                // la sede recién elegida.
-                queryClient.clear();
+                // `active_branch_id`. Refrescamos primero el contexto
+                // (bootstrap + business-context) para que reloadContext pueda
+                // encontrar las queries en cache y esperar su refetch real.
+                // Si se llamara queryClient.clear() ANTES de reloadContext,
+                // el cache estaría vacío, invalidateQueries no encontraría nada
+                // y la promesa resolvería inmediatamente sin esperar ningún
+                // refetch — causando que el sidebar mostrara la sede anterior.
                 await reloadContext();
+                // Ahora que el contexto es fresco, eliminamos las queries
+                // branch-scoped (órdenes, caja, etc.) que no incluyen branch_id
+                // en su key. Así no se sirven datos de la sede anterior dentro
+                // de la ventana de staleTime. Preservamos bootstrap y
+                // business-context que ya vienen frescos del reloadContext.
+                queryClient.removeQueries({
+                    predicate: (q) => q.queryKey[0] !== 'bootstrap' && q.queryKey[0] !== 'business-context',
+                });
                 navigate(route(target));
                 return;
             }

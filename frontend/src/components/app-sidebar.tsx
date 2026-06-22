@@ -43,7 +43,7 @@ import {
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Documentación',
+        title: 'Manual de usuario',
         url: 'https://flexyflow.co/wiki/restaurante',
         icon: BookOpen,
     },
