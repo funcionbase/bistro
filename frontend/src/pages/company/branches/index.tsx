@@ -22,7 +22,7 @@ import { apiFetch } from '@/lib/api';
 import { sanitizeSlug, slugify } from '@/lib/input-sanitize';
 import { reloadContext } from '@/lib/navigate-compat';
 import { useSharedData } from '@/lib/shared-data';
-import { Archive, Copy, Info, LoaderCircle, MapPin, Pencil, Plus, Star, Users } from 'lucide-react';
+import { Archive, Copy, Info, Landmark, LoaderCircle, MapPin, Pencil, Plus, Star, Users } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
 interface Branch {
@@ -53,6 +53,14 @@ interface FormState {
     business_type_id: string;
     initial_business_type_id: string | null;
     is_default: boolean;
+}
+
+interface BranchCashRegister {
+    id: string;
+    name: string;
+    is_active: boolean;
+    sort_order: number;
+    archived: boolean;
 }
 
 const EMPTY_FORM: FormState = {
@@ -99,6 +107,12 @@ export default function BranchesIndex() {
 
     const [confirmArchive, setConfirmArchive] = useState<Branch | null>(null);
     const [archiving, setArchiving] = useState(false);
+
+    const [cashModalBranch, setCashModalBranch] = useState<Branch | null>(null);
+    const [cashRegisters, setCashRegisters] = useState<BranchCashRegister[]>([]);
+    const [cashLoading, setCashLoading] = useState(false);
+    const [cashNewName, setCashNewName] = useState('');
+    const [cashSaving, setCashSaving] = useState(false);
 
     // #237 — labels de business types para mostrar como badge en cada sede.
     const businessTypesQuery = useBusinessTypes();
@@ -259,6 +273,55 @@ export default function BranchesIndex() {
         }
     }
 
+    async function openCashModal(b: Branch) {
+        setCashModalBranch(b);
+        setCashNewName('');
+        setCashLoading(true);
+        try {
+            const res = await apiFetch(`/api/v1/company/branches/${b.id}/cash-registers`);
+            const data = await res.json();
+            setCashRegisters(data.data ?? []);
+        } finally {
+            setCashLoading(false);
+        }
+    }
+
+    async function addCashRegister() {
+        if (!cashModalBranch || !cashNewName.trim()) return;
+        setCashSaving(true);
+        try {
+            const res = await apiFetch(`/api/v1/company/branches/${cashModalBranch.id}/cash-registers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: cashNewName.trim() }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message ?? 'No se pudo crear la caja.');
+            setCashRegisters((prev) => [...prev, data.data]);
+            setCashNewName('');
+        } catch (e) {
+            showToast('error', e instanceof Error ? e.message : 'Error de conexión');
+        } finally {
+            setCashSaving(false);
+        }
+    }
+
+    async function archiveCashRegister(r: BranchCashRegister) {
+        if (!cashModalBranch) return;
+        try {
+            const res = await apiFetch(`/api/v1/company/branches/${cashModalBranch.id}/cash-registers/${r.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ archived: true }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message ?? 'No se pudo archivar.');
+            setCashRegisters((prev) => prev.map((x) => (x.id === r.id ? data.data : x)));
+        } catch (e) {
+            showToast('error', e instanceof Error ? e.message : 'Error de conexión');
+        }
+    }
+
     return (
         <PageShell title="Sedes">
             <div className="container mx-auto space-y-6 p-4 sm:p-6">
@@ -340,6 +403,11 @@ export default function BranchesIndex() {
                                                     <Users className="mr-1 size-4" /> Usuarios
                                                 </Button>
                                             )}
+                                            {canManage && !b.archived_at && (
+                                                <Button variant="outline" size="sm" onClick={() => openCashModal(b)}>
+                                                    <Landmark className="mr-1 size-4" /> Cajas
+                                                </Button>
+                                            )}
                                             {canCopyMenu && !b.archived_at && (
                                                 <Button variant="outline" size="sm" onClick={() => setCopyModalTarget(b)}>
                                                     <Copy className="mr-1 size-4" /> Copiar menú
@@ -396,6 +464,11 @@ export default function BranchesIndex() {
                                             {canAssignUsers && (
                                                 <Button variant="ghost" size="sm" onClick={() => openUsersModal(b)}>
                                                     <Users className="mr-1 size-4" /> Usuarios
+                                                </Button>
+                                            )}
+                                            {canManage && !b.archived_at && (
+                                                <Button variant="ghost" size="sm" onClick={() => openCashModal(b)} title="Cajas">
+                                                    <Landmark className="mr-1 size-4" /> Cajas
                                                 </Button>
                                             )}
                                             {canCopyMenu && !b.archived_at && (
@@ -599,6 +672,63 @@ export default function BranchesIndex() {
                             {copying ? 'Copiando...' : 'Copiar menú'}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!cashModalBranch} onOpenChange={(o) => !o && setCashModalBranch(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Cajas — {cashModalBranch?.name}</DialogTitle>
+                        <DialogDescription>
+                            Cada caja es un punto de venta independiente con su propia sesión y historial.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        {cashLoading ? (
+                            <Skeleton className="h-24 w-full" />
+                        ) : cashRegisters.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">Esta sede aún no tiene cajas configuradas.</p>
+                        ) : (
+                            <ul className="divide-border divide-y">
+                                {cashRegisters.map((r) => (
+                                    <li key={r.id} className="flex items-center justify-between gap-2 py-2">
+                                        <div className="min-w-0">
+                                            <p className={`truncate text-sm font-medium ${r.archived ? 'text-muted-foreground line-through' : ''}`}>
+                                                {r.name}
+                                            </p>
+                                            {r.archived && (
+                                                <p className="text-muted-foreground text-xs">Archivada</p>
+                                            )}
+                                        </div>
+                                        {!r.archived && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-muted-foreground hover:text-destructive shrink-0"
+                                                onClick={() => archiveCashRegister(r)}
+                                                title="Archivar caja"
+                                            >
+                                                <Archive className="size-4" />
+                                            </Button>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <div className="flex gap-2 pt-1">
+                            <Input
+                                placeholder="Nombre de la nueva caja"
+                                maxLength={120}
+                                value={cashNewName}
+                                onChange={(e) => setCashNewName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && void addCashRegister()}
+                            />
+                            <Button onClick={() => void addCashRegister()} disabled={!cashNewName.trim() || cashSaving}>
+                                {cashSaving ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
 

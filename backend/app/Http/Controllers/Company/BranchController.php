@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CashRegister\StoreCashRegisterRequest;
+use App\Http\Requests\CashRegister\UpdateCashRegisterRequest;
 use App\Http\Requests\Company\StoreBranchRequest;
 use App\Http\Requests\Company\UpdateBranchRequest;
 use App\Models\Branch;
 use App\Models\BranchUser;
 use App\Models\BusinessType;
+use App\Models\CashRegister;
+use App\Models\CashRegisterSession;
 use App\Models\CompanyUser;
 use App\Models\KdsStation;
 use App\Models\PrepArea;
@@ -417,6 +421,130 @@ class BranchController extends Controller
         $structure['categories'] = $categories;
 
         return $structure;
+    }
+
+    /**
+     * Lista las cajas de una sede específica. Permite gestionar la configuración
+     * multi-caja desde la vista de empresa sin requerir branch.access en JWT.
+     */
+    public function cashRegisters(Request $request, string $branch): JsonResponse
+    {
+        $model = $this->resolveBranch($request, $branch);
+        $includeArchived = $request->boolean('all');
+
+        $registers = CashRegister::query()
+            ->where('company_nit', $model->company_nit)
+            ->where('branch_id', $model->id)
+            ->when(! $includeArchived, fn ($q) => $q->whereNull('archived_at'))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'data' => $registers->map(fn (CashRegister $r) => $this->serializeCashRegister($r))->values()->all(),
+        ]);
+    }
+
+    /**
+     * Crea una caja en la sede indicada. No requiere branch.access en JWT —
+     * usa company_nit del token y el {branch} del path.
+     */
+    public function storeCashRegister(StoreCashRegisterRequest $request, string $branch): JsonResponse
+    {
+        $model = $this->resolveBranch($request, $branch);
+        $actorId = (string) ($request->attributes->get('jwt_payload')['sub'] ?? '');
+
+        $nextOrder = CashRegister::query()
+            ->where('company_nit', $model->company_nit)
+            ->where('branch_id', $model->id)
+            ->max('sort_order') ?? -1;
+
+        $register = CashRegister::create([
+            'company_nit' => $model->company_nit,
+            'branch_id' => $model->id,
+            'name' => $request->validated('name'),
+            'is_active' => true,
+            'sort_order' => (int) ($request->validated('sort_order') ?? $nextOrder + 1),
+        ]);
+
+        $this->auditService->log('cash_register.created', null, $register, [
+            'actor_id' => $actorId,
+            'name' => $register->name,
+            'branch_id' => $model->id,
+        ]);
+
+        return response()->json(['data' => $this->serializeCashRegister($register)], 201);
+    }
+
+    /**
+     * Renombra / (des)activa / archiva una caja desde la vista de empresa.
+     * Archivar requiere que no haya sesión abierta (regla contable).
+     */
+    public function updateCashRegister(UpdateCashRegisterRequest $request, string $branch, string $registerId): JsonResponse
+    {
+        $model = $this->resolveBranch($request, $branch);
+        $actorId = (string) ($request->attributes->get('jwt_payload')['sub'] ?? '');
+
+        /** @var CashRegister $register */
+        $register = CashRegister::query()
+            ->where('company_nit', $model->company_nit)
+            ->where('branch_id', $model->id)
+            ->findOrFail($registerId);
+
+        $data = $request->validated();
+
+        if (array_key_exists('name', $data)) {
+            $register->name = $data['name'];
+        }
+        if (array_key_exists('is_active', $data)) {
+            $register->is_active = (bool) $data['is_active'];
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $register->sort_order = (int) $data['sort_order'];
+        }
+
+        if (! empty($data['archived']) && ! $register->isArchived()) {
+            $hasOpen = CashRegisterSession::query()
+                ->where('cash_register_id', $register->id)
+                ->where('status', 'open')
+                ->exists();
+
+            if ($hasOpen) {
+                return response()->json([
+                    'message' => 'No se puede archivar una caja con una sesión abierta. Ciérrala primero.',
+                    'code' => 'REGISTER_SESSION_OPEN',
+                ], 422);
+            }
+
+            $register->archived_at = now();
+            $register->is_active = false;
+        } elseif (isset($data['archived']) && $data['archived'] === false) {
+            $register->archived_at = null;
+        }
+
+        $register->save();
+
+        $this->auditService->log('cash_register.updated', null, $register, [
+            'actor_id' => $actorId,
+            'branch_id' => $model->id,
+            'name' => $register->name,
+            'is_active' => $register->is_active,
+            'archived' => $register->isArchived(),
+        ]);
+
+        return response()->json(['data' => $this->serializeCashRegister($register->fresh())]);
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeCashRegister(CashRegister $r): array
+    {
+        return [
+            'id' => $r->id,
+            'name' => $r->name,
+            'is_active' => (bool) $r->is_active,
+            'sort_order' => (int) $r->sort_order,
+            'archived' => $r->isArchived(),
+        ];
     }
 
     private function resolveBranch(Request $request, string $branch): Branch

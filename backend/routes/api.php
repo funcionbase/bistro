@@ -349,6 +349,16 @@ Route::prefix('v1')->group(function () {
                 Route::post('bulk-assign', [BranchController::class, 'bulkAssign'])
                     ->middleware('permission:branches.assign_users,update')
                     ->name('api.company.branches.users.bulkAssign');
+                // Cajas por sede (configuración multi-caja desde gestión de empresa).
+                Route::get('{branch}/cash-registers', [BranchController::class, 'cashRegisters'])
+                    ->middleware('permission:branches.manage,read')
+                    ->name('api.company.branches.cashRegisters.index');
+                Route::post('{branch}/cash-registers', [BranchController::class, 'storeCashRegister'])
+                    ->middleware('permission:cash_register.manage,create')
+                    ->name('api.company.branches.cashRegisters.store');
+                Route::patch('{branch}/cash-registers/{registerId}', [BranchController::class, 'updateCashRegister'])
+                    ->middleware('permission:cash_register.manage,update')
+                    ->name('api.company.branches.cashRegisters.update');
             });
 
             // Bodegas (multi-bodega #120). Subdivisiones de inventario dentro
