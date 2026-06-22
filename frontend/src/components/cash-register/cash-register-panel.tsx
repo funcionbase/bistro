@@ -39,7 +39,7 @@ export default function CashRegisterPanel({ children }: Props) {
     const { session, loading, error, registers, selectedRegisterId, selectedRegister, selectRegister, openSession, closeSession, refresh, recordExpense } =
         useCashRegister(token);
 
-    if (loading && !session && registers.length === 0) {
+    if (loading) {
         return <div className="mb-3 h-10 animate-pulse rounded-md bg-muted" />;
     }
 
