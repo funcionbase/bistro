@@ -36,6 +36,7 @@ use App\Models\RestaurantMenu;
 use App\Models\Subscription;
 use App\Models\Supplier;
 use App\Models\SupplierIngredient;
+use App\Models\Table;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Database\Seeder;
@@ -211,6 +212,21 @@ class RestauranteFlexySeeder extends Seeder
         // por (company_nit, branch_id, slug).
         foreach ([$pereira, $cartago, $armenia] as $branch) {
             KdsStation::seedDefaultsForBranch($companyNit, $branch->id);
+        }
+
+        // Mesas de Cartago (restaurant sit-down). Capacidades: 1-4 → 2 pax,
+        // 5-8 → 4 pax, 9-10 → 6 pax. Números coinciden con los order seeds
+        // que usan table_number 1-10 vía ($sequence % 10 + 1).
+        $cartagoTableCapacities = [
+            '1' => 2, '2' => 2, '3' => 2, '4' => 2,
+            '5' => 4, '6' => 4, '7' => 4, '8' => 4,
+            '9' => 6, '10' => 6,
+        ];
+        foreach ($cartagoTableCapacities as $number => $capacity) {
+            Table::firstOrCreate(
+                ['company_nit' => $companyNit, 'branch_id' => $cartago->id, 'number' => $number],
+                ['capacity' => $capacity, 'status' => 'available'],
+            );
         }
 
         return ['pereira' => $pereira, 'cartago' => $cartago, 'armenia' => $armenia];
@@ -2395,7 +2411,7 @@ class RestauranteFlexySeeder extends Seeder
                 $ingredient = $ingredients[$ingSlug];
                 $warehouse = $this->warehouseForIngredient($branchKey, $ingredient);
 
-                IngredientMovement::query()->updateOrCreate(
+                IngredientMovement::query()->firstOrCreate(
                     [
                         'company_nit' => $companyNit,
                         'ingredient_id' => $ingredient->id,
