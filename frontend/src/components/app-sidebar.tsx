@@ -54,7 +54,7 @@ const footerNavItems: NavItem[] = [
  * día a día arriba para que un cajero/mesero llegue con un solo click.
  *
  *  1. **Día a día** — Dashboard, Caja, Mesas, Tablero, Cocina (KDS),
- *     Domicilios y Mis entregas. Items planos para acceso directo sin
+ *     Ventas del día y Mis entregas. Items planos para acceso directo sin
  *     clicks extra. Orden por frecuencia real de uso operativo.
  *  2. **Catálogo y CRM** — Menú (plano) y Contactos (submenu con
  *     Clientes / Cupones / Fidelización).
@@ -137,7 +137,7 @@ export function AppSidebar() {
             businessCapability: 'kds',
         },
         {
-            title: 'Domicilios',
+            title: 'Ventas del día',
             url: route('orders.deliveries'),
             icon: Truck,
             permission: 'deliveries.read',

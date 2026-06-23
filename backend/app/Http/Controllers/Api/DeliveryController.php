@@ -286,7 +286,7 @@ class DeliveryController extends Controller
                     ->where('deliveries.status', 'pending')
                     ->whereNull('deliveries.deleted_at');
             })
-            ->select(['id', 'client_phone', 'client_name', 'delivery_address', 'total', 'status', 'branch_id', 'table_number', 'ordered_at'])
+            ->select(['id', 'client_phone', 'delivery_address', 'total', 'status', 'branch_id', 'table_number', 'ordered_at'])
             ->orderBy('ordered_at')
             ->limit(50)
             ->get();
