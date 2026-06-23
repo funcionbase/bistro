@@ -74,7 +74,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
     { pattern: '/billing', label: 'Facturación', parent: null },
     { pattern: '/chats', label: 'Chats', parent: null },
     { pattern: '/me', label: 'Mi perfil', parent: null },
-    { pattern: '/me/perfil', label: 'Perfil', parent: '/me' },
+    { pattern: '/me/profile', label: 'Perfil', parent: '/me' },
     { pattern: '/settings/notifications', label: 'Notificaciones', parent: null },
 
     { pattern: '/onboarding', label: 'Onboarding', parent: null },

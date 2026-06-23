@@ -196,7 +196,8 @@ Route::get('hours', FrontendRedirectController::class)->name('hours');
 Route::get('company/tables', FrontendRedirectController::class)->name('company.tables');
 
 // Caja para mesa con QR (#191 Fase 6). Auth + gate orders.update.
-Route::get('caja/table-sessions/{id}', FrontendRedirectController::class)->name('caja.table-session');
+Route::get('cashier/table-sessions/{id}', FrontendRedirectController::class)->name('cashier.table-session');
+Route::get('caja/table-sessions/{id}', fn ($id) => redirect("/cashier/table-sessions/{$id}", 301));
 
 // Kitchen Display System (#191 F5 + #115). Auth + gate kds.read.
 Route::get('kds', FrontendRedirectController::class)->name('kds');
@@ -262,9 +263,11 @@ Route::get('employees/{id}', FrontendRedirectController::class)->name('employees
 Route::get('planner', FrontendRedirectController::class)->name('planner.week');
 Route::get('planner/calendar', FrontendRedirectController::class)->name('planner.month');
 
-Route::get('me/agenda', FrontendRedirectController::class)->name('me.agenda');
+Route::get('me/schedule', FrontendRedirectController::class)->name('me.schedule');
+Route::get('me/agenda', fn () => redirect('/me/schedule', 301));
 
-Route::get('me/perfil', FrontendRedirectController::class)->name('me.perfil');
+Route::get('me/profile', FrontendRedirectController::class)->name('me.profile');
+Route::get('me/perfil', fn () => redirect('/me/profile', 301));
 
 /*
  * DEV-ONLY: preview de las páginas de error (resources/views/errors/{code}.blade.php)

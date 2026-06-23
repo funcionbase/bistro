@@ -114,7 +114,7 @@ const ROUTE_SKELETONS: SkeletonRoute[] = [
     { match: (p) => /^\/orders\/table-sessions\/[^/]+$/.test(p), render: () => <Padded><TableSessionDetailSkeleton /></Padded> },
     { match: (p) => p === '/orders/table-sessions', render: () => <Padded><TableSessionsListSkeleton /></Padded> },
     { match: (p) => p === '/orders/cashier', render: () => <Padded><CashierSkeleton /></Padded> },
-    { match: (p) => /^\/caja\/table-sessions\/[^/]+$/.test(p), render: () => <Padded><CajaTableSessionSkeleton /></Padded> },
+    { match: (p) => /^\/cashier\/table-sessions\/[^/]+$/.test(p), render: () => <Padded><CajaTableSessionSkeleton /></Padded> },
 
     // KDS
     { match: (p) => p === '/kds', render: () => <Padded><KdsSkeleton /></Padded> },
@@ -160,7 +160,7 @@ const ROUTE_SKELETONS: SkeletonRoute[] = [
 
     // Horarios / agenda personal
     { match: (p) => p === '/hours', render: () => <Padded><HoursSkeleton /></Padded> },
-    { match: (p) => p === '/me/agenda', render: () => <Padded><WeekAgendaSkeleton /></Padded> },
+    { match: (p) => p === '/me/schedule', render: () => <Padded><WeekAgendaSkeleton /></Padded> },
 
     // WhatsApp + formularios tipo settings
     { match: (p) => p === '/company/whatsapp', render: () => <Padded><WhatsappPageSkeleton /></Padded> },

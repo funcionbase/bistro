@@ -140,7 +140,7 @@ export function OrderDetailModal({
     const goToFullDetail = () => {
         if (!order) return;
         if (order.table_session_id) {
-            navigate(`/caja/table-sessions/${order.table_session_id}`);
+            navigate(`/cashier/table-sessions/${order.table_session_id}`);
         } else {
             navigate(`/orders/board`);
         }

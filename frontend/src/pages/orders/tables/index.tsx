@@ -339,7 +339,7 @@ export default function TablesPage() {
                                     className="w-full justify-between"
                                     onClick={() => {
                                         setSessionAction(null);
-                                        navigate(`/caja/table-sessions/${session.id}`);
+                                        navigate(`/cashier/table-sessions/${session.id}`);
                                     }}
                                 >
                                     Cobrar mesa

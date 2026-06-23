@@ -142,7 +142,7 @@ export default function MeIndex() {
 
     const headerActions = (
         <>
-            <AppLink href="/me/agenda">
+            <AppLink href="/me/schedule">
                 <Button variant="outline" size="sm">
                     <CalendarDays className="mr-1.5 h-4 w-4" />
                     Mi agenda

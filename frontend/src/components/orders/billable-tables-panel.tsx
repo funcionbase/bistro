@@ -115,7 +115,7 @@ export default function BillableTablesPanel() {
                 {sessions.map((s) => (
                     <li key={s.session_id}>
                         <AppLink
-                            href={`/caja/table-sessions/${s.session_id}`}
+                            href={`/cashier/table-sessions/${s.session_id}`}
                             className="border-border bg-card hover:bg-muted/40 focus:ring-ring flex items-start gap-3 rounded-xl border p-3 transition-colors focus:ring-2 focus:outline-none"
                         >
                             <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl font-semibold tabular-nums">
