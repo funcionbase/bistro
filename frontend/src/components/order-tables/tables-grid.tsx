@@ -6,13 +6,6 @@ import type { TableOrder } from '@/hooks/use-tables';
 import { statusLabel } from '@/lib/order-status';
 import { Cog, Utensils } from 'lucide-react';
 
-interface ReleaseConfirmRequest {
-    sessionId: string;
-    tableNumber: string;
-    canRelease: boolean;
-    reason?: string;
-}
-
 interface TablesGridProps {
     /** Números/etiquetas de mesa a renderizar (admin + órdenes vivas). */
     tableNumbers: string[];
@@ -28,8 +21,6 @@ interface TablesGridProps {
     onOpenOrder: (orderId: string) => void;
     /** Abre la caja para una mesa libre. */
     onOpenCashier: (tableNumber: string) => void;
-    /** Solicita confirmación para liberar una sesión grupal. */
-    onRequestRelease: (request: ReleaseConfirmRequest) => void;
 }
 
 /**
@@ -46,7 +37,6 @@ export function TablesGrid({
     onSessionAction,
     onOpenOrder,
     onOpenCashier,
-    onRequestRelease,
 }: TablesGridProps) {
     if (tableNumbers.length === 0) {
         return (
@@ -75,16 +65,10 @@ export function TablesGrid({
                 const session = activeSessionByTable.get(n) ?? null;
 
                 if (session) {
-                    // Mesa con sesión grupal activa: tono info, badge
-                    // "En sesión" y botón para liberar (solo habilitado
-                    // si la orden está completada o no hay items en
-                    // producción — backend lo valida también).
-                    const canRelease =
-                        session.items_consumable_count === 0 ||
-                        session.order_status === 'completed' ||
-                        session.order_status === 'cancelled' ||
-                        session.order_status === 'refunded';
-                    const reason = canRelease ? undefined : 'Hay platos en cocina o servidos sin pagar — pasa primero por caja.';
+                    // Mesa con sesión grupal activa: tono info, badge "En sesión".
+                    // La orden `completed` en el tablero solo significa "entregada al
+                    // cliente" — NO que se cobró. El cobro es obligatorio antes de
+                    // liberar la mesa y solo ocurre desde Mesas o Caja.
                     const hasActiveOrder = session.order_id !== null && session.items_consumable_count > 0;
                     return (
                         <TableCard
@@ -104,19 +88,12 @@ export function TablesGrid({
                                         size="sm"
                                         variant="outline"
                                         className="w-full text-xs"
-                                        disabled={!canRelease}
-                                        title={reason}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onRequestRelease({
-                                                sessionId: session.id,
-                                                tableNumber: n,
-                                                canRelease,
-                                                reason,
-                                            });
+                                            onSessionAction(session, n);
                                         }}
                                     >
-                                        Liberar mesa
+                                        Cerrar mesa
                                     </Button>
                                 ),
                             }}

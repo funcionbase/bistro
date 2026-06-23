@@ -217,11 +217,7 @@ export default function TablesPage() {
                             onSessionAction={(session, tableNumber) => setSessionAction({ session, tableNumber })}
                             onOpenOrder={(orderId) => setSelectedOrderId(orderId)}
                             onOpenCashier={openCashierForTable}
-                            onRequestRelease={(request) => {
-                                setReleaseError(null);
-                                setReleaseConfirm(request);
-                            }}
-                        />
+                            />
                     </>
                 )}
             </div>
@@ -321,14 +317,15 @@ export default function TablesPage() {
 
             {sessionAction && (() => {
                 const { session, tableNumber } = sessionAction;
+                // `completed` en el tablero/KDS = entregado al cliente, NO pagado.
+                // El cobro es la última fase y solo ocurre desde Mesas o Caja.
                 const canRelease =
                     session.items_consumable_count === 0 ||
-                    session.order_status === 'completed' ||
                     session.order_status === 'cancelled' ||
                     session.order_status === 'refunded';
                 const releaseReason = canRelease
                     ? undefined
-                    : 'Hay platos en cocina o sin pagar — pasa primero por caja.';
+                    : 'Hay platos en cocina o un cobro pendiente — cobra aquí antes de liberar.';
                 return (
                     <BottomSheetDialog
                         isOpen
