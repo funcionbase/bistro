@@ -363,10 +363,16 @@ class TableSessionController extends Controller
 
     /**
      * Lista mesas con órdenes pendientes de cobro. Una sesión es "facturable"
-     * cuando tiene al menos una orden en estado operativo (no completed /
-     * cancelled / refunded / abandoned). El total a cobrar suma esas órdenes
-     * pendientes — la buffer (pending_approval) NO suma porque aún no se
-     * aprobó la cocina.
+     * cuando tiene al menos una orden con items consumibles sin pagar (paid_at = null).
+     *
+     * Una orden `completed` puede serlo por dos razones: (1) el tablero/KDS la
+     * marcó como entregada (items sin paid_at → sigue siendo facturable) o (2) el
+     * cajero cobró todos sus items vía payAll/payItems (items con paid_at setteado
+     * → no facturable). Las órdenes en terminal_failure (cancelled/refunded/etc.)
+     * nunca se cobran. La buffer (pending_approval) no suma porque no fue aprobada.
+     *
+     * El total_due se calcula sobre items consumibles sin pagar, igual que payAll,
+     * para que el monto en pantalla coincida exactamente con lo que el cajero cobra.
      *
      * Usado por /orders/cashier para que el cajero vea qué mesas le tocan
      * cobrar. Filtra estrictamente por sede activa.
@@ -376,30 +382,55 @@ class TableSessionController extends Controller
         $branchId = $request->attributes->get('active_branch_id');
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $terminal = array_merge(
-            config('orders.revenue', ['completed']),
-            config('orders.terminal_failure', ['cancelled', 'refunded', 'failed', 'abandoned']),
-        );
+        $terminalFailure = config('orders.terminal_failure', ['cancelled', 'refunded', 'failed', 'abandoned']);
+        $revenueStatuses = config('orders.revenue', ['completed']);
+        $consumableItemStatuses = config('orders.item_statuses.consumable', ['approved', 'in_kitchen', 'ready', 'served']);
 
         $sessions = TableSession::query()
             ->where('company_nit', $companyNit)
             ->where('branch_id', $branchId)
             ->whereIn('status', config('tables.active_statuses'))
-            ->with(['table:id,number', 'guests:id,table_session_id,display_name', 'orders'])
+            ->with(['table:id,number', 'guests:id,table_session_id,display_name', 'orders.items'])
             ->get();
 
         $data = [];
 
         foreach ($sessions as $session) {
-            $billableOrders = $session->orders->filter(
-                fn (Order $o) => $o->status !== 'pending_approval' && ! in_array($o->status, $terminal, true),
-            );
+            // Una orden `completed` puede serlo por dos razones:
+            // 1. El tablero/KDS la marcó como entregada (sin cobrar): items tienen paid_at = null.
+            // 2. El cajero la cobró vía payAll/payItems: todos sus items tienen paid_at setteado.
+            // Solo (1) es "facturable". Las órdenes en terminal_failure nunca se cobran.
+            $billableOrders = $session->orders->filter(function (Order $o) use ($terminalFailure, $revenueStatuses, $consumableItemStatuses): bool {
+                if ($o->status === 'pending_approval') {
+                    return false;
+                }
+                if (in_array($o->status, $terminalFailure, true)) {
+                    return false;
+                }
+                if (in_array($o->status, $revenueStatuses, true)) {
+                    // completed por tablero → tiene items sin pagar; completed por caja → todos paid.
+                    return $o->items->filter(
+                        fn (OrderItem $i) => $i->paid_at === null && in_array($i->status, $consumableItemStatuses, true),
+                    )->isNotEmpty();
+                }
+
+                return true;
+            });
 
             if ($billableOrders->isEmpty()) {
                 continue;
             }
 
-            $totalDue = $billableOrders->sum(fn (Order $o) => (float) $o->total);
+            // Total real pendiente: suma de items sin pagar en las órdenes facturables.
+            // Coincide con lo que payAll cobra (misma query base: consumable + paid_at IS NULL).
+            $totalDue = round(
+                $billableOrders->sum(function (Order $o) use ($consumableItemStatuses): float {
+                    return $o->items
+                        ->filter(fn (OrderItem $i) => $i->paid_at === null && in_array($i->status, $consumableItemStatuses, true))
+                        ->sum(fn (OrderItem $i) => (float) $i->unit_price * (int) $i->quantity);
+                }),
+                2,
+            );
 
             $data[] = [
                 'session_id' => $session->id,
