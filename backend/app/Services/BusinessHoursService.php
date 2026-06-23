@@ -156,7 +156,7 @@ class BusinessHoursService
     {
         $from = ($from ?? Carbon::now())->setTimezone($this->timezone);
 
-        $dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        $dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
         $baseHours = $this->hoursQuery($companyNit, $branchId)
             ->enabled()

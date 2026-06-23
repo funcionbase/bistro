@@ -261,7 +261,7 @@ export default function Roles() {
                             className="sm:hidden"
                             renderCard={(role) => {
                                 const usersCount = role.users_count ?? 0;
-                                const permsCount = role.permissions?.length ?? 0;
+                                const permsCount = (role.permissions ?? []).filter((p) => p.can_create || p.can_read || p.can_update || p.can_delete).length;
                                 return (
                                     <DataCard
                                         title={
@@ -300,7 +300,7 @@ export default function Roles() {
                                 <TableBody>
                                     {roles.map((role) => {
                                         const usersCount = role.users_count ?? 0;
-                                        const permsCount = role.permissions?.length ?? 0;
+                                        const permsCount = (role.permissions ?? []).filter((p) => p.can_create || p.can_read || p.can_update || p.can_delete).length;
                                         return (
                                             <TableRow key={role.id}>
                                                 <TableCell>

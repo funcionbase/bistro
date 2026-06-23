@@ -15,6 +15,7 @@ import { apiFetch } from '@/lib/api';
 import { formatCurrency } from '@/lib/coupon-helpers';
 import { cn } from '@/lib/utils';
 
+import { todayInBogota } from '@/lib/datetime';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -53,9 +54,9 @@ interface SummaryData {
 
 
 function defaultRange(): { from: string; to: string } {
-    const now = new Date();
-    const past = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
-    return { from: past.toISOString().slice(0, 10), to: now.toISOString().slice(0, 10) };
+    const today = todayInBogota();
+    const past = new Date(new Date(`${today}T00:00:00`).getTime() - 30 * 24 * 3600 * 1000);
+    return { from: past.toISOString().slice(0, 10), to: today };
 }
 
 export default function LoyaltyReports() {

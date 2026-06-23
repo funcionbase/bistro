@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/components/ui/toast';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
+import { todayInBogota } from '@/lib/datetime';
 import { useSharedData } from '@/lib/shared-data';
 import { cn } from '@/lib/utils';
 
@@ -427,7 +428,7 @@ export default function PlannerWeek() {
                                 <TableRow>
                                     <TableHead className="bg-muted/50 sticky left-0 z-10">Colaborador</TableHead>
                                     {days.map((d) => {
-                                        const isToday = fmtDate(d) === fmtDate(new Date());
+                                        const isToday = fmtDate(d) === todayInBogota();
                                         return (
                                             <TableHead
                                                 key={d.toISOString()}

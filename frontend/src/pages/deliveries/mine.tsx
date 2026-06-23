@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
+import { todayInBogota } from '@/lib/datetime';
 import type { Delivery } from '@/types';
 
 import { AlertCircle, Bike, Inbox, PackageCheck } from 'lucide-react';
@@ -59,7 +60,7 @@ export default function MyDeliveriesPage() {
         };
     }, []);
 
-    const todayFrom = useMemo(() => new Date().toISOString().slice(0, 10), []);
+    const todayFrom = useMemo(() => todayInBogota(), []);
 
     const fetchMine = useCallback(async () => {
         if (!token) return;

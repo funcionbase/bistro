@@ -140,7 +140,7 @@ export function PurchaseOrderDetailDrawer({
                                                 {i.description}
                                                 {i.unit && <span className="text-muted-foreground ml-1 text-xs">({i.unit})</span>}
                                             </td>
-                                            <td className="px-2 py-1.5 tabular-nums">{i.quantity}</td>
+                                            <td className="px-2 py-1.5 tabular-nums">{Number(i.quantity).toLocaleString('es-CO', { maximumFractionDigits: 3 })}</td>
                                             <td className="px-2 py-1.5 tabular-nums">{fmt(i.unit_cost)}</td>
                                             <td className="px-2 py-1.5">{i.tax_rate}%</td>
                                             <td className="px-2 py-1.5 text-right tabular-nums">{fmt(i.line_total)}</td>

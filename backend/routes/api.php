@@ -793,6 +793,13 @@ Route::prefix('v1')->group(function () {
                     ->name('api.hours.exceptions.destroy');
 
                 // Gestión de entregas / repartidores
+                // #119: bolsa de órdenes disponibles para auto-asignación.
+                // Requiere `deliveries.self_assign` (default rol Domiciliario).
+                // Declarada ANTES del grupo con `deliveries/{id}` para que el
+                // segmento estático "available" tome precedencia sobre la ruta dinámica.
+                Route::get('deliveries/available', [DeliveryController::class, 'available'])
+                    ->middleware('permission:deliveries.self_assign,read')
+                    ->name('api.deliveries.available');
                 Route::middleware('permission:deliveries.read,read')->group(function () {
                     Route::get('deliveries', [DeliveryController::class, 'index'])->name('api.deliveries.index');
                     Route::get('deliveries/couriers', [DeliveryController::class, 'getCouriers'])->name('api.deliveries.couriers');
@@ -805,11 +812,6 @@ Route::prefix('v1')->group(function () {
                         ->name('api.deliveries.show');
                     Route::get('orders/{orderId}/available-deliverers', [DeliveryStatusController::class, 'getAvailableDeliverers'])->name('api.orders.available-deliverers');
                 });
-                // #119: bolsa de órdenes disponibles para auto-asignación.
-                // Requiere `deliveries.self_assign` (default rol Domiciliario).
-                Route::get('deliveries/available', [DeliveryController::class, 'available'])
-                    ->middleware('permission:deliveries.self_assign,read')
-                    ->name('api.deliveries.available');
                 Route::post('deliveries', [DeliveryController::class, 'store'])
                     ->middleware('permission:deliveries.create,create')
                     ->name('api.deliveries.store');

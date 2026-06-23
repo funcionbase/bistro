@@ -12,6 +12,7 @@ import { StatTile } from '@/components/ui/stat-tile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
+import { todayInBogota } from '@/lib/datetime';
 
 import { AlertCircle, ArrowLeft, Download, FileBarChart, FileText, Info, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -63,8 +64,8 @@ function formatCop(value: number): string {
 }
 
 function computeRange(period: Period, customFrom: string, customTo: string): { from: string; to: string } {
-    const today = new Date();
-    const todayIso = isoDate(today);
+    const todayIso = todayInBogota();
+    const today = new Date(`${todayIso}T00:00:00`);
     switch (period) {
         case 'daily':
             return { from: todayIso, to: todayIso };
@@ -86,12 +87,13 @@ function computeRange(period: Period, customFrom: string, customTo: string): { f
 export default function EmployeesReports() {
     useToken();
 
-    const today = new Date();
+    const todayStr = todayInBogota();
+    const today = new Date(`${todayStr}T00:00:00`);
     const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
 
     const [period, setPeriod] = useState<Period>('monthly');
     const [customFrom, setCustomFrom] = useState(isoDate(monthAgo));
-    const [customTo, setCustomTo] = useState(isoDate(today));
+    const [customTo, setCustomTo] = useState(todayStr);
     const [rows, setRows] = useState<Row[]>([]);
     const [totals, setTotals] = useState<Totals | null>(null);
     const [loading, setLoading] = useState(true);
