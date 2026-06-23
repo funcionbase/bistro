@@ -141,8 +141,11 @@ class CrmService
                 ->where(function ($q) use ($contact): void {
                     $q->where('contact_id', $contact->id);
                     if ($contact->phone !== null && $contact->phone !== '') {
-                        $q->orWhere(function ($q2) use ($contact): void {
-                            $q2->whereNull('contact_id')->where('client_phone', $contact->phone);
+                        $normalized = self::normalizePhone($contact->phone);
+                        $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+                        $variants = array_values(array_unique(array_filter([$contact->phone, $normalized, $alt])));
+                        $q->orWhere(function ($q2) use ($variants): void {
+                            $q2->whereNull('contact_id')->whereIn('client_phone', $variants);
                         });
                     }
                 })
@@ -319,7 +322,18 @@ class CrmService
         }
 
         $contactIds = $contacts->pluck('id')->all();
-        $phones = $contacts->pluck('phone')->filter()->unique()->values()->all();
+
+        // Expandir variantes de teléfono (con/sin prefijo 57) para matchear
+        // `orders.client_phone` independiente del formato digitado en el POS.
+        $allPhoneVariants = [];
+        foreach ($contacts->pluck('phone')->filter()->unique() as $rawPhone) {
+            $normalized = self::normalizePhone((string) $rawPhone);
+            $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+            foreach (array_unique(array_filter([$rawPhone, $normalized, $alt])) as $pv) {
+                $allPhoneVariants[$pv] = true;
+            }
+        }
+        $phones = array_keys($allPhoneVariants);
 
         // Agregación SQL: una pasada por contact_id, una pasada por phone
         // (para legacy sin contact_id), después merge en PHP.
@@ -382,9 +396,18 @@ class CrmService
 
         $clients = $contacts->map(function (Contact $contact) use ($byContact, $byPhone, $tagsByContact): array {
             $a = $byContact->get($contact->id);
-            $b = $contact->phone !== null && $contact->phone !== ''
-                ? $byPhone->get($contact->phone)
-                : null;
+            $b = null;
+            if ($contact->phone !== null && $contact->phone !== '') {
+                $normalized = self::normalizePhone($contact->phone);
+                $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+                foreach (array_unique(array_filter([$contact->phone, $normalized, $alt])) as $pv) {
+                    $found = $byPhone->get($pv);
+                    if ($found !== null) {
+                        $b = $found;
+                        break;
+                    }
+                }
+            }
 
             $totalOrders = (int) ($a->total_orders ?? 0) + (int) ($b->total_orders ?? 0);
             $completed = (int) ($a->completed_orders ?? 0) + (int) ($b->completed_orders ?? 0);
@@ -457,13 +480,23 @@ class CrmService
 
         $hasPhone = $contact->phone !== null && $contact->phone !== '';
 
-        // Si el contacto no tiene teléfono, NO foldear órdenes legacy con
-        // `client_phone=''`: matchear solo por contact_id evita atribuir
-        // pedidos huérfanos (contact_id IS NULL + phone vacío) a este contacto.
-        // Consistente con buildClientList, que filtra phones no-vacíos.
-        $matchClause = $hasPhone
-            ? '(contact_id = ? OR (contact_id IS NULL AND client_phone = ?))'
-            : 'contact_id = ?';
+        // Variantes de teléfono: el POS guarda `client_phone` en el formato que
+        // digitó el cajero (10 dígitos sin prefijo o con 57/+57). Para no fallar
+        // el match cuando el formato difiere del almacenado en `contacts.phone`,
+        // buscamos con todas las variantes (crudo + normalizado + 10-dígitos).
+        $phoneVariants = [];
+        if ($hasPhone) {
+            $normalized = self::normalizePhone((string) $contact->phone);
+            $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+            $phoneVariants = array_values(array_unique(array_filter([$contact->phone, $normalized, $alt])));
+        }
+
+        if ($hasPhone) {
+            $inPlaceholders = implode(',', array_fill(0, count($phoneVariants), '?'));
+            $matchClause = "(contact_id = ? OR (contact_id IS NULL AND client_phone IN ({$inPlaceholders})))";
+        } else {
+            $matchClause = 'contact_id = ?';
+        }
 
         $bindings = [
             'completed',
@@ -474,8 +507,8 @@ class CrmService
             $contact->company_nit, $contact->id,
         ];
 
-        if ($hasPhone) {
-            $bindings[] = $contact->phone;
+        foreach ($phoneVariants as $pv) {
+            $bindings[] = $pv;
         }
 
         $rows = DB::select(

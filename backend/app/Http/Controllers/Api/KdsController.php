@@ -79,7 +79,6 @@ class KdsController extends Controller
             ->withoutGlobalScopes()
             ->where('company_nit', $companyNit)
             ->where('branch_id', $branchId)
-            ->whereNotNull('table_session_id')
             ->whereNotIn('status', $closedStatuses)
             ->pluck('id');
 

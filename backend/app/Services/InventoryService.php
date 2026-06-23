@@ -7,8 +7,11 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\IngredientMovement;
 use App\Models\IngredientStock;
+use App\Models\Order;
+use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Support\UnitConverter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -509,6 +512,121 @@ class InventoryService
                     $type,
                 ),
             ]);
+        }
+    }
+
+    /**
+     * Descuenta inventario por consumo de cocina a partir de las recetas activas
+     * de cada ítem vendido. Idempotencia garantizada por el caller vía
+     * `order.inventory_consumed_at`. Items sin receta se omiten con audit.
+     * Nunca bloquea el flujo de venta por inventario desactualizado
+     * (`allowNegativeStock=true`).
+     *
+     * @param  array<int, array<string, mixed>>  $items  snapshot de order.items[]
+     */
+    public function consumeForOrder(Order $order, array $items, ?User $actor, string $referencePrefix): void
+    {
+        $aggregated = [];
+        foreach ($items as $line) {
+            $itemId = $line['id'] ?? null;
+            $qty = (int) ($line['quantity'] ?? 0);
+            if (! $itemId || $qty <= 0) {
+                continue;
+            }
+            $aggregated[$itemId] = ($aggregated[$itemId] ?? 0) + $qty;
+        }
+
+        if (empty($aggregated)) {
+            return;
+        }
+
+        $recipes = Recipe::withoutBranchScope()
+            ->forCompany($order->company_nit)
+            ->where('branch_id', $order->branch_id)
+            ->active()
+            ->whereIn('menu_item_id', array_keys($aggregated))
+            ->with(['ingredient', 'warehouse'])
+            ->get()
+            ->groupBy('menu_item_id');
+
+        $reference = $referencePrefix.':order='.$order->id;
+
+        foreach ($aggregated as $itemId => $orderedQty) {
+            $itemRecipes = $recipes->get($itemId);
+            if (! $itemRecipes || $itemRecipes->isEmpty()) {
+                $this->auditService->log('inventory.recipe.missing', $actor, $order, [
+                    'order_id' => $order->id,
+                    'menu_item_id' => $itemId,
+                    'quantity' => $orderedQty,
+                ]);
+
+                continue;
+            }
+
+            foreach ($itemRecipes as $recipe) {
+                /** @var Ingredient|null $ingredient */
+                $ingredient = $recipe->ingredient;
+                if (! $ingredient || $ingredient->archived_at !== null) {
+                    $this->auditService->log('inventory.recipe.ingredient_unavailable', $actor, $order, [
+                        'order_id' => $order->id,
+                        'menu_item_id' => $itemId,
+                        'recipe_id' => $recipe->id,
+                        'ingredient_id' => $recipe->ingredient_id,
+                    ]);
+
+                    continue;
+                }
+
+                /** @var Warehouse|null $warehouse */
+                $warehouse = $recipe->warehouse;
+                if (! $warehouse || $warehouse->isArchived()) {
+                    $this->auditService->log('inventory.recipe.warehouse_unavailable', $actor, $order, [
+                        'order_id' => $order->id,
+                        'menu_item_id' => $itemId,
+                        'recipe_id' => $recipe->id,
+                        'warehouse_id' => $recipe->warehouse_id,
+                    ]);
+
+                    continue;
+                }
+
+                $perUnit = UnitConverter::convert((string) $recipe->quantity, $recipe->unit, $ingredient->unit);
+                $consumed = bcmul($perUnit, (string) $orderedQty, 3);
+                if (bccomp($consumed, '0', 3) <= 0) {
+                    continue;
+                }
+
+                $stockBefore = IngredientStock::query()
+                    ->where('ingredient_id', $ingredient->id)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->value('quantity');
+                $previousQuantity = $stockBefore !== null ? (string) $stockBefore : '0.000';
+
+                $this->recordMovement(
+                    ingredient: $ingredient,
+                    warehouse: $warehouse,
+                    type: self::TYPE_SALE_CONSUMPTION,
+                    signedQuantity: '-'.$consumed,
+                    unitCost: null,
+                    reference: $reference,
+                    actor: $actor,
+                    allowNegativeStock: true,
+                    branchId: $order->branch_id,
+                );
+
+                $newQuantity = bcsub($previousQuantity, $consumed, 3);
+                if (bccomp($newQuantity, '0', 3) < 0) {
+                    $this->auditService->log('inventory.sale_consumption.negative_stock', $actor, $order, [
+                        'order_id' => $order->id,
+                        'menu_item_id' => $itemId,
+                        'ingredient_id' => $ingredient->id,
+                        'warehouse_id' => $warehouse->id,
+                        'previous_quantity' => $previousQuantity,
+                        'consumed' => $consumed,
+                        'new_quantity' => $newQuantity,
+                    ]);
+                }
+            }
         }
     }
 

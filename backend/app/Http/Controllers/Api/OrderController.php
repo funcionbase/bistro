@@ -8,23 +8,21 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendOrderStatusSmsJob;
 use App\Models\Chat;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Coupon;
-use App\Models\Ingredient;
-use App\Models\IngredientStock;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderNote;
 use App\Models\PaymentReceipt;
-use App\Models\Recipe;
 use App\Models\RestaurantMenu;
 use App\Models\TableSession;
 use App\Models\TableSessionGuest;
 use App\Models\User;
-use App\Models\Warehouse;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
 use App\Services\CashRegisterService;
 use App\Services\CouponService;
+use App\Services\CrmService;
 use App\Services\FeaturePermissionService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyService;
@@ -32,7 +30,6 @@ use App\Services\RecipeCostService;
 use App\Services\TableSessionService;
 use App\Services\TaxCalculator;
 use App\Support\PhoneNumber;
-use App\Support\UnitConverter;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -306,6 +303,23 @@ class OrderController extends Controller
 
             return $order;
         });
+
+        // Vincular contact_id fuera de la txn: permite que CRM y fidelización
+        // encuentren la orden por FK directa sin depender del fallback de phone.
+        $clientPhone = $validated['client_phone'] ?? null;
+        if ($clientPhone !== null && $clientPhone !== '' && $order->contact_id === null) {
+            $normalized = CrmService::normalizePhone($clientPhone);
+            $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+            $contact = Contact::withoutBranchScope()
+                ->where('company_nit', $companyNit)
+                ->whereIn('phone', array_values(array_unique(array_filter([$clientPhone, $normalized, $alt]))))
+                ->orderByDesc('dian_profile_completed_at')
+                ->first();
+            if ($contact !== null) {
+                $order->contact_id = $contact->id;
+                $order->save();
+            }
+        }
 
         return response()->json([
             'data' => [
@@ -821,7 +835,7 @@ class OrderController extends Controller
             // debe re-descontarse. Si aún no pasó por cocina, el descuento
             // se hará en bloque al pasar a in_kitchen.
             if ($order->inventory_consumed_at !== null) {
-                $this->consumeInventoryForItems($order, $newLines, $actor, 'order.append_items');
+                $this->inventoryService->consumeForOrder($order, $newLines, $actor, 'order.append_items');
             }
 
             return [$order, $addedTotal];
@@ -987,6 +1001,22 @@ class OrderController extends Controller
 
             return [$order, $paidAt, $paymentData];
         });
+
+        // Vincular contact_id si aún está sin asignar (órdenes de Mesa no lo traen
+        // desde la creación). Idempotente — no toca si ya está asignado.
+        if ($order->contact_id === null && $order->client_phone !== null && $order->client_phone !== '') {
+            $normalized = CrmService::normalizePhone((string) $order->client_phone);
+            $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+            $contact = Contact::withoutBranchScope()
+                ->where('company_nit', $order->company_nit)
+                ->whereIn('phone', array_values(array_unique(array_filter([$order->client_phone, $normalized, $alt]))))
+                ->orderByDesc('dian_profile_completed_at')
+                ->first();
+            if ($contact !== null) {
+                $order->contact_id = $contact->id;
+                $order->save();
+            }
+        }
 
         $actor = $this->actingUser($request);
 
@@ -1300,7 +1330,7 @@ class OrderController extends Controller
             // ignora silenciosamente con audit; nunca bloquea el flujo de cocina.
             $consumedNow = false;
             if ($target === 'in_kitchen' && $order->inventory_consumed_at === null) {
-                $this->consumeInventoryForItems($order, $order->items ?? [], $actor, 'order.in_kitchen');
+                $this->inventoryService->consumeForOrder($order, $order->items ?? [], $actor, 'order.in_kitchen');
                 $order->inventory_consumed_at = now();
                 $order->save();
                 $consumedNow = true;
@@ -1532,128 +1562,6 @@ class OrderController extends Controller
             case 'completed':
                 $this->markOpenKitchenItemsServed($order);
                 break;
-        }
-    }
-
-    /**
-     * Descuenta inventario por consumo de cocina a partir de las recetas
-     * activas de cada item vendido. Items sin receta NO bloquean (se loguea
-     * audit y se continúa). El stock puede quedar negativo (`allowNegativeStock`)
-     * — el flujo de venta nunca se rompe por inventario desactualizado.
-     *
-     * @param  array<int, array<string, mixed>>  $items  snapshot order.items[]
-     */
-    private function consumeInventoryForItems(Order $order, array $items, ?User $actor, string $referencePrefix): void
-    {
-        // Agregamos por (menu_item_id, quantity) — un mismo item puede aparecer
-        // en varias líneas si appendItems lo añadió por separado.
-        $aggregated = [];
-        foreach ($items as $line) {
-            $itemId = $line['id'] ?? null;
-            $qty = (int) ($line['quantity'] ?? 0);
-            if (! $itemId || $qty <= 0) {
-                continue;
-            }
-            $aggregated[$itemId] = ($aggregated[$itemId] ?? 0) + $qty;
-        }
-
-        if (empty($aggregated)) {
-            return;
-        }
-
-        $itemIds = array_keys($aggregated);
-        // Costeo/consumo por sede (#costeo-multibodega): se filtra explícito por
-        // la sede de la orden. Sin esto, en contexto sin active_branch_id (jobs
-        // de settle) el BranchScope no aplicaría y se consumiría inventario de
-        // recetas de OTRAS sedes que compartan menu_item_id (cartas clonadas).
-        $recipes = Recipe::withoutBranchScope()
-            ->forCompany($order->company_nit)
-            ->where('branch_id', $order->branch_id)
-            ->active()
-            ->whereIn('menu_item_id', $itemIds)
-            ->with(['ingredient', 'warehouse'])
-            ->get()
-            ->groupBy('menu_item_id');
-
-        $reference = $referencePrefix.':order='.$order->id;
-
-        foreach ($aggregated as $itemId => $orderedQty) {
-            $itemRecipes = $recipes->get($itemId);
-            if (! $itemRecipes || $itemRecipes->isEmpty()) {
-                $this->auditService->log('inventory.recipe.missing', $actor, $order, [
-                    'order_id' => $order->id,
-                    'menu_item_id' => $itemId,
-                    'quantity' => $orderedQty,
-                ]);
-
-                continue;
-            }
-
-            foreach ($itemRecipes as $recipe) {
-                /** @var Ingredient|null $ingredient */
-                $ingredient = $recipe->ingredient;
-                if (! $ingredient || $ingredient->archived_at !== null) {
-                    $this->auditService->log('inventory.recipe.ingredient_unavailable', $actor, $order, [
-                        'order_id' => $order->id,
-                        'menu_item_id' => $itemId,
-                        'recipe_id' => $recipe->id,
-                        'ingredient_id' => $recipe->ingredient_id,
-                    ]);
-
-                    continue;
-                }
-
-                /** @var Warehouse|null $warehouse */
-                $warehouse = $recipe->warehouse;
-                if (! $warehouse || $warehouse->isArchived()) {
-                    $this->auditService->log('inventory.recipe.warehouse_unavailable', $actor, $order, [
-                        'order_id' => $order->id,
-                        'menu_item_id' => $itemId,
-                        'recipe_id' => $recipe->id,
-                        'warehouse_id' => $recipe->warehouse_id,
-                    ]);
-
-                    continue;
-                }
-
-                $perUnit = UnitConverter::convert((string) $recipe->quantity, $recipe->unit, $ingredient->unit);
-                $consumed = bcmul($perUnit, (string) $orderedQty, 3);
-                if (bccomp($consumed, '0', 3) <= 0) {
-                    continue;
-                }
-                $signed = '-'.$consumed;
-
-                $stockBefore = IngredientStock::query()
-                    ->where('ingredient_id', $ingredient->id)
-                    ->where('warehouse_id', $warehouse->id)
-                    ->value('quantity');
-                $previousQuantity = $stockBefore !== null ? (string) $stockBefore : '0.000';
-
-                $this->inventoryService->recordMovement(
-                    ingredient: $ingredient,
-                    warehouse: $warehouse,
-                    type: InventoryService::TYPE_SALE_CONSUMPTION,
-                    signedQuantity: $signed,
-                    unitCost: null,
-                    reference: $reference,
-                    actor: $actor,
-                    allowNegativeStock: true,
-                    branchId: $order->branch_id,
-                );
-
-                $newQuantity = bcsub($previousQuantity, $consumed, 3);
-                if (bccomp($newQuantity, '0', 3) < 0) {
-                    $this->auditService->log('inventory.sale_consumption.negative_stock', $actor, $order, [
-                        'order_id' => $order->id,
-                        'menu_item_id' => $itemId,
-                        'ingredient_id' => $ingredient->id,
-                        'warehouse_id' => $warehouse->id,
-                        'previous_quantity' => $previousQuantity,
-                        'consumed' => $consumed,
-                        'new_quantity' => $newQuantity,
-                    ]);
-                }
-            }
         }
     }
 }

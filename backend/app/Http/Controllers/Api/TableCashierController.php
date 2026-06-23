@@ -41,7 +41,7 @@ class TableCashierController extends Controller
             'guest_id' => ['nullable', 'uuid'],
             'item_ids' => ['required', 'array', 'min:1'],
             'item_ids.*' => ['uuid'],
-            'payment_method' => ['required', 'string', 'in:cash,card,transfer'],
+            'payment_method' => ['required', 'string', 'in:cash,card,transfer,nequi,daviplata'],
             'amount' => ['required', 'numeric', 'min:0'],
             'reference' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'tip_amount' => ['nullable', 'numeric', 'min:0'],
@@ -73,7 +73,7 @@ class TableCashierController extends Controller
         $user = $this->actor($request);
 
         $payload = $request->validate([
-            'payment_method' => ['required', 'string', 'in:cash,card,transfer'],
+            'payment_method' => ['required', 'string', 'in:cash,card,transfer,nequi,daviplata'],
             'amount' => ['required', 'numeric', 'min:0'],
             'reference' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: false)],
             'tip_amount' => ['nullable', 'numeric', 'min:0'],

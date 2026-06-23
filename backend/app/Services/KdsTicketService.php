@@ -29,7 +29,10 @@ use InvalidArgumentException;
  */
 class KdsTicketService
 {
-    public function __construct(private readonly AuditService $audit) {}
+    public function __construct(
+        private readonly AuditService $audit,
+        private readonly InventoryService $inventory,
+    ) {}
 
     /**
      * approved → in_kitchen. Setea `in_kitchen_at`. Si la orden estaba en
@@ -223,6 +226,7 @@ class KdsTicketService
                     ->exists();
                 if ($hasInKitchen) {
                     $order->status = 'in_kitchen';
+                    $this->maybeConsumeInventory($order);
                     $order->save();
                 }
             }
@@ -232,5 +236,23 @@ class KdsTicketService
 
         $order->status = 'ready';
         $order->save();
+    }
+
+    /**
+     * Descuenta inventario al pasar la orden a `in_kitchen` (idempotente vía
+     * `inventory_consumed_at`). Falla silenciosamente — nunca bloquea el KDS.
+     */
+    private function maybeConsumeInventory(Order $order): void
+    {
+        if ($order->inventory_consumed_at !== null) {
+            return;
+        }
+
+        try {
+            $this->inventory->consumeForOrder($order, $order->items ?? [], null, 'kds.in_kitchen');
+            $order->inventory_consumed_at = now();
+        } catch (\Throwable) {
+            // Nunca bloquear el flujo de cocina por inventario.
+        }
     }
 }
