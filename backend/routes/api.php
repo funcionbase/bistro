@@ -67,6 +67,7 @@ use App\Http\Controllers\Api\ReceiptPrintController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SesNotificationController;
+use App\Http\Controllers\Api\SetupGuideController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\TableAdminController;
@@ -303,6 +304,13 @@ Route::prefix('v1')->group(function () {
             Route::patch('companies/settings', [CompanySettingsController::class, 'update'])
                 ->middleware('permission:company.update,update')
                 ->name('api.companies.settings.update');
+
+            // Guía de configuración inicial (#setup-guide). RBAC validado en el
+            // controller (is_system=true, excluyendo Empleado). Sin permiso nuevo.
+            Route::get('company/setup-guide', [SetupGuideController::class, 'show'])
+                ->name('api.company.setup-guide.show');
+            Route::post('company/setup-guide/dismiss', [SetupGuideController::class, 'dismiss'])
+                ->name('api.company.setup-guide.dismiss');
 
             Route::match(['PUT', 'POST'], 'company', [CompanyController::class, 'update'])
                 ->middleware('permission:company.update,update')

@@ -1,5 +1,6 @@
 import { AlertsFeed } from '@/components/alerts/alerts-feed';
 import { ResolutionExpirationAlert } from '@/components/dian/resolution-expiration-alert';
+import { SetupGuide } from '@/components/setup-guide/setup-guide';
 import { AppLink } from '@/components/app-link';
 import LiveIndicator from '@/components/dashboard/live-indicator';
 import PeriodFilter from '@/components/dashboard/period-filter';
@@ -50,7 +51,7 @@ export default function Dashboard() {
     const initialPeriod = (searchParams.get('period') ?? 'today') as Period;
 
     const { period, setPeriod, branchFilter, setBranchFilter } = usePeriodFilter(initialPeriod);
-    const { has: hasPermission } = usePermissions();
+    const { has: hasPermission, isSystem } = usePermissions();
     // Sin sede activa, los endpoints `/api/v1/metrics/orders/active`,
     // `/cash-register/current` y compañía devuelven 422 NO_ACTIVE_BRANCH.
     // Gateamos el polling para no spammear logs/red mientras el usuario
@@ -58,10 +59,13 @@ export default function Dashboard() {
     //
     // Cuando la empresa está `suspended` (#193), `EnsureCompanyNotBlocked`
     // devuelve 403 `company_payment_blocked` en cualquier endpoint operativo.
-    const { activeBranch, activeCompany } = useSharedData();
+    const { activeBranch, activeCompany, role } = useSharedData();
     const hasActiveBranch = Boolean(activeBranch?.id);
     const isCompanySuspended = activeCompany ? isFullyBlocked(activeCompany.status) : false;
     const canPollMetrics = hasActiveBranch && !isCompanySuspended;
+    // Visible para Propietario y Administrador (is_system=true), no para Empleado.
+    // ponytail: backend duplica el check para seguridad; esto evita la request innecesaria.
+    const canSeeSetupGuide = isSystem && role?.name !== 'Empleado';
 
     // Datos del dashboard (#220): un solo endpoint que reemplaza las props
     // diferidas de Inertia. Re-fetch automático cada 5 min y al cambiar
@@ -165,6 +169,8 @@ export default function Dashboard() {
                         </AlertDescription>
                     </Alert>
                 )}
+
+                {canSeeSetupGuide && <SetupGuide />}
 
                 {/* Alertas accionables (#124). Gate por reports.read — el feed
                     expone información de márgenes/costos indirectamente. */}
