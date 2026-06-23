@@ -409,7 +409,8 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                             id="new-client-email"
                             type="email"
                             value={form.email}
-                            onChange={(e) => setField('email', e.target.value)}
+                            onChange={(e) => { (e.target as HTMLInputElement).setCustomValidity(''); setField('email', e.target.value); }}
+                            onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Ingresa un correo válido (ej. usuario@dominio.com)')}
                             placeholder={isCompany ? 'facturacion@empresa.com' : 'persona@ejemplo.com'}
                             disabled={submitting}
                             maxLength={120}

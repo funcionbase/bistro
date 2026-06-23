@@ -36,6 +36,15 @@ class OrderReportRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'date_from' => 'fecha desde',
+            'date_to' => 'fecha hasta',
+        ];
+    }
+
     public function after(): array
     {
         return [

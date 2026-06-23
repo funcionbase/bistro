@@ -71,7 +71,7 @@ export function RecordEntryModal({ open, onClose, onSubmit, ingredient, submitti
                             {err('quantity') && <p className="text-destructive text-xs">{err('quantity')}</p>}
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="entry_cost">Costo unitario (COP)</Label>
+                            <Label htmlFor="entry_cost">Costo por 1 {ingredient?.unit ?? 'unidad'} (COP)</Label>
                             <Input
                                 id="entry_cost"
                                 type="number"

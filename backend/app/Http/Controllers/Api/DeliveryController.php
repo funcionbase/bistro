@@ -243,7 +243,7 @@ class DeliveryController extends Controller
 
         $query = Delivery::forCompany($companyNit)
             ->forUser($userId)
-            ->with(['order:id,client_phone,client_name,delivery_address,total,status,branch_id,table_number', 'deliverer:id,name'])
+            ->with(['order:id,client_phone,delivery_address,total,status,branch_id,table_number', 'deliverer:id,name'])
             ->orderByDesc('assigned_at')
             ->orderByDesc('id');
 

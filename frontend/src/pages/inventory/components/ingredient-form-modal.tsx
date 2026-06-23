@@ -181,7 +181,7 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                                     {err('initial_stock') && <p className="text-destructive text-xs">{err('initial_stock')}</p>}
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="initial_cost">Costo unitario (COP)</Label>
+                                    <Label htmlFor="initial_cost">Costo por 1 {unit} (COP)</Label>
                                     <Input
                                         id="initial_cost"
                                         type="number"
@@ -200,7 +200,7 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                         <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={submitting}>
+                        <Button type="submit" disabled={submitting || name.trim() === ''}>
                             {submitting && <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />}
                             {editing ? 'Guardar' : 'Crear insumo'}
                         </Button>

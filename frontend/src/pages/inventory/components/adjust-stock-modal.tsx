@@ -49,8 +49,8 @@ export function AdjustStockModal({ open, onClose, onSubmit, ingredient, submitti
                     <DialogDescription>
                         {ingredient ? (
                             <>
-                                Insumo: <span className="font-medium">{ingredient.name}</span> · existencias totales {ingredient.total_stock}{' '}
-                                {ingredient.unit}
+                                Insumo: <span className="font-medium">{ingredient.name}</span> · existencias totales{' '}
+                                {Number(ingredient.total_stock).toLocaleString('es-CO', { maximumFractionDigits: 3 })} {ingredient.unit}
                             </>
                         ) : null}
                     </DialogDescription>
@@ -107,7 +107,7 @@ export function AdjustStockModal({ open, onClose, onSubmit, ingredient, submitti
                         <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={submitting}>
+                        <Button type="submit" disabled={submitting || quantity === '' || Number(quantity) <= 0 || reference.trim().length < 3}>
                             {submitting && <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />}
                             Aplicar ajuste
                         </Button>
