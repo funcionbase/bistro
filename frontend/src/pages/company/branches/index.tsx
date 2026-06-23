@@ -1,4 +1,4 @@
-import { BusinessTypeSelector } from '@/components/business-type-selector';
+﻿import { BusinessTypeSelector } from '@/components/business-type-selector';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -503,7 +503,7 @@ export default function BranchesIndex() {
                     <DialogHeader>
                         <DialogTitle>{form.id ? 'Editar sede' : 'Nueva sede'}</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={submitForm} className="space-y-4">
+                    <form noValidate onSubmit={submitForm} className="space-y-4">
                         {formError && (
                             <Alert variant="destructive">
                                 <AlertDescription>{formError}</AlertDescription>

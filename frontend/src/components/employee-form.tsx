@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -142,7 +142,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form noValidate onSubmit={handleSubmit}>
             <fieldset disabled={readOnly} className="space-y-6 disabled:cursor-default">
             <DashboardPanel title="Identidad" icon={IdCard}>
                 <div className="grid gap-4 md:grid-cols-3">

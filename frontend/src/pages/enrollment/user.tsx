@@ -1,4 +1,4 @@
-import InputError from '@/components/input-error';
+﻿import InputError from '@/components/input-error';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -198,7 +198,7 @@ export default function EnrollmentUser() {
                             )}
 
                             {!recoveryNotice && step === 1 && (
-                                <form className="flex flex-col gap-6" onSubmit={handleNextStep} autoComplete="off">
+                                <form noValidate className="flex flex-col gap-6" onSubmit={handleNextStep} autoComplete="off">
                                     <div className="grid gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="first_name">Nombres *</Label>
@@ -250,7 +250,7 @@ export default function EnrollmentUser() {
                             )}
 
                             {!recoveryNotice && step === 2 && (
-                                <form className="flex flex-col gap-6" onSubmit={handleSubmit} autoComplete="off">
+                                <form noValidate className="flex flex-col gap-6" onSubmit={handleSubmit} autoComplete="off">
                                     <p className="text-muted-foreground text-sm">Para continuar, debes aceptar nuestros términos legales.</p>
 
                                     <div className="border-border bg-muted/30 space-y-4 rounded-lg border p-4">

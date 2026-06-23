@@ -1,4 +1,4 @@
-import { BusinessTypeSelector } from '@/components/business-type-selector';
+﻿import { BusinessTypeSelector } from '@/components/business-type-selector';
 import { PlanInfoBlock } from '@/components/enrollment/plan-info-block';
 import { PromoLandingPanel } from '@/components/enrollment/promo-landing-panel';
 import InputError from '@/components/input-error';
@@ -267,7 +267,7 @@ export default function EnrollmentCompany() {
                             )}
 
                             {step === 1 && (
-                                <form className="flex flex-col gap-6" onSubmit={handleSubmitStep1}>
+                                <form noValidate className="flex flex-col gap-6" onSubmit={handleSubmitStep1}>
                                     <p className="text-muted-foreground text-sm">
                                         Antes de registrar tu empresa debes leer y aceptar el Contrato de Servicio que rige la relación con
                                         flexyflow.
@@ -302,7 +302,7 @@ export default function EnrollmentCompany() {
                             )}
 
                             {step === 2 && (
-                                <form className="flex flex-col gap-6" onSubmit={handleSubmitStep2}>
+                                <form noValidate className="flex flex-col gap-6" onSubmit={handleSubmitStep2}>
                                     <div className="grid gap-3">
                                         <p className="text-muted-foreground text-sm">
                                             Elige cómo opera tu primera sede. Esto define qué módulos y áreas de preparación quedan habilitados de
@@ -329,7 +329,7 @@ export default function EnrollmentCompany() {
                             )}
 
                             {step === 3 && (
-                                <form className="flex flex-col gap-6" onSubmit={handleSubmitStep3}>
+                                <form noValidate className="flex flex-col gap-6" onSubmit={handleSubmitStep3}>
                                     <div className="grid gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="nit">NIT *</Label>

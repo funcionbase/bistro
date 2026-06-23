@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,7 +73,7 @@ export function SupplierFormModal({ open, onClose, onSubmit, editing, submitting
                     <DialogDescription>Datos de contacto y términos comerciales del proveedor.</DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form noValidate onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="name">Nombre / Razón social</Label>
                         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={150} />

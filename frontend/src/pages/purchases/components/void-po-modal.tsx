@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { LoaderCircle } from 'lucide-react';
@@ -46,7 +46,7 @@ export function ReasonPromptModal({
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-4">
+                <form noValidate onSubmit={submit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="reason">Motivo</Label>
                         <textarea

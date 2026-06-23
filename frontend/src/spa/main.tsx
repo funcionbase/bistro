@@ -8,6 +8,7 @@ import { SavePageEasterEgg } from '../components/save-page-easter-egg';
 import { initializeTheme } from '../hooks/use-appearance';
 import { attachCtaListener } from '../lib/analytics';
 import { installChunkRecoveryHandlers } from '../lib/chunk-recovery';
+import { activateSpanishValidation } from '../lib/native-validation-i18n';
 import { queryClient } from '../lib/query-client';
 import { setToken } from '../lib/token';
 import { router } from './router';
@@ -56,6 +57,7 @@ if (el) {
 
 initializeTheme();
 attachCtaListener();
+activateSpanishValidation();
 
 // Service Worker (PWA): registra `/sw.js` para cache de assets y soporte offline.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

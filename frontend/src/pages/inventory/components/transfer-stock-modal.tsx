@@ -1,4 +1,4 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+﻿import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -98,7 +98,7 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-4">
+                <form noValidate onSubmit={submit} className="space-y-4">
                     <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="transfer_from">Desde</Label>

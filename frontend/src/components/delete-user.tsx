@@ -1,4 +1,4 @@
-import { useApiForm } from '@/hooks/use-api-form';
+﻿import { useApiForm } from '@/hooks/use-api-form';
 import { FormEventHandler, useRef, useState } from 'react';
 
 import InputError from '@/components/input-error';
@@ -59,7 +59,7 @@ export default function DeleteUser() {
                 <p className="text-muted-foreground text-sm">
                     Al eliminar tu cuenta, todos sus recursos y datos se borrarán permanentemente. Ingresa tu contraseña para confirmar.
                 </p>
-                <form className="mt-4 space-y-4" onSubmit={deleteUser}>
+                <form noValidate className="mt-4 space-y-4" onSubmit={deleteUser}>
                     <div className="grid gap-2">
                         <Label htmlFor="password" className="sr-only">
                             Contraseña

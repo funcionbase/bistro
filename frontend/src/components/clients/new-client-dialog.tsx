@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -256,7 +256,7 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                         opcional y puede compartirse entre familiares.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form noValidate onSubmit={handleSubmit} className="space-y-4">
                     {/* Selector de naturaleza — define qué doc_types se permiten */}
                     <div className="space-y-1.5">
                         <Label>Tipo de contacto</Label>

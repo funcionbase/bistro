@@ -1,4 +1,4 @@
-import { BillingTab } from '@/components/company-settings/billing-tab';
+﻿import { BillingTab } from '@/components/company-settings/billing-tab';
 import { CompanyBankSection } from '@/components/company-settings/company-bank-section';
 import { CompanyColorSection } from '@/components/company-settings/company-color-section';
 import { CompanyFiscalSection } from '@/components/company-settings/company-fiscal-section';
@@ -117,7 +117,7 @@ export default function CompanySettings() {
                             </Alert>
                         )}
 
-                        <form onSubmit={settings.handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <form noValidate onSubmit={settings.handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <CompanyGeneralSection
                                 nit={company?.nit ?? ''}
                                 commercialName={settings.commercialName}

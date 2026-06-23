@@ -1,4 +1,4 @@
-import AppLogoIcon from '@/components/app-logo-icon';
+﻿import AppLogoIcon from '@/components/app-logo-icon';
 import { useApiForm } from '@/hooks/use-api-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -309,7 +309,7 @@ function TableJoinForm({ context }: { context: TableJoinContext }) {
                             </Alert>
                         )}
 
-                        <form onSubmit={handleSubmit} className="max-w-md space-y-5">
+                        <form noValidate onSubmit={handleSubmit} className="max-w-md space-y-5">
                             <div className="space-y-1.5">
                                 <Label htmlFor="phone" className="flex items-center gap-1.5">
                                     <Phone className="h-3.5 w-3.5" />

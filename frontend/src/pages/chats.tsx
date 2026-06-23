@@ -1,4 +1,4 @@
-import { ChatMessageMedia } from '@/components/chats/chat-message-media';
+﻿import { ChatMessageMedia } from '@/components/chats/chat-message-media';
 import { ChatMessageStatusTicks } from '@/components/chats/chat-message-status-ticks';
 import { ChatSourceBadge } from '@/components/chats/chat-source-badge';
 import { ClientDetailModal, type ClientDetail } from '@/components/chats/client-detail-modal';
@@ -518,7 +518,7 @@ export default function ChatsPage() {
                                 </div>
 
                                 {selectedChat && (
-                                    <form onSubmit={handleSend} className="border-t p-3">
+                                    <form noValidate onSubmit={handleSend} className="border-t p-3">
                                         {sendError && <p className="text-destructive mb-2 text-xs">{sendError}</p>}
                                         {!canUpdate && (
                                             <p className="text-muted-foreground mb-2 text-xs">
@@ -578,7 +578,7 @@ export default function ChatsPage() {
                     <DialogHeader>
                         <DialogTitle>Editar contacto</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleSaveContact} className="space-y-3">
+                    <form noValidate onSubmit={handleSaveContact} className="space-y-3">
                         <div className="space-y-1">
                             <Label htmlFor="contact-name">Nombre</Label>
                             <Input

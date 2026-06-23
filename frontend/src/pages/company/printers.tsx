@@ -1,4 +1,4 @@
-import { PageShell } from '@/components/page-shell';
+﻿import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -296,7 +296,7 @@ export default function CompanyPrinters() {
                         <DialogTitle>{form.id ? 'Editar impresora' : 'Nueva impresora'}</DialogTitle>
                     </DialogHeader>
 
-                    <form onSubmit={submit} className="flex flex-col gap-4">
+                    <form noValidate onSubmit={submit} className="flex flex-col gap-4">
                         {formError && (
                             <Alert variant="destructive">
                                 <AlertCircle className="h-4 w-4" />

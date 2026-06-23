@@ -1,4 +1,4 @@
-import { Transition } from '@headlessui/react';
+﻿import { Transition } from '@headlessui/react';
 import { FormEventHandler } from 'react';
 
 import DeleteUser from '@/components/delete-user';
@@ -37,7 +37,7 @@ export default function Profile() {
                 <div className="space-y-6">
                     <HeadingSmall title="Información del perfil" description="Actualiza tu nombre, cédula y correo" />
 
-                    <form onSubmit={submit} className="space-y-6">
+                    <form noValidate onSubmit={submit} className="space-y-6">
                         <div className="grid gap-2 sm:grid-cols-2">
                             <div className="grid gap-2">
                                 <Label htmlFor="first_name">Nombres</Label>

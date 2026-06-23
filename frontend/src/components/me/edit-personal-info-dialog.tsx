@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { SanitizedInput } from '@/components/ui/sanitized-input';
@@ -144,7 +144,7 @@ export function EditPersonalInfoDialog({ open, onOpenChange, current, onUpdated 
                     <DialogTitle>Editar información personal</DialogTitle>
                     <DialogDescription>Actualiza tus nombres y apellidos. Tu nombre completo se arma con ambos.</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form noValidate onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="me-first-name">Nombres</Label>
                         <SanitizedInput

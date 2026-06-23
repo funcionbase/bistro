@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +43,7 @@ export function MarkPaidModal({ open, onClose, onConfirm, submitting, errors }: 
                     <DialogDescription>El pago marca la orden como `paid` — terminal salvo anulación.</DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-4">
+                <form noValidate onSubmit={submit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label>Método</Label>
                         <div className="flex gap-2">

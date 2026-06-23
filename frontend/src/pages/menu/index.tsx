@@ -1,4 +1,4 @@
-import { CloneMenuButton } from '@/components/branches/clone-menu-button';
+﻿import { CloneMenuButton } from '@/components/branches/clone-menu-button';
 import MenuCard from '@/components/menu/menu-card';
 import PublishModal from '@/components/menu/publish-modal';
 import ScheduleModal from '@/components/menu/schedule-modal';
@@ -262,7 +262,7 @@ export default function MenuIndex() {
                         {showForm && (
                             <Card>
                                 <CardContent className="pt-5">
-                                    <form onSubmit={handleCreate} className="space-y-3">
+                                    <form noValidate onSubmit={handleCreate} className="space-y-3">
                                         <div className="grid gap-1.5">
                                             <Label htmlFor="menu-name">Nombre del menú *</Label>
                                             <Input

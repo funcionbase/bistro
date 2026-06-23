@@ -1,4 +1,4 @@
-import { PageShell } from '@/components/page-shell';
+﻿import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -361,7 +361,7 @@ export default function CompanyKdsPage() {
                         <DialogTitle>{stationForm.id ? 'Editar estación' : 'Nueva estación'}</DialogTitle>
                         <DialogDescription>Define el slug, los umbrales SLA y el color identitario.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={submitStation} className="space-y-4">
+                    <form noValidate onSubmit={submitStation} className="space-y-4">
                         <div className="space-y-1.5">
                             <Label htmlFor="kds-name">Nombre *</Label>
                             <Input

@@ -1,4 +1,4 @@
-import InputError from '@/components/input-error';
+﻿import InputError from '@/components/input-error';
 import { KdsStationSelect } from '@/components/kds/kds-station-select';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -66,7 +66,7 @@ export default function CategoryFormModal({ menuId, category, onClose, onSaved }
                     <DialogTitle>{isEditing ? 'Editar categoría' : 'Nueva categoría'}</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form noValidate onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="cat-name">Nombre *</Label>
                         <Input

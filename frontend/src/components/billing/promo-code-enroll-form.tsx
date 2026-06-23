@@ -1,4 +1,4 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+﻿import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
 import { Input } from '@/components/ui/input';
@@ -80,7 +80,7 @@ export function PromoCodeEnrollForm({ onPreview, onApply }: PromoCodeEnrollFormP
 
     return (
         <DashboardPanel title="Inscribir un código promocional" icon={BadgePercent}>
-            <form className="space-y-4" onSubmit={handlePreview}>
+            <form noValidate className="space-y-4" onSubmit={handlePreview}>
                 <div className="grid gap-2">
                     <Label htmlFor="promo-code">Código</Label>
                     <div className="flex flex-col gap-2 sm:flex-row">

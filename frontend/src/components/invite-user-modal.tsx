@@ -1,4 +1,4 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+﻿import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -143,7 +143,7 @@ export default function InviteUserModal({ roles, onInvited }: InviteUserModalPro
                         </DialogFooter>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form noValidate onSubmit={handleSubmit} className="space-y-4">
                         {errors.general && (
                             <Alert variant="destructive">
                                 <AlertCircle className="h-4 w-4" />

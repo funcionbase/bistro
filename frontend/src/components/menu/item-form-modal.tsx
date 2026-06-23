@@ -1,4 +1,4 @@
-import InputError from '@/components/input-error';
+﻿import InputError from '@/components/input-error';
 import ImageUploadZone from '@/components/menu/image-upload-zone';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -119,7 +119,7 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                     <DialogTitle>{isEditing ? 'Editar ítem' : 'Nuevo ítem'}</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form noValidate onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-1.5">
                         <Label htmlFor="item-name">Nombre *</Label>
                         <Input
