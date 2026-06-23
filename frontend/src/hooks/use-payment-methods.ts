@@ -1,5 +1,5 @@
 import { useSharedData } from '@/lib/shared-data';
-import type { PaymentMethodsConfig, PaymentReceiptMethod } from '@/types';
+import type { PaymentMethod, PaymentMethodsConfig } from '@/types';
 
 /**
  * Fallback embebido si el contexto global de la SPA no está disponible aún
@@ -9,15 +9,17 @@ import type { PaymentMethodsConfig, PaymentReceiptMethod } from '@/types';
  * replicarse allá. Ver `bistro/backend/constants/PAYMENT_METHODS.md`.
  */
 export const PAYMENT_METHODS_FALLBACK: PaymentMethodsConfig = {
-    methods: ['cash', 'card', 'transfer'],
+    methods: ['cash', 'card', 'transfer', 'nequi', 'daviplata'],
     receipt_methods: ['cash', 'card', 'transfer', 'refund'],
     labels: {
         cash: 'Efectivo',
         card: 'Tarjeta',
         transfer: 'Transferencia',
+        nequi: 'Nequi',
+        daviplata: 'Daviplata',
         refund: 'Devolución',
     },
-    requires_reference: ['card', 'transfer'],
+    requires_reference: ['card', 'transfer', 'nequi', 'daviplata'],
 };
 
 /**
@@ -29,12 +31,12 @@ export function usePaymentMethods(): PaymentMethodsConfig {
     return page.props.paymentMethods ?? PAYMENT_METHODS_FALLBACK;
 }
 
-export function paymentMethodLabel(config: PaymentMethodsConfig | undefined, method: PaymentReceiptMethod): string {
+export function paymentMethodLabel(config: PaymentMethodsConfig | undefined, method: PaymentMethod | 'refund'): string {
     const cfg = config ?? PAYMENT_METHODS_FALLBACK;
     return cfg.labels[method] ?? method;
 }
 
-export function paymentRequiresReference(config: PaymentMethodsConfig | undefined, method: PaymentReceiptMethod): boolean {
+export function paymentRequiresReference(config: PaymentMethodsConfig | undefined, method: PaymentMethod | 'refund'): boolean {
     const cfg = config ?? PAYMENT_METHODS_FALLBACK;
     return cfg.requires_reference.includes(method);
 }

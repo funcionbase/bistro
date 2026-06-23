@@ -121,7 +121,7 @@ function emptyLiveSummary(): CashSessionLiveSummary {
         expected_cash: 0,
         orders_count: 0,
         pending_orders: 0,
-        expenses: { total: 0, count: 0, by_method: { cash: 0, card: 0, transfer: 0 }, by_category: {} },
+        expenses: { total: 0, count: 0, by_method: { cash: 0, card: 0, transfer: 0, nequi: 0, daviplata: 0 }, by_category: {} },
     };
 }
 

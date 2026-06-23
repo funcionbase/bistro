@@ -1,7 +1,7 @@
 import { usePaymentMethods } from '@/hooks/use-payment-methods';
 import { cn } from '@/lib/utils';
 import type { PaymentMethod } from '@/types';
-import { Banknote, CreditCard, QrCode, type LucideIcon } from 'lucide-react';
+import { Banknote, CreditCard, QrCode, Smartphone, type LucideIcon } from 'lucide-react';
 
 export type PaymentMethodPickerValue = PaymentMethod;
 
@@ -13,6 +13,8 @@ const METHOD_ICONS: Record<PaymentMethod, LucideIcon> = {
     cash: Banknote,
     card: CreditCard,
     transfer: QrCode,
+    nequi: Smartphone,
+    daviplata: Smartphone,
 };
 
 interface PaymentMethodPickerProps {

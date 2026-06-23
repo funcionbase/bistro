@@ -320,7 +320,7 @@ class TableCashierService
             $receipt->company_nit = $lockedSession->company_nit;
             $receipt->branch_id = $lockedSession->branch_id;
             $receipt->client_uuid = $input['client_uuid'];
-            $receipt->payment_method = $input['payment_method'];
+            $receipt->payment_method = $this->normalizeReceiptMethod($input['payment_method']);
             $receipt->amount = number_format($expectedAmount, 2, '.', '');
             $receipt->reference = $input['reference'] ?? null;
             $receipt->paid_at = $now;
@@ -500,7 +500,7 @@ class TableCashierService
                 $receipt->company_nit = $lockedSession->company_nit;
                 $receipt->branch_id = $lockedSession->branch_id;
                 $receipt->client_uuid = $orderClientUuid;
-                $receipt->payment_method = $input['payment_method'];
+                $receipt->payment_method = $this->normalizeReceiptMethod($input['payment_method']);
                 $receipt->amount = number_format($orderAmount, 2, '.', '');
                 $receipt->reference = $input['reference'] ?? null;
                 $receipt->paid_at = $now;
@@ -715,14 +715,26 @@ class TableCashierService
     }
 
     /**
-     * Solo cash/card/transfer son cobros válidos. `refund` se reserva
-     * para `refundItem()` que setea el método directamente.
+     * Solo cash/card/transfer/nequi/daviplata son cobros válidos. `refund`
+     * se reserva para `refundItem()` que setea el método directamente.
+     * nequi/daviplata se normalizan a 'transfer' al crear el PaymentReceipt.
      */
     private function guardPaymentMethod(string $method, bool $allowRefund): void
     {
-        $allowed = $allowRefund ? ['cash', 'card', 'transfer', 'refund'] : ['cash', 'card', 'transfer'];
+        $allowed = $allowRefund
+            ? ['cash', 'card', 'transfer', 'refund', 'nequi', 'daviplata']
+            : ['cash', 'card', 'transfer', 'nequi', 'daviplata'];
         if (! in_array($method, $allowed, true)) {
             throw new InvalidArgumentException('Método de pago inválido.');
         }
+    }
+
+    /** Normaliza aliases de transferencia → 'transfer' para payment_receipts. */
+    private function normalizeReceiptMethod(string $method): string
+    {
+        return match ($method) {
+            'nequi', 'daviplata' => 'transfer',
+            default => $method,
+        };
     }
 }

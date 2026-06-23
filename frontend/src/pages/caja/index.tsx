@@ -554,7 +554,7 @@ export default function CajaPage() {
                                     </div>
 
                                     <div className="max-h-[40vh] space-y-2 overflow-y-auto">
-                                        {cartLines.length === 0 ? (
+                                        {!menu || cartLines.length === 0 ? (
                                             <p className="text-muted-foreground py-6 text-center text-sm">Sin ítems aún</p>
                                         ) : (
                                             cartLines.map((line) => (

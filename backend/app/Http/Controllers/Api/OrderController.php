@@ -899,7 +899,7 @@ class OrderController extends Controller
         $this->permissionService->assertPermission($request, 'orders', 'update');
 
         $validated = $request->validate([
-            'payment_method' => ['required', Rule::in(['cash', 'card', 'transfer'])],
+            'payment_method' => ['required', Rule::in(['cash', 'card', 'transfer', 'nequi', 'daviplata'])],
             'amount_received' => ['required_if:payment_method,cash', 'nullable', 'numeric', 'min:0'],
             'reference' => ['nullable', new SafePlainText(maxBytes: 120)],
             // Propina voluntaria (CO). NO suma a total ni a base gravable, NO genera
@@ -965,7 +965,10 @@ class OrderController extends Controller
                 'file_path' => null,
                 // Columnas estructuradas (fuente de verdad contable). amount es el
                 // INGRESO de la empresa: NO incluye propina (la propina es del staff).
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => match ($validated['payment_method']) {
+                    'nequi', 'daviplata' => 'transfer',
+                    default => $validated['payment_method'],
+                },
                 'amount' => $total,
                 'reference' => $validated['reference'] ?? null,
                 'paid_at' => $paidAt,

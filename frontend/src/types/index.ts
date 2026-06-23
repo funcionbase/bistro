@@ -315,14 +315,14 @@ export interface RbacActionDescriptor {
  * - `requires_reference`: métodos que exigen `reference` en backend
  *   (CLAUDE.md §13: card/transfer siempre, cash opcional).
  */
-export type PaymentMethod = 'cash' | 'card' | 'transfer';
-export type PaymentReceiptMethod = PaymentMethod | 'refund';
+export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'nequi' | 'daviplata';
+export type PaymentReceiptMethod = 'cash' | 'card' | 'transfer' | 'refund';
 
 export interface PaymentMethodsConfig {
     methods: PaymentMethod[];
     receipt_methods: PaymentReceiptMethod[];
-    labels: Record<PaymentReceiptMethod, string>;
-    requires_reference: PaymentReceiptMethod[];
+    labels: Partial<Record<PaymentMethod | 'refund', string>>;
+    requires_reference: (PaymentMethod | 'refund')[];
 }
 
 /**

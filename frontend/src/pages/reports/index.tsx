@@ -22,6 +22,7 @@ import { useOrderStatuses } from '@/hooks/use-order-statuses';
 import type { KanbanOrder } from '@/hooks/use-orders';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
+import { todayInBogota } from '@/lib/datetime';
 import { statusBadgeClass, statusLabel } from '@/lib/order-status';
 import { cn } from '@/lib/utils';
 import { type Order, type OrderStatus, type ReportSummary } from '@/types';
@@ -197,7 +198,7 @@ export default function Reports() {
         return () => window.removeEventListener('open-order-detail', handler);
     }, [openOrderDetail]);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInBogota();
 
     const buildQuery = useCallback(
         (page: number) => {

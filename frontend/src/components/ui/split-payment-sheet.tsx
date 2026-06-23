@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { paymentRequiresReference, usePaymentMethods } from '@/hooks/use-payment-methods';
 import { cn } from '@/lib/utils';
 import type { PaymentMethod } from '@/types';
-import { Banknote, CreditCard, type LucideIcon, Send } from 'lucide-react';
+import { Banknote, CreditCard, type LucideIcon, Send, Smartphone } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface SplitPaymentSheetProps {
@@ -34,6 +34,8 @@ const METHOD_ICONS: Record<PaymentMethod, LucideIcon> = {
     cash: Banknote,
     card: CreditCard,
     transfer: Send,
+    nequi: Smartphone,
+    daviplata: Smartphone,
 };
 
 /**

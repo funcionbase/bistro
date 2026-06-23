@@ -21,9 +21,12 @@ declare(strict_types=1);
 return [
 
     // Métodos seleccionables al cobrar/registrar pago manual.
-    'methods' => ['cash', 'card', 'transfer'],
+    // nequi/daviplata son aliases de 'transfer' — el backend los normaliza
+    // a 'transfer' en payment_receipts para mantener la lista cerrada DIAN.
+    'methods' => ['cash', 'card', 'transfer', 'nequi', 'daviplata'],
 
     // Set completo que puede aparecer en payment_receipts.payment_method (incluye refund).
+    // Lista cerrada DIAN — nequi/daviplata se almacenan como 'transfer'.
     'receipt_methods' => ['cash', 'card', 'transfer', 'refund'],
 
     // Etiquetas en español para UI/PDFs/recibos.
@@ -31,10 +34,12 @@ return [
         'cash' => 'Efectivo',
         'card' => 'Tarjeta',
         'transfer' => 'Transferencia',
+        'nequi' => 'Nequi',
+        'daviplata' => 'Daviplata',
         'refund' => 'Devolución',
     ],
 
     // Métodos para los que `reference` es obligatoria (#119 + constants/PAYMENT_METHODS.md).
     // Efectivo se documenta con quién autorizó (actor_id del JWT en AuditLog).
-    'requires_reference' => ['card', 'transfer'],
+    'requires_reference' => ['card', 'transfer', 'nequi', 'daviplata'],
 ];

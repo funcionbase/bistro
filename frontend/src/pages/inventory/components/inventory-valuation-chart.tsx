@@ -2,6 +2,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api';
+import { todayInBogota } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { Warehouse } from '@/types/inventory';
 import { AlertCircle } from 'lucide-react';
@@ -45,11 +46,11 @@ export function InventoryValuationChart({ warehouses, selectedWarehouseId }: Pro
             setError(null);
             try {
                 const params = new URLSearchParams();
-                const to = new Date();
-                const from = new Date();
-                from.setDate(to.getDate() - days);
-                params.set('from', from.toISOString().slice(0, 10));
-                params.set('to', to.toISOString().slice(0, 10));
+                const toStr = todayInBogota();
+                const [y, m, d] = toStr.split('-').map(Number);
+                const fromDate = new Date(y, m - 1, d - days);
+                params.set('from', fromDate.toLocaleDateString('sv'));
+                params.set('to', toStr);
                 if (selectedWarehouseId) params.set('warehouse_id', selectedWarehouseId);
 
                 const res = await apiFetch(`/api/v1/inventory/history/valuation?${params.toString()}`);
