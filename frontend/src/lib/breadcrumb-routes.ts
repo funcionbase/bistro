@@ -25,7 +25,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
     { pattern: '/orders/board', label: 'Tablero', parent: null },
     { pattern: '/kds', label: 'Cocina (KDS)', parent: null },
     { pattern: '/kds/:stationId', label: null, parent: '/kds' },
-    { pattern: '/orders/deliveries', label: 'Domicilios', parent: null },
+    { pattern: '/orders/deliveries', label: 'Ventas del día', parent: null },
     { pattern: '/deliveries/mine', label: 'Mis entregas', parent: null },
 
     { pattern: '/menu', label: 'Menú', parent: null },

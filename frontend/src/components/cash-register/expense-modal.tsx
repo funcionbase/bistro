@@ -29,8 +29,10 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const parsed = parseFloat(amount);
-    const isValid = Number.isFinite(parsed) && parsed > 0;
+    // BUG-003: strip separadores de miles (. ó ,) antes de parsear para que
+    // "$99.000" COP no se interprete como 99 por el punto decimal de JS.
+    const parsed = parseInt(amount.replace(/[^0-9]/g, ''), 10);
+    const isValid = !isNaN(parsed) && parsed > 0;
 
     const submit = async () => {
         if (!isValid) {
@@ -84,10 +86,8 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                         <Label htmlFor="expense_amount">Monto</Label>
                         <Input
                             id="expense_amount"
-                            type="number"
+                            type="text"
                             inputMode="numeric"
-                            min={1}
-                            step="1"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0"

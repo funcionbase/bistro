@@ -33,13 +33,27 @@
 
 **No se inventan valores nuevos sin sub-issue + migración + actualización de todos los reportes.**
 
+### Métodos en `payment_receipts` (DB — lista DIAN cerrada)
+
 | Valor | Signo | Reference obligatoria | Caso de uso |
 |---|---|---|---|
 | `cash` | positivo | no (recomendada en refund con autorización) | Pago en efectivo. Cuadre de caja diario. |
 | `card` | positivo | sí (voucher / autorización POS) | Pago con tarjeta débito/crédito. |
-| `transfer` | positivo | sí (número de comprobante Nequi/Daviplata/PSE) | Transferencia electrónica. |
+| `transfer` | positivo | sí (número de comprobante PSE/Nequi/Daviplata) | Transferencia electrónica. |
 | `refund` | negativo (amount < 0) | **sí siempre para card/transfer**; opcional para cash con `actor_id` audit | Devolución (parcial o total). Crea nuevo asiento, NO modifica el receipt original. |
 
+### Métodos en UI (`config/payments.php` → `methods`) — BUG-022 aclarado
+
+La UI expone **5 métodos** seleccionables al cobrar: `cash | card | transfer | nequi | daviplata`.  
+`nequi` y `daviplata` son **alias de UI** que el backend normaliza a `transfer` en `payment_receipts`.  
+Esto preserva la lista DIAN cerrada (4 valores) sin perder la distinción Nequi/Daviplata para el cajero.
+
+| Método UI | Almacenado como | Reference obligatoria |
+|---|---|---|
+| `nequi` | `transfer` | sí |
+| `daviplata` | `transfer` | sí |
+
+Fuente: `bistro/backend/config/payments.php` → `'methods'` vs `'receipt_methods'`.
 Fuente narrativa: `CLAUDE.md` §12 "Convención de signos en payment_receipts".
 
 ---

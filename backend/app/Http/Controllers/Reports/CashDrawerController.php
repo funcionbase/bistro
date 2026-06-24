@@ -139,10 +139,26 @@ class CashDrawerController extends Controller
         $totalTips = (float) array_sum(array_column($byMethod, 'tips'));
         $totalNet = $totalGross - $totalRefunds;
 
-        // Cash drawer físico: efectivo cobrado + propinas en efectivo - refunds en efectivo.
-        $cashDrawer = $byMethod['cash']['gross']
+        // BUG-021: sumar saldo inicial de sesiones abiertas en el período y
+        // restar egresos en efectivo — igual que CashRegisterService::computeExpectedCash.
+        $openingTotal = (float) DB::table('cash_register_sessions')
+            ->where('company_nit', $companyNit)
+            ->whereBetween('opened_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->sum('opening_amount');
+
+        $cashExpensesTotal = (float) DB::table('cash_register_expenses')
+            ->where('company_nit', $companyNit)
+            ->where('payment_method', 'cash')
+            ->whereBetween('created_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->sum('amount');
+
+        // Cash drawer físico: saldo inicial + efectivo cobrado + propinas en efectivo
+        //                     - refunds en efectivo - egresos en efectivo.
+        $cashDrawer = $openingTotal
+            + $byMethod['cash']['gross']
             + $byMethod['cash']['tips']
-            - $byMethod['cash']['refunds'];
+            - $byMethod['cash']['refunds']
+            - $cashExpensesTotal;
 
         // Conteo de órdenes operadas en el período (por paid_at).
         $orderCount = (int) Order::where('company_nit', $companyNit)

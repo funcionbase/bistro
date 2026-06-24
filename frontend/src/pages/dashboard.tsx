@@ -159,7 +159,9 @@ export default function Dashboard() {
                     </Alert>
                 )}
 
-                {companyStatus !== undefined && isPendingVerification(companyStatus) && (
+                {/* BUG-028: usar activeCompany.status (live, de bootstrap con staleTime=60s)
+                    como fuente de verdad; el URL param ?company_status= puede quedar stale. */}
+                {(companyStatus !== undefined && isPendingVerification(companyStatus) && isPendingVerification(activeCompany?.status ?? 'pending')) && (
                     <Alert variant="warning">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Empresa pendiente de activación</AlertTitle>

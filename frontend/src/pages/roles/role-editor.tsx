@@ -60,8 +60,7 @@ export default function RoleEditor({ role, features, existingRoles = [], onClose
     }, [name, existingRoles, role?.id]);
 
     const totalPermsActive = useMemo(
-        () =>
-            permissions.reduce((acc, p) => acc + (p.can_create ? 1 : 0) + (p.can_read ? 1 : 0) + (p.can_update ? 1 : 0) + (p.can_delete ? 1 : 0), 0),
+        () => permissions.filter((p) => p.can_create || p.can_read || p.can_update || p.can_delete).length,
         [permissions],
     );
 

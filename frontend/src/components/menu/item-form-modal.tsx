@@ -26,7 +26,7 @@ function MarginIndicator({ price, cost }: { price: string; cost: string }) {
     else if (marginPct < 40) cls = 'text-[color:var(--color-status-warning)]';
     return (
         <p className={cn('text-xs font-medium', cls)}>
-            Margen: {marginPct.toFixed(1)}% ({marginAmount.toLocaleString('es-CO')} COP)
+            Margen: {marginPct.toFixed(1)}% ({Math.round(marginAmount).toLocaleString('es-CO')} COP)
         </p>
     );
 }
@@ -150,7 +150,7 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                         <Input
                             id="item-price"
                             type="number"
-                            min="0"
+                            min="1"
                             step="1"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}

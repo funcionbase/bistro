@@ -16,6 +16,7 @@ import { useBootstrap } from '@/hooks/use-bootstrap';
 import { useDefaultPlan } from '@/hooks/use-default-plan';
 import { usePromoCodeFromUrl } from '@/hooks/use-promo-code-from-url';
 import { apiFetch } from '@/lib/api';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { reloadContext } from '@/lib/navigate-compat';
 import { route } from '@/lib/route-compat';
 import { useDocumentTitle } from '@/lib/use-document-title';
@@ -350,7 +351,7 @@ export default function EnrollmentCompany() {
                                                 id="commercial_name"
                                                 type="text"
                                                 value={commercialName}
-                                                onChange={(e) => setCommercialName(e.target.value)}
+                                                onChange={(e) => setCommercialName(sanitizePlainText(e.target.value, 255))}
                                                 placeholder="Ej: Mi empresa S.A.S."
                                             />
                                             <InputError message={errors.commercial_name} />
@@ -361,7 +362,7 @@ export default function EnrollmentCompany() {
                                                 id="legal_name"
                                                 type="text"
                                                 value={legalName}
-                                                onChange={(e) => setLegalName(e.target.value)}
+                                                onChange={(e) => setLegalName(sanitizePlainText(e.target.value, 255))}
                                                 placeholder="Ej: El Sabor S.A.S."
                                             />
                                             <InputError message={errors.legal_name} />

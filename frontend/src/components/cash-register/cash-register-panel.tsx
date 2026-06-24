@@ -245,12 +245,26 @@ function ActiveSessionBanner({
           })
         : '—';
 
+    const hoursOpen = session.opened_at
+        ? (Date.now() - new Date(session.opened_at).getTime()) / 3_600_000
+        : 0;
+    const isOverdue = hoursOpen > 24;
+
     const expenses = session.live.expenses;
     const cashExpensesTotal = expenses?.by_method?.cash ?? 0;
     const registerLabel = session.cash_register_name ? ` · ${session.cash_register_name}` : '';
 
     return (
         <>
+            {isOverdue && (
+                <Alert variant="warning" className="mb-3">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Caja abierta hace más de 24 horas</AlertTitle>
+                    <AlertDescription>
+                        La caja lleva más de 24 horas abierta. Haz el arqueo y ciérrala para que el cuadre sea por día.
+                    </AlertDescription>
+                </Alert>
+            )}
             <div
                 role="status"
                 className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-[color:var(--color-status-safe)]/30 bg-[color:var(--color-status-safe)]/10 px-3 py-2 text-sm"

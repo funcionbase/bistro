@@ -36,7 +36,7 @@ class UpdateItemRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', new SafePlainText(maxBytes: 128)],
             'description' => ['nullable', new SafePlainText(maxBytes: 512, allowWhitespace: true)],
-            'price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'price' => ['sometimes', 'required', 'numeric', 'min:1'],
             'cost' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999.99'],
             'available' => ['boolean'],
             'tax_rate' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],

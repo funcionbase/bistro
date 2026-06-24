@@ -235,7 +235,10 @@ class DashboardController extends Controller
             return null;
         }
 
-        $result = $this->metricsService->getSummary($companyNit, $period, null, null);
+        // BUG-024: pasar branchId desde el atributo de request (ya resuelto por
+        // el bloque de autenticación de __invoke, respetando ?branch=all/uuid).
+        $branchId = request()->attributes->get('active_branch_id');
+        $result = $this->metricsService->getSummary($companyNit, $period, null, null, $branchId);
 
         return $result['data'] ?? null;
     }
@@ -247,7 +250,8 @@ class DashboardController extends Controller
             return null;
         }
 
-        $result = $this->metricsService->getOrderHeatmap($companyNit, $period, null, null);
+        $branchId = request()->attributes->get('active_branch_id');
+        $result = $this->metricsService->getOrderHeatmap($companyNit, $period, null, null, $branchId);
 
         return $result['data'] ?? null;
     }
@@ -259,7 +263,8 @@ class DashboardController extends Controller
             return null;
         }
 
-        $result = $this->metricsService->getCartAbandonment($companyNit, $period, null, null);
+        $branchId = request()->attributes->get('active_branch_id');
+        $result = $this->metricsService->getCartAbandonment($companyNit, $period, null, null, $branchId);
 
         return $result['data'] ?? null;
     }

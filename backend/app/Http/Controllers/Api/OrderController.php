@@ -1322,6 +1322,21 @@ class OrderController extends Controller
                 return [$order, $previous, false];
             }
 
+            // BUG-005/010/020: bloquear completed sin PaymentReceipt (cobro real).
+            // closeWithPayment() es el único camino válido; el tablero solo avanza
+            // hasta in_transit para órdenes de mesa/domicilio.
+            if ($target === 'completed') {
+                $hasPayment = $order->receipts()
+                    ->where('payment_method', '!=', 'refund')
+                    ->whereNotNull('payment_method')
+                    ->exists();
+                if (! $hasPayment) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Para completar esta orden debes cobrarla desde Caja.',
+                    ]);
+                }
+            }
+
             $order->status = $target;
             $order->save();
 

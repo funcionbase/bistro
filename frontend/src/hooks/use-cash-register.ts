@@ -209,8 +209,19 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 updatedRegisters = ((regsJson as { data: CashRegister[] }).data ?? []).filter((r) => !r.archived);
                 setRegisters(updatedRegisters);
 
-                // Auto-selección: si hay exactamente 1 caja activa → elegirla.
-                if (updatedRegisters.length === 1 && !selectedRegisterIdRef.current) {
+                // BUG-031: limpiar selección si el registro ya no existe en la sede
+                // (archivado, eliminado, o empresa nueva sin registros aún).
+                const currentSel = selectedRegisterIdRef.current;
+                const selIsValid = currentSel ? updatedRegisters.some((r) => r.id === currentSel) : false;
+                if (currentSel && !selIsValid) {
+                    if (branchId) localStorage.removeItem(selectedRegisterKey(branchId));
+                    setSelectedRegisterId(null);
+                }
+
+                // Auto-selección: si hay exactamente 1 caja activa y no hay
+                // selección válida → elegirla automáticamente.
+                const effectiveSel = selIsValid ? currentSel : null;
+                if (updatedRegisters.length === 1 && !effectiveSel) {
                     const onlyId = updatedRegisters[0].id;
                     if (branchId) localStorage.setItem(selectedRegisterKey(branchId), onlyId);
                     setSelectedRegisterId(onlyId);

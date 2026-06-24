@@ -407,6 +407,14 @@ export default function KanbanBoard() {
             return;
         }
 
+        // BUG-020: bloquear arrastre a "Completado" sin cobro.
+        // El único camino válido es Caja → closeWithPayment.
+        if (newStatus === 'completed') {
+            setAssignError('Para completar una orden debes cobrarla desde Caja.');
+            window.setTimeout(() => setAssignError(null), 4000);
+            return;
+        }
+
         const orderId = order.id;
         setDroppedOrderId(orderId);
         window.setTimeout(() => {
@@ -566,7 +574,9 @@ export default function KanbanBoard() {
                 onAdvanceStatus={handleAdvanceStatusFromDetail}
                 advanceOptions={
                     selectedOrder
-                        ? ESTADOS.filter((e) => e.rank > rankOf(selectedOrder.status)).map((e) => ({ key: e.key, label: e.label }))
+                        ? ESTADOS.filter(
+                              (e) => e.rank > rankOf(selectedOrder.status) && e.key !== 'completed',
+                          ).map((e) => ({ key: e.key, label: e.label }))
                         : []
                 }
             />

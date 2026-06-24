@@ -147,6 +147,9 @@ class LoyaltyReportController extends Controller
     /** @return list<array<string, mixed>> */
     private function arpuByTier(string $nit, CarbonImmutable $from, CarbonImmutable $to): array
     {
+        // BUG-018: normalizar el teléfono del pedido al mismo formato que
+        // loyalty_accounts (57XXXXXXXXXX) para que el JOIN no falle cuando
+        // orders.client_phone está en formato local (10 dígitos sin prefijo).
         $rows = DB::select(
             "SELECT
                 a.tier,
@@ -158,7 +161,13 @@ class LoyaltyReportController extends Controller
             FROM loyalty_accounts a
             LEFT JOIN orders o
               ON o.company_nit = a.company_nit
-             AND o.client_phone = a.client_phone
+             AND (
+                o.client_phone = a.client_phone
+                OR CASE WHEN LENGTH(REGEXP_REPLACE(COALESCE(o.client_phone,''),'[^0-9]','','g')) = 10
+                        THEN '57' || REGEXP_REPLACE(o.client_phone,'[^0-9]','','g')
+                        ELSE REGEXP_REPLACE(COALESCE(o.client_phone,''),'[^0-9]','','g')
+                   END = a.client_phone
+             )
              AND o.status = 'completed'
              AND o.ordered_at BETWEEN ? AND ?
             WHERE a.company_nit = ?

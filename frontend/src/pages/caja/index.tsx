@@ -462,7 +462,7 @@ export default function CajaPage() {
                                         <ToggleGroup
                                             type="single"
                                             value={orderType}
-                                            onValueChange={(v) => v && setOrderType(v as OrderType)}
+                                            onValueChange={(v) => { if (v) { setOrderType(v as OrderType); setSubmitError(null); } }}
                                             className="grid w-full grid-cols-3 gap-1"
                                             disabled={submitting}
                                         >

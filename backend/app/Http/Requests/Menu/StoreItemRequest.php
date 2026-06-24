@@ -36,7 +36,7 @@ class StoreItemRequest extends FormRequest
         return [
             'name' => ['required', new SafePlainText(maxBytes: 128)],
             'description' => ['nullable', new SafePlainText(maxBytes: 512, allowWhitespace: true)],
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'min:1'],
             // Costo unitario opcional para cálculo de margen. Sensible: nunca se
             // expone al menú público (showPublic strip-ea este campo).
             'cost' => ['nullable', 'numeric', 'min:0', 'max:9999999.99'],
