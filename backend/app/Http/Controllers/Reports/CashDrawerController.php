@@ -177,6 +177,8 @@ class CashDrawerController extends Controller
                 'tips' => round($totalTips, 2),
             ],
             'cash_drawer_expected' => round($cashDrawer, 2),
+            'cash_opening_amount' => round($openingTotal, 2),
+            'cash_expenses_total' => round($cashExpensesTotal, 2),
             'orders_count' => $orderCount,
         ];
     }

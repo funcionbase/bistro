@@ -44,7 +44,7 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
     const [name, setName] = useState(item?.name ?? '');
     const [description, setDescription] = useState(item?.description ?? '');
     const [price, setPrice] = useState(item ? String(item.price) : '');
-    const [cost, setCost] = useState(item?.cost !== null && item?.cost !== undefined ? String(item.cost) : '');
+    const [cost, setCost] = useState(item?.cost !== null && item?.cost !== undefined ? String(Math.round(item.cost)) : '');
     const [available, setAvailable] = useState(item?.available ?? true);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [errors, setErrors] = useState<Record<string, string[]>>({});

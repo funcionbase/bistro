@@ -38,6 +38,8 @@ interface CashDrawerSummary {
     by_method: Record<PaymentReceiptMethod, MethodTotals>;
     totals: { gross: number; refunds: number; net: number; tips: number };
     cash_drawer_expected: number;
+    cash_opening_amount: number;
+    cash_expenses_total: number;
     orders_count: number;
 }
 
@@ -376,9 +378,13 @@ export default function CashDrawerCard() {
                             </div>
                             <div className="text-foreground text-2xl font-bold tabular-nums">{formatCurrency(summary.cash_drawer_expected)}</div>
                             <p className="text-muted-foreground mt-1 text-xs">
-                                = Cobros en efectivo {formatCurrency(summary.by_method.cash.gross)} + Propinas en efectivo{' '}
+                                = Saldo inicial {formatCurrency(summary.cash_opening_amount)} + Cobros en efectivo{' '}
+                                {formatCurrency(summary.by_method.cash.gross)} + Propinas en efectivo{' '}
                                 {formatCurrency(summary.by_method.cash.tips)} − Devoluciones en efectivo{' '}
                                 {formatCurrency(summary.by_method.cash.refunds)}
+                                {summary.cash_expenses_total > 0 && (
+                                    <> − Egresos {formatCurrency(summary.cash_expenses_total)}</>
+                                )}
                             </p>
                         </div>
 
