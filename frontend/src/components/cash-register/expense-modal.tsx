@@ -144,7 +144,7 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                     </DialogFooter>
 
                     <p className="text-muted-foreground text-[11px] leading-snug">
-                        Los egresos son append-only: para corregir uno erróneo, registra otro en sentido contrario con descripción explícita.
+                        Los egresos son permanentes e irreversibles: para corregir uno erróneo, registra otro en sentido contrario con descripción explícita.
                     </p>
                 </div>
             </DialogContent>
