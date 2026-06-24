@@ -670,7 +670,9 @@ JWT extraction: el controller usa `JwtService::extractTokenFromRequest()` para a
 
 Servido como **deferred prop Inertia** (no como REST). Esto significa: la página renderiza inmediatamente con un skeleton, y cuando `MetricsService::getSummary()` retorna, los props se hidratan client-side. **No existe endpoint `/api/v1/metrics/kpis`** — es un alias mental; el dashboard consume `summary` directamente.
 
-#### Datos retornados por `MetricsService::getSummary($companyNit, $period)`
+#### Datos retornados por `MetricsService::getSummary($companyNit, $period, $branchId = null)`
+
+> `$branchId` (activo desde v1.16.0) filtra por sede activa. `DashboardController` lo extrae de `request()->attributes->get('active_branch_id')` y lo pasa a `getSummary`, `getOrderHeatmap` y `getCartAbandonment`.
 
 ```typescript
 {
