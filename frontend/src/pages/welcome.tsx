@@ -2,7 +2,6 @@ import { ConsentBanner } from '@/components/consent-banner';
 import GoogleAuthButton from '@/components/google-auth-button';
 import { HeroHeadline } from '@/components/ui/hero-headline';
 import { HeroPanel, HeroPanelStats } from '@/components/ui/hero-panel';
-import { useTiktokPixel } from '@/hooks/use-tiktok-pixel';
 import { useToken } from '@/hooks/use-token';
 import { useDocumentTitle } from '@/lib/use-document-title';
 
@@ -19,9 +18,6 @@ const heroStats: Array<{ label: string; value: string }> = [
  */
 export default function Welcome() {
     useDocumentTitle('Bienvenido');
-    // TikTok Pixel solo en la landing pública (campañas TikTok Ads). El resto
-    // del panel no lo carga — ver `hooks/use-tiktok-pixel.ts`.
-    useTiktokPixel();
     const token = useToken();
 
     return (

@@ -46,7 +46,7 @@ export function SpaAppLayout() {
 
     return (
         <SpaSharedDataBridge bootstrap={bootstrap.data}>
-            <ConsentBanner noMarketing />
+            <ConsentBanner />
             <BusinessProvider>
                 <PageTitleProvider>
                     <AppSidebarLayout>
