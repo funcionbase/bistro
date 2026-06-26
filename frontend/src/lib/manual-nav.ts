@@ -72,8 +72,7 @@ export const wikiSections: WikiSection[] = [
 export const allWikiPages: WikiPage[] = wikiSections.flatMap((s) => s.pages);
 
 export function getPrevNext(currentSlug: string): { prev: WikiPage | null; next: WikiPage | null } {
-    // Excluir legal/contrato del flujo prev/next (es externo)
-    const pages = allWikiPages.filter((p) => p.slug !== 'legal/contrato');
+    const pages = allWikiPages;
     const idx = pages.findIndex((p) => p.slug === currentSlug);
     return {
         prev: idx > 0 ? pages[idx - 1] : null,

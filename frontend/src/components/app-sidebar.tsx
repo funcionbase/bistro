@@ -44,7 +44,7 @@ import {
 const footerNavItems: NavItem[] = [
     {
         title: 'Manual de usuario',
-        url: 'https://flexyflow.co/wiki/restaurante',
+        url: '/manual/bistro',
         icon: BookOpen,
     },
 ];

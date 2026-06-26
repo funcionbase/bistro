@@ -4,6 +4,8 @@ import { HeroHeadline } from '@/components/ui/hero-headline';
 import { HeroPanel, HeroPanelStats } from '@/components/ui/hero-panel';
 import { useToken } from '@/hooks/use-token';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { BookOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const heroStats: Array<{ label: string; value: string }> = [
     { label: 'Operación', value: '24/7' },
@@ -22,54 +24,87 @@ export default function Welcome() {
 
     return (
         <>
-            <div className="bg-background flex min-h-svh items-center justify-center p-4 md:p-8">
-                <div className="w-full max-w-6xl">
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16">
-                        {/* Columna izquierda: logo + hero + acceso */}
-                        <div className="flex flex-col gap-8 md:col-span-7 md:gap-10 lg:col-span-7">
-                            <img src="/images/logo-black-font.svg" alt="flexyflow" className="block h-9 w-auto md:h-10 dark:hidden" />
-                            <img src="/images/logo-white-font.svg" alt="flexyflow" className="hidden h-9 w-auto md:h-10 dark:block" />
+            <div className="bg-background flex min-h-svh flex-col">
+                {/* Contenido principal centrado */}
+                <div className="flex flex-1 items-center justify-center p-4 md:p-8">
+                    <div className="w-full max-w-6xl">
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16">
+                            {/* Columna izquierda: logo + hero + acceso */}
+                            <div className="flex flex-col gap-8 md:col-span-7 md:gap-10 lg:col-span-7">
+                                <img src="/images/logo-black-font.svg" alt="flexyflow" className="block h-9 w-auto md:h-10 dark:hidden" />
+                                <img src="/images/logo-white-font.svg" alt="flexyflow" className="hidden h-9 w-auto md:h-10 dark:block" />
 
-                            <HeroHeadline
-                                eyebrow="Bienvenido"
-                                title={
-                                    <>
-                                        Lo que importa,
-                                        <br />a la mano.
-                                    </>
-                                }
-                                description="Tu operación en un solo panel. Inicia sesión con tu cuenta de Gmail para continuar."
-                            />
+                                <HeroHeadline
+                                    eyebrow="Bienvenido"
+                                    title={
+                                        <>
+                                            Lo que importa,
+                                            <br />a la mano.
+                                        </>
+                                    }
+                                    description="Tu operación en un solo panel. Inicia sesión con tu cuenta de Gmail para continuar."
+                                />
 
-                            <div className="max-w-sm space-y-3">
-                                {token ? (
-                                    <a
-                                        href="/dashboard"
-                                        className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition-colors"
+                                <div className="max-w-sm space-y-3">
+                                    {token ? (
+                                        <a
+                                            href="/dashboard"
+                                            className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition-colors"
+                                        >
+                                            Ir al panel
+                                        </a>
+                                    ) : (
+                                        <GoogleAuthButton />
+                                    )}
+                                    <p className="text-muted-foreground text-xs">Solo se permite acceso con cuentas de Google.</p>
+
+                                    {/* Link al manual */}
+                                    <Link
+                                        to="/manual/bistro"
+                                        className="text-muted-foreground hover:text-foreground flex items-center gap-2 pt-1 text-sm transition-colors"
                                     >
-                                        Ir al panel
-                                    </a>
-                                ) : (
-                                    <GoogleAuthButton />
-                                )}
-                                <p className="text-muted-foreground text-xs">Solo se permite acceso con cuentas de Google.</p>
+                                        <BookOpen className="h-4 w-4 shrink-0" />
+                                        ¿Primera vez? Revisa el manual de usuario
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Columna derecha: bloque lime con value props */}
-                        <HeroPanel
-                            eyebrow="Diseñado para tu empresa"
-                            className="md:col-span-5 lg:col-span-5"
-                            footer={
-                                <p className="text-sm leading-relaxed opacity-80">
-                                    Caja, POS, planificador y reportes. Todo en un mismo panel — sin instalaciones, sin licencias por terminal.
-                                </p>
-                            }
-                        >
-                            <HeroPanelStats stats={heroStats} />
-                        </HeroPanel>
+                            {/* Columna derecha: bloque lime con value props */}
+                            <HeroPanel
+                                eyebrow="Diseñado para tu empresa"
+                                className="md:col-span-5 lg:col-span-5"
+                                footer={
+                                    <p className="text-sm leading-relaxed opacity-80">
+                                        Caja, POS, planificador y reportes. Todo en un mismo panel — sin instalaciones, sin licencias por terminal.
+                                    </p>
+                                }
+                            >
+                                <HeroPanelStats stats={heroStats} />
+                            </HeroPanel>
+                        </div>
                     </div>
                 </div>
+
+                {/* Pie de página con links útiles */}
+                <footer className="border-t border-border px-6 py-4">
+                    <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span>© {new Date().getFullYear()} flexyflow · bistro</span>
+                        <div className="flex flex-wrap items-center gap-4">
+                            <Link to="/manual/bistro" className="hover:text-foreground transition-colors">
+                                Manual de usuario
+                            </Link>
+                            <a href="https://flexyflow.co" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                                flexyflow.co
+                            </a>
+                            <a href="https://flexyflow.co/privacy-policy/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                                Privacidad
+                            </a>
+                            <a href="https://flexyflow.co/terms-conditions/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                                Términos
+                            </a>
+                        </div>
+                    </div>
+                </footer>
             </div>
             <ConsentBanner />
         </>

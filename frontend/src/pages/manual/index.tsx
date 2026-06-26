@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 const stats = [
     { value: '+ de 20', label: 'módulos documentados' },
     { value: '100%', label: 'en español colombiano' },
-    { value: 'gratuito', label: 'sin registro' },
+    { value: '$100K/mes', label: 'por empresa · sedes ilimitadas' },
 ];
 
 export default function ManualIndex() {
@@ -21,8 +21,8 @@ export default function ManualIndex() {
             {/* Stats */}
             <div className="mb-8 grid grid-cols-3 gap-4">
                 {stats.map((s) => (
-                    <div key={s.label} className="rounded-xl border border-border bg-card p-4 text-center">
-                        <p className="text-2xl font-bold text-primary">{s.value}</p>
+                    <div key={s.label} className="rounded-2xl border border-border bg-card p-4 text-center">
+                        <p className="text-2xl font-semibold text-primary">{s.value}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">{s.label}</p>
                     </div>
                 ))}
@@ -40,33 +40,13 @@ export default function ManualIndex() {
             <h2>Secciones del manual</h2>
 
             <div className="not-prose grid gap-4 sm:grid-cols-2">
-                {wikiSections
-                    .filter((s) => s.label !== 'legal')
-                    .map((section) => (
+                {wikiSections.map((section) => (
                         <div key={section.label} className="rounded-xl border border-border bg-card p-3">
                             <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                                 {section.label}
                             </p>
                             <div>
-                                {section.pages.map((page) => {
-                                    const isExternal = page.slug === 'legal/contrato';
-                                    if (isExternal) {
-                                        return (
-                                            <a
-                                                key={page.slug}
-                                                href="https://flexyflow.co/wiki/restaurante/legal/contrato/"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-muted"
-                                            >
-                                                <span>{page.label}</span>
-                                                <svg className="h-3 w-3 shrink-0 text-muted-foreground" viewBox="0 0 12 12" fill="none">
-                                                    <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                            </a>
-                                        );
-                                    }
-                                    return (
+                                {section.pages.map((page) => (
                                         <Link
                                             key={page.slug}
                                             to={manualPageUrl(page.slug)}
@@ -75,8 +55,7 @@ export default function ManualIndex() {
                                             <span>{page.label}</span>
                                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                         </Link>
-                                    );
-                                })}
+                                    ))}
                             </div>
                         </div>
                     ))}

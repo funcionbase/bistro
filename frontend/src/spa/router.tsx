@@ -5,7 +5,7 @@ import { EnrollmentCompanyGuard } from '@/pages/enrollment/company-guard';
 import ErrorBoundary from '@/pages/error-boundary';
 import HoursRoute from '@/pages/hours';
 import NotFound from '@/pages/not-found';
-import { lazy, useEffect } from 'react';
+import { lazy } from 'react';
 import { createBrowserRouter, Outlet, useParams, useSearchParams } from 'react-router-dom';
 
 /**
@@ -119,14 +119,7 @@ const ManualUsuarios = lazy(() => import('@/pages/manual/usuarios'));
 const ManualSedes = lazy(() => import('@/pages/manual/sedes'));
 const ManualConfiguracion = lazy(() => import('@/pages/manual/configuracion'));
 const ManualFaq = lazy(() => import('@/pages/manual/faq'));
-
-// ponytail: window.location.replace porque Navigate no soporta URLs externas
-function LegalContratoRedirect() {
-    useEffect(() => {
-        window.location.replace('https://flexyflow.co/wiki/restaurante/legal/contrato/');
-    }, []);
-    return null;
-}
+const ManualLegalContrato = lazy(() => import('@/pages/manual/legal-contrato'));
 
 // Carta pública (destino del QR impreso): `/menus/{nit}?table=N`. El QR
 // codifica `/menus/{nit}`; la página persiste el NIT en localStorage y la
@@ -201,7 +194,7 @@ export const router = createBrowserRouter([
             { path: '/manual/bistro/sedes', element: <ManualSedes /> },
             { path: '/manual/bistro/configuracion', element: <ManualConfiguracion /> },
             { path: '/manual/bistro/faq', element: <ManualFaq /> },
-            { path: '/manual/bistro/legal/contrato', element: <LegalContratoRedirect /> },
+            { path: '/manual/bistro/legal/contrato', element: <ManualLegalContrato /> },
 
             { path: '/login', element: <Login /> },
             { path: '/register', element: <Register /> },

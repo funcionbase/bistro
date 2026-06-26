@@ -55,32 +55,14 @@ export default function ManualLayout({
                     <ul className="space-y-0.5">
                         {section.pages.map((page) => {
                             const isActive = page.slug === currentSlug;
-                            const isExternal = page.slug === 'legal/contrato';
-                            if (isExternal) {
-                                return (
-                                    <li key={page.slug}>
-                                        <a
-                                            href="https://flexyflow.co/wiki/restaurante/legal/contrato/"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                                        >
-                                            {page.label}
-                                            <svg className="h-3 w-3 shrink-0 opacity-50" viewBox="0 0 12 12" fill="none">
-                                                <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
-                                        </a>
-                                    </li>
-                                );
-                            }
                             return (
                                 <li key={page.slug}>
                                     <Link
                                         to={manualPageUrl(page.slug)}
                                         className={`flex items-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                                             isActive
-                                                ? 'bg-primary/10 font-medium text-primary'
-                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                                                : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
                                         }`}
                                         aria-current={isActive ? 'page' : undefined}
                                     >
@@ -182,12 +164,12 @@ export default function ManualLayout({
                     {/* Encabezado de página */}
                     <div className="mb-8">
                         {sectionLabel && (
-                            <span className="mb-2 inline-block rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <span className="mb-2 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">
                                 {sectionLabel}
                             </span>
                         )}
-                        <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{pageTitle}</h1>
-                        <p className="text-muted-foreground">{pageDescription}</p>
+                        <h1 className="font-brand mb-2 text-2xl font-medium tracking-tight text-foreground md:text-3xl">{pageTitle}</h1>
+                        <p className="text-sm text-muted-foreground">{pageDescription}</p>
                         {readingTime && (
                             <p className="mt-2 text-xs text-muted-foreground">⏱ {readingTime} de lectura</p>
                         )}
