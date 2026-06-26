@@ -182,4 +182,4 @@ Schedule::call(function () {
         ->where('status', 'queued')
         ->where('created_at', '<', now()->subHours(24))
         ->update(['status' => 'skipped', 'error' => 'expired: no job dispatched within 24h', 'updated_at' => now()]);
-})->hourly()->onOneServer()->withoutOverlapping(5)->name('sms:expire-queued');
+})->hourly()->name('sms:expire-queued')->onOneServer()->withoutOverlapping(5);
