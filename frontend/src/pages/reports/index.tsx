@@ -22,7 +22,7 @@ import { useOrderStatuses } from '@/hooks/use-order-statuses';
 import type { KanbanOrder } from '@/hooks/use-orders';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
-import { todayInBogota } from '@/lib/datetime';
+import { shiftDate, todayInBogota } from '@/lib/datetime';
 import { statusBadgeClass, statusLabel } from '@/lib/order-status';
 import { cn } from '@/lib/utils';
 import { type Order, type OrderStatus, type ReportSummary } from '@/types';
@@ -70,13 +70,14 @@ function sessionBorderClass(sessionId: string): string {
     return SESSION_BORDER_PALETTE[h % SESSION_BORDER_PALETTE.length];
 }
 
-type Period = 'daily' | 'weekly' | 'monthly' | 'custom';
+type Period = 'daily' | 'weekly' | 'monthly' | 'specific_day' | 'custom';
 type StatusFilter = 'all' | OrderStatus;
 
 const PERIOD_OPTIONS: ReadonlyArray<{ value: Period; label: string }> = [
     { value: 'daily', label: 'Hoy' },
     { value: 'weekly', label: 'Semana' },
     { value: 'monthly', label: 'Últ. 30 días' },
+    { value: 'specific_day', label: 'Día específico' },
     { value: 'custom', label: 'Personalizado' },
 ];
 
@@ -104,6 +105,7 @@ export default function Reports() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const [specificDay, setSpecificDay] = useState(todayInBogota);
     const [currentPage, setCurrentPage] = useState(1);
     // Multi-sede (#117): default 'active' = sede actual (BranchScope filtra por JWT).
     const [branchFilter, setBranchFilter] = useState<string>('active');
@@ -200,23 +202,42 @@ export default function Reports() {
 
     const today = todayInBogota();
 
+    // Rango efectivo de fechas para los cards de caja (que usan date_from/date_to, no period).
+    const resolvedCashRange = useMemo(() => {
+        switch (period) {
+            case 'daily': return { from: today, to: today };
+            case 'weekly': return { from: shiftDate(today, -6), to: today };
+            case 'monthly': return { from: shiftDate(today, -29), to: today };
+            case 'specific_day': return { from: specificDay, to: specificDay };
+            case 'custom': return dateFrom && dateTo ? { from: dateFrom, to: dateTo } : { from: today, to: today };
+        }
+    }, [period, specificDay, dateFrom, dateTo, today]);
+
     const buildQuery = useCallback(
         (page: number) => {
-            const params = new URLSearchParams({ period, status: statusFilter, page: String(page), per_page: '20' });
-            if (period === 'custom') {
-                if (dateFrom) params.set('date_from', dateFrom);
-                if (dateTo) params.set('date_to', dateTo);
+            const params = new URLSearchParams({ status: statusFilter, page: String(page), per_page: '20' });
+            if (period === 'specific_day') {
+                params.set('period', 'custom');
+                params.set('date_from', specificDay);
+                params.set('date_to', specificDay);
+            } else {
+                params.set('period', period);
+                if (period === 'custom') {
+                    if (dateFrom) params.set('date_from', dateFrom);
+                    if (dateTo) params.set('date_to', dateTo);
+                }
             }
             if (branchFilter !== 'active') params.set('branch', branchFilter);
             return params.toString();
         },
-        [period, dateFrom, dateTo, statusFilter, branchFilter],
+        [period, dateFrom, dateTo, specificDay, statusFilter, branchFilter],
     );
 
     const fetchReport = useCallback(
         async (page: number) => {
             if (!activeToken) return;
             if (period === 'custom' && (!dateFrom || !dateTo)) return;
+            if (period === 'specific_day' && !specificDay) return;
 
             setLoading(true);
             setFetchError(null);
@@ -254,7 +275,7 @@ export default function Reports() {
     useEffect(() => {
         setCurrentPage(1);
         fetchReport(1);
-    }, [period, statusFilter, dateFrom, dateTo, branchFilter, fetchReport]);
+    }, [period, statusFilter, dateFrom, dateTo, specificDay, branchFilter, fetchReport]);
 
     function handlePageChange(page: number) {
         setCurrentPage(page);
@@ -267,14 +288,13 @@ export default function Reports() {
     }
 
     function buildPdfFilters(): Record<string, unknown> {
-        // El backend del export (PdfExportService::exportOrders) sólo entiende
-        // date_from/date_to/status — no resuelve "period". Reusamos el rango ya
-        // calculado por el backend (`periodRange`) para que el PDF respete
-        // exactamente el mismo período + estado visibles en pantalla.
         const f: Record<string, unknown> = {};
         if (periodRange) {
             f.date_from = periodRange.from;
             f.date_to = periodRange.to;
+        } else if (period === 'specific_day') {
+            f.date_from = specificDay;
+            f.date_to = specificDay;
         } else if (period === 'custom') {
             if (dateFrom) f.date_from = dateFrom;
             if (dateTo) f.date_to = dateTo;
@@ -320,6 +340,9 @@ export default function Reports() {
                         options={PERIOD_OPTIONS}
                         value={period}
                         onChange={setPeriod}
+                        specificDayValue="specific_day"
+                        specificDay={specificDay}
+                        onSpecificDayChange={setSpecificDay}
                         customValue="custom"
                         dateFrom={dateFrom}
                         dateTo={dateTo}
@@ -547,7 +570,7 @@ export default function Reports() {
                     </>
                 ) : null}
 
-                <CashDrawerCard branchFilter={branchFilter} />
+                <CashDrawerCard branchFilter={branchFilter} dateFrom={resolvedCashRange.from} dateTo={resolvedCashRange.to} />
 
                 <CashSessionsCard branchFilter={branchFilter} />
 

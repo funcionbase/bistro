@@ -29,6 +29,10 @@ interface PeriodTabsProps<T extends string = string> {
     onDateToChange?: (value: string) => void;
     onApplyCustom?: () => void;
     applyDisabled?: boolean;
+    /** Mostrar un único input de fecha cuando value === specificDayValue. */
+    specificDayValue?: T;
+    specificDay?: string;
+    onSpecificDayChange?: (value: string) => void;
     className?: string;
 }
 
@@ -47,9 +51,13 @@ export function PeriodTabs<T extends string = string>({
     onDateToChange,
     onApplyCustom,
     applyDisabled,
+    specificDayValue,
+    specificDay = '',
+    onSpecificDayChange,
     className,
 }: PeriodTabsProps<T>) {
     const showCustomInputs = customValue !== undefined && value === customValue;
+    const showSpecificDayInput = specificDayValue !== undefined && value === specificDayValue;
 
     return (
         <div className={cn('flex flex-wrap items-center gap-2', className)}>
@@ -63,6 +71,15 @@ export function PeriodTabs<T extends string = string>({
                     {label}
                 </button>
             ))}
+
+            {showSpecificDayInput && (
+                <Input
+                    type="date"
+                    value={specificDay}
+                    onChange={(e) => onSpecificDayChange?.(e.target.value)}
+                    className="border-border w-full max-w-[10rem] sm:w-36"
+                />
+            )}
 
             {showCustomInputs && (
                 <div className="flex flex-wrap items-center gap-2">
