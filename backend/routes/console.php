@@ -4,6 +4,7 @@ use App\Jobs\AggregateMenuScansJob;
 use App\Jobs\DropOldMenuScanPartitionsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -170,3 +171,15 @@ Schedule::command('dian:resolution-expiration-alert')
     ->dailyAt('05:15')
     ->onOneServer()
     ->withoutOverlapping(60);
+
+// SMS huérfanos: `dispatch()` puede fallar DESPUÉS del insertOrIgnore, dejando
+// la notificación en 'queued' sin job en la tabla jobs. La corrección primaria
+// vive en OrderController::dispatchOrderStatusSms (marca 'failed' en el catch).
+// Este schedule es red de seguridad para cualquier edge case no capturado.
+// onOneServer + withoutOverlapping(5) — N-instance safe (CACHE_STORE=database).
+Schedule::call(function () {
+    DB::table('order_sms_notifications')
+        ->where('status', 'queued')
+        ->where('created_at', '<', now()->subHours(24))
+        ->update(['status' => 'skipped', 'error' => 'expired: no job dispatched within 24h', 'updated_at' => now()]);
+})->hourly()->onOneServer()->withoutOverlapping(5)->name('sms:expire-queued');

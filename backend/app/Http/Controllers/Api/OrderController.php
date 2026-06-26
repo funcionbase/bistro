@@ -1465,6 +1465,14 @@ class OrderController extends Controller
                 'to_status' => $toStatus,
                 'error' => $e->getMessage(),
             ]);
+            // Limpiar la notificación huérfana: el insert ya ocurrió pero el
+            // dispatch falló → marcar failed para no dejarla atascada en 'queued'.
+            if (isset($intentId) && $intentId !== null) {
+                DB::table('order_sms_notifications')
+                    ->where('id', $intentId)
+                    ->where('status', 'queued')
+                    ->update(['status' => 'failed', 'error' => 'dispatch failed: '.$e->getMessage(), 'updated_at' => now()]);
+            }
         }
     }
 
