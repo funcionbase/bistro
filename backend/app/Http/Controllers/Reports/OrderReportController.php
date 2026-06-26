@@ -80,7 +80,8 @@ class OrderReportController extends Controller
             $ordersQuery->where(function (Builder $q) use ($search): void {
                 $q->where('client_phone', 'like', "%{$search}%")
                     ->orWhere('billing_legal_name', 'like', "%{$search}%")
-                    ->orWhere('billing_doc_number', 'like', "%{$search}%");
+                    ->orWhere('billing_doc_number', 'like', "%{$search}%")
+                    ->orWhereRaw("('Mesa ' || CAST(table_number AS TEXT)) ILIKE ?", ["%{$search}%"]);
             });
         }
 

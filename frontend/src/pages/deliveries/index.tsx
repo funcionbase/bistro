@@ -25,7 +25,7 @@ import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 
 import { AlertCircle, Inbox, RefreshCw, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function DaySalesIndex() {
     const token = useToken();
@@ -40,6 +40,7 @@ export default function DaySalesIndex() {
     const [draftSearch, setDraftSearch] = useState('');
     const [draftMinAmount, setDraftMinAmount] = useState('');
     const [draftMaxAmount, setDraftMaxAmount] = useState('');
+    const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
     // Applied: lo que se envía al backend (solo cambia con "Buscar")
     const [applied, setApplied] = useState<DaySalesParams>({
@@ -48,10 +49,15 @@ export default function DaySalesIndex() {
         search: '',
         minAmount: '',
         maxAmount: '',
+        status: 'all',
     });
 
-    // Estado: filtro client-side, aplica inmediato (no necesita backend)
-    const [statusFilters, setStatusFilters] = useState<string[]>([]);
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setApplied({ dateFrom: draftDateFrom, dateTo: draftDateTo, search: draftSearch, minAmount: draftMinAmount, maxAmount: draftMaxAmount, status: statusFilters.length === 1 ? statusFilters[0] : 'all' });
+        }, 400);
+        return () => clearTimeout(t);
+    }, [draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters]);
 
     const { orders, summary, period, loading, error, refresh, lastUpdated } = useDaySales(token, applied);
 
@@ -65,16 +71,16 @@ export default function DaySalesIndex() {
             search: draftSearch,
             minAmount: draftMinAmount,
             maxAmount: draftMaxAmount,
+            status: statusFilters.length === 1 ? statusFilters[0] : 'all',
         });
     }
 
     const filteredOrders = statusFilters.length > 0 ? orders.filter((o) => statusFilters.includes(o.status)) : orders;
 
-    // BUG-L03: cuando hay filtro de estado, derivar KPIs de filteredOrders para
-    // que las tarjetas sean consistentes con la tabla. total_refunded es
-    // aproximado (usa orders.total, no receipts) pero es el mejor dato disponible.
+    // KPIs siempre derivados de filteredOrders para que coincidan con la tabla.
+    // total_refunded es aproximado (orders.total, no receipts) pero consistente.
     const displaySummary = useMemo((): DaySalesSummaryData | null => {
-        if (statusFilters.length === 0 || !summary) return summary;
+        if (!summary) return null;
         const gross = filteredOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + Number(o.total), 0);
         const refunds = filteredOrders.filter((o) => o.status === 'refunded').reduce((s, o) => s + Number(o.total), 0);
         return {
@@ -87,7 +93,7 @@ export default function DaySalesIndex() {
             total_refunded: refunds,
             net_revenue: gross - refunds,
         };
-    }, [statusFilters, filteredOrders, summary]);
+    }, [filteredOrders, summary]);
 
     const { sortColumn, sortDirection, toggleSort, sortedOrders } = useDaySalesSort(filteredOrders, orderStatuses);
 
@@ -227,7 +233,7 @@ export default function DaySalesIndex() {
                                     <Input
                                         id="search-filter"
                                         type="search"
-                                        placeholder="Nombre, teléfono o documento"
+                                        placeholder="Nombre, teléfono, documento o mesa"
                                         value={draftSearch}
                                         onChange={(e) => setDraftSearch(e.target.value)}
                                         onKeyDown={(e) => { if (e.key === 'Enter') applyFilters(); }}

@@ -24,6 +24,7 @@ export interface DaySalesParams {
     search: string;
     minAmount: string;
     maxAmount: string;
+    status: string;
 }
 
 interface UseDaySalesReturn {
@@ -61,7 +62,7 @@ export function useDaySales(token: string | null, params: DaySalesParams): UseDa
                 period: 'custom',
                 date_from: params.dateFrom,
                 date_to: params.dateTo,
-                status: 'all',
+                status: params.status,
                 per_page: '100',
                 page: '1',
             });
@@ -87,7 +88,7 @@ export function useDaySales(token: string | null, params: DaySalesParams): UseDa
         } finally {
             if (isMounted.current) setLoading(false);
         }
-    }, [token, params.dateFrom, params.dateTo, params.search, params.minAmount, params.maxAmount]);
+    }, [token, params.dateFrom, params.dateTo, params.search, params.minAmount, params.maxAmount, params.status]);
 
     useEffect(() => {
         void fetchOrders();

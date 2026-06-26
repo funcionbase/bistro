@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "flexyflow/backend-panel",
-    "version": "1.16.5",
+    "version": "1.16.6",
     "type": "project",
-    "description": "Bistro — API backend (Laravel 12) del SaaS de restaurantes FlexyFlow: pedidos y KDS, caja y cobros, facturación electrónica DIAN, inventario, RBAC multi-empresa/multi-sede y notificaciones (SMS/WhatsApp/push). El campo `version` es SemVer manual y es la fuente de verdad del release de backend (App Deploy a pdn taggea `bistro-backend-v<version>`); ver CLAUDE.md §14.",
+    "description": "Bistro \u2014 API backend (Laravel 12) del SaaS de restaurantes FlexyFlow: pedidos y KDS, caja y cobros, facturaci\u00f3n electr\u00f3nica DIAN, inventario, RBAC multi-empresa/multi-sede y notificaciones (SMS/WhatsApp/push). El campo `version` es SemVer manual y es la fuente de verdad del release de backend (App Deploy a pdn taggea `bistro-backend-v<version>`); ver CLAUDE.md \u00a714.",
     "keywords": [
         "flexyflow",
         "bistro",
@@ -81,7 +81,7 @@
             "Composer\\Config::disableProcessTimeout",
             "composer clear",
             "npx --yes concurrently -c \"bgBlue.white.bold,bgBlackBright.white.bold\" --prefix \"[{name}]\" --names \"srv,queue\" \"php artisan serve --port=80\" \"php artisan queue:listen --tries=1\""
-        ],       
+        ],
         "clear": "php artisan optimize:clear && php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear",
         "test-arch": "vendor/bin/pest tests/Feature/Architecture"
     },
