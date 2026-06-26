@@ -650,8 +650,11 @@ function OrderTimeline({ events }: { events: TimelineEvent[] }) {
     // First payment = comensal started paying
     const firstPaymentEvent = events.filter((e) => e.action === 'payment.split').sort((a, b) => a.at.localeCompare(b.at))[0];
 
-    const totalSeconds = openedEvent
-        ? Math.floor(((closedEvent ? new Date(closedEvent.at) : new Date()).getTime() - new Date(openedEvent.at).getTime()) / 1000)
+    // "en mesa" = desde el primer pedido (no desde que se abrió la sesión,
+    // que puede estar abierta días si es una sesión de QA o se olvidó cerrar).
+    const totalStart = firstOrderEvent ?? openedEvent;
+    const totalSeconds = totalStart
+        ? Math.floor(((closedEvent ? new Date(closedEvent.at) : new Date()).getTime() - new Date(totalStart.at).getTime()) / 1000)
         : null;
 
     // Tiempo esperando el pedido: desde que ordenó hasta que llegó el primer plato
@@ -710,7 +713,7 @@ function OrderTimeline({ events }: { events: TimelineEvent[] }) {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                         <span className={`text-sm font-medium ${meta.text}`}>{ev.label}</span>
-                                        {ev.duration_seconds !== null && ev.duration_seconds > 0 && (
+                                        {ev.duration_seconds !== null && ev.duration_seconds > 0 && ev.duration_seconds <= 86400 && (
                                             <span className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-[11px] tabular-nums">
                                                 +{formatDuration(ev.duration_seconds)}
                                             </span>
