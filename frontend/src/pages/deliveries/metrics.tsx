@@ -1,6 +1,7 @@
 import { CourierMetricsPanel } from '@/components/deliveries/courier-metrics-panel';
 import { PerformanceBar } from '@/components/deliveries/performance-bar';
 import { PageShell } from '@/components/page-shell';
+import BranchFilterTabs from '@/components/reports/branch-filter-tabs';
 import { Button } from '@/components/ui/button';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
 import { DeliveryMetricsSkeleton } from '@/components/ui/delivery-metrics-skeleton';
@@ -16,6 +17,7 @@ import type { DeliveryMetric } from '@/types';
 
 import { ChevronDown, ChevronUp, ChevronsUpDown, RefreshCw, Truck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+
 
 
 const PERIOD_OPTIONS: ReadonlyArray<{ value: MetricPeriodOption; label: string }> = [
@@ -55,7 +57,8 @@ function SortIcon({ column, sort }: { column: SortKey; sort: { key: SortKey; dir
 
 export default function DeliveryMetricsPage() {
     const token = useToken();
-    const { metrics, loading, period, changePeriod, fetchMetrics } = useDeliveryMetrics(token);
+    const [branchFilter, setBranchFilter] = useState('active');
+    const { metrics, loading, period, changePeriod, fetchMetrics } = useDeliveryMetrics(token, branchFilter);
     const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'total_deliveries', dir: 'desc' });
 
     useEffect(() => {
@@ -105,6 +108,8 @@ export default function DeliveryMetricsPage() {
                         />
 
                         <PeriodTabs<MetricPeriodOption> options={PERIOD_OPTIONS} value={period} onChange={changePeriod} />
+
+                        <BranchFilterTabs value={branchFilter} onChange={setBranchFilter} />
 
                         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                             <StatTile size="lg" value={totals.totalDeliveries} label="Total entregas" />

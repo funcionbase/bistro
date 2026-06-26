@@ -76,7 +76,7 @@ type StatusFilter = 'all' | OrderStatus;
 const PERIOD_OPTIONS: ReadonlyArray<{ value: Period; label: string }> = [
     { value: 'daily', label: 'Hoy' },
     { value: 'weekly', label: 'Semana' },
-    { value: 'monthly', label: 'Mes' },
+    { value: 'monthly', label: 'Últ. 30 días' },
     { value: 'custom', label: 'Personalizado' },
 ];
 

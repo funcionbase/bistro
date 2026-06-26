@@ -803,7 +803,7 @@ Route::prefix('v1')->group(function () {
                 Route::middleware('permission:deliveries.read,read')->group(function () {
                     Route::get('deliveries', [DeliveryController::class, 'index'])->name('api.deliveries.index');
                     Route::get('deliveries/couriers', [DeliveryController::class, 'getCouriers'])->name('api.deliveries.couriers');
-                    Route::get('deliveries/metrics', [DeliveryMetricsController::class, 'index'])->name('api.deliveries.metrics');
+                    Route::get('deliveries/metrics', [DeliveryMetricsController::class, 'index'])->middleware('branch.consolidate')->name('api.deliveries.metrics');
                     Route::get('deliveries/reassign-reasons', [DeliveryController::class, 'getReassignReasons'])->name('api.deliveries.reassign-reasons');
                     // #119: vista mobile-first del domiciliario — mis entregas
                     // asignadas en la sede activa.

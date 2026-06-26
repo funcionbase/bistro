@@ -12,7 +12,7 @@ interface UseDeliveryMetricsReturn {
     fetchMetrics: (period?: MetricPeriodOption) => Promise<void>;
 }
 
-export function useDeliveryMetrics(token: string | null): UseDeliveryMetricsReturn {
+export function useDeliveryMetrics(token: string | null, branchFilter: string = 'active'): UseDeliveryMetricsReturn {
     const [metrics, setMetrics] = useState<DeliveryMetric[]>([]);
     const [loading, setLoading] = useState(false);
     const [period, setPeriod] = useState<MetricPeriodOption>('today');
@@ -31,7 +31,8 @@ export function useDeliveryMetrics(token: string | null): UseDeliveryMetricsRetu
             if (!token) return;
             setLoading(true);
             try {
-                const res = await apiFetch(`/api/v1/deliveries/metrics?period=${p}`);
+                const branchParam = branchFilter !== 'active' ? `&branch=${branchFilter}` : '';
+                const res = await apiFetch(`/api/v1/deliveries/metrics?period=${p}${branchParam}`);
                 const data = await res.json();
                 if (!isMounted.current) return;
                 if (res.ok) {
@@ -43,7 +44,7 @@ export function useDeliveryMetrics(token: string | null): UseDeliveryMetricsRetu
                 if (isMounted.current) setLoading(false);
             }
         },
-        [token, period],
+        [token, period, branchFilter],
     );
 
     const changePeriod = useCallback(
