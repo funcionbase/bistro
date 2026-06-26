@@ -1,7 +1,6 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
 import { KpiCell } from '@/components/ui/kpi-cell';
-import { PeriodTabs } from '@/components/ui/period-tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
@@ -10,21 +9,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Seguimiento de SMS enviados al cliente por cambios de estado de orden (#275).
- *
- * Total de la empresa + desglose por sede en el período. Consume
- * `/api/v1/metrics/sms/counts` (permiso reports.read, consolidación multi-sede
- * vía branch.consolidate — la sede activa la inyecta el backend). Sirve para
- * monitorear el gasto SNS (cobra por segmento y país).
+ * Las fechas y la sede se controlan desde el filtro principal de la página.
  */
-
-type SmsPeriod = 'today' | 'week' | 'month' | 'custom';
-
-const PERIOD_OPTIONS: ReadonlyArray<{ value: SmsPeriod; label: string }> = [
-    { value: 'today', label: 'Hoy' },
-    { value: 'week', label: 'Semana' },
-    { value: 'month', label: 'Mes' },
-    { value: 'custom', label: 'Rango' },
-];
 
 interface BranchCount {
     branch_id: string;
@@ -37,28 +23,27 @@ interface SmsCountsResponse {
     data: { total: number; by_branch: BranchCount[] };
 }
 
-export default function SmsSentCard() {
+export default function SmsSentCard({
+    branchFilter = 'active',
+    dateFrom,
+    dateTo,
+}: {
+    branchFilter?: string;
+    dateFrom: string;
+    dateTo: string;
+}) {
     const token = useToken();
-    const [period, setPeriod] = useState<SmsPeriod>('today');
-    const [dateFrom, setDateFrom] = useState('');
-    const [dateTo, setDateTo] = useState('');
-    const [appliedCustom, setAppliedCustom] = useState<{ from: string; to: string } | null>(null);
     const [data, setData] = useState<SmsCountsResponse['data'] | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
-        if (!token) return;
-        if (period === 'custom' && !appliedCustom) return;
-
+        if (!token || !dateFrom || !dateTo) return;
         setLoading(true);
         setError(null);
         try {
-            const params = new URLSearchParams({ period });
-            if (period === 'custom' && appliedCustom) {
-                params.set('date_from', appliedCustom.from);
-                params.set('date_to', appliedCustom.to);
-            }
+            const params = new URLSearchParams({ period: 'custom', date_from: dateFrom, date_to: dateTo });
+            if (branchFilter !== 'active') params.set('branch', branchFilter);
             const res = await apiFetch(`/api/v1/metrics/sms/counts?${params.toString()}`);
             const json = await res.json().catch(() => ({}));
             if (!res.ok) {
@@ -71,31 +56,14 @@ export default function SmsSentCard() {
         } finally {
             setLoading(false);
         }
-    }, [token, period, appliedCustom]);
+    }, [token, dateFrom, dateTo, branchFilter]);
 
     useEffect(() => {
         void fetchData();
     }, [fetchData]);
 
     return (
-        <DashboardPanel
-            title="SMS enviados"
-            icon={MessageSquare}
-            rightSlot={
-                <PeriodTabs<SmsPeriod>
-                    options={PERIOD_OPTIONS}
-                    value={period}
-                    onChange={setPeriod}
-                    customValue="custom"
-                    dateFrom={dateFrom}
-                    dateTo={dateTo}
-                    onDateFromChange={setDateFrom}
-                    onDateToChange={setDateTo}
-                    onApplyCustom={() => dateFrom && dateTo && setAppliedCustom({ from: dateFrom, to: dateTo })}
-                    applyDisabled={!dateFrom || !dateTo}
-                />
-            }
-        >
+        <DashboardPanel title="SMS enviados" icon={MessageSquare}>
             {error ? (
                 <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>

@@ -574,7 +574,7 @@ export default function Reports() {
 
                 <CashSessionsCard branchFilter={branchFilter} />
 
-                <SmsSentCard />
+                <SmsSentCard branchFilter={branchFilter} dateFrom={resolvedCashRange.from} dateTo={resolvedCashRange.to} />
             </div>
 
             <OrderDetailModal order={selectedOrder} isOpen={selectedOrder !== null} onClose={() => setSelectedOrder(null)} />
