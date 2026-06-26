@@ -49,6 +49,7 @@ const PLACEHOLDER_STATION = (slug: string): StationProp => ({
  */
 export default function KdsStationPage() {
     const stationSlug = window.location.pathname.split('/').pop() ?? '';
+    const deviceToken = new URLSearchParams(window.location.search).get('device') ?? '';
     const [tickets, setTickets] = useState<KdsStationTicketGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -56,9 +57,11 @@ export default function KdsStationPage() {
     const [actionError, setActionError] = useState<string | null>(null);
     const [stationInfo, setStationInfo] = useState<StationProp>(() => PLACEHOLDER_STATION(stationSlug));
 
+    const deviceQ = deviceToken ? `?device=${encodeURIComponent(deviceToken)}` : '';
+
     const fetchTickets = useCallback(async () => {
         try {
-            const resp = await apiFetch(`/api/v1/kds/${encodeURIComponent(stationSlug)}/tickets`);
+            const resp = await apiFetch(`/api/v1/kds/${encodeURIComponent(stationSlug)}/tickets${deviceQ}`);
             if (!resp.ok) throw new Error('No pudimos cargar los tickets.');
             const json = (await resp.json()) as ApiResponse;
             setTickets(json.data ?? []);
@@ -71,7 +74,7 @@ export default function KdsStationPage() {
         } finally {
             setLoading(false);
         }
-    }, [stationSlug]);
+    }, [stationSlug, deviceQ]);
 
     useEffect(() => {
         void fetchTickets();
@@ -83,7 +86,7 @@ export default function KdsStationPage() {
         setBusy(true);
         setActionError(null);
         try {
-            const resp = await apiFetch(`/api/v1/kds/${encodeURIComponent(stationSlug)}/items/${itemId}/${action}`, {
+            const resp = await apiFetch(`/api/v1/kds/${encodeURIComponent(stationSlug)}/items/${itemId}/${action}${deviceQ}`, {
                 method: 'PATCH',
             });
             if (!resp.ok) {
