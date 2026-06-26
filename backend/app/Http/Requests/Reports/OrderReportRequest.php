@@ -33,6 +33,9 @@ class OrderReportRequest extends FormRequest
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'cursor' => ['sometimes', 'nullable', 'string'],
             'cursor_based' => ['sometimes', 'boolean'],
+            'search' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'min_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'max_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 

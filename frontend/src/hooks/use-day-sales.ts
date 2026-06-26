@@ -2,17 +2,6 @@ import type { KanbanOrder } from '@/hooks/use-orders';
 import { apiFetch } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/**
- * Lista TODAS las órdenes del día actual en TZ America/Bogota — alimenta la
- * vista "Ventas del día" (`/orders/deliveries`). Reemplaza al hook anterior
- * `useDeliveryList` que solo traía deliveries; ahora cubre todos los tipos
- * (table/delivery/pickup) y todos los estados (pending → refunded/cancelled).
- *
- * Backend: `/api/v1/reports/orders?period=daily&status=all&per_page=100`.
- * Permission: `reports.read`. Se usa el endpoint de reportes porque ya tiene
- * resumen agregado (gross/refunded/net) que la UI muestra como KPIs.
- */
-
 export interface DaySalesSummary {
     total_orders: number;
     completed: number;
@@ -26,8 +15,15 @@ export interface DaySalesSummary {
 }
 
 export interface DaySalesOrder extends KanbanOrder {
-    /** El reports endpoint puede traer campos extra; los toleramos. */
     cost?: number;
+}
+
+export interface DaySalesParams {
+    dateFrom: string;
+    dateTo: string;
+    search: string;
+    minAmount: string;
+    maxAmount: string;
 }
 
 interface UseDaySalesReturn {
@@ -36,21 +32,18 @@ interface UseDaySalesReturn {
     period: { from: string; to: string } | null;
     loading: boolean;
     error: string | null;
-    statusFilter: string;
-    setStatusFilter: (s: string) => void;
     refresh: () => Promise<void>;
     lastUpdated: Date | undefined;
 }
 
 const POLL_INTERVAL_MS = 30_000;
 
-export function useDaySales(token: string | null): UseDaySalesReturn {
+export function useDaySales(token: string | null, params: DaySalesParams): UseDaySalesReturn {
     const [orders, setOrders] = useState<DaySalesOrder[]>([]);
     const [summary, setSummary] = useState<DaySalesSummary | null>(null);
     const [period, setPeriod] = useState<{ from: string; to: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [lastUpdated, setLastUpdated] = useState<Date | undefined>();
     const isMounted = useRef(true);
 
@@ -64,13 +57,19 @@ export function useDaySales(token: string | null): UseDaySalesReturn {
     const fetchOrders = useCallback(async () => {
         if (!token) return;
         try {
-            const params = new URLSearchParams({
-                period: 'daily',
-                status: statusFilter,
+            const urlParams = new URLSearchParams({
+                period: 'custom',
+                date_from: params.dateFrom,
+                date_to: params.dateTo,
+                status: 'all',
                 per_page: '100',
                 page: '1',
             });
-            const res = await apiFetch(`/api/v1/reports/orders?${params.toString()}`);
+            if (params.search.trim()) urlParams.set('search', params.search.trim());
+            if (params.minAmount !== '') urlParams.set('min_amount', params.minAmount);
+            if (params.maxAmount !== '') urlParams.set('max_amount', params.maxAmount);
+
+            const res = await apiFetch(`/api/v1/reports/orders?${urlParams.toString()}`);
             if (!isMounted.current) return;
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}));
@@ -88,7 +87,7 @@ export function useDaySales(token: string | null): UseDaySalesReturn {
         } finally {
             if (isMounted.current) setLoading(false);
         }
-    }, [token, statusFilter]);
+    }, [token, params.dateFrom, params.dateTo, params.search, params.minAmount, params.maxAmount]);
 
     useEffect(() => {
         void fetchOrders();
@@ -96,15 +95,9 @@ export function useDaySales(token: string | null): UseDaySalesReturn {
         return () => clearInterval(interval);
     }, [fetchOrders]);
 
-    return {
-        orders,
-        summary,
-        period,
-        loading,
-        error,
-        statusFilter,
-        setStatusFilter,
-        refresh: fetchOrders,
-        lastUpdated,
-    };
+    return { orders, summary, period, loading, error, refresh: fetchOrders, lastUpdated };
+}
+
+export function todayBogota(): string {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 }

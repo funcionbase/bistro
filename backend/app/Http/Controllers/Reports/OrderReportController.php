@@ -74,6 +74,23 @@ class OrderReportController extends Controller
         // (receipts, payment_data) se cargan solo en el detalle (`/orders/{id}`).
         $ordersQuery->with(['delivery.deliverer:id,name']);
 
+        $search = $validated['search'] ?? null;
+        if ($search !== null && $search !== '') {
+            $ordersQuery->where(function (Builder $q) use ($search): void {
+                $q->where('client_phone', 'like', "%{$search}%")
+                    ->orWhere('billing_legal_name', 'like', "%{$search}%")
+                    ->orWhere('billing_doc_number', 'like', "%{$search}%");
+            });
+        }
+
+        if (isset($validated['min_amount'])) {
+            $ordersQuery->where('total', '>=', $validated['min_amount']);
+        }
+
+        if (isset($validated['max_amount'])) {
+            $ordersQuery->where('total', '<=', $validated['max_amount']);
+        }
+
         $validated = $request->validated();
         $useCursor = filter_var($validated['cursor_based'] ?? false, FILTER_VALIDATE_BOOLEAN);
 

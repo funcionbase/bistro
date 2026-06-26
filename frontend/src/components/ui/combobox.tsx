@@ -22,6 +22,11 @@ interface BaseComboboxProps {
     /** Muestra una "X" para limpiar la selección. */
     clearable?: boolean;
     /**
+     * Panel flotante (absolute z-50). Úsalo fuera de modales/dialogs.
+     * Por defecto false: panel inline para no romper overflow de Radix Dialog.
+     */
+    floating?: boolean;
+    /**
      * Modo servidor: si se pasa, el filtrado lo hace el padre. El componente
      * emite el query (debounced) y NO filtra localmente.
      */
@@ -101,6 +106,7 @@ export function Combobox(props: ComboboxProps) {
         className,
         footer,
         clearable,
+        floating = false,
         onSearchChange,
         searchDebounceMs = 250,
         loading,
@@ -373,7 +379,13 @@ export function Combobox(props: ComboboxProps) {
             )}
 
             {open && (
-                <div className="border-input bg-popover text-popover-foreground mt-1 overflow-hidden rounded-md border shadow-md" data-combobox-panel>
+                <div
+                    className={cn(
+                        'border-input bg-popover text-popover-foreground mt-1 overflow-hidden rounded-md border shadow-md',
+                        floating && 'absolute z-50 w-full',
+                    )}
+                    data-combobox-panel
+                >
                     <div className="relative border-b">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
                         {loading && <LoaderCircle className="text-muted-foreground absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 animate-spin" />}

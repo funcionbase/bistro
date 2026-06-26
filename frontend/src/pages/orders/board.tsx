@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { KanbanBoardSkeleton } from '@/components/ui/kanban-board-skeleton';
+import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,8 +36,9 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
-import { AlertCircle, RefreshCw, Truck } from 'lucide-react';
+import { AlertCircle, RefreshCw, Search, Truck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 /**
  * Aplica una inclinacion estilo "swing" a la card en drag, modulada por la
@@ -289,7 +291,6 @@ export default function KanbanBoard() {
     const isMobile = useIsMobile();
     const formatCurrency = useCurrencyFormatter();
     const { has } = usePermissions();
-    // Roles que solo gestionan estado (p.ej. cocina) no asignan repartidores.
     const canAssignCourier = has('deliveries.create');
     const canReassignCourier = has('deliveries.update');
 
@@ -303,6 +304,21 @@ export default function KanbanBoard() {
     const [assignError, setAssignError] = useState<string | null>(null);
     const [activeDragOrder, setActiveDragOrder] = useState<KanbanOrder | null>(null);
     const [droppedOrderId, setDroppedOrderId] = useState<string | null>(null);
+    const [searchInput, setSearchInput] = useState('');
+    const [appliedSearch, setAppliedSearch] = useState('');
+
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Auto-abrir orden si llega desde ?order=<id> (ej. desde "Ver detalle" en Ventas del día)
+    useEffect(() => {
+        const orderId = searchParams.get('order');
+        if (!orderId || loading || orders.length === 0) return;
+        const found = orders.find((o) => o.id.toLowerCase() === orderId.toLowerCase());
+        if (found) {
+            setSelectedOrder(found);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, orders, loading, setSearchParams]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -314,8 +330,19 @@ export default function KanbanBoard() {
     // pedidos recién movidos a esta columna (o creados) aparecen arriba; los
     // que llevan más tiempo sin tocar bajan al final. Fallback a ordered_at
     // para órdenes que (por algún motivo legacy) no traigan updated_at.
+    const searchLower = appliedSearch.trim().toLowerCase();
+    const visibleOrders = searchLower
+        ? orders.filter(
+              (o) =>
+                  o.id.toLowerCase().includes(searchLower) ||
+                  (o.client_phone ?? '').toLowerCase().includes(searchLower) ||
+                  (o.delivery_address ?? '').toLowerCase().includes(searchLower) ||
+                  (o.table_number ?? '').toLowerCase().includes(searchLower),
+          )
+        : orders;
+
     const grouped = ESTADOS.reduce<Record<string, KanbanOrder[]>>((acc, estado) => {
-        const filtered = orders.filter((o) => o.status === estado.key);
+        const filtered = visibleOrders.filter((o) => o.status === estado.key);
         filtered.sort((a, b) => {
             const at = new Date(a.updated_at ?? a.ordered_at ?? 0).getTime();
             const bt = new Date(b.updated_at ?? b.ordered_at ?? 0).getTime();
@@ -407,13 +434,6 @@ export default function KanbanBoard() {
             return;
         }
 
-        // BUG-020: bloquear arrastre a "Completado" sin cobro.
-        // El único camino válido es Caja → closeWithPayment.
-        if (newStatus === 'completed') {
-            setAssignError('Para completar una orden debes cobrarla desde Caja.');
-            window.setTimeout(() => setAssignError(null), 4000);
-            return;
-        }
 
         const orderId = order.id;
         setDroppedOrderId(orderId);
@@ -444,6 +464,39 @@ export default function KanbanBoard() {
                             description="Arrastra cada orden para avanzar de estado. Solo se permite mover hacia adelante."
                             actions={<LiveIndicator timestamp={lastUpdated} isLive={!loading && !error} />}
                         />
+                    </div>
+
+                    {/* Buscador */}
+                    <div className="mx-4 mt-3 flex gap-2">
+                        <Input
+                            type="search"
+                            placeholder="Buscar por #orden, teléfono, dirección o mesa…"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') setAppliedSearch(searchInput);
+                            }}
+                            className="h-9 max-w-sm"
+                        />
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setAppliedSearch(searchInput)}
+                            className="h-9 shrink-0"
+                        >
+                            <Search className="mr-1.5 h-3.5 w-3.5" />
+                            Buscar
+                        </Button>
+                        {appliedSearch && (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { setSearchInput(''); setAppliedSearch(''); }}
+                                className="h-9 shrink-0"
+                            >
+                                Limpiar
+                            </Button>
+                        )}
                     </div>
 
                     {error && (
@@ -575,7 +628,7 @@ export default function KanbanBoard() {
                 advanceOptions={
                     selectedOrder
                         ? ESTADOS.filter(
-                              (e) => e.rank > rankOf(selectedOrder.status) && e.key !== 'completed',
+                              (e) => e.rank > rankOf(selectedOrder.status),
                           ).map((e) => ({ key: e.key, label: e.label }))
                         : []
                 }
