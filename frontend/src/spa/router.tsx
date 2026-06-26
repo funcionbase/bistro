@@ -5,7 +5,7 @@ import { EnrollmentCompanyGuard } from '@/pages/enrollment/company-guard';
 import ErrorBoundary from '@/pages/error-boundary';
 import HoursRoute from '@/pages/hours';
 import NotFound from '@/pages/not-found';
-import { lazy } from 'react';
+import { lazy, useEffect } from 'react';
 import { createBrowserRouter, Outlet, useParams, useSearchParams } from 'react-router-dom';
 
 /**
@@ -98,6 +98,36 @@ const EnrollmentCompany = lazy(() => import('@/pages/enrollment/company'));
 const TableJoin = lazy(() => import('@/pages/table/join'));
 const TableMenu = lazy(() => import('@/pages/table/menu'));
 
+// Manual de usuario — páginas públicas sin auth ni layout SpaAppLayout.
+const ManualIndex = lazy(() => import('@/pages/manual/index'));
+const ManualPrimerosPasos = lazy(() => import('@/pages/manual/primeros-pasos'));
+const ManualMenus = lazy(() => import('@/pages/manual/menus'));
+const ManualPedidos = lazy(() => import('@/pages/manual/pedidos'));
+const ManualCaja = lazy(() => import('@/pages/manual/caja'));
+const ManualMesas = lazy(() => import('@/pages/manual/mesas'));
+const ManualEntregas = lazy(() => import('@/pages/manual/entregas'));
+const ManualHorarios = lazy(() => import('@/pages/manual/horarios'));
+const ManualChat = lazy(() => import('@/pages/manual/chat'));
+const ManualClientes = lazy(() => import('@/pages/manual/clientes'));
+const ManualCupones = lazy(() => import('@/pages/manual/cupones'));
+const ManualFidelizacion = lazy(() => import('@/pages/manual/fidelizacion'));
+const ManualWhatsapp = lazy(() => import('@/pages/manual/whatsapp'));
+const ManualMetricas = lazy(() => import('@/pages/manual/metricas'));
+const ManualAlertas = lazy(() => import('@/pages/manual/alertas'));
+const ManualFacturacion = lazy(() => import('@/pages/manual/facturacion'));
+const ManualUsuarios = lazy(() => import('@/pages/manual/usuarios'));
+const ManualSedes = lazy(() => import('@/pages/manual/sedes'));
+const ManualConfiguracion = lazy(() => import('@/pages/manual/configuracion'));
+const ManualFaq = lazy(() => import('@/pages/manual/faq'));
+
+// ponytail: window.location.replace porque Navigate no soporta URLs externas
+function LegalContratoRedirect() {
+    useEffect(() => {
+        window.location.replace('https://flexyflow.co/wiki/restaurante/legal/contrato/');
+    }, []);
+    return null;
+}
+
 // Carta pública (destino del QR impreso): `/menus/{nit}?table=N`. El QR
 // codifica `/menus/{nit}`; la página persiste el NIT en localStorage y la
 // mesa en sessionStorage, de modo que `/menus` (sin NIT) resuelve la última
@@ -149,6 +179,29 @@ export const router = createBrowserRouter([
             // Carta pública (QR impreso) — pública, sin layout ni auth.
             { path: '/menus', element: <PublicMenuRoute /> },
             { path: '/menus/:nit', element: <PublicMenuRoute /> },
+
+            // Manual de usuario — públicas, sin auth, layout propio.
+            { path: '/manual/bistro', element: <ManualIndex /> },
+            { path: '/manual/bistro/primeros-pasos', element: <ManualPrimerosPasos /> },
+            { path: '/manual/bistro/menus', element: <ManualMenus /> },
+            { path: '/manual/bistro/pedidos', element: <ManualPedidos /> },
+            { path: '/manual/bistro/caja', element: <ManualCaja /> },
+            { path: '/manual/bistro/mesas', element: <ManualMesas /> },
+            { path: '/manual/bistro/entregas', element: <ManualEntregas /> },
+            { path: '/manual/bistro/horarios', element: <ManualHorarios /> },
+            { path: '/manual/bistro/chat', element: <ManualChat /> },
+            { path: '/manual/bistro/clientes', element: <ManualClientes /> },
+            { path: '/manual/bistro/cupones', element: <ManualCupones /> },
+            { path: '/manual/bistro/fidelizacion', element: <ManualFidelizacion /> },
+            { path: '/manual/bistro/whatsapp', element: <ManualWhatsapp /> },
+            { path: '/manual/bistro/metricas', element: <ManualMetricas /> },
+            { path: '/manual/bistro/alertas', element: <ManualAlertas /> },
+            { path: '/manual/bistro/facturacion', element: <ManualFacturacion /> },
+            { path: '/manual/bistro/usuarios', element: <ManualUsuarios /> },
+            { path: '/manual/bistro/sedes', element: <ManualSedes /> },
+            { path: '/manual/bistro/configuracion', element: <ManualConfiguracion /> },
+            { path: '/manual/bistro/faq', element: <ManualFaq /> },
+            { path: '/manual/bistro/legal/contrato', element: <LegalContratoRedirect /> },
 
             { path: '/login', element: <Login /> },
             { path: '/register', element: <Register /> },
