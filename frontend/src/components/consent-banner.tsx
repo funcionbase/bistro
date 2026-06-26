@@ -25,22 +25,22 @@ import { useState } from 'react';
 /** Política de privacidad pública (pdn). El banner solo aparece donde hay trackers (pdn). */
 const PRIVACY_URL = 'https://flexyflow.co/privacy-policy/';
 
-export function ConsentBanner() {
-    // ¿Hay algún tracker opcional configurado en este build? Si no, no preguntamos.
-    // La inicialización es síncrona (localStorage + variables de build) para que el
-    // banner esté presente desde el primer frame y no cause CLS.
+/** `noMarketing`: oculta la categoría TikTok Pixel. Usar en páginas autenticadas
+ *  donde el pixel no carga — evita mostrar la opción de marketing a usuarios logueados. */
+export function ConsentBanner({ noMarketing = false }: { noMarketing?: boolean }) {
     const [open, setOpen] = useState(
-        () => Boolean(resolveGa4Id(null) || resolveTiktokPixelId()) && getStoredConsent() === null,
+        () => Boolean(resolveGa4Id(null) || (!noMarketing && resolveTiktokPixelId())) && getStoredConsent() === null,
     );
     const [customizing, setCustomizing] = useState(false);
     const [analytics, setAnalytics] = useState(true);
     const [marketing, setMarketing] = useState(true);
 
-    /** Persiste la decisión, la aplica a los trackers y cierra el banner. */
     function decide(grantAnalytics: boolean, grantMarketing: boolean): void {
-        setStoredConsent(grantAnalytics, grantMarketing);
+        // En contexto autenticado (noMarketing) preservamos la decisión de marketing
+        // existente para no pisar lo que el usuario eligió en la landing.
+        const effectiveMarketing = noMarketing ? (getStoredConsent()?.marketing ?? false) : grantMarketing;
+        setStoredConsent(grantAnalytics, effectiveMarketing);
         updateGa4Consent(grantAnalytics);
-        // El pixel de TikTok reacciona vía `subscribeConsent` (lib/consent).
         setOpen(false);
     }
 
@@ -78,15 +78,17 @@ export function ConsentBanner() {
                             </span>
                         </label>
 
-                        <label className="border-border flex items-start gap-3 rounded-lg border p-3">
-                            <Checkbox checked={marketing} onCheckedChange={(value) => setMarketing(value === true)} className="mt-0.5" />
-                            <span className="text-sm">
-                                <span className="text-foreground font-medium">Marketing y publicidad</span>
-                                <span className="text-muted-foreground block">
-                                    TikTok Pixel. Mide nuestras campañas y conversiones para mostrarte anuncios relevantes.
+                        {!noMarketing && (
+                            <label className="border-border flex items-start gap-3 rounded-lg border p-3">
+                                <Checkbox checked={marketing} onCheckedChange={(value) => setMarketing(value === true)} className="mt-0.5" />
+                                <span className="text-sm">
+                                    <span className="text-foreground font-medium">Marketing y publicidad</span>
+                                    <span className="text-muted-foreground block">
+                                        TikTok Pixel. Mide nuestras campañas y conversiones para mostrarte anuncios relevantes.
+                                    </span>
                                 </span>
-                            </span>
-                        </label>
+                            </label>
+                        )}
                     </div>
                 )}
 
