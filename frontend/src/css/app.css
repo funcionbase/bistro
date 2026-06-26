@@ -57,6 +57,8 @@ body {
 @theme {
     --font-sans:
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    /* font-mono reemplaza ui-monospace — Instrument Sans como única fuente auxiliar */
+    --font-mono: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
     --font-brand: 'FlexyFont', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
     --radius-lg: var(--radius);
