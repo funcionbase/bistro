@@ -474,7 +474,7 @@ class KdsController extends Controller
      * Resuelve el id de la estación `is_default=true` de la sede activa.
      * Cached per request via memoization en el container del request.
      */
-    private function resolveDefaultStationId(string $companyNit, string $branchId): ?int
+    private function resolveDefaultStationId(string $companyNit, string $branchId): ?string
     {
         return KdsStation::query()
             ->where('company_nit', $companyNit)
@@ -489,7 +489,7 @@ class KdsController extends Controller
      * sede. Si no hay menú activo, devuelve mapa vacío (todo cae al
      * fallback).
      *
-     * @return array<string, int|null>
+     * @return array<string, string|null>
      */
     private function resolveActiveMenuStationMap(string $companyNit, string $branchId): array
     {

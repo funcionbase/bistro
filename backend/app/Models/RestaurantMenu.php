@@ -161,7 +161,7 @@ class RestaurantMenu extends Model
                 if ($itemId === null) {
                     continue;
                 }
-                $map[(string) $itemId] = is_int($stationId) ? $stationId : null;
+                $map[(string) $itemId] = (is_string($stationId) && $stationId !== '') ? $stationId : null;
             }
         }
 
