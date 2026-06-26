@@ -49,7 +49,17 @@ const PLACEHOLDER_STATION = (slug: string): StationProp => ({
  */
 export default function KdsStationPage() {
     const stationSlug = window.location.pathname.split('/').pop() ?? '';
-    const deviceToken = new URLSearchParams(window.location.search).get('device') ?? '';
+    // ponytail: localStorage per-slug — kiosk loads URL con ?device= la primera vez,
+    // recargas posteriores (sin query param) siguen usando el token cacheado.
+    const deviceToken = useMemo(() => {
+        const storageKey = `kds_token_${stationSlug}`;
+        const fromUrl = new URLSearchParams(window.location.search).get('device') ?? '';
+        if (fromUrl) {
+            try { localStorage.setItem(storageKey, fromUrl); } catch { /* private browsing */ }
+            return fromUrl;
+        }
+        try { return localStorage.getItem(storageKey) ?? ''; } catch { return ''; }
+    }, [stationSlug]);
     const [tickets, setTickets] = useState<KdsStationTicketGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
