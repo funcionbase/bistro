@@ -628,7 +628,7 @@ export default function KanbanBoard() {
                 advanceOptions={
                     selectedOrder
                         ? ESTADOS.filter(
-                              (e) => e.rank > rankOf(selectedOrder.status),
+                              (e) => e.rank > rankOf(selectedOrder.status) && e.key !== 'completed',
                           ).map((e) => ({ key: e.key, label: e.label }))
                         : []
                 }

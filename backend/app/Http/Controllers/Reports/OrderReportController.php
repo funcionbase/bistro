@@ -38,10 +38,11 @@ class OrderReportController extends Controller
         $companyNit = $request->attributes->get('active_company_nit');
         $activeBranchId = $request->attributes->get('active_branch_id');
         $isConsolidated = $request->attributes->get('consolidated_branches') === true;
-        [$dateFrom, $dateTo] = $this->resolvePeriod($request->validated());
+        $validated = $request->validated();
+        [$dateFrom, $dateTo] = $this->resolvePeriod($validated);
 
-        $status = $request->validated()['status'] ?? 'all';
-        $perPage = (int) ($request->validated()['per_page'] ?? 25);
+        $status = $validated['status'] ?? 'all';
+        $perPage = (int) ($validated['per_page'] ?? 25);
 
         $baseQuery = Order::where('company_nit', $companyNit)
             ->whereBetween('ordered_at', [$dateFrom->copy()->startOfDay(), $dateTo->copy()->endOfDay()]);
@@ -91,7 +92,6 @@ class OrderReportController extends Controller
             $ordersQuery->where('total', '<=', $validated['max_amount']);
         }
 
-        $validated = $request->validated();
         $useCursor = filter_var($validated['cursor_based'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $orderedQuery = $ordersQuery->orderByDesc('ordered_at')->orderByDesc('id');

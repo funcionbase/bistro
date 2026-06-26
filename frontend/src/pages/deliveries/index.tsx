@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
-import { useDaySales, todayBogota, type DaySalesParams } from '@/hooks/use-day-sales';
+import { useDaySales, todayBogota, type DaySalesParams, type DaySalesSummary as DaySalesSummaryData } from '@/hooks/use-day-sales';
 import { useDaySalesActions } from '@/hooks/use-day-sales-actions';
 import { useDaySalesSort } from '@/hooks/use-day-sales-sort';
 import { useOrderStatuses } from '@/hooks/use-order-statuses';
@@ -25,7 +25,7 @@ import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 
 import { AlertCircle, Inbox, RefreshCw, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function DaySalesIndex() {
     const token = useToken();
@@ -69,6 +69,26 @@ export default function DaySalesIndex() {
     }
 
     const filteredOrders = statusFilters.length > 0 ? orders.filter((o) => statusFilters.includes(o.status)) : orders;
+
+    // BUG-L03: cuando hay filtro de estado, derivar KPIs de filteredOrders para
+    // que las tarjetas sean consistentes con la tabla. total_refunded es
+    // aproximado (usa orders.total, no receipts) pero es el mejor dato disponible.
+    const displaySummary = useMemo((): DaySalesSummaryData | null => {
+        if (statusFilters.length === 0 || !summary) return summary;
+        const gross = filteredOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + o.total, 0);
+        const refunds = filteredOrders.filter((o) => o.status === 'refunded').reduce((s, o) => s + o.total, 0);
+        return {
+            total_orders: filteredOrders.length,
+            completed: filteredOrders.filter((o) => o.status === 'completed').length,
+            cancelled: filteredOrders.filter((o) => o.status === 'cancelled').length,
+            refunded: filteredOrders.filter((o) => o.status === 'refunded').length,
+            abandoned: filteredOrders.filter((o) => o.status === 'abandoned').length,
+            total_revenue: gross,
+            total_refunded: refunds,
+            net_revenue: gross - refunds,
+        };
+    }, [statusFilters, filteredOrders, summary]);
+
     const { sortColumn, sortDirection, toggleSort, sortedOrders } = useDaySalesSort(filteredOrders, orderStatuses);
 
     const {
@@ -127,13 +147,23 @@ export default function DaySalesIndex() {
                             description={
                                 period?.from
                                     ? (() => {
-                                          const formatted = new Intl.DateTimeFormat('es-CO', {
-                                              weekday: 'long',
-                                              day: 'numeric',
-                                              month: 'long',
-                                              year: 'numeric',
-                                              timeZone: 'America/Bogota',
-                                          }).format(new Date(period.from + 'T12:00:00'));
+                                          const fmtShort = (d: string) =>
+                                              new Intl.DateTimeFormat('es-CO', {
+                                                  day: 'numeric',
+                                                  month: 'long',
+                                                  year: 'numeric',
+                                                  timeZone: 'America/Bogota',
+                                              }).format(new Date(d + 'T12:00:00'));
+                                          const formatted =
+                                              period.from === period.to
+                                                  ? new Intl.DateTimeFormat('es-CO', {
+                                                        weekday: 'long',
+                                                        day: 'numeric',
+                                                        month: 'long',
+                                                        year: 'numeric',
+                                                        timeZone: 'America/Bogota',
+                                                    }).format(new Date(period.from + 'T12:00:00'))
+                                                  : `${fmtShort(period.from)} – ${fmtShort(period.to)}`;
                                           const stamp = lastUpdated
                                               ? ` · Actualizado a las ${lastUpdated.toLocaleTimeString('es-CO', {
                                                     hour: '2-digit',
@@ -165,7 +195,7 @@ export default function DaySalesIndex() {
                             }
                         />
 
-                        <DaySalesSummary summary={summary} formatCurrency={formatCurrency} />
+                        <DaySalesSummary summary={displaySummary} formatCurrency={formatCurrency} />
 
                         {/* Filtros */}
                         <div className="flex flex-col gap-3">

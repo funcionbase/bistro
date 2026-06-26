@@ -86,7 +86,7 @@ export function KdsTicketCard({ ticket, onMarkInKitchen, onMarkReady, onMarkServ
                             compact ? 'text-sm' : 'text-2xl',
                         )}
                     >
-                        Mesa {ticket.table?.number ?? '—'}
+                        {ticket.table?.number ? `Mesa ${ticket.table.number}` : 'Sin mesa'}
                     </p>
                     {ticket.guest && !compact && (
                         <div className="mt-1">
