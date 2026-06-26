@@ -547,9 +547,9 @@ export default function Reports() {
                     </>
                 ) : null}
 
-                <CashDrawerCard />
+                <CashDrawerCard branchFilter={branchFilter} />
 
-                <CashSessionsCard />
+                <CashSessionsCard branchFilter={branchFilter} />
 
                 <SmsSentCard />
             </div>

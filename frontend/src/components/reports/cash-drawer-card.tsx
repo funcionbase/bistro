@@ -98,7 +98,7 @@ function formatLongDate(iso: string): string {
     }).format(dt);
 }
 
-export default function CashDrawerCard() {
+export default function CashDrawerCard({ branchFilter = 'active' }: { branchFilter?: string }) {
     const token = useToken();
     const paymentCatalog = usePaymentMethods();
     const today = useMemo(() => todayInBogota(), []);
@@ -124,6 +124,7 @@ export default function CashDrawerCard() {
         setError(null);
         try {
             const qs = new URLSearchParams({ date_from: params.from, date_to: params.to });
+            if (branchFilter !== 'active') qs.set('branch', branchFilter);
             const res = await apiFetch(`/api/v1/reports/cash-drawer?${qs.toString()}`);
             const json = await res.json().catch(() => ({}));
             if (!res.ok) {
@@ -136,7 +137,7 @@ export default function CashDrawerCard() {
         } finally {
             setLoading(false);
         }
-    }, [params.from, params.to, token]);
+    }, [params.from, params.to, token, branchFilter]);
 
     useEffect(() => {
         void fetchData();
@@ -145,6 +146,7 @@ export default function CashDrawerCard() {
     const exportPdf = () => {
         const qs = new URLSearchParams({ date_from: params.from, date_to: params.to });
         if (token) qs.set('token', token);
+        if (branchFilter !== 'active') qs.set('branch', branchFilter);
         window.open(`/api/v1/reports/cash-drawer/pdf?${qs.toString()}`, '_blank');
     };
 

@@ -69,7 +69,7 @@ function diffTokenClass(diff: number | null): string {
     return 'text-[color:var(--color-status-critical)]';
 }
 
-export default function CashSessionsCard() {
+export default function CashSessionsCard({ branchFilter = 'active' }: { branchFilter?: string }) {
     const token = useToken();
     const [data, setData] = useState<CashSessionRow[]>([]);
     const [page, setPage] = useState(1);
@@ -83,6 +83,7 @@ export default function CashSessionsCard() {
         setError(null);
         try {
             const params = new URLSearchParams({ page: String(page), per_page: '15' });
+            if (branchFilter !== 'active') params.set('branch', branchFilter);
             const res = await apiFetch(`/api/v1/reports/cash-register/sessions?${params.toString()}`);
             const json = await res.json().catch(() => ({}));
             if (!res.ok) {
@@ -97,7 +98,7 @@ export default function CashSessionsCard() {
         } finally {
             setLoading(false);
         }
-    }, [page, token]);
+    }, [page, token, branchFilter]);
 
     useEffect(() => {
         void fetchData();
