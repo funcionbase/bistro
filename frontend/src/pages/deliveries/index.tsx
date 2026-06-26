@@ -75,8 +75,8 @@ export default function DaySalesIndex() {
     // aproximado (usa orders.total, no receipts) pero es el mejor dato disponible.
     const displaySummary = useMemo((): DaySalesSummaryData | null => {
         if (statusFilters.length === 0 || !summary) return summary;
-        const gross = filteredOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + o.total, 0);
-        const refunds = filteredOrders.filter((o) => o.status === 'refunded').reduce((s, o) => s + o.total, 0);
+        const gross = filteredOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + Number(o.total), 0);
+        const refunds = filteredOrders.filter((o) => o.status === 'refunded').reduce((s, o) => s + Number(o.total), 0);
         return {
             total_orders: filteredOrders.length,
             completed: filteredOrders.filter((o) => o.status === 'completed').length,
