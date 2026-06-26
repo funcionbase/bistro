@@ -390,7 +390,7 @@ class TableSessionController extends Controller
             ->where('company_nit', $companyNit)
             ->where('branch_id', $branchId)
             ->whereIn('status', config('tables.active_statuses'))
-            ->with(['table:id,number', 'guests:id,table_session_id,display_name', 'orders.items'])
+            ->with(['table:id,number', 'guests:id,table_session_id,display_name', 'orders.orderItems'])
             ->get();
 
         $data = [];
@@ -409,7 +409,7 @@ class TableSessionController extends Controller
                 }
                 if (in_array($o->status, $revenueStatuses, true)) {
                     // completed por tablero → tiene items sin pagar; completed por caja → todos paid.
-                    return $o->items->filter(
+                    return $o->orderItems->filter(
                         fn (OrderItem $i) => $i->paid_at === null && in_array($i->status, $consumableItemStatuses, true),
                     )->isNotEmpty();
                 }
@@ -425,7 +425,7 @@ class TableSessionController extends Controller
             // Coincide con lo que payAll cobra (misma query base: consumable + paid_at IS NULL).
             $totalDue = round(
                 $billableOrders->sum(function (Order $o) use ($consumableItemStatuses): float {
-                    return $o->items
+                    return $o->orderItems
                         ->filter(fn (OrderItem $i) => $i->paid_at === null && in_array($i->status, $consumableItemStatuses, true))
                         ->sum(fn (OrderItem $i) => (float) $i->unit_price * (int) $i->quantity);
                 }),
