@@ -1,10 +1,7 @@
 User-agent: *
-# Rutas públicas indexables
 Allow: /manual/
 Allow: /menus/
 Allow: /menus$
-
-# Todo lo demás son rutas autenticadas o privadas
 Disallow: /
 
 Sitemap: https://bistro.flexyflow.co/sitemap.xml
