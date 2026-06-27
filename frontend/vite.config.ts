@@ -120,9 +120,6 @@ export default defineConfig(({ mode }) => {
                 '/storage-proxy': { target: backendUrl, changeOrigin: true },
             },
         },
-        esbuild: {
-            jsx: 'automatic',
-        },
         build: isProd
             ? {
                   sourcemap: false,
