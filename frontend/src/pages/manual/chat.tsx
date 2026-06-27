@@ -1,5 +1,4 @@
 import ManualLayout from '@/layouts/manual-layout';
-import { Link } from 'react-router-dom';
 
 export default function ManualChat() {
     return (
@@ -14,8 +13,7 @@ export default function ManualChat() {
         >
             <h2>Para qué sirve el panel de chat</h2>
             <p>
-                Cuando conectas tu{' '}
-                <Link to="/manual/bistro/whatsapp">WhatsApp del negocio</Link> a flexyflow, todos los mensajes
+                Cuando conectas tu WhatsApp del negocio a flexyflow, todos los mensajes
                 que llegan a tu número aparecen acá. El equipo puede responder desde el panel sin necesidad de
                 tocar el celular del negocio — y queda registro de quién atendió cada conversación.
             </p>
@@ -90,8 +88,7 @@ export default function ManualChat() {
                 <p>
                     <strong>Ventana de 24 horas de WhatsApp:</strong> puedes responder libremente solo dentro de
                     las 24 horas siguientes al último mensaje del cliente. Pasada esa ventana, para iniciar
-                    conversación necesitas una plantilla pre-aprobada por Meta. Ver{' '}
-                    <Link to="/manual/bistro/whatsapp">WhatsApp del negocio</Link>.
+                    conversación necesitas una plantilla pre-aprobada por Meta.
                 </p>
             </div>
 

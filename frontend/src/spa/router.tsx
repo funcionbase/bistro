@@ -111,12 +111,14 @@ const ManualChat = lazy(() => import('@/pages/manual/chat'));
 const ManualClientes = lazy(() => import('@/pages/manual/clientes'));
 const ManualCupones = lazy(() => import('@/pages/manual/cupones'));
 const ManualFidelizacion = lazy(() => import('@/pages/manual/fidelizacion'));
-const ManualWhatsapp = lazy(() => import('@/pages/manual/whatsapp'));
 const ManualMetricas = lazy(() => import('@/pages/manual/metricas'));
 const ManualAlertas = lazy(() => import('@/pages/manual/alertas'));
 const ManualFacturacion = lazy(() => import('@/pages/manual/facturacion'));
 const ManualUsuarios = lazy(() => import('@/pages/manual/usuarios'));
 const ManualSedes = lazy(() => import('@/pages/manual/sedes'));
+const ManualInventario = lazy(() => import('@/pages/manual/inventario'));
+const ManualCompras = lazy(() => import('@/pages/manual/compras'));
+const ManualPlanner = lazy(() => import('@/pages/manual/planner'));
 const ManualConfiguracion = lazy(() => import('@/pages/manual/configuracion'));
 const ManualFaq = lazy(() => import('@/pages/manual/faq'));
 const ManualLegalContrato = lazy(() => import('@/pages/manual/legal-contrato'));
@@ -186,12 +188,14 @@ export const router = createBrowserRouter([
             { path: '/manual/bistro/clientes', element: <ManualClientes /> },
             { path: '/manual/bistro/cupones', element: <ManualCupones /> },
             { path: '/manual/bistro/fidelizacion', element: <ManualFidelizacion /> },
-            { path: '/manual/bistro/whatsapp', element: <ManualWhatsapp /> },
             { path: '/manual/bistro/metricas', element: <ManualMetricas /> },
             { path: '/manual/bistro/alertas', element: <ManualAlertas /> },
             { path: '/manual/bistro/facturacion', element: <ManualFacturacion /> },
             { path: '/manual/bistro/usuarios', element: <ManualUsuarios /> },
             { path: '/manual/bistro/sedes', element: <ManualSedes /> },
+            { path: '/manual/bistro/inventario', element: <ManualInventario /> },
+            { path: '/manual/bistro/compras', element: <ManualCompras /> },
+            { path: '/manual/bistro/planner', element: <ManualPlanner /> },
             { path: '/manual/bistro/configuracion', element: <ManualConfiguracion /> },
             { path: '/manual/bistro/faq', element: <ManualFaq /> },
             { path: '/manual/bistro/legal/contrato', element: <ManualLegalContrato /> },

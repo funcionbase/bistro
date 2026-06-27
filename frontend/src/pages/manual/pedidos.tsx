@@ -25,7 +25,7 @@ export default function ManualPedidos() {
                 </li>
                 <li>
                     <strong>WhatsApp (bot):</strong> el cliente conversa con el bot, que arma el carrito y genera un
-                    enlace de confirmación. Ver <Link to="/manual/bistro/whatsapp">WhatsApp del negocio</Link>.
+                    enlace de confirmación.
                 </li>
                 <li>
                     <strong>Caja (POS):</strong> el cajero toma el pedido directamente desde la{' '}

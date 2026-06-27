@@ -49,6 +49,10 @@ export default function ManualConfiguracion() {
                         </td>
                     </tr>
                     <tr>
+                        <td>Cajas registradoras</td>
+                        <td>Crear, nombrar y activar las cajas de una sede para soporte multi-caja.</td>
+                    </tr>
+                    <tr>
                         <td>Mi cuenta</td>
                         <td>Perfil personal, apariencia, notificaciones push.</td>
                     </tr>
@@ -159,7 +163,7 @@ export default function ManualConfiguracion() {
             <h2>WhatsApp Cloud API</h2>
             <p>
                 En <strong>configuración → WhatsApp</strong> conectas el número de WhatsApp del negocio. Ver la
-                guía completa en <Link to="/manual/bistro/whatsapp">WhatsApp del negocio</Link>.
+                guía completa en la sección de WhatsApp del negocio (próximamente en este manual).
             </p>
 
             <div className="callout callout-info">
@@ -191,6 +195,22 @@ export default function ManualConfiguracion() {
             <p>
                 Hay un botón <strong>"Probar impresora"</strong> que manda un ticket de prueba para verificar
                 que la conexión funciona antes de abrir el local.
+            </p>
+
+            <h2>Cajas registradoras</h2>
+            <p>
+                Si tu operación tiene más de un punto de cobro (mostrador principal, barra, caja express), en{' '}
+                <strong>configuración → sedes → cajas registradoras</strong> creas una caja por cada terminal.
+                Le das un nombre, la activas y listo. Cuando el cajero entra al módulo de caja, el sistema le
+                pregunta cuál caja va a operar — esa elección queda guardada en el dispositivo.
+            </p>
+            <p>
+                Cada caja tiene su propio turno independiente: se puede abrir y cerrar por separado sin afectar
+                las otras cajas de la sede. Los reportes de cierre del día muestran el detalle por caja.
+            </p>
+            <p>
+                Si solo tienes un punto de cobro, no necesitas configurar nada — la sede ya trae una caja por
+                defecto.
             </p>
 
             <h2>Configuración personal</h2>

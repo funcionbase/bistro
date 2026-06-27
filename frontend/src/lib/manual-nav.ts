@@ -32,6 +32,7 @@ export const wikiSections: WikiSection[] = [
             { slug: 'entregas', label: 'Entregas / Domicilios' },
             { slug: 'horarios', label: 'Horarios' },
             { slug: 'chat', label: 'Chat' },
+            { slug: 'inventario', label: 'Inventario' },
         ],
     },
     {
@@ -40,7 +41,6 @@ export const wikiSections: WikiSection[] = [
             { slug: 'clientes', label: 'Clientes' },
             { slug: 'cupones', label: 'Cupones y descuentos' },
             { slug: 'fidelizacion', label: 'Puntos de fidelidad' },
-            { slug: 'whatsapp', label: 'WhatsApp del negocio' },
         ],
     },
     {
@@ -56,6 +56,8 @@ export const wikiSections: WikiSection[] = [
         pages: [
             { slug: 'usuarios', label: 'Usuarios, roles y permisos' },
             { slug: 'sedes', label: 'Sedes y bodegas' },
+            { slug: 'compras', label: 'Compras y proveedores' },
+            { slug: 'planner', label: 'Planificador de turnos' },
             { slug: 'configuracion', label: 'Configuración' },
         ],
     },

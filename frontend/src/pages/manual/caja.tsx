@@ -11,18 +11,31 @@ export default function ManualCaja() {
             sectionLabel="el día a día"
             readingTime="10 min"
         >
+            <h2>Cajas registradoras</h2>
+            <p>
+                Una sede puede tener <strong>una o varias cajas registradoras</strong>. Si tienes un solo
+                punto de cobro, todo funciona sin configuración extra. Si tienes varios (mostrador principal,
+                barra, caja express), cada caja opera de forma independiente con su propio turno.
+            </p>
+            <p>
+                Las cajas se crean y administran en{' '}
+                <em>configuración → sedes → cajas registradoras</em>. Le pones nombre a cada una (Caja 1,
+                Barra, Caja Express) y la activas. Al entrar a la pantalla de caja, el sistema te pregunta
+                cuál caja vas a operar hoy — esa elección se guarda en el dispositivo.
+            </p>
+
             <h2>Abrir el turno</h2>
             <p>
-                Antes de cobrar el primer pedido, el cajero abre el turno desde{' '}
-                <strong>caja → abrir turno</strong>. Ingresa el fondo inicial (el efectivo que arrancó en caja).
-                En una misma sede solo puede haber un turno abierto a la vez — todos los cajeros operan la misma
-                sesión.
+                Antes de cobrar, el cajero abre el turno desde <strong>caja → abrir turno</strong> e ingresa
+                el fondo inicial (el efectivo que arrancó en el cajón). Cada caja registradora tiene su propio
+                turno independiente — varias cajas pueden tener turnos abiertos al mismo tiempo en la misma
+                sede.
             </p>
 
             <div className="callout callout-info">
                 <p>
-                    <strong>¿Cuánto fondo inicial?</strong> Típicamente es la plata que tienes en el cajón para dar
-                    vueltas. No hay un monto mínimo — puede ser $0 si no recibes efectivo.
+                    <strong>¿Cuánto fondo inicial?</strong> Típicamente la plata que tienes para dar vueltas.
+                    No hay monto mínimo — puede ser $0 si no recibes efectivo.
                 </p>
             </div>
 

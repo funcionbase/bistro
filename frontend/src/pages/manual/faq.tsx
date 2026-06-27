@@ -44,7 +44,7 @@ const faqs = [
     },
     {
         q: '¿Cómo recibe pedidos por WhatsApp si el cliente no está en contacto?',
-        a: 'Cuando un número nuevo escribe, el bot de WhatsApp arrancar el flujo de pedido automáticamente. El cliente elige del menú, confirma y eso crea un pedido en el panel igual que si lo hubiera hecho por la app de mesa. Ver WhatsApp del negocio.',
+        a: 'Cuando un número nuevo escribe, el bot de WhatsApp arranca el flujo de pedido automáticamente. El cliente elige del menú, confirma y eso crea un pedido en el panel igual que si lo hubiera hecho por la app de mesa. Ver WhatsApp del negocio.',
     },
     {
         q: '¿Puedo conectar más de un número de WhatsApp?',
@@ -100,7 +100,11 @@ const faqs = [
     },
     {
         q: '¿Puedo cambiar el idioma a inglés?',
-        a: 'Hoy el panel está disponible solo en español. La zona horaria y la moneda son fijas para Colombia (COT / COP) dado el enfoque en legislación colombiana.',
+        a: 'Hoy el panel está disponible solo en español. La zona horaria (UTC-5, hora Colombia) y la moneda (pesos colombianos, COP) son fijas dado el enfoque en legislación colombiana.',
+    },
+    {
+        q: '¿bistro flexy usa analíticas o cookies de seguimiento?',
+        a: 'La plataforma usa Google Analytics 4 (GA4) para entender cómo se usa la app y mejorarla. La primera vez que entras aparece un banner de consentimiento donde decides si aceptas o rechazas las analíticas. Si cambias de opinión, puedes revocar desde el mismo banner o escribirnos. Las analíticas son de la plataforma — el restaurante no tiene acceso al panel de GA4.',
     },
     {
         q: '¿Cómo cancelo mi suscripción?',

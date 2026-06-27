@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const stats = [
-    { value: '+ de 20', label: 'módulos documentados' },
+    { value: '+ de 25', label: 'módulos documentados' },
     { value: '100%', label: 'en español colombiano' },
     { value: '$100K/mes', label: 'por empresa · sedes ilimitadas' },
 ];
@@ -66,7 +66,9 @@ export default function ManualIndex() {
                 <li>Crear y gestionar menús, platos y recetas.</li>
                 <li>Recibir pedidos por web, QR de mesa, domicilio y WhatsApp.</li>
                 <li>Cobrar desde la caja con múltiples métodos de pago.</li>
-                <li>Controlar el inventario y los costos de insumos.</li>
+                <li>Controlar el inventario, las bodegas y los costos de insumos.</li>
+                <li>Gestionar compras de insumos y el catálogo de proveedores.</li>
+                <li>Planificar los turnos del equipo con vista semanal y mensual.</li>
                 <li>Ver métricas en vivo e ingeniería de menú.</li>
                 <li>Gestionar clientes, cupones y puntos de fidelidad.</li>
                 <li>Emitir facturas electrónicas ante la DIAN.</li>

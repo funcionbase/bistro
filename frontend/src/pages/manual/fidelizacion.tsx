@@ -120,9 +120,9 @@ export default function ManualFidelizacion() {
             </ol>
 
             <p>
-                Si el cupón expira sin usarse, <strong>los puntos no se devuelven</strong> (la decisión es del
-                cliente, asumió). Pero si tú, el operador, anulas el canje antes de que se use, los puntos vuelven
-                a la cuenta con un movimiento auditado y un motivo.
+                Si el cupón expira sin usarse, <strong>los puntos no se devuelven</strong> — el cliente asumió
+                ese riesgo al canjear. Pero si tú, el operador, anulas el canje antes de que se use, los puntos
+                vuelven a la cuenta con un movimiento auditado y un motivo.
             </p>
 
             <h2>Niveles y subida automática</h2>
@@ -200,7 +200,7 @@ export default function ManualFidelizacion() {
                     Cuántos clientes activos tienes en el programa y cuántos eventos de ganancia/canje hubo.
                 </li>
                 <li>
-                    <strong>Tasa de canje:</strong> qué porcentaje de cupones emitidos se efectivamente usó.
+                    <strong>Tasa de canje:</strong> qué porcentaje de cupones emitidos efectivamente se usó.
                 </li>
                 <li>Distribución de clientes por nivel (cuántos bronce, plata, oro).</li>
                 <li>

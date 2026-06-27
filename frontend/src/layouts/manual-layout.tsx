@@ -31,6 +31,7 @@ export default function ManualLayout({
 
     useEffect(() => {
         document.title = metaTitle;
+
         let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
         if (!meta) {
             meta = document.createElement('meta');
@@ -38,7 +39,19 @@ export default function ManualLayout({
             document.head.appendChild(meta);
         }
         meta.content = metaDescription;
-    }, [metaTitle, metaDescription]);
+
+        let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+        if (!canonical) {
+            canonical = document.createElement('link');
+            canonical.rel = 'canonical';
+            document.head.appendChild(canonical);
+        }
+        canonical.href = `https://bistro.flexyflow.co${location.pathname}`;
+
+        return () => {
+            canonical?.remove();
+        };
+    }, [metaTitle, metaDescription, location.pathname]);
 
     // Cierra sidebar al navegar
     useEffect(() => {

@@ -1,5 +1,4 @@
 import ManualLayout from '@/layouts/manual-layout';
-import { Link } from 'react-router-dom';
 
 export default function ManualEntregas() {
     return (
@@ -26,7 +25,7 @@ export default function ManualEntregas() {
             <h2>Asignación manual</h2>
             <p>
                 El operador selecciona un pedido y le asigna un domiciliario de la lista de disponibles. En ese
-                momento, si tienes <Link to="/manual/bistro/whatsapp">WhatsApp</Link> conectado y la notificación
+                momento, si tienes WhatsApp conectado y la notificación
                 activada, el cliente recibe un aviso automático con el nombre del domiciliario.
             </p>
 
@@ -74,7 +73,7 @@ export default function ManualEntregas() {
 
             <h2>Avisos por WhatsApp</h2>
             <p>
-                Si tienes <Link to="/manual/bistro/whatsapp">WhatsApp</Link> conectado y las notificaciones de
+                Si tienes WhatsApp conectado y las notificaciones de
                 domicilios activadas:
             </p>
             <ul>

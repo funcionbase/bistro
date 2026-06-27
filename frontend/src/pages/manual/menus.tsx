@@ -145,7 +145,7 @@ export default function ManualMenus() {
 
             <div className="callout callout-info">
                 <p>
-                    <strong>Tip para empezar:</strong> empieza con 2-3 categorías y los platos más vendidos. Un menú
+                    <strong>Truco para empezar:</strong> empieza con 2-3 categorías y los platos más vendidos. Un menú
                     corto bien fotografiado convierte mejor que una carta de 80 platos sin foto.
                 </p>
             </div>
