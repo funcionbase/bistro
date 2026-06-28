@@ -10,7 +10,7 @@ import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
 import type { Ingredient, IngredientUnit, Warehouse } from '@/types/inventory';
 import type { RecipeResponse } from '@/types/recipes';
-import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface RecipeEditorModalProps {
@@ -59,6 +59,8 @@ export default function RecipeEditorModal({ open, onClose, menuId, itemId, itemN
     const [saving, setSaving] = useState(false);
     const [draft, setDraft] = useState<DraftLine[]>([]);
     const [serverData, setServerData] = useState<RecipeResponse | null>(null);
+    const [pendingCostSync, setPendingCostSync] = useState<number | null>(null);
+    const [savedRecipe, setSavedRecipe] = useState<RecipeResponse | null>(null);
 
     const ingredientById = useMemo(() => new Map(ingredients.map((i) => [i.id, i])), [ingredients]);
     const activeWarehouses = useMemo(() => warehouses.filter((w) => !w.archived_at), [warehouses]);
@@ -200,9 +202,16 @@ export default function RecipeEditorModal({ open, onClose, menuId, itemId, itemN
                 })),
             });
             setServerData(response);
-            showToast('success', 'Receta guardada.');
-            onSaved?.(response);
-            onClose();
+            setSavedRecipe(response);
+            const recipeCost = parseFloat(response.total_cost);
+            if (recipeCost > 0) {
+                showToast('success', 'Receta guardada.');
+                setPendingCostSync(recipeCost);
+            } else {
+                showToast('success', 'Receta guardada.');
+                onSaved?.(response);
+                onClose();
+            }
         } catch (err) {
             const apiErr = err as { errors?: Record<string, string[]>; message?: string };
             const firstError = apiErr?.errors ? Object.values(apiErr.errors)[0]?.[0] : null;
@@ -210,6 +219,29 @@ export default function RecipeEditorModal({ open, onClose, menuId, itemId, itemN
         } finally {
             setSaving(false);
         }
+    }
+
+    async function handleSyncCost() {
+        if (pendingCostSync === null || !savedRecipe) return;
+        setSaving(true);
+        try {
+            await apiFetch(`/api/v1/menus/${menuId}/items/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cost: Math.round(pendingCostSync * 100) / 100 }),
+            });
+        } catch {
+            showToast('error', 'No se pudo actualizar el costo del ítem.');
+        } finally {
+            setSaving(false);
+        }
+        onSaved?.(savedRecipe);
+        onClose();
+    }
+
+    function handleSkipSync() {
+        if (savedRecipe) onSaved?.(savedRecipe);
+        onClose();
     }
 
     return (
@@ -391,14 +423,33 @@ export default function RecipeEditorModal({ open, onClose, menuId, itemId, itemN
                     </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" onClick={onClose} disabled={saving}>
-                        Cancelar
-                    </Button>
-                    <Button onClick={save} disabled={saving || loading}>
-                        {saving ? 'Guardando…' : 'Guardar receta'}
-                    </Button>
-                </div>
+                {pendingCostSync !== null ? (
+                    <div className="bg-muted/50 rounded-lg border p-3 text-sm">
+                        <p className="font-medium">Receta guardada</p>
+                        <p className="text-muted-foreground mt-0.5">
+                            El costo calculado es <strong className="text-foreground">{formatPrice(pendingCostSync)}</strong>.
+                            ¿Asignarlo al campo "Costo" del ítem?
+                        </p>
+                        <div className="mt-3 flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={handleSkipSync} disabled={saving}>
+                                No, solo guardar
+                            </Button>
+                            <Button size="sm" onClick={handleSyncCost} disabled={saving}>
+                                {saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+                                Sí, asignar costo
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={onClose} disabled={saving}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={save} disabled={saving || loading}>
+                            {saving ? 'Guardando…' : 'Guardar receta'}
+                        </Button>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );

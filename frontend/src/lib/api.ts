@@ -9,7 +9,7 @@ import { AUTH_MARKER, clearToken, getToken, markCookieMigrated } from './token';
 const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL) ?? '';
 
 /** Antepone el host del backend a paths relativos; deja intactas las URLs absolutas. */
-function resolveBackendUrl(url: string): string {
+export function resolveBackendUrl(url: string): string {
     if (url.startsWith('http')) {
         return url;
     }

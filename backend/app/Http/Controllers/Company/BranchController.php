@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\AuditService;
 use App\Services\BranchSettingsService;
+use App\Support\SignedAssetUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -560,7 +561,7 @@ class BranchController extends Controller
         $model = $this->resolveBranch($request, $branch);
 
         return response()->json([
-            'settings' => $this->branchSettings->all($model->id),
+            'settings' => $this->resolveSettingsUrls($this->branchSettings->all($model->id)),
         ]);
     }
 
@@ -582,7 +583,7 @@ class BranchController extends Controller
         }
 
         return response()->json([
-            'settings' => $this->branchSettings->all($model->id),
+            'settings' => $this->resolveSettingsUrls($this->branchSettings->all($model->id)),
         ]);
     }
 
@@ -614,16 +615,13 @@ class BranchController extends Controller
         $settingKey = "menu_{$position}_image_url";
         $disk = config('filesystems.default');
 
-        $currentUrl = $this->branchSettings->get($model->id, $settingKey);
-        if ($currentUrl) {
-            $path = parse_url((string) $currentUrl, PHP_URL_PATH);
-            if ($path) {
-                Storage::disk($disk)->delete(ltrim($path, '/'));
-            }
+        $storedValue = $this->branchSettings->get($model->id, $settingKey);
+        if ($storedValue) {
+            Storage::disk($disk)->delete($this->extractStoragePath((string) $storedValue));
             $this->branchSettings->forget($model->id, $settingKey);
         }
 
-        return response()->json(['settings' => $this->branchSettings->all($model->id)]);
+        return response()->json(['settings' => $this->resolveSettingsUrls($this->branchSettings->all($model->id))]);
     }
 
     private function uploadMenuBannerImage(Request $request, string $branch, string $position): JsonResponse
@@ -636,12 +634,9 @@ class BranchController extends Controller
         $settingKey = "menu_{$position}_image_url";
         $disk = config('filesystems.default');
 
-        $currentUrl = $this->branchSettings->get($model->id, $settingKey);
-        if ($currentUrl) {
-            $path = parse_url((string) $currentUrl, PHP_URL_PATH);
-            if ($path) {
-                Storage::disk($disk)->delete(ltrim($path, '/'));
-            }
+        $existing = $this->branchSettings->get($model->id, $settingKey);
+        if ($existing) {
+            Storage::disk($disk)->delete($this->extractStoragePath((string) $existing));
         }
 
         $ext = $request->file('image')->getClientOriginalExtension();
@@ -651,10 +646,45 @@ class BranchController extends Controller
             $disk,
         );
 
-        $url = Storage::disk($disk)->url($storedPath);
-        $this->branchSettings->set($model->company_nit, $model->id, $settingKey, $url);
+        // Store the S3 path (not the URL); SignedAssetUrl resolves it on read.
+        $this->branchSettings->set($model->company_nit, $model->id, $settingKey, $storedPath);
 
-        return response()->json(['settings' => $this->branchSettings->all($model->id)]);
+        return response()->json(['settings' => $this->resolveSettingsUrls($this->branchSettings->all($model->id))]);
+    }
+
+    /**
+     * Converts stored image value (S3 path or legacy proxy URL) to a signable path.
+     *
+     * @ponytail: handles both new (path) and legacy (URL) stored values for backwards compat
+     */
+    private function extractStoragePath(string $value): string
+    {
+        if (! str_starts_with($value, 'http')) {
+            return $value;
+        }
+
+        $urlPath = (string) (parse_url($value, PHP_URL_PATH) ?? '');
+
+        return ltrim(str_replace('/storage-proxy', '', $urlPath), '/');
+    }
+
+    /**
+     * Resolves stored image paths to signed proxy URLs before returning settings to the client.
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    private function resolveSettingsUrls(array $settings): array
+    {
+        $disk = (string) config('filesystems.default');
+        foreach (['menu_header_image_url', 'menu_footer_image_url'] as $key) {
+            if (! empty($settings[$key])) {
+                $path = $this->extractStoragePath((string) $settings[$key]);
+                $settings[$key] = SignedAssetUrl::for($path, $disk);
+            }
+        }
+
+        return $settings;
     }
 
     private function resolveBranch(Request $request, string $branch): Branch

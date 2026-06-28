@@ -157,7 +157,8 @@ class MenuController extends Controller
         $companyNit = $request->attributes->get('active_company_nit');
         $jwtPayload = $request->attributes->get('jwt_payload');
 
-        $original = RestaurantMenu::where('id', $id)->where('company_nit', $companyNit)->firstOrFail();
+        // ponytail: withoutBranchScope — company NIT already scopes; BranchScope blocks cross-branch duplicates unnecessarily
+        $original = RestaurantMenu::withoutBranchScope()->where('id', $id)->where('company_nit', $companyNit)->firstOrFail();
 
         $copy = DB::transaction(function () use ($original, $companyNit, $jwtPayload, $request) {
             $newMenu = RestaurantMenu::create([
@@ -861,8 +862,9 @@ class MenuController extends Controller
         if ($branchId !== null) {
             $payload['branch_name'] = Branch::find($branchId)?->name;
             $bs = $this->branchSettings->all($branchId);
-            $payload['header_image_url'] = $bs['menu_header_image_url'] ?? null;
-            $payload['footer_image_url'] = $bs['menu_footer_image_url'] ?? null;
+            $disk = (string) config('filesystems.default');
+            $payload['header_image_url'] = $bs['menu_header_image_url'] ? SignedAssetUrl::for($bs['menu_header_image_url'], $disk) : null;
+            $payload['footer_image_url'] = $bs['menu_footer_image_url'] ? SignedAssetUrl::for($bs['menu_footer_image_url'], $disk) : null;
             $payload['tagline'] = $bs['menu_tagline'] ?? null;
             $payload['card_style'] = $bs['menu_card_style'] ?? 'default';
             $payload['show_branding'] = (bool) ($bs['menu_show_branding'] ?? true);

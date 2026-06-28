@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { HeroHeadline } from '@/components/ui/hero-headline';
 import { MenuItemRow } from '@/components/ui/menu-item-row';
 import { Skeleton } from '@/components/ui/skeleton';
+import { resolveBackendUrl } from '@/lib/api';
 import { formatCurrency } from '@/lib/coupon-helpers';
 import { type MenuItem, type MenuStructure } from '@/types';
 import { Clock, MapPin, QrCode, ShoppingBag, Users, UtensilsCrossed, WifiOff } from 'lucide-react';
@@ -119,7 +120,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     useEffect(() => {
         if (typeof window === 'undefined' || !effectiveNit || !table || !/^\d+$/.test(table)) return;
         let cancelled = false;
-        fetch(`/api/v1/public/menu/${encodeURIComponent(effectiveNit)}/table/${encodeURIComponent(table)}`, {
+        fetch(resolveBackendUrl(`/api/v1/public/menu/${encodeURIComponent(effectiveNit)}/table/${encodeURIComponent(table)}`), {
             method: 'GET',
             headers: { Accept: 'application/json' },
             credentials: 'omit',
@@ -174,7 +175,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
         }
 
         const body = JSON.stringify({ table, session_id: sessionId, _h: '' });
-        void fetch(`/api/v1/public/menu/${encodeURIComponent(effectiveNit)}/scan`, {
+        void fetch(resolveBackendUrl(`/api/v1/public/menu/${encodeURIComponent(effectiveNit)}/scan`), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body,
@@ -194,9 +195,11 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
         let cancelled = false;
         setState({ kind: 'loading' });
 
-        const menuUrl = effectiveBranchId
-            ? `/api/v1/public/menu/${encodeURIComponent(effectiveNit)}?branch_id=${encodeURIComponent(effectiveBranchId)}`
-            : `/api/v1/public/menu/${encodeURIComponent(effectiveNit)}`;
+        const menuUrl = resolveBackendUrl(
+            effectiveBranchId
+                ? `/api/v1/public/menu/${encodeURIComponent(effectiveNit)}?branch_id=${encodeURIComponent(effectiveBranchId)}`
+                : `/api/v1/public/menu/${encodeURIComponent(effectiveNit)}`,
+        );
         fetch(menuUrl, {
             method: 'GET',
             headers: { Accept: 'application/json' },
