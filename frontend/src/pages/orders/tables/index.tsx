@@ -11,7 +11,6 @@ import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PageHeader } from '@/components/ui/page-header';
 import { TablesGridSkeleton } from '@/components/ui/tables-grid-skeleton';
 import { useAddItems } from '@/hooks/use-add-items';
@@ -24,10 +23,8 @@ import { useTables, type TableOrder } from '@/hooks/use-tables';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 
-import { BottomSheetDialog } from '@/components/ui/bottom-sheet-dialog';
-import { AlertCircle, ArrowRight, Cog, RefreshCw, Store, Unlock } from 'lucide-react';
+import { AlertCircle, Cog, RefreshCw, Store } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 // Mesas solo muestra órdenes operativas pre-entrega; usamos las etiquetas canónicas.
 // Las labels finales se resuelven con `statusLabel(orderStatuses, ...)` para evitar drift.
@@ -57,7 +54,6 @@ const DIAN_FISCAL_RESPONSIBILITIES_CATALOG: Record<string, string> = {
 };
 
 export default function TablesPage() {
-    const navigate = useNavigate();
     const token = useToken();
     const formatCurrency = useCurrencyFormatter();
     const orderStatuses = useOrderStatuses();
@@ -94,17 +90,7 @@ export default function TablesPage() {
     // verdad). Hasta que la primera carga termina mostramos skeleton — sin
     // flash de placeholders. Si el endpoint falla, fallback degradado a 12
     // mesas numéricas para no bloquear la operación.
-    const {
-        definedTables,
-        tablesLoaded,
-        tablesEndpointFailed,
-        releaseConfirm,
-        setReleaseConfirm,
-        releaseBusy,
-        releaseError,
-        setReleaseError,
-        releaseTable,
-    } = useTableGrid({ token, refreshOrders: refresh });
+    const { definedTables, tablesLoaded, tablesEndpointFailed } = useTableGrid({ token, refreshOrders: refresh });
 
     // Guardamos el id en lugar del objeto para que el detalle siempre refleje
     // los datos más recientes de `tableOrders` (tras append/refresh el modal se actualiza solo).
@@ -160,7 +146,6 @@ export default function TablesPage() {
     }, [definedTables, tablesEndpointFailed, tableOrders]);
 
     const [newOrderTable, setNewOrderTable] = useState<string | null>(null);
-    const [sessionAction, setSessionAction] = useState<{ session: ActiveSession; tableNumber: string } | null>(null);
 
     const openCashierForTable = (tableNumber: string) => {
         setNewOrderTable(tableNumber);
@@ -214,7 +199,6 @@ export default function TablesPage() {
                             activeSessionByTable={activeSessionByTable}
                             orderStatuses={orderStatuses}
                             formatCurrency={formatCurrency}
-                            onSessionAction={(session, tableNumber) => setSessionAction({ session, tableNumber })}
                             onOpenOrder={(orderId) => setSelectedOrderId(orderId)}
                             onOpenCashier={openCashierForTable}
                             />
@@ -315,87 +299,6 @@ export default function TablesPage() {
                 onSuccess={() => void refresh()}
             />
 
-            {sessionAction && (() => {
-                const { session, tableNumber } = sessionAction;
-                // `completed` en el tablero/KDS = entregado al cliente, NO pagado.
-                // El cobro es la última fase y solo ocurre desde Mesas o Caja.
-                const canRelease =
-                    session.items_consumable_count === 0 ||
-                    session.order_status === 'cancelled' ||
-                    session.order_status === 'refunded';
-                const releaseReason = canRelease
-                    ? undefined
-                    : 'Hay platos en cocina o un cobro pendiente — cobra aquí antes de liberar.';
-                return (
-                    <BottomSheetDialog
-                        isOpen
-                        onClose={() => setSessionAction(null)}
-                        title={`Mesa ${tableNumber}`}
-                    >
-                        <div className="space-y-3 pb-2">
-                            {session.order_id && (
-                                <Button
-                                    type="button"
-                                    className="w-full justify-between"
-                                    onClick={() => {
-                                        setSessionAction(null);
-                                        navigate(`/cashier/table-sessions/${session.id}`);
-                                    }}
-                                >
-                                    Cobrar mesa
-                                    <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            )}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full justify-between"
-                                disabled={!canRelease}
-                                title={releaseReason}
-                                onClick={() => {
-                                    setSessionAction(null);
-                                    setReleaseError(null);
-                                    setReleaseConfirm({
-                                        sessionId: session.id,
-                                        tableNumber,
-                                        canRelease,
-                                        reason: releaseReason,
-                                    });
-                                }}
-                            >
-                                Liberar mesa
-                                <Unlock className="h-4 w-4" />
-                            </Button>
-                            {!canRelease && (
-                                <p className="text-muted-foreground text-center text-xs">{releaseReason}</p>
-                            )}
-                        </div>
-                    </BottomSheetDialog>
-                );
-            })()}
-
-            <ConfirmDialog
-                open={!!releaseConfirm}
-                title={releaseConfirm ? `Liberar Mesa ${releaseConfirm.tableNumber}` : 'Liberar mesa'}
-                message={
-                    releaseError
-                        ? releaseError
-                        : releaseConfirm?.canRelease
-                          ? 'Se cerrará la sesión grupal y se borrarán las cookies de los comensales. Esta acción no se puede deshacer.'
-                          : (releaseConfirm?.reason ?? 'Hay platos pendientes — pasa primero por caja.')
-                }
-                confirmLabel={releaseConfirm?.canRelease ? 'Liberar mesa' : 'Entendido'}
-                cancelLabel={releaseConfirm?.canRelease ? 'Cancelar' : undefined}
-                onConfirm={() => {
-                    if (releaseConfirm?.canRelease) {
-                        void releaseTable();
-                    } else {
-                        setReleaseConfirm(null);
-                    }
-                }}
-                onCancel={() => setReleaseConfirm(null)}
-                loading={releaseBusy}
-            />
         </PageShell>
     );
 }

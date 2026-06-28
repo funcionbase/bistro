@@ -10,7 +10,9 @@ interface GroupSessionInfo {
     hasActiveOrder: boolean;
     /** Cantidad de items aún no servidos (en cocina/listos). */
     itemsInFlight: number;
-    /** Acción opcional renderizada bajo el desglose (ej. botón "Liberar mesa"). */
+    /** Items pendientes de aprobación del mesero. */
+    pendingApprovalCount: number;
+    /** Acción opcional renderizada bajo el desglose (ej. botón "Cobrar mesa"). */
     releaseAction?: ReactNode;
 }
 
@@ -85,6 +87,11 @@ export function TableCard({ number, occupied, itemCount, total, statusLabel, onC
                         >
                             En sesión
                         </Badge>
+                        {groupSession.pendingApprovalCount > 0 && (
+                            <Badge className="border-transparent bg-[color:var(--color-status-critical)]/15 px-2 py-0 text-[11px] text-[color:var(--color-status-critical)]">
+                                {groupSession.pendingApprovalCount} por aprobar
+                            </Badge>
+                        )}
                         {groupSession.hasActiveOrder && statusLabel && (
                             <Badge variant="warning" className="px-2 py-0 text-[11px]">
                                 {statusLabel}

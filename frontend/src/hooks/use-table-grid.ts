@@ -9,6 +9,7 @@ export interface ActiveSession {
     order_id: string | null;
     order_status: string | null;
     items_consumable_count: number;
+    pending_approval_count: number;
 }
 
 /** Mesa definida por el admin en /company/tables. */

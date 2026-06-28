@@ -17,6 +17,7 @@ import { apiFetch } from '@/lib/api';
 import { shortOrderCode } from '@/lib/order-code';
 import { AlertCircle, CheckCircle2, ChefHat, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Guest {
     id: string;
@@ -122,6 +123,7 @@ const tabs = [
  * abiertas y notas grupales/cocina. Polling cada 3s.
  */
 export default function TableSessionShow() {
+    const navigate = useNavigate();
     const id = window.location.pathname.split('/').pop() ?? '';
 
     const sessionId = id;
@@ -252,6 +254,16 @@ export default function TableSessionShow() {
                             }
                             actions={
                                 <div className="flex flex-wrap items-center gap-2">
+                                    {detail?.order && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => navigate(`/cashier/table-sessions/${sessionId}`)}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            Cobrar mesa
+                                        </Button>
+                                    )}
                                     <Button
                                         type="button"
                                         variant="outline"

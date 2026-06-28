@@ -22,6 +22,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
     { pattern: '/orders/cashier', label: 'Caja', parent: null },
     { pattern: '/orders/tables', label: 'Mesas', parent: null },
     { pattern: '/orders/table-sessions/:id', label: null, parent: '/orders/tables' },
+    // /orders/table-sessions (lista) redirige a /orders/tables — sin entrada propia.
     { pattern: '/orders/board', label: 'Tablero', parent: null },
     { pattern: '/kds', label: 'Cocina (KDS)', parent: null },
     { pattern: '/kds/:stationId', label: null, parent: '/kds' },

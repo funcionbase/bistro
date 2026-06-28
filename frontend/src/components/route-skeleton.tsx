@@ -24,7 +24,6 @@ import { RolesTableSkeleton } from '@/components/ui/roles-table-skeleton';
 import { SettingsFormSkeleton } from '@/components/ui/settings-form-skeleton';
 import { SuppliersListSkeleton } from '@/components/ui/suppliers-list-skeleton';
 import { TableSessionDetailSkeleton } from '@/components/ui/table-session-detail-skeleton';
-import { TableSessionsListSkeleton } from '@/components/ui/table-sessions-list-skeleton';
 import { TablesGridSkeleton } from '@/components/ui/tables-grid-skeleton';
 import { UsersTableSkeleton } from '@/components/ui/users-table-skeleton';
 import { WeekAgendaSkeleton } from '@/components/ui/week-agenda-skeleton';
@@ -112,7 +111,6 @@ const ROUTE_SKELETONS: SkeletonRoute[] = [
     { match: (p) => p === '/orders/board', render: () => <KanbanBoardSkeleton /> },
     { match: (p) => p === '/orders/tables', render: () => <Padded><TablesGridSkeleton /></Padded> },
     { match: (p) => /^\/orders\/table-sessions\/[^/]+$/.test(p), render: () => <Padded><TableSessionDetailSkeleton /></Padded> },
-    { match: (p) => p === '/orders/table-sessions', render: () => <Padded><TableSessionsListSkeleton /></Padded> },
     { match: (p) => p === '/orders/cashier', render: () => <Padded><CashierSkeleton /></Padded> },
     { match: (p) => /^\/cashier\/table-sessions\/[^/]+$/.test(p), render: () => <Padded><CajaTableSessionSkeleton /></Padded> },
 

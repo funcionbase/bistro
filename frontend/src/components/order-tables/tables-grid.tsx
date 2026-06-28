@@ -5,6 +5,7 @@ import type { useOrderStatuses } from '@/hooks/use-order-statuses';
 import type { TableOrder } from '@/hooks/use-tables';
 import { statusLabel } from '@/lib/order-status';
 import { Cog, Utensils } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface TablesGridProps {
     /** Números/etiquetas de mesa a renderizar (admin + órdenes vivas). */
@@ -15,8 +16,6 @@ interface TablesGridProps {
     activeSessionByTable: Map<string, ActiveSession>;
     orderStatuses: ReturnType<typeof useOrderStatuses>;
     formatCurrency: (value: number) => string;
-    /** Abre el menú de acciones de una sesión grupal (cobrar / liberar). */
-    onSessionAction: (session: ActiveSession, tableNumber: string) => void;
     /** Abre el modal de detalle de una orden de mesa tradicional. */
     onOpenOrder: (orderId: string) => void;
     /** Abre la caja para una mesa libre. */
@@ -27,6 +26,9 @@ interface TablesGridProps {
  * Grilla de mesas del POS. Combina mesas definidas en admin con órdenes
  * vivas y sesiones grupales. Muestra un empty state cuando no hay mesas.
  * Extraído de la página de mesas — comportamiento idéntico.
+ *
+ * Mesas con sesión QR: click → detalle de sesión (/orders/table-sessions/:id).
+ * Botón "Cobrar" navega a /cashier/table-sessions/:id (solo si hay orden activa).
  */
 export function TablesGrid({
     tableNumbers,
@@ -34,10 +36,11 @@ export function TablesGrid({
     activeSessionByTable,
     orderStatuses,
     formatCurrency,
-    onSessionAction,
     onOpenOrder,
     onOpenCashier,
 }: TablesGridProps) {
+    const navigate = useNavigate();
+
     if (tableNumbers.length === 0) {
         return (
             <div className="border-border bg-card text-card-foreground flex flex-col items-center gap-3 rounded-2xl border px-6 py-12 text-center">
@@ -65,10 +68,6 @@ export function TablesGrid({
                 const session = activeSessionByTable.get(n) ?? null;
 
                 if (session) {
-                    // Mesa con sesión grupal activa: tono info, badge "En sesión".
-                    // La orden `completed` en el tablero solo significa "entregada al
-                    // cliente" — NO que se cobró. El cobro es obligatorio antes de
-                    // liberar la mesa y solo ocurre desde Mesas o Caja.
                     const hasActiveOrder = session.order_id !== null && session.items_consumable_count > 0;
                     return (
                         <TableCard
@@ -77,12 +76,13 @@ export function TablesGrid({
                             occupied
                             total={order ? formatCurrency(order.total) : undefined}
                             statusLabel={session.order_status ? statusLabel(orderStatuses, session.order_status) : undefined}
-                            onClick={() => onSessionAction(session, n)}
+                            onClick={() => navigate(`/orders/table-sessions/${session.id}`)}
                             groupSession={{
                                 guestsCount: session.guests_count,
                                 hasActiveOrder,
                                 itemsInFlight: session.items_consumable_count,
-                                releaseAction: (
+                                pendingApprovalCount: session.pending_approval_count,
+                                releaseAction: session.order_id ? (
                                     <Button
                                         type="button"
                                         size="sm"
@@ -90,12 +90,12 @@ export function TablesGrid({
                                         className="w-full text-xs"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onSessionAction(session, n);
+                                            navigate(`/cashier/table-sessions/${session.id}`);
                                         }}
                                     >
-                                        Cerrar mesa
+                                        Cobrar mesa
                                     </Button>
-                                ),
+                                ) : undefined,
                             }}
                         />
                     );

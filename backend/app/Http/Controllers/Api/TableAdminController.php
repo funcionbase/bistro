@@ -60,6 +60,7 @@ class TableAdminController extends Controller
         // y no refleja el estado real de cobro — usamos `orders` (hasMany) aquí.
         $activeOrdersBySession = [];
         $consumableItemsCount = [];
+        $pendingApprovalItemCounts = [];
         if ($activeSessions->isNotEmpty()) {
             $sessionIds = $activeSessions->pluck('id')->all();
 
@@ -85,10 +86,22 @@ class TableAdminController extends Controller
                     ->pluck('c', 'order_id')
                     ->all();
             }
+
+            // Items pendientes de aprobación del mesero (buffer order de cada sesión).
+            $pendingApprovalItemCounts = OrderItem::query()
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->whereIn('orders.table_session_id', $sessionIds)
+                ->where('orders.status', 'pending_approval')
+                ->where('order_items.status', 'pending_approval')
+                ->whereNotNull('order_items.submitted_at')
+                ->selectRaw('orders.table_session_id, COUNT(*) as c')
+                ->groupBy('orders.table_session_id')
+                ->pluck('c', 'table_session_id')
+                ->all();
         }
 
         return response()->json([
-            'data' => $tables->map(function (Table $t) use ($activeSessions, $activeOrdersBySession, $consumableItemsCount) {
+            'data' => $tables->map(function (Table $t) use ($activeSessions, $activeOrdersBySession, $consumableItemsCount, $pendingApprovalItemCounts) {
                 $session = $activeSessions->get($t->id);
                 $activeOrder = $session ? ($activeOrdersBySession[$session->id] ?? null) : null;
                 $orderId = optional($activeOrder)->id;
@@ -116,6 +129,7 @@ class TableAdminController extends Controller
                         // en producción/entrega (approved/in_kitchen/ready/served)
                         // sin pagar. El frontend usa esto para bloquear "Liberar".
                         'items_consumable_count' => $totalConsumable,
+                        'pending_approval_count' => (int) ($pendingApprovalItemCounts[$session->id] ?? 0),
                     ] : null,
                 ];
             })->values(),
