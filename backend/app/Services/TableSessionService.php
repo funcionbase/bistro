@@ -380,10 +380,19 @@ class TableSessionService
      */
     public function resolveGuestByDeviceToken(Table $table, string $deviceToken): ?TableSessionGuest
     {
+        // Incluye sesiones expiradas/cerradas para que el poll de `/state`
+        // pueda devolver `status: 'expired'` al frontend — sin esto la
+        // resolución falla con 401 y el cliente nunca se entera de la expiración.
+        // Mutaciones siguen protegidas por `guardSessionAllowsChanges`.
+        $allStatuses = array_merge(
+            config('tables.active_statuses'),
+            config('tables.terminal_statuses'),
+        );
+
         return TableSessionGuest::query()
-            ->whereHas('session', function ($q) use ($table) {
+            ->whereHas('session', function ($q) use ($table, $allStatuses) {
                 $q->where('table_id', $table->id)
-                    ->whereIn('status', config('tables.active_statuses'));
+                    ->whereIn('status', $allStatuses);
             })
             ->where('device_token', $deviceToken)
             ->with('session')

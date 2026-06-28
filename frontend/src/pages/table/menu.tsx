@@ -17,6 +17,8 @@ import { CheckCircle2, Clock, MapPin, QrCode, ShoppingBag, UtensilsCrossed } fro
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+const TERMINAL_SESSION_STATUSES = ['closed', 'expired'] as const;
+
 interface TableMenuContext {
     qrToken: string;
     nit: string;
@@ -225,6 +227,7 @@ export default function TableMenuPage() {
  */
 function TableMenuView({ context }: { context: TableMenuContext }) {
     const { qrToken, nit, table, branch, company, session, guest } = context;
+    const navigate = useNavigate();
 
     const [menu, setMenu] = useState<PublicMenuPayload['data']>(null);
     const [menuLoading, setMenuLoading] = useState(true);
@@ -268,6 +271,10 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
         void refreshState();
     }, [refreshState]);
 
+    // Estado vivo de la sesión: el poll actualiza esto; la UI reacciona al expirar.
+    const liveSessionStatus = state?.session?.status ?? session.status;
+    const isTerminal = TERMINAL_SESSION_STATUSES.includes(liveSessionStatus as (typeof TERMINAL_SESSION_STATUSES)[number]);
+
     // Polling automático cada 5s mientras la sesión esté activa.
     const pollingRef = useRef<number | null>(null);
     useEffect(() => {
@@ -277,6 +284,19 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
             if (pollingRef.current !== null) window.clearInterval(pollingRef.current);
         };
     }, [refreshState, session.status]);
+
+    // Cuando el poll detecta que la sesión expiró, parar el intervalo y
+    // volver al menú público para que el comensal pueda unirse de nuevo.
+    useEffect(() => {
+        if (!isTerminal) return;
+        if (pollingRef.current !== null) {
+            window.clearInterval(pollingRef.current);
+            pollingRef.current = null;
+        }
+        if (liveSessionStatus === 'expired') {
+            navigate(`/menus/${encodeURIComponent(nit)}?table=${encodeURIComponent(table.number)}`, { replace: true });
+        }
+    }, [isTerminal, liveSessionStatus, navigate, nit, table.number]);
 
     // Cargar el catálogo público del menú.
     useEffect(() => {
@@ -411,7 +431,7 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
         return { active: active.length, total };
     }, [state]);
 
-    const sessionClosed = session.status === 'closed' || session.status === 'expired';
+    const sessionClosed = isTerminal;
 
     return (
         <div className="bg-background flex min-h-svh flex-col pb-28">

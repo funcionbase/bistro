@@ -82,6 +82,7 @@ class TableOrderService
             $item->save();
 
             $this->totals->recalculateAndSave($order->refresh());
+            $this->bumpExpiry($session);
 
             $this->audit->log(
                 'table.item.added_by_customer',
@@ -291,6 +292,8 @@ class TableOrderService
                 ->update(['submitted_at' => $now]);
 
             if ($affected > 0) {
+                $this->bumpExpiry($session);
+
                 $this->audit->log(
                     'table.batch.submitted',
                     user: null,
@@ -555,6 +558,18 @@ class TableOrderService
         if (in_array($session->status, ['closed', 'expired'], true)) {
             throw new InvalidArgumentException('La sesión de mesa ya está cerrada.');
         }
+    }
+
+    /**
+     * Renueva `expires_at` de la sesión desde ahora + config de expiración.
+     * Llamado tras cada acción del comensal para que el reloj de inactividad
+     * corra desde la última interacción, no desde la apertura.
+     */
+    private function bumpExpiry(TableSession $session): void
+    {
+        $hours = (int) config('tables.session_expiration_hours', 1);
+        $session->expires_at = Carbon::now()->addHours($hours);
+        $session->save();
     }
 
     /**

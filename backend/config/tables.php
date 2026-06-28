@@ -11,10 +11,11 @@ declare(strict_types=1);
  */
 return [
 
-    // Tiempo máximo sin actividad de pago antes de marcar la sesión como `expired`.
+    // Tiempo máximo sin actividad antes de marcar la sesión como `expired`.
     // El job `tables:purge-expired-sessions` corre cada 5 min y cierra sesiones
-    // que excedan este umbral. Default 4 horas — cubre almuerzo + sobremesa.
-    'session_expiration_hours' => env('TABLES_SESSION_EXPIRATION_HOURS', 4),
+    // que excedan este umbral. Se renueva con cada `addItem`/`submitBatch` —
+    // el reloj arranca desde la última interacción, no desde la apertura.
+    'session_expiration_hours' => env('TABLES_SESSION_EXPIRATION_HOURS', 1),
 
     // Tiempo de vida de la cookie firmada `device_token` que identifica al
     // comensal. Más corto que la expiración de sesión para forzar re-join si
