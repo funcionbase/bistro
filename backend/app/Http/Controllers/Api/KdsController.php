@@ -123,10 +123,19 @@ class KdsController extends Controller
             ->get()
             ->groupBy('order_id');
 
-        $tickets = $items->map(function (OrderItem $item) use ($guests, $tables, $orderNotes) {
+        // table_number de la orden para órdenes de cajero sin guest/session.
+        $orderTableNumbers = Order::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $items->pluck('order_id')->unique()->values())
+            ->get(['id', 'table_number'])
+            ->pluck('table_number', 'id')
+            ->all();
+
+        $tickets = $items->map(function (OrderItem $item) use ($guests, $tables, $orderNotes, $orderTableNumbers) {
             $guest = $guests->get($item->guest_id);
             $session = $guest?->session;
             $table = $session ? $tables->get($session->table_id) : null;
+            $tableNumber = $table?->number ?? ($orderTableNumbers[$item->order_id] ?? null);
             $notes = $orderNotes->get($item->order_id, collect());
 
             return [
@@ -143,9 +152,9 @@ class KdsController extends Controller
                     'id' => $guest->id,
                     'display_name' => $guest->display_name,
                 ] : null,
-                'table' => $table ? [
-                    'id' => $table->id,
-                    'number' => $table->number,
+                'table' => $tableNumber ? [
+                    'id' => $table?->id,
+                    'number' => $tableNumber,
                 ] : null,
                 'order_notes' => $notes->map(fn (OrderNote $n) => [
                     'id' => $n->id,
@@ -261,6 +270,13 @@ class KdsController extends Controller
             ->get()
             ->groupBy('order_id');
 
+        $orderTableNumbers = Order::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $filtered->pluck('order_id')->unique()->values())
+            ->get(['id', 'table_number'])
+            ->pluck('table_number', 'id')
+            ->all();
+
         $now = Carbon::now();
 
         // Agrupación por orden. Cada grupo expone meta (mesa, comensal,
@@ -268,11 +284,12 @@ class KdsController extends Controller
         // items (rojo > ámbar > verde).
         $grouped = $filtered
             ->groupBy('order_id')
-            ->map(function ($groupItems, $orderId) use ($guests, $tables, $orderNotes, $station, $now) {
+            ->map(function ($groupItems, $orderId) use ($guests, $tables, $orderNotes, $orderTableNumbers, $station, $now) {
                 $first = $groupItems->first();
                 $guest = $guests->get($first->guest_id);
                 $session = $guest?->session;
                 $table = $session ? $tables->get($session->table_id) : null;
+                $tableNumber = $table?->number ?? ($orderTableNumbers[$orderId] ?? null);
                 $notes = $orderNotes->get($orderId, collect());
 
                 $items = $groupItems->map(function (OrderItem $item) use ($station, $now, $stationMap, $defaultStationId) {
@@ -311,9 +328,9 @@ class KdsController extends Controller
                         'id' => $guest->id,
                         'display_name' => $guest->display_name,
                     ] : null,
-                    'table' => $table ? [
-                        'id' => $table->id,
-                        'number' => $table->number,
+                    'table' => $tableNumber ? [
+                        'id' => $table?->id,
+                        'number' => $tableNumber,
                     ] : null,
                     'order_notes' => $notes->map(fn (OrderNote $n) => [
                         'id' => $n->id,

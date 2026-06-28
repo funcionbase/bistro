@@ -568,7 +568,7 @@ class TableSessionController extends Controller
 
         $payload = $request->validate([
             'item_ids' => ['required', 'array', 'min:1'],
-            'item_ids.*' => ['integer'],
+            'item_ids.*' => ['string', 'uuid'],
         ]);
 
         try {

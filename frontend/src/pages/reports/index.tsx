@@ -456,7 +456,7 @@ export default function Reports() {
                                                 const positionInGroup =
                                                     isLinked && sessionGroup ? sessionGroup.findIndex((o) => o.id === order.id) + 1 : 0;
                                                 const borderColor = isLinked && sid !== null ? sessionBorderClass(sid) : '';
-                                                const groupTotal = sessionGroup?.reduce((acc, o) => acc + o.total, 0) ?? 0;
+                                                const groupTotal = sessionGroup?.reduce((acc, o) => acc + Number(o.total), 0) ?? 0;
 
                                                 return (
                                                     <Fragment key={`row-${order.id}`}>
