@@ -23,6 +23,8 @@ interface MenuItemRowProps {
      * presentacional.
      */
     onImageClick?: () => void;
+    /** compact = sin imagen; card = imagen grande arriba; default = imagen derecha (default). */
+    variant?: 'default' | 'compact' | 'card';
     className?: string;
 }
 
@@ -38,9 +40,83 @@ interface MenuItemRowProps {
  * - `action` es opcional: en menú público no hay acción, en sesión grupal va
  *   un botón "Agregar".
  */
-export function MenuItemRow({ item, formatPrice, action, onImageClick, className }: MenuItemRowProps) {
+export function MenuItemRow({ item, formatPrice, action, onImageClick, variant = 'default', className }: MenuItemRowProps) {
     const src = item.thumbnail_url ?? item.image_url ?? null;
     const unavailable = item.available === false;
+
+    if (variant === 'compact') {
+        return (
+            <div
+                className={cn(
+                    'group bg-card text-card-foreground flex items-center justify-between gap-4 rounded-2xl px-3 py-3 transition-colors hover:bg-muted/40 md:px-4 md:py-4',
+                    unavailable && 'opacity-60 hover:bg-card',
+                    className,
+                )}
+            >
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-foreground text-base font-semibold leading-snug">{item.name}</h3>
+                    {item.description && (
+                        <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">{item.description}</p>
+                    )}
+                    {unavailable && (
+                        <p className="mt-2 inline-flex text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-status-warning)]">
+                            No disponible
+                        </p>
+                    )}
+                </div>
+                <div className="flex shrink-0 flex-col items-end justify-between gap-2 self-stretch">
+                    <p className="text-foreground text-base font-semibold tabular-nums">{formatPrice(item.price)}</p>
+                    {action && <div>{action}</div>}
+                </div>
+            </div>
+        );
+    }
+
+    if (variant === 'card') {
+        return (
+            <div
+                className={cn(
+                    'group bg-card text-card-foreground overflow-hidden rounded-2xl transition-colors hover:bg-muted/40',
+                    unavailable && 'opacity-60',
+                    className,
+                )}
+            >
+                {src ? (
+                    onImageClick ? (
+                        <button
+                            type="button"
+                            onClick={onImageClick}
+                            aria-label={`Ver detalle de ${item.name}`}
+                            className="focus:ring-ring block w-full focus:outline-none focus:ring-2"
+                        >
+                            <img src={src} alt={item.name} className="h-44 w-full object-cover" loading="lazy" />
+                        </button>
+                    ) : (
+                        <img src={src} alt={item.name} className="h-44 w-full object-cover" loading="lazy" />
+                    )
+                ) : (
+                    <div aria-hidden className="bg-muted text-muted-foreground flex h-44 w-full items-center justify-center">
+                        <UtensilsCrossed className="size-10" />
+                    </div>
+                )}
+                <div className="p-3 md:p-4">
+                    <h3 className="text-foreground text-base font-semibold leading-snug">{item.name}</h3>
+                    {item.description && (
+                        <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">{item.description}</p>
+                    )}
+                    {unavailable && (
+                        <p className="mt-2 inline-flex text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-status-warning)]">
+                            No disponible
+                        </p>
+                    )}
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-foreground text-base font-semibold tabular-nums">{formatPrice(item.price)}</p>
+                        {action && <div>{action}</div>}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const thumbInner = src ? (
         <img

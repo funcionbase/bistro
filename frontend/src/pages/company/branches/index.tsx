@@ -22,7 +22,8 @@ import { apiFetch } from '@/lib/api';
 import { sanitizeSlug, slugify } from '@/lib/input-sanitize';
 import { reloadContext } from '@/lib/navigate-compat';
 import { useSharedData } from '@/lib/shared-data';
-import { Archive, Copy, Info, Landmark, LoaderCircle, MapPin, Pencil, Plus, Star, Users } from 'lucide-react';
+import { BranchMenuBranding } from '@/components/company/branch-menu-branding';
+import { Archive, Copy, Info, Landmark, LoaderCircle, MapPin, Palette, Pencil, Plus, Star, Users } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
 interface Branch {
@@ -113,6 +114,8 @@ export default function BranchesIndex() {
     const [cashLoading, setCashLoading] = useState(false);
     const [cashNewName, setCashNewName] = useState('');
     const [cashSaving, setCashSaving] = useState(false);
+
+    const [brandingModalBranch, setBrandingModalBranch] = useState<Branch | null>(null);
 
     // #237 — labels de business types para mostrar como badge en cada sede.
     const businessTypesQuery = useBusinessTypes();
@@ -408,6 +411,11 @@ export default function BranchesIndex() {
                                                     <Landmark className="mr-1 size-4" /> Cajas
                                                 </Button>
                                             )}
+                                            {canManage && !b.archived_at && (
+                                                <Button variant="outline" size="sm" onClick={() => setBrandingModalBranch(b)}>
+                                                    <Palette className="mr-1 size-4" /> Diseño menú
+                                                </Button>
+                                            )}
                                             {canCopyMenu && !b.archived_at && (
                                                 <Button variant="outline" size="sm" onClick={() => setCopyModalTarget(b)}>
                                                     <Copy className="mr-1 size-4" /> Copiar menú
@@ -469,6 +477,11 @@ export default function BranchesIndex() {
                                             {canManage && !b.archived_at && (
                                                 <Button variant="ghost" size="sm" onClick={() => openCashModal(b)} title="Cajas">
                                                     <Landmark className="mr-1 size-4" /> Cajas
+                                                </Button>
+                                            )}
+                                            {canManage && !b.archived_at && (
+                                                <Button variant="ghost" size="sm" onClick={() => setBrandingModalBranch(b)} title="Diseño menú">
+                                                    <Palette className="mr-1 size-4" /> Diseño
                                                 </Button>
                                             )}
                                             {canCopyMenu && !b.archived_at && (
@@ -729,6 +742,15 @@ export default function BranchesIndex() {
                             </Button>
                         </div>
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!brandingModalBranch} onOpenChange={(o) => !o && setBrandingModalBranch(null)}>
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Diseño del menú — {brandingModalBranch?.name}</DialogTitle>
+                    </DialogHeader>
+                    {brandingModalBranch && <BranchMenuBranding branchId={brandingModalBranch.id} />}
                 </DialogContent>
             </Dialog>
 

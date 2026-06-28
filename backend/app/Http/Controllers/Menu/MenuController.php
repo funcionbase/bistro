@@ -20,6 +20,7 @@ use App\Models\RestaurantMenu;
 use App\Models\User;
 use App\Services\Analytics\BotDetectionService;
 use App\Services\AuditService;
+use App\Services\BranchSettingsService;
 use App\Services\BusinessHoursService;
 use App\Services\CashRegisterService;
 use App\Services\CompanySettingsService;
@@ -57,6 +58,7 @@ class MenuController extends Controller
         private readonly CashRegisterService $cashRegister,
         private readonly BotDetectionService $botDetection,
         private readonly CompanySettingsService $companySettings,
+        private readonly BranchSettingsService $branchSettings,
         private readonly RecipeCostService $recipeCostService,
     ) {}
 
@@ -706,7 +708,15 @@ class MenuController extends Controller
     {
         $company = Company::where('nit', $companyNit)->firstOrFail();
 
-        $restaurant = $this->buildRestaurantPayload($company);
+        // Sede efectiva: la del QR/mesa (?branch_id=) o la sede por defecto.
+        // Se resuelve aquí (antes del payload) para incluir branding de sede.
+        $requestedBranchId = (string) $request->query('branch_id', '');
+        $branchId = $requestedBranchId !== ''
+            ? $requestedBranchId
+            : (Branch::resolveDefault($company->nit)?->id ?? '');
+        $branchScope = $branchId !== '' ? $branchId : null;
+
+        $restaurant = $this->buildRestaurantPayload($company, $branchScope);
 
         // Si la empresa está bloqueada por mora, el menú público se
         // presenta como "no disponible" SIN revelar el motivo al comensal.
@@ -723,17 +733,6 @@ class MenuController extends Controller
                 ],
             ], 423);
         }
-
-        // Sede efectiva: la del QR/mesa (?branch_id=) o la sede por defecto de
-        // la empresa. Horario, excepciones y menú se evalúan POR SEDE — las
-        // sedes son independientes (una puede estar abierta y otra no) y no
-        // comparten carta. Sin esto, el flujo público (sin active_branch_id)
-        // tomaría una sede arbitraria y podría cerrar/abrir otra por error.
-        $requestedBranchId = (string) $request->query('branch_id', '');
-        $branchId = $requestedBranchId !== ''
-            ? $requestedBranchId
-            : (Branch::resolveDefault($company->nit)?->id ?? '');
-        $branchScope = $branchId !== '' ? $branchId : null;
 
         $hoursStatus = $this->businessHoursService->getCurrentStatus($company->nit, null, $branchScope);
 
@@ -843,15 +842,33 @@ class MenuController extends Controller
      * pública pueda renderizar la cabecera incluso cuando el restaurante
      * está cerrado o sin menú activo.
      *
-     * @return array{commercial_name: string, logo_url: ?string, primary_color: string}
+     * @return array<string, mixed>
      */
-    private function buildRestaurantPayload(Company $company): array
+    private function buildRestaurantPayload(Company $company, ?string $branchId = null): array
     {
-        return [
+        $payload = [
             'commercial_name' => $company->commercial_name,
+            'branch_name' => null,
             'logo_url' => SignedAssetUrl::for($company->logo_path),
             'primary_color' => (string) $this->companySettings->get($company->nit, 'menu_primary_color', '#FF6B35'),
+            'header_image_url' => null,
+            'footer_image_url' => null,
+            'tagline' => null,
+            'card_style' => 'default',
+            'show_branding' => true,
         ];
+
+        if ($branchId !== null) {
+            $payload['branch_name'] = Branch::find($branchId)?->name;
+            $bs = $this->branchSettings->all($branchId);
+            $payload['header_image_url'] = $bs['menu_header_image_url'] ?? null;
+            $payload['footer_image_url'] = $bs['menu_footer_image_url'] ?? null;
+            $payload['tagline'] = $bs['menu_tagline'] ?? null;
+            $payload['card_style'] = $bs['menu_card_style'] ?? 'default';
+            $payload['show_branding'] = (bool) ($bs['menu_show_branding'] ?? true);
+        }
+
+        return $payload;
     }
 
     /**

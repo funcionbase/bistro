@@ -1,12 +1,9 @@
-import AppLogoIcon from '@/components/app-logo-icon';
-
 import MenuItemDetailDialog, { type MenuItemDetailDialogItem } from '@/components/menu/menu-item-detail-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditorialEmpty } from '@/components/ui/editorial-empty';
 import { EmptyState } from '@/components/ui/empty-state';
 import { HeroHeadline } from '@/components/ui/hero-headline';
-import { HeroPanel } from '@/components/ui/hero-panel';
 import { MenuItemRow } from '@/components/ui/menu-item-row';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/coupon-helpers';
@@ -21,8 +18,14 @@ interface PublicMenuProps {
 
 interface RestaurantBranding {
     commercial_name: string;
+    branch_name?: string | null;
     logo_url: string | null;
     primary_color: string;
+    header_image_url?: string | null;
+    footer_image_url?: string | null;
+    tagline?: string | null;
+    card_style?: 'default' | 'compact' | 'card';
+    show_branding?: boolean;
 }
 
 interface PublicMenuPayload {
@@ -255,6 +258,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     }, [effectiveNit, effectiveBranchId]);
 
     const commercialName = restaurant?.commercial_name ?? '';
+    const displayName = restaurant?.branch_name ?? commercialName;
     const joinUrl = tableStatus ? `/t/${encodeURIComponent(tableStatus.qr_token)}` : null;
     const guestsCount = tableStatus?.active_session?.guests_count ?? 0;
     // Una sesión con 0 guests es un edge case (cookie perdida / sesión huérfana
@@ -287,91 +291,74 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     return (
         <>
             <div className="bg-background pwa-safe-top pwa-safe-bottom min-h-svh">
-                {/* HERO: logo flexyflow + HeroHeadline (izq) + HeroPanel lime con branding (der) */}
-                <section className="mx-auto w-full max-w-6xl px-4 pt-6 pb-2 md:px-8 md:pt-10 md:pb-4">
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16">
-                        <div className="flex flex-col gap-6 md:col-span-7 md:gap-8">
-                            <div>
-                                <img src="/images/logo-black-font.svg" alt={appName} className="block h-9 w-auto md:h-10 dark:hidden" />
-                                <img src="/images/logo-white-font.svg" alt={appName} className="hidden h-9 w-auto md:h-10 dark:block" />
-                            </div>
+                {/* HERO */}
+                {restaurant?.header_image_url ? (
+                    <div className="relative flex min-h-[320px] w-full flex-col overflow-hidden md:min-h-[500px]">
+                        <img
+                            src={restaurant.header_image_url}
+                            alt=""
+                            aria-hidden
+                            className="absolute inset-0 h-full w-full object-cover"
+                            loading="eager"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
 
+                        <div className="relative mx-auto w-full max-w-3xl px-4 pt-6 md:px-8 md:pt-10">
+                            <img src="/images/logo-white-font.svg" alt={appName} className="h-9 w-auto md:h-10" />
+                        </div>
+
+                        <div className="relative mx-auto mt-auto w-full max-w-3xl px-4 pb-8 md:px-8 md:pb-12">
                             <HeroHeadline
-                                eyebrow={commercialName ? 'Carta digital' : 'Carta'}
+                                eyebrow={displayName ? 'Carta digital' : 'Carta'}
                                 title={
-                                    commercialName ? (
+                                    displayName ? (
                                         <>
                                             La carta de <br />
-                                            {commercialName}
+                                            {displayName}
                                         </>
                                     ) : (
                                         'Carta digital'
                                     )
                                 }
                                 description={
-                                    commercialName
-                                        ? `Toda la carta de ${commercialName} al alcance de tu celular. Precios siempre actualizados, sin esperar.`
+                                    displayName
+                                        ? `Toda la carta de ${displayName} al alcance de tu celular. Precios siempre actualizados, sin esperar.`
+                                        : 'Carta de la empresa al alcance de tu celular.'
+                                }
+                                size="lg"
+                                className="text-white"
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <section className="mx-auto w-full max-w-3xl px-4 pt-6 pb-2 md:px-8 md:pt-10 md:pb-4">
+                        <div className="flex flex-col gap-6 md:gap-8">
+                            <div>
+                                <img src="/images/logo-black-font.svg" alt={appName} className="block h-9 w-auto md:h-10 dark:hidden" />
+                                <img src="/images/logo-white-font.svg" alt={appName} className="hidden h-9 w-auto md:h-10 dark:block" />
+                            </div>
+                            <HeroHeadline
+                                eyebrow={displayName ? 'Carta digital' : 'Carta'}
+                                title={
+                                    displayName ? (
+                                        <>
+                                            La carta de <br />
+                                            {displayName}
+                                        </>
+                                    ) : (
+                                        'Carta digital'
+                                    )
+                                }
+                                description={
+                                    displayName
+                                        ? `Toda la carta de ${displayName} al alcance de tu celular. Precios siempre actualizados, sin esperar.`
                                         : 'Carta de la empresa al alcance de tu celular.'
                                 }
                                 size="lg"
                             />
                         </div>
-
-                        <HeroPanel
-                            eyebrow={table ? 'Tu mesa' : 'Estás en'}
-                            className="md:col-span-5"
-                            footer={
-                                <p className="text-sm leading-relaxed opacity-80">
-                                    Precios al día, sin esperas. Si quieres ordenar directo desde la mesa, escanea el QR sobre tu mesa y únete a la
-                                    sesión grupal.
-                                </p>
-                            }
-                        >
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    {restaurant?.logo_url ? (
-                                        <img
-                                            src={restaurant.logo_url}
-                                            alt={commercialName}
-                                            className="bg-background border-foreground/10 size-14 rounded-2xl border object-contain p-1.5"
-                                        />
-                                    ) : (
-                                        <div
-                                            className="bg-foreground text-background border-foreground/10 flex size-14 items-center justify-center rounded-2xl border"
-                                            aria-label="flexyflow"
-                                        >
-                                            <AppLogoIcon className="size-7 fill-current" />
-                                        </div>
-                                    )}
-                                    <div className="min-w-0">
-                                        <p className="text-[10px] font-semibold tracking-[0.18em] uppercase opacity-70">Empresa</p>
-                                        <p className="font-brand text-2xl leading-tight font-medium tracking-tight md:text-3xl">
-                                            {commercialName || 'Carta'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {table && (
-                                    <div className="border-foreground/10 flex items-center justify-between gap-3 border-t pt-4">
-                                        <div>
-                                            <p className="text-[10px] font-semibold tracking-[0.18em] uppercase opacity-70">Mesa</p>
-                                            <p className="font-brand text-5xl leading-none font-medium tabular-nums md:text-6xl">{table}</p>
-                                        </div>
-                                        {joinUrl && (
-                                            <span
-                                                aria-hidden
-                                                className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-                                            >
-                                                <Users className="size-3.5" />
-                                                {sessionHasGuests ? `${guestsCount} en mesa` : 'Pedir aquí'}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </HeroPanel>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 {/* Banner: si el mesero ya tomó la cuenta, mostramos un aviso
                     en lugar del CTA de unirse — el cliente no debe duplicar el
@@ -444,10 +431,25 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
                             className="bg-card border-border rounded-3xl border"
                         />
                     )}
-                    {state.kind === 'menu' && <MenuContent structure={state.payload.structure} />}
+                    {state.kind === 'menu' && (
+                        <MenuContent structure={state.payload.structure} cardStyle={restaurant?.card_style ?? 'default'} />
+                    )}
                 </main>
 
-                <PublicFooter appName={appName} />
+                {/* Imagen decorativa inferior (banner de sede) */}
+                {restaurant?.footer_image_url && (
+                    <div className="w-full overflow-hidden">
+                        <img
+                            src={restaurant.footer_image_url}
+                            alt=""
+                            aria-hidden
+                            className="h-36 w-full object-cover"
+                            loading="lazy"
+                        />
+                    </div>
+                )}
+
+                {(restaurant?.show_branding ?? true) && <PublicFooter appName={appName} />}
             </div>
 
             <Dialog open={askJoin !== null} onOpenChange={(o) => !o && setAskJoin(null)}>
@@ -474,7 +476,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     );
 }
 
-function MenuContent({ structure }: { structure: MenuStructure }) {
+function MenuContent({ structure, cardStyle = 'default' }: { structure: MenuStructure; cardStyle?: 'default' | 'compact' | 'card' }) {
     const [detail, setDetail] = useState<MenuItemDetailDialogItem | null>(null);
 
     if (!structure?.categories?.length) {
@@ -505,6 +507,7 @@ function MenuContent({ structure }: { structure: MenuStructure }) {
                                     <MenuItemRow
                                         item={item as MenuItem & { available?: boolean; thumbnail_url?: string | null }}
                                         formatPrice={formatCurrency}
+                                        variant={cardStyle}
                                         onImageClick={() =>
                                             setDetail({
                                                 name: item.name,

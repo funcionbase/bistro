@@ -357,6 +357,22 @@ Route::prefix('v1')->group(function () {
                 Route::post('bulk-assign', [BranchController::class, 'bulkAssign'])
                     ->middleware('permission:branches.assign_users,update')
                     ->name('api.company.branches.users.bulkAssign');
+                // Branding del menú público por sede.
+                Route::get('{branch}/settings', [BranchController::class, 'showSettings'])
+                    ->middleware('permission:branches.manage,read')
+                    ->name('api.company.branches.settings.show');
+                Route::patch('{branch}/settings', [BranchController::class, 'updateSettings'])
+                    ->middleware('permission:branches.manage,update')
+                    ->name('api.company.branches.settings.update');
+                Route::post('{branch}/settings/menu-header-image', [BranchController::class, 'uploadMenuHeaderImage'])
+                    ->middleware('permission:branches.manage,update')
+                    ->name('api.company.branches.settings.menu-header-image');
+                Route::post('{branch}/settings/menu-footer-image', [BranchController::class, 'uploadMenuFooterImage'])
+                    ->middleware('permission:branches.manage,update')
+                    ->name('api.company.branches.settings.menu-footer-image');
+                Route::delete('{branch}/settings/menu-{position}-image', [BranchController::class, 'deleteMenuBannerImage'])
+                    ->middleware('permission:branches.manage,update')
+                    ->name('api.company.branches.settings.menu-banner-image.delete');
                 // Cajas por sede (configuración multi-caja desde gestión de empresa).
                 Route::get('{branch}/cash-registers', [BranchController::class, 'cashRegisters'])
                     ->middleware('permission:branches.manage,read')

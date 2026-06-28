@@ -30,6 +30,7 @@ class RestaurantMenu extends Model
     /** @var list<string> */
     protected $fillable = [
         'company_nit',
+        'branch_id',
         'name',
         'description',
         'status',

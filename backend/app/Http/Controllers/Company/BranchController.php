@@ -19,9 +19,11 @@ use App\Models\RestaurantMenu;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\AuditService;
+use App\Services\BranchSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -36,7 +38,10 @@ use Illuminate\Support\Str;
  */
 class BranchController extends Controller
 {
-    public function __construct(private readonly AuditService $auditService) {}
+    public function __construct(
+        private readonly AuditService $auditService,
+        private readonly BranchSettingsService $branchSettings,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -545,6 +550,111 @@ class BranchController extends Controller
             'sort_order' => (int) $r->sort_order,
             'archived' => $r->isArchived(),
         ];
+    }
+
+    /**
+     * Retorna las branch_settings de la sede (solo claves de branding de menú).
+     */
+    public function showSettings(Request $request, string $branch): JsonResponse
+    {
+        $model = $this->resolveBranch($request, $branch);
+
+        return response()->json([
+            'settings' => $this->branchSettings->all($model->id),
+        ]);
+    }
+
+    /**
+     * Actualiza campos de texto/boolean de branding (tagline, card_style, show_branding).
+     */
+    public function updateSettings(Request $request, string $branch): JsonResponse
+    {
+        $model = $this->resolveBranch($request, $branch);
+
+        $validated = $request->validate([
+            'menu_tagline' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'menu_card_style' => ['sometimes', 'string', 'in:default,compact,card'],
+            'menu_show_branding' => ['sometimes', 'boolean'],
+        ]);
+
+        if (! empty($validated)) {
+            $this->branchSettings->setMany($model->company_nit, $model->id, $validated);
+        }
+
+        return response()->json([
+            'settings' => $this->branchSettings->all($model->id),
+        ]);
+    }
+
+    /**
+     * Sube o reemplaza la imagen de cabecera del menú público de esta sede.
+     * Patrón idéntico al logo de empresa en CompanyController.
+     */
+    public function uploadMenuHeaderImage(Request $request, string $branch): JsonResponse
+    {
+        return $this->uploadMenuBannerImage($request, $branch, 'header');
+    }
+
+    /**
+     * Sube o reemplaza la imagen de pie de página del menú público de esta sede.
+     */
+    public function uploadMenuFooterImage(Request $request, string $branch): JsonResponse
+    {
+        return $this->uploadMenuBannerImage($request, $branch, 'footer');
+    }
+
+    /**
+     * Elimina la imagen de cabecera o pie de página del menú de esta sede.
+     */
+    public function deleteMenuBannerImage(Request $request, string $branch, string $position): JsonResponse
+    {
+        abort_unless(in_array($position, ['header', 'footer'], true), 422, 'Posición inválida.');
+
+        $model = $this->resolveBranch($request, $branch);
+        $settingKey = "menu_{$position}_image_url";
+        $disk = config('filesystems.default');
+
+        $currentUrl = $this->branchSettings->get($model->id, $settingKey);
+        if ($currentUrl) {
+            $path = parse_url((string) $currentUrl, PHP_URL_PATH);
+            if ($path) {
+                Storage::disk($disk)->delete(ltrim($path, '/'));
+            }
+            $this->branchSettings->forget($model->id, $settingKey);
+        }
+
+        return response()->json(['settings' => $this->branchSettings->all($model->id)]);
+    }
+
+    private function uploadMenuBannerImage(Request $request, string $branch, string $position): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $model = $this->resolveBranch($request, $branch);
+        $settingKey = "menu_{$position}_image_url";
+        $disk = config('filesystems.default');
+
+        $currentUrl = $this->branchSettings->get($model->id, $settingKey);
+        if ($currentUrl) {
+            $path = parse_url((string) $currentUrl, PHP_URL_PATH);
+            if ($path) {
+                Storage::disk($disk)->delete(ltrim($path, '/'));
+            }
+        }
+
+        $ext = $request->file('image')->getClientOriginalExtension();
+        $storedPath = $request->file('image')->storeAs(
+            "companies/{$model->company_nit}/branches/{$model->id}",
+            "menu-{$position}.{$ext}",
+            $disk,
+        );
+
+        $url = Storage::disk($disk)->url($storedPath);
+        $this->branchSettings->set($model->company_nit, $model->id, $settingKey, $url);
+
+        return response()->json(['settings' => $this->branchSettings->all($model->id)]);
     }
 
     private function resolveBranch(Request $request, string $branch): Branch
