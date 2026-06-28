@@ -324,6 +324,7 @@ export default function CompanyTablesIndex() {
                             primaryColor={activeCompany?.brand_color ?? '#0F172A'}
                             mode="menu"
                             tableNumber={posterFor.number}
+                            qrToken={posterFor.qr_token}
                         />
                     )}
                 </DialogContent>

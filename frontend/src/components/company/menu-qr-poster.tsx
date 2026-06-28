@@ -58,7 +58,7 @@ export function MenuQrPoster({
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [downloading, setDownloading] = useState(false);
 
-    const targetUrl = mode === 'table-session' && qrToken ? buildTableSessionUrl(qrToken) : buildTargetUrl(nit, tableNumber);
+    const targetUrl = mode === 'table-session' && qrToken ? buildTableSessionUrl(qrToken) : buildTargetUrl(nit, tableNumber, qrToken);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -136,10 +136,14 @@ export function MenuQrPoster({
     );
 }
 
-function buildTargetUrl(nit: string, tableNumber?: string | null): string {
+function buildTargetUrl(nit: string, tableNumber?: string | null, qrToken?: string | null): string {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const path = `/menus/${encodeURIComponent(nit)}`;
     const trimmed = (tableNumber ?? '').trim();
+    // Nuevo formato opaco: no expone NIT ni número de mesa en la URL.
+    if (trimmed !== '' && qrToken) {
+        return `${origin}/menus?table=${encodeURIComponent(qrToken)}`;
+    }
+    const path = `/menus/${encodeURIComponent(nit)}`;
     if (trimmed === '') return `${origin}${path}`;
     return `${origin}${path}?table=${encodeURIComponent(trimmed)}`;
 }

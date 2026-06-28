@@ -26,6 +26,69 @@ use Illuminate\Http\Request;
  */
 class TableResolveController extends Controller
 {
+    /**
+     * Resuelve una mesa por su `qr_token` opaco (nuevo formato de QR:
+     * `/menus?table={qr_token}`). Devuelve el mismo payload que `show()`
+     * más `company_nit` para que el frontend pueda cargar el menú sin
+     * exponer el NIT en la URL escaneada.
+     */
+    public function showByToken(string $qrToken): JsonResponse
+    {
+        $table = Table::withoutBranchScope()
+            ->where('qr_token', $qrToken)
+            ->whereNull('archived_at')
+            ->first();
+
+        if ($table === null) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        $branch = Branch::find($table->branch_id);
+        if ($branch === null) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        $nit = $branch->company_nit;
+        $company = Company::query()->where('nit', $nit)->first();
+
+        if ($company === null || ! $company->canServePublic()) {
+            return response()->json(['table_exists' => false], 404);
+        }
+
+        $activeSession = TableSession::withoutBranchScope()
+            ->where('table_id', $table->id)
+            ->whereIn('status', config('tables.active_statuses'))
+            ->withCount('guests')
+            ->first();
+
+        $waiterOrderActive = Order::withoutGlobalScopes()
+            ->where('company_nit', $nit)
+            ->where('branch_id', $branch->id)
+            ->where('order_type', 'table')
+            ->where('table_number', $table->number)
+            ->whereNull('table_session_id')
+            ->whereIn('status', ['pending', 'in_kitchen', 'ready', 'pending_approval'])
+            ->exists();
+
+        return response()->json([
+            'table_exists' => true,
+            'company_nit' => $nit,
+            'qr_token' => $table->qr_token,
+            'table_number' => $table->number,
+            'branch' => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+            ],
+            'active_session' => $activeSession ? [
+                'id' => $activeSession->id,
+                'guests_count' => (int) $activeSession->guests_count,
+                'accepts_new_guests' => (bool) $activeSession->accepts_new_guests,
+                'opened_at' => optional($activeSession->opened_at)?->toIso8601String(),
+            ] : null,
+            'waiter_order_active' => $waiterOrderActive,
+        ]);
+    }
+
     public function show(Request $request, string $nit, string $tableNumber): JsonResponse
     {
         unset($request);

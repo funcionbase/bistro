@@ -96,6 +96,11 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     // con el filtro de branch correcto cuando una empresa tiene un menú
     // activo por sede.
     const [effectiveBranchId, setEffectiveBranchId] = useState<string | null>(null);
+    // Número legible de la mesa (e.g. "3"). Con el QR antiguo coincide con `table`;
+    // con el nuevo formato opaco se resuelve desde la API después de decodificar el token.
+    const [effectiveTableNumber, setEffectiveTableNumber] = useState<string | null>(
+        table !== null && /^\d+$/.test(table) ? table : null,
+    );
     const [askJoin, setAskJoin] = useState<'new' | 'join' | null>(null);
     const askedRef = useRef(false);
 
@@ -109,13 +114,63 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     }, [nit]);
 
     useEffect(() => {
-        if (typeof window === 'undefined' || !effectiveNit || !table) return;
+        if (typeof window === 'undefined' || !effectiveNit || !effectiveTableNumber) return;
         try {
-            sessionStorage.setItem(TABLE_PRESELECT_KEY(effectiveNit), table);
+            sessionStorage.setItem(TABLE_PRESELECT_KEY(effectiveNit), effectiveTableNumber);
         } catch {
             // sessionStorage puede estar bloqueado en modo privado; ignorar.
         }
-    }, [effectiveNit, table]);
+    }, [effectiveNit, effectiveTableNumber]);
+
+    // Nuevo formato: ?table={qr_token} (no-dígito). Resuelve NIT + sede + número
+    // de mesa desde el token opaco. El formato viejo (?table={número}) sigue
+    // usando el efecto de abajo para backward compat con QRs ya impresos.
+    useEffect(() => {
+        if (typeof window === 'undefined' || !table || /^\d+$/.test(table)) return;
+        let cancelled = false;
+        fetch(resolveBackendUrl(`/api/v1/public/table-resolve/${encodeURIComponent(table)}`), {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            credentials: 'omit',
+        })
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error('no-table'))))
+            .then(
+                (json: {
+                    table_exists: boolean;
+                    company_nit: string;
+                    qr_token: string;
+                    table_number: string;
+                    branch?: { id: string; name: string };
+                    active_session: { id: string; guests_count: number; accepts_new_guests: boolean } | null;
+                    waiter_order_active?: boolean;
+                }) => {
+                    if (cancelled || !json.table_exists) return;
+                    setEffectiveNit(json.company_nit);
+                    setEffectiveTableNumber(json.table_number);
+                    setTableStatus({
+                        qr_token: json.qr_token,
+                        active_session: json.active_session,
+                        waiter_order_active: !!json.waiter_order_active,
+                    });
+                    if (json.branch?.id) {
+                        setEffectiveBranchId(json.branch.id);
+                    }
+                    try {
+                        localStorage.setItem(LAST_NIT_KEY, json.company_nit);
+                    } catch {
+                        // ignorar
+                    }
+                    if (!askedRef.current && !json.waiter_order_active) {
+                        askedRef.current = true;
+                        setAskJoin(json.active_session ? 'join' : 'new');
+                    }
+                },
+            )
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [table]);
 
     useEffect(() => {
         if (typeof window === 'undefined' || !effectiveNit || !table || !/^\d+$/.test(table)) return;
@@ -378,7 +433,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
                             <div className="min-w-0 flex-1">
                                 <p className="text-foreground text-sm font-semibold">Esta mesa ya está siendo atendida</p>
                                 <p className="text-muted-foreground text-xs">
-                                    El mesero ya tomó la orden de la mesa {table}. Para pedir más o pagar, hablá con el mesero directamente.
+                                    El mesero ya tomó la orden de la mesa {effectiveTableNumber}. Para pedir más o pagar, hablá con el mesero directamente.
                                 </p>
                             </div>
                         </div>
@@ -398,7 +453,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
                             <div className="min-w-0 flex-1">
                                 <p className="text-foreground text-sm font-semibold">
                                     {sessionHasGuests
-                                        ? `${guestsLabel} pidiendo desde la Mesa ${table}`
+                                        ? `${guestsLabel} pidiendo desde la Mesa ${effectiveTableNumber}`
                                         : 'Pedí desde tu celular sin esperar al mesero'}
                                 </p>
                                 <p className="text-muted-foreground text-xs">
@@ -458,10 +513,10 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
             <Dialog open={askJoin !== null} onOpenChange={(o) => !o && setAskJoin(null)}>
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>{sessionHasGuests ? `Tu mesa ya está pidiendo` : `¿Pedís desde la Mesa ${table}?`}</DialogTitle>
+                        <DialogTitle>{sessionHasGuests ? `Tu mesa ya está pidiendo` : `¿Pedís desde la Mesa ${effectiveTableNumber}?`}</DialogTitle>
                         <DialogDescription>
                             {sessionHasGuests
-                                ? `${guestsLabel === '1 persona' ? 'Hay 1 persona' : `Hay ${guestsCount} personas`} pidiendo desde la Mesa ${table}. Si te unís, tu pedido entra a la misma cuenta y al final cada uno paga lo que consumió.`
+                                ? `${guestsLabel === '1 persona' ? 'Hay 1 persona' : `Hay ${guestsCount} personas`} pidiendo desde la Mesa ${effectiveTableNumber}. Si te unís, tu pedido entra a la misma cuenta y al final cada uno paga lo que consumió.`
                                 : 'Abrí tu pedido desde el celular sin esperar al mesero. Si llegan más personas a tu mesa, pueden sumarse al mismo pedido escaneando el mismo QR.'}
                         </DialogDescription>
                     </DialogHeader>

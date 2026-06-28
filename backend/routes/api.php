@@ -1477,6 +1477,13 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:menu-scan-public')
         ->name('api.menus.public.table.resolve');
 
+    // Nuevo formato de QR: `/menus?table={qr_token}`. El token opaco resuelve
+    // NIT + sede + número de mesa sin exponerlos en la URL.
+    Route::get('public/table-resolve/{qr_token}', [TableResolveController::class, 'showByToken'])
+        ->where(['qr_token' => '[A-Za-z0-9]+'])
+        ->middleware('throttle:menu-scan-public')
+        ->name('api.public.table.resolve-by-token');
+
     // Mesa con QR (#191) — flujo público sin auth, identidad por cookie firmada
     // `tdt_*`. Migrado del stack web a la API REST cuando el frontend pasó a
     // SPA standalone: el QR escaneado abre la página SPA `/t/{qr}` y ésta
