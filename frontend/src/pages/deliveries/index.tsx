@@ -26,35 +26,54 @@ import { apiFetch } from '@/lib/api';
 
 import { AlertCircle, Inbox, RefreshCw, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 export default function DaySalesIndex() {
     const token = useToken();
     const { showToast } = useToast();
     const formatCurrency = useCurrencyFormatter();
     const orderStatuses = useOrderStatuses();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const today = todayBogota();
+    const initFrom = searchParams.get('from') ?? today;
+    const initTo = searchParams.get('to') ?? today;
+    const initSearch = searchParams.get('q') ?? '';
+    const initMin = searchParams.get('min') ?? '';
+    const initMax = searchParams.get('max') ?? '';
+    const initStatuses = searchParams.get('status')?.split(',').filter(Boolean) ?? [];
 
     // Draft: lo que el usuario está editando en los inputs
-    const today = todayBogota();
-    const [draftDateFrom, setDraftDateFrom] = useState(today);
-    const [draftDateTo, setDraftDateTo] = useState(today);
-    const [draftSearch, setDraftSearch] = useState('');
-    const [draftMinAmount, setDraftMinAmount] = useState('');
-    const [draftMaxAmount, setDraftMaxAmount] = useState('');
-    const [statusFilters, setStatusFilters] = useState<string[]>([]);
+    const [draftDateFrom, setDraftDateFrom] = useState(initFrom);
+    const [draftDateTo, setDraftDateTo] = useState(initTo);
+    const [draftSearch, setDraftSearch] = useState(initSearch);
+    const [draftMinAmount, setDraftMinAmount] = useState(initMin);
+    const [draftMaxAmount, setDraftMaxAmount] = useState(initMax);
+    const [statusFilters, setStatusFilters] = useState<string[]>(initStatuses);
 
     // Applied: lo que se envía al backend (solo cambia con "Buscar")
     const [applied, setApplied] = useState<DaySalesParams>({
-        dateFrom: today,
-        dateTo: today,
-        search: '',
-        minAmount: '',
-        maxAmount: '',
-        status: 'all',
+        dateFrom: initFrom,
+        dateTo: initTo,
+        search: initSearch,
+        minAmount: initMin,
+        maxAmount: initMax,
+        status: initStatuses.length === 1 ? initStatuses[0] : 'all',
     });
+
+    function syncUrl(from: string, to: string, q: string, min: string, max: string, statuses: string[]) {
+        const params: Record<string, string> = { from, to };
+        if (q) params.q = q;
+        if (min) params.min = min;
+        if (max) params.max = max;
+        if (statuses.length > 0) params.status = statuses.join(',');
+        setSearchParams(params, { replace: true });
+    }
 
     useEffect(() => {
         const t = setTimeout(() => {
             setApplied({ dateFrom: draftDateFrom, dateTo: draftDateTo, search: draftSearch, minAmount: draftMinAmount, maxAmount: draftMaxAmount, status: statusFilters.length === 1 ? statusFilters[0] : 'all' });
+            syncUrl(draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters);
         }, 400);
         return () => clearTimeout(t);
     }, [draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters]);
@@ -73,6 +92,7 @@ export default function DaySalesIndex() {
             maxAmount: draftMaxAmount,
             status: statusFilters.length === 1 ? statusFilters[0] : 'all',
         });
+        syncUrl(draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters);
     }
 
     const filteredOrders = statusFilters.length > 0 ? orders.filter((o) => statusFilters.includes(o.status)) : orders;
