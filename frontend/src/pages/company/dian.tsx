@@ -40,7 +40,8 @@ function InformationalLockBanner() {
             <AlertTitle>Vista informativa</AlertTitle>
             <AlertDescription>
                 La facturación electrónica DIAN todavía no está habilitada para edición. Por ahora puedes explorar la configuración para irla
-                conociendo; pronto podrás conectar tu proveedor y registrar tus resoluciones.
+                conociendo; pronto podrás conectar tu proveedor y registrar tus resoluciones.{' '}
+                <strong>El costo del servicio de facturación electrónica DIAN no está incluido en la suscripción mensual.</strong>
             </AlertDescription>
         </Alert>
     );
