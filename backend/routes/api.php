@@ -1480,7 +1480,7 @@ Route::prefix('v1')->group(function () {
     // Nuevo formato de QR: `/menus?table={qr_token}`. El token opaco resuelve
     // NIT + sede + número de mesa sin exponerlos en la URL.
     Route::get('public/table-resolve/{qr_token}', [TableResolveController::class, 'showByToken'])
-        ->where(['qr_token' => '[A-Za-z0-9]+'])
+        ->where(['qr_token' => '[A-Za-z]{13}'])
         ->middleware('throttle:menu-scan-public')
         ->name('api.public.table.resolve-by-token');
 
@@ -1495,7 +1495,7 @@ Route::prefix('v1')->group(function () {
     // los endpoints que operan sobre el carrito.
     Route::prefix('public/table/{qr_token}')
         ->middleware('throttle:table-public')
-        ->where(['qr_token' => '[A-Za-z0-9]+'])
+        ->where(['qr_token' => '[A-Za-z]{13}'])
         ->group(function () {
             // Contexto de la pantalla de unión (hidrata `pages/table/join.tsx`).
             Route::get('/', [TableJoinController::class, 'show'])

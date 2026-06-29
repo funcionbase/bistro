@@ -301,11 +301,11 @@ if (app()->environment('local') && config('app.debug') === true) {
 // query (FrontendRedirectController). Las acciones puras del flujo (join,
 // contact-lookup, carrito) ya no viven en web.php: son endpoints API.
 Route::get('t/{qr_token}', FrontendRedirectController::class)
-    ->where('qr_token', '[A-Za-z0-9]+')
+    ->where('qr_token', '[A-Za-z]{13}')
     ->name('public.table.join');
 
 Route::get('t/{qr_token}/menu', FrontendRedirectController::class)
-    ->where('qr_token', '[A-Za-z0-9]+')
+    ->where('qr_token', '[A-Za-z]{13}')
     ->name('public.table.menu');
 
 require __DIR__.'/settings.php';

@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * Mesa física del restaurante (#191).
@@ -62,10 +61,10 @@ class Table extends Model
         });
     }
 
-    /** Token aleatorio URL-safe para imprimir como QR (40 chars alfanuméricos). */
+    /** Token aleatorio URL-safe para imprimir como QR (13 chars A–Z, mayúscula). */
     public static function generateQrToken(): string
     {
-        return Str::random(40);
+        return implode('', array_map(fn () => chr(random_int(65, 90)), range(1, 13)));
     }
 
     /** @return BelongsTo<Company, $this> */
