@@ -130,8 +130,8 @@ export default function EnrollmentCompany() {
         try {
             const formData = new FormData();
             formData.append('nit', nit);
-            formData.append('commercial_name', commercialName);
-            formData.append('legal_name', legalName);
+            formData.append('commercial_name', commercialName.trim());
+            formData.append('legal_name', legalName.trim());
             formData.append('bank_id', bankId);
             formData.append('account_number', accountNumber);
             formData.append('account_type', accountType);
@@ -351,7 +351,7 @@ export default function EnrollmentCompany() {
                                                 id="commercial_name"
                                                 type="text"
                                                 value={commercialName}
-                                                onChange={(e) => setCommercialName(sanitizePlainText(e.target.value, 255))}
+                                                onChange={(e) => setCommercialName(sanitizePlainText(e.target.value, 255, false, false))}
                                                 placeholder="Ej: Mi empresa S.A.S."
                                             />
                                             <InputError message={errors.commercial_name} />
@@ -362,7 +362,7 @@ export default function EnrollmentCompany() {
                                                 id="legal_name"
                                                 type="text"
                                                 value={legalName}
-                                                onChange={(e) => setLegalName(sanitizePlainText(e.target.value, 255))}
+                                                onChange={(e) => setLegalName(sanitizePlainText(e.target.value, 255, false, false))}
                                                 placeholder="Ej: El Sabor S.A.S."
                                             />
                                             <InputError message={errors.legal_name} />

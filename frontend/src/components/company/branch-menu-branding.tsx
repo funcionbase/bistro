@@ -83,7 +83,7 @@ export function BranchMenuBranding({ branchId }: BranchMenuBrandingProps) {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    menu_tagline: settings.menu_tagline || null,
+                    menu_tagline: settings.menu_tagline?.trim() || null,
                     menu_card_style: settings.menu_card_style,
                     menu_show_branding: settings.menu_show_branding,
                 }),
@@ -180,7 +180,7 @@ export function BranchMenuBranding({ branchId }: BranchMenuBrandingProps) {
                     maxLength={120}
                     value={settings.menu_tagline ?? ''}
                     onChange={(e) =>
-                        setSettings({ ...settings, menu_tagline: sanitizePlainText(e.target.value, 120, true) || null })
+                        setSettings({ ...settings, menu_tagline: sanitizePlainText(e.target.value, 120, true, false) || null })
                     }
                 />
                 <p className="text-muted-foreground text-[11px]">{(settings.menu_tagline?.length ?? 0)}/120</p>
