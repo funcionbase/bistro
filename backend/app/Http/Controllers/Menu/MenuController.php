@@ -932,10 +932,11 @@ class MenuController extends Controller
 
         // bytea via parámetro: Postgres requiere o `\x...` o decode('hex', 'hex').
         // Usamos INSERT raw para que `decode(?, 'hex')` mantenga binding seguro.
+        // gen_random_uuid() genera el PK en DB (uuid sin DEFAULT en columna).
         DB::statement(<<<'SQL'
             INSERT INTO menu_scan_events
-                (company_nit, branch_id, table_number, scanned_at, session_id, user_agent, ip_hash, is_bot)
-            VALUES (?, ?::uuid, ?, now(), ?::uuid, ?, CASE WHEN ?::text IS NULL THEN NULL ELSE decode(?, 'hex') END, ?)
+                (id, company_nit, branch_id, table_number, scanned_at, session_id, user_agent, ip_hash, is_bot)
+            VALUES (gen_random_uuid(), ?, ?::uuid, ?, now(), ?::uuid, ?, CASE WHEN ?::text IS NULL THEN NULL ELSE decode(?, 'hex') END, ?)
         SQL, [
             $company->nit,
             $defaultBranch->id,
