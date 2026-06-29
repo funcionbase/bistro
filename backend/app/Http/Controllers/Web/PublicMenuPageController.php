@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Company;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,12 +46,28 @@ class PublicMenuPageController extends Controller
                 ]);
         }
 
+        // QR de menú de sede: ?branch={menu_qr_token} (solo letras mayúsculas, 3-13 chars).
+        $branchParam = $request->query('branch');
+        if (is_string($branchParam) && preg_match('/^[A-Z]{3,13}$/', $branchParam)) {
+            $branch = Branch::query()->where('menu_qr_token', $branchParam)->first();
+            if ($branch !== null) {
+                return redirect()
+                    ->route('public.menu.alias')
+                    ->with([
+                        '_public_menu_nit' => $branch->company_nit,
+                        '_public_menu_branch_id' => (string) $branch->id,
+                    ]);
+            }
+        }
+
         $sessionNit = $request->session()->get('_public_menu_nit');
         $sessionTable = $request->session()->get('_public_menu_table');
+        $sessionBranchId = $request->session()->get('_public_menu_branch_id');
 
         return Inertia::render('menu/public', [
             'nit' => is_string($sessionNit) ? $sessionNit : null,
             'table' => is_string($sessionTable) ? $sessionTable : null,
+            'branch_id' => is_string($sessionBranchId) ? $sessionBranchId : null,
         ]);
     }
 }

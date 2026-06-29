@@ -1,4 +1,5 @@
 import CashRegisterPanel from '@/components/cash-register/cash-register-panel';
+import { MenuQrPoster } from '@/components/company/menu-qr-poster';
 import BillableTablesPanel from '@/components/orders/billable-tables-panel';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -6,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashierSkeleton } from '@/components/ui/cashier-skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useActiveAutoApply } from '@/hooks/use-active-auto-apply';
+import { useActiveBranch } from '@/hooks/use-active-branch';
 import { useCashRegister } from '@/hooks/use-cash-register';
 import { useCouponValidation } from '@/hooks/use-coupon-validation';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
@@ -21,7 +24,7 @@ import { useSharedData } from '@/lib/shared-data';
 import { aggregateTax, calculateTaxLine } from '@/lib/tax';
 import type { MenuItem, RestaurantMenu } from '@/types';
 
-import { AlertCircle, Check, Minus, Plus, Store, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, Minus, Plus, QrCode, Store, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface CartLine {
@@ -37,6 +40,8 @@ export default function CajaPage() {
     const { selectedRegister } = useCashRegister(token);
     const sharedData = useSharedData();
     const activeCompany = sharedData.activeCompany;
+    const { activeBranch } = useActiveBranch();
+    const [menuQrOpen, setMenuQrOpen] = useState(false);
     const activeCompanyNit = activeCompany?.nit ?? null;
     const activeBranchId = sharedData.activeBranch?.id ?? null;
     const taxRate = (activeCompany as { default_tax_rate?: number } | null)?.default_tax_rate ?? 0;
@@ -285,7 +290,7 @@ export default function CajaPage() {
             if (!tableNumber.trim() || !tables.some((t) => t.number === tableNumber)) {
                 setSubmitError(
                     tableCount === 0
-                        ? 'No hay mesas configuradas. Crea mesas en /company/tables primero.'
+                        ? 'No hay mesas configuradas. Crea mesas en Mesas → Configuración primero.'
                         : 'Selecciona una mesa válida de la lista.',
                 );
                 return;
@@ -403,6 +408,17 @@ export default function CajaPage() {
                                                 </Badge>
                                             )}
                                             {menu && <Badge variant="secondary">Menú activo</Badge>}
+                                            {activeBranch?.menu_qr_token && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setMenuQrOpen(true)}
+                                                >
+                                                    <QrCode className="h-4 w-4" />
+                                                    QR Menú
+                                                </Button>
+                                            )}
                                         </div>
                                     }
                                 />
@@ -511,8 +527,8 @@ export default function CajaPage() {
                                             </Select>
                                             <p className="text-muted-foreground text-xs">
                                                 {tableCount} {tableCount === 1 ? 'mesa configurada' : 'mesas configuradas'}. Gestiónalas en{' '}
-                                                <a href="/company/tables" className="underline">
-                                                    Mesas
+                                                <a href="/orders/tables?tab=config" className="underline">
+                                                    Mesas → Configuración
                                                 </a>
                                                 .
                                             </p>
@@ -715,6 +731,28 @@ export default function CajaPage() {
                     </CashRegisterPanel>
                 )}
             </div>
+
+            <Dialog open={menuQrOpen} onOpenChange={setMenuQrOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>QR del menú{activeBranch?.name ? ` — ${activeBranch.name}` : ''}</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-muted-foreground -mt-2 mb-2 text-xs">
+                        Comparte este QR para que tus clientes vean el menú de esta sede desde su celular.
+                    </p>
+                    {activeCompany?.nit && activeBranch?.menu_qr_token && (
+                        <MenuQrPoster
+                            nit={activeCompany.nit}
+                            commercialName={activeCompany.name ?? 'Empresa'}
+                            logoUrl={activeCompany.logo_url ?? null}
+                            primaryColor={activeCompany.brand_color ?? '#0F172A'}
+                            mode="menu"
+                            tableNumber={null}
+                            menuQrToken={activeBranch.menu_qr_token}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </PageShell>
     );
 }

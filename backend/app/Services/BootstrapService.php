@@ -100,7 +100,7 @@ class BootstrapService
             $branches = $query
                 ->orderByDesc('is_default')
                 ->orderBy('name')
-                ->get(['id', 'name', 'slug', 'is_default', 'address', 'city'])
+                ->get(['id', 'name', 'slug', 'is_default', 'address', 'city', 'menu_qr_token'])
                 ->map(fn ($b) => [
                     // id como string para alinear con el tipo TS Branch.
                     'id' => (string) $b->id,
@@ -109,6 +109,7 @@ class BootstrapService
                     'is_default' => (bool) $b->is_default,
                     'address' => $b->address,
                     'city' => $b->city,
+                    'menu_qr_token' => $b->menu_qr_token,
                 ])
                 ->values()
                 ->all();

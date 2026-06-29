@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Download, LoaderCircle, QrCode } from 'lucide-react';
+import { Check, Copy, Download, LoaderCircle, QrCode } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState } from 'react';
 
@@ -28,6 +28,12 @@ interface MenuQrPosterProps {
      * en el backend.
      */
     qrToken?: string;
+    /**
+     * Token del QR de menú de la sede (3-13 letras A-Z). Cuando está presente
+     * y no hay `tableNumber`, la URL codifica `/menus?table={menuQrToken}` en
+     * lugar de `/menus/{nit}` — no expone el NIT públicamente.
+     */
+    menuQrToken?: string | null;
 }
 
 const DEFAULT_WIDTH = 800;
@@ -54,11 +60,16 @@ export function MenuQrPoster({
     height = DEFAULT_HEIGHT,
     mode = 'menu',
     qrToken,
+    menuQrToken,
 }: MenuQrPosterProps) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [downloading, setDownloading] = useState(false);
+    const [copied, setCopied] = useState(false);
 
-    const targetUrl = mode === 'table-session' && qrToken ? buildTableSessionUrl(qrToken) : buildTargetUrl(nit, tableNumber, qrToken);
+    const targetUrl =
+        mode === 'table-session' && qrToken
+            ? buildTableSessionUrl(qrToken)
+            : buildTargetUrl(nit, tableNumber, qrToken, menuQrToken);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -83,6 +94,16 @@ export function MenuQrPoster({
             void cancelled;
         };
     }, [width, height, targetUrl, commercialName, logoUrl, primaryColor, tableNumber]);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(targetUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // clipboard no disponible — ignorar
+        }
+    };
 
     const handleDownload = async () => {
         const canvas = canvasRef.current;
@@ -116,7 +137,7 @@ export function MenuQrPoster({
                     aria-label={`QR del menú de ${commercialName}`}
                 />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="space-y-2">
                 <a
                     href={targetUrl}
                     target="_blank"
@@ -127,19 +148,29 @@ export function MenuQrPoster({
                     <QrCode className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate font-mono">{targetUrl}</span>
                 </a>
-                <Button type="button" size="sm" onClick={handleDownload} disabled={downloading}>
-                    {downloading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    Descargar PNG
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={handleCopy} className="flex-1 sm:flex-none">
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {copied ? 'Copiado' : 'Copiar enlace'}
+                    </Button>
+                    <Button type="button" size="sm" onClick={handleDownload} disabled={downloading} className="flex-1 sm:flex-none">
+                        {downloading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        Descargar PNG
+                    </Button>
+                </div>
             </div>
         </div>
     );
 }
 
-function buildTargetUrl(nit: string, tableNumber?: string | null, qrToken?: string | null): string {
+function buildTargetUrl(nit: string, tableNumber?: string | null, qrToken?: string | null, menuQrToken?: string | null): string {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const trimmed = (tableNumber ?? '').trim();
-    // Nuevo formato opaco: no expone NIT ni número de mesa en la URL.
+    // QR de menú de sede (sin mesa): URL opaca que no expone el NIT.
+    if (trimmed === '' && menuQrToken) {
+        return `${origin}/menus?branch=${encodeURIComponent(menuQrToken)}`;
+    }
+    // QR de mesa con token opaco: no expone NIT ni número de mesa.
     if (trimmed !== '' && qrToken) {
         return `${origin}/menus?table=${encodeURIComponent(qrToken)}`;
     }

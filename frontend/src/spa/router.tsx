@@ -55,6 +55,7 @@ const OrdersBoard = lazy(() => import('@/pages/orders/board'));
 const OrdersTables = lazy(() => import('@/pages/orders/tables/index'));
 const TableSessionsIndex = lazy(() => import('@/pages/orders/table-sessions/index'));
 const TableSessionsShow = lazy(() => import('@/pages/orders/table-sessions/show'));
+const OrderShow = lazy(() => import('@/pages/orders/show'));
 const CajaIndex = lazy(() => import('@/pages/caja/index'));
 const CajaTableSession = lazy(() => import('@/pages/caja/table-session'));
 const Roles = lazy(() => import('@/pages/roles/roles'));
@@ -242,6 +243,7 @@ export const router = createBrowserRouter([
                     { path: '/orders/tables', element: <OrdersTables /> },
                     { path: '/orders/table-sessions', element: <TableSessionsIndex /> },
                     { path: '/orders/table-sessions/:id', element: <TableSessionsShow /> },
+                    { path: '/orders/:id', element: <OrderShow /> },
                     { path: '/orders/cashier', element: <CajaIndex /> },
                     { path: '/cashier/table-sessions/:id', element: <CajaTableSession /> },
                     { path: '/identities/roles', element: <Roles /> },

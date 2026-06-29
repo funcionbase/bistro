@@ -52,7 +52,7 @@ export function TablesGrid({
                     </p>
                 </div>
                 <Button size="sm" asChild>
-                    <a href="/company/tables">
+                    <a href="/orders/tables?tab=config">
                         <Cog className="mr-1 h-4 w-4" /> Gestionar mesas
                     </a>
                 </Button>
@@ -76,7 +76,7 @@ export function TablesGrid({
                             occupied
                             total={order ? formatCurrency(order.total) : undefined}
                             statusLabel={session.order_status ? statusLabel(orderStatuses, session.order_status) : undefined}
-                            onClick={() => navigate(`/orders/table-sessions/${session.id}`)}
+                            onClick={() => session.order_id && navigate(`/orders/${session.order_id}`)}
                             groupSession={{
                                 guestsCount: session.guests_count,
                                 hasActiveOrder,
@@ -90,7 +90,7 @@ export function TablesGrid({
                                         className="w-full text-xs"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            navigate(`/cashier/table-sessions/${session.id}`);
+                                            if (session.order_id) navigate(`/orders/${session.order_id}`);
                                         }}
                                     >
                                         Cobrar mesa

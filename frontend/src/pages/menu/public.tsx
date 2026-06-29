@@ -15,6 +15,8 @@ import { useEffect, useRef, useState } from 'react';
 interface PublicMenuProps {
     nit: string | null;
     table: string | null;
+    /** Sede resuelta server-side desde el QR de menú de sede (?table={menu_qr_token}). */
+    branch_id?: string | null;
 }
 
 interface RestaurantBranding {
@@ -79,7 +81,7 @@ function generateUuid(): string {
     });
 }
 
-export default function PublicMenu({ nit, table }: PublicMenuProps) {
+export default function PublicMenu({ nit, table, branch_id }: PublicMenuProps) {
     const appName = 'flexyflow';
     const initialEffective = nit ?? readLastNit();
     const [effectiveNit, setEffectiveNit] = useState<string | null>(initialEffective);
@@ -95,7 +97,7 @@ export default function PublicMenu({ nit, table }: PublicMenuProps) {
     // Sede resuelta a partir del `?table=N`. Se usa para refetch del menú
     // con el filtro de branch correcto cuando una empresa tiene un menú
     // activo por sede.
-    const [effectiveBranchId, setEffectiveBranchId] = useState<string | null>(null);
+    const [effectiveBranchId, setEffectiveBranchId] = useState<string | null>(branch_id ?? null);
     // Número legible de la mesa (e.g. "3"). Con el QR antiguo coincide con `table`;
     // con el nuevo formato opaco se resuelve desde la API después de decodificar el token.
     const [effectiveTableNumber, setEffectiveTableNumber] = useState<string | null>(

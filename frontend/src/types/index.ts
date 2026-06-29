@@ -264,6 +264,7 @@ export interface Branch {
     is_default: boolean;
     address?: string | null;
     city?: string | null;
+    menu_qr_token?: string | null;
 }
 
 export interface SharedData {

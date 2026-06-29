@@ -347,13 +347,6 @@ export function AppSidebar() {
             icon: SlidersHorizontal,
             children: [
                 {
-                    title: 'Mesas físicas',
-                    url: route('company.tables'),
-                    icon: Table2,
-                    permission: 'company.update',
-                    businessCapability: 'tables',
-                },
-                {
                     title: 'Horarios',
                     url: route('hours'),
                     icon: Clock,

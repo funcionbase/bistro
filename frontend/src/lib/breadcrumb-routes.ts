@@ -21,7 +21,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
 
     { pattern: '/orders/cashier', label: 'Caja', parent: null },
     { pattern: '/orders/tables', label: 'Mesas', parent: null },
-    { pattern: '/orders/table-sessions/:id', label: null, parent: '/orders/tables' },
+    { pattern: '/orders/:id', label: null, parent: '/orders/board' },
     // /orders/table-sessions (lista) redirige a /orders/tables — sin entrada propia.
     { pattern: '/orders/board', label: 'Tablero', parent: null },
     { pattern: '/kds', label: 'Cocina (KDS)', parent: null },
@@ -64,7 +64,6 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
     { pattern: '/company/branches', label: 'Sedes', parent: '/empresa' },
     { pattern: '/company/preferences', label: 'Preferencias', parent: '/empresa' },
 
-    { pattern: '/company/tables', label: 'Mesas físicas', parent: '/operacion' },
     { pattern: '/hours', label: 'Horarios', parent: '/operacion' },
     { pattern: '/company/printers', label: 'Impresoras', parent: '/operacion' },
     { pattern: '/company/kds', label: 'KDS / Cocina', parent: '/operacion' },

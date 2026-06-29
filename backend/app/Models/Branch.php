@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $company_nit
  * @property string $name
  * @property string $slug — único por empresa
+ * @property string $menu_qr_token — token opaco 3-13 letras A-Z, único global, codifica la URL del menú público
  * @property ?string $address
  * @property ?string $city
  * @property bool $is_default — informativo
@@ -33,6 +34,7 @@ class Branch extends Model
         'company_nit',
         'name',
         'slug',
+        'menu_qr_token',
         'address',
         'city',
         'business_type_id',
@@ -40,6 +42,42 @@ class Branch extends Model
         'is_default',
         'archived_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Branch $branch): void {
+            if (empty($branch->menu_qr_token)) {
+                $branch->menu_qr_token = static::generateMenuQrToken();
+            }
+        });
+    }
+
+    /**
+     * Genera un token opaco único para el QR del menú de una sede.
+     * Longitud mínima 3 chars (26^3 = 17 576 combinaciones), escala hasta 13.
+     * 20 intentos por longitud antes de escalar — probabilidad de colisión
+     * es despreciable en el volumen de sedes esperado.
+     */
+    public static function generateMenuQrToken(): string
+    {
+        $existingCount = static::whereNotNull('menu_qr_token')->count();
+        $minLength = match (true) {
+            $existingCount < 10000 => 3,
+            $existingCount < 200000 => 4,
+            default => 5,
+        };
+
+        for ($length = $minLength; $length <= 13; $length++) {
+            for ($attempt = 0; $attempt < 20; $attempt++) {
+                $token = implode('', array_map(fn () => chr(random_int(65, 90)), range(1, $length)));
+                if (! static::where('menu_qr_token', $token)->exists()) {
+                    return $token;
+                }
+            }
+        }
+
+        throw new \RuntimeException('Espacio de tokens de menú QR agotado.');
+    }
 
     protected function casts(): array
     {

@@ -126,7 +126,7 @@ class SetupGuideController extends Controller
                 'id' => 'tables',
                 'title' => 'Configura las mesas',
                 'description' => 'Organiza el salón (opcional si haces domicilios)',
-                'url' => '/company/tables',
+                'url' => '/orders/tables?tab=config',
                 'completed' => $hasTables,
             ],
         ];
