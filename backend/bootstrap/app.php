@@ -141,14 +141,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            if ($e instanceof ValidationException
-                || $e instanceof AuthenticationException) {
+            // Auth handler manages web redirect + API 401 correctly in both envs
+            if ($e instanceof AuthenticationException) {
+                return null;
+            }
+
+            // In debug mode keep full field-level validation detail for DX
+            if (config('app.debug') && $e instanceof ValidationException) {
                 return null;
             }
 
             $status = 500;
             if ($e instanceof HttpExceptionInterface) {
                 $status = $e->getStatusCode();
+            } elseif ($e instanceof ValidationException) {
+                $status = 422;
             }
 
             $message = match (true) {
@@ -162,10 +169,24 @@ return Application::configure(basePath: dirname(__DIR__))
                 $status >= 500 => config('app.debug')
                     ? ($e->getMessage() ?: 'Error interno del servidor.')
                     : 'Algo se rompió de nuestro lado. Ya estamos investigando.',
-                default => $e->getMessage() ?: 'Error en la solicitud.',
+                default => config('app.debug') ? ($e->getMessage() ?: 'Error en la solicitud.') : 'Error en la solicitud.',
             };
 
-            return response()->json(['message' => $message], $status, [
+            $payload = ['message' => $message];
+
+            if (! config('app.debug') && $status >= 500) {
+                $ref = strtoupper(bin2hex(random_bytes(5)));
+                $payload['ref'] = $ref;
+                logger()->error("API {$status} [{$ref}]", [
+                    'exception' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile().':'.$e->getLine(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                ]);
+            }
+
+            return response()->json($payload, $status, [
                 'X-Robots-Tag' => 'noindex, nofollow',
             ]);
         });
