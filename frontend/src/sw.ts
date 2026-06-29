@@ -19,7 +19,7 @@
 
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
-import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst } from 'workbox-strategies';
 
@@ -35,11 +35,23 @@ cleanupOutdatedCaches();
 // SPA (no-API, no-asset) se sirve con `index.html` precacheado. Sin esto, una
 // recarga offline de /caja devolvía el error de red del navegador. El denylist
 // excluye API/OAuth/storage para que esas rutas sigan yendo a la red.
-const navigationHandler = createHandlerBoundToURL('/index.html');
+//
+// ponytail: NO usar createHandlerBoundToURL('/index.html') — Cloudflare Workers
+// redirige /index.html con 307 → /. El SW no puede responder a una navegación
+// con una respuesta redirigida (redirect mode != 'follow'). En su lugar:
+// precache primero; si no hay cache, fetch de la URL original (CF sirve
+// index.html para cualquier ruta SPA con 200, no 307).
 registerRoute(
-    new NavigationRoute(navigationHandler, {
-        denylist: [/^\/api\//, /^\/auth\//, /^\/storage-proxy\//, /^\/storage\//],
-    }),
+    new NavigationRoute(
+        async ({ request }) => {
+            const precached = await caches.match('/index.html');
+            if (precached) return precached;
+            return fetch(request.url);
+        },
+        {
+            denylist: [/^\/api\//, /^\/auth\//, /^\/storage-proxy\//, /^\/storage\//],
+        },
+    ),
 );
 
 // Activación inmediata — el SW nuevo toma control sin esperar a cerrar tabs.
