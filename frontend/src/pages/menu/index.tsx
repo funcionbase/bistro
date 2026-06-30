@@ -223,9 +223,9 @@ export default function MenuIndex() {
                     <>
                         <PageHeader
                             eyebrow="Menú"
-                            title="Menús de la empresa"
+                            title="Menús de la sede"
                             description={
-                                canUpdate ? 'Administra tus menús, categorías y platos.' : 'Consulta los menús, categorías y platos de la empresa.'
+                                canUpdate ? 'Administra los menús, categorías y platos de esta sede.' : 'Consulta los menús, categorías y platos de esta sede.'
                             }
                             actions={
                                 <>
