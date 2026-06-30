@@ -62,12 +62,34 @@ activateSpanishValidation();
 // Service Worker (PWA): registra `/sw.js` para cache de assets y soporte offline.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     void import('workbox-window').then(({ Workbox }) => {
+        const hadController = !!navigator.serviceWorker.controller;
         const wb = new Workbox('/sw.js');
+
+        // controlling: con skipWaiting() incondicional en sw.ts el SW nuevo nunca
+        // entra en "waiting" → este es el único evento que se dispara de forma
+        // confiable cuando un deploy nuevo toma control de la página.
+        wb.addEventListener('controlling', () => {
+            if (!hadController) return; // primera instalación, no actualización
+            if (document.visibilityState === 'hidden') {
+                window.location.reload(); // background → recarga silenciosa
+            } else {
+                window.dispatchEvent(new CustomEvent('pwa:update-available'));
+            }
+        });
+
+        // waiting: fallback si en algún momento skipWaiting pasa a ser message-driven.
         wb.addEventListener('waiting', () => {
             window.dispatchEvent(new CustomEvent('pwa:update-available'));
         });
-        wb.register().catch(() => {
-            // Falla silenciosa: la app sigue funcionando sin SW.
-        });
+
+        wb.register()
+            .then((reg) => {
+                // Chequeo periódico: sin esto una PWA abierta 24/7 puede pasar
+                // hasta 24h sin detectar una nueva versión.
+                if (reg) setInterval(() => void reg.update(), 5 * 60 * 1000);
+            })
+            .catch(() => {
+                // Falla silenciosa: la app sigue funcionando sin SW.
+            });
     });
 }
