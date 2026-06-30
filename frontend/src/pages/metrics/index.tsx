@@ -353,13 +353,13 @@ export default function MetricsIndex({ foodCostAlertThreshold = '0.30' }: Metric
                 </div>
 
                 {/* Middle row: active orders + item ranking */}
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                     <ActiveOrdersPanel data={activeOrders} loading={activeOrdersLoading} refreshedAt={activeOrdersRefreshedAt} />
                     <DishRankingPanel data={topItems} loading={topItemsLoading} formatCurrency={formatCurrency} />
                 </div>
 
                 {/* Charts row: hourly heatmap + abandonment */}
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                     <HeatmapPanel data={heatmap} loading={heatmapLoading} />
                     <AbandonmentPanel data={abandonment} loading={abandonmentLoading} formatCurrency={formatCurrency} />
                 </div>

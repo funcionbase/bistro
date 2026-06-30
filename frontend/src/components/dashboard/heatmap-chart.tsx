@@ -73,7 +73,7 @@ export default function HeatmapChart({ data, loading = false }: HeatmapChartProp
                                     <div
                                         key={h}
                                         className="h-5 flex-1 cursor-default rounded-sm"
-                                        style={{ backgroundColor: `rgba(0, 82, 255, ${opacity.toFixed(2)})` }}
+                                        style={{ backgroundColor: `color-mix(in oklch, var(--color-primary) ${Math.round(opacity * 100)}%, transparent)` }}
                                         title={`${DAY_FULL[dow]} ${String(h).padStart(2, '0')}:00 — ${orders} órdenes${revenue > 0 ? ` — ${formatCurrency(revenue)}` : ''}`}
                                     />
                                 );
@@ -87,7 +87,7 @@ export default function HeatmapChart({ data, loading = false }: HeatmapChartProp
                     <span className="text-muted-foreground text-[10px]">Menos</span>
                     <div className="flex gap-0.5">
                         {[0.06, 0.28, 0.5, 0.72, 1].map((op) => (
-                            <div key={op} className="h-3 w-3 rounded-sm" style={{ backgroundColor: `rgba(0, 82, 255, ${op})` }} />
+                            <div key={op} className="h-3 w-3 rounded-sm" style={{ backgroundColor: `color-mix(in oklch, var(--color-primary) ${Math.round(op * 100)}%, transparent)` }} />
                         ))}
                     </div>
                     <span className="text-muted-foreground text-[10px]">Más</span>

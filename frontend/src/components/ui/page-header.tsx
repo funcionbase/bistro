@@ -58,8 +58,8 @@ export function PageHeader({
     return (
         <div
             className={cn(
-                'flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between',
-                isEditorial && 'gap-6 md:gap-8',
+                'flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between',
+                isEditorial && 'gap-6 sm:gap-8',
                 className,
             )}
         >
@@ -101,7 +101,7 @@ export function PageHeader({
                 )}
             </div>
             {actions && (
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:shrink [&>*]:w-full sm:[&>*]:w-auto">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:shrink [&>*]:w-full sm:[&>*]:w-auto">
                     {actions}
                 </div>
             )}

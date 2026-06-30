@@ -25,7 +25,7 @@ import { useSharedData } from '@/lib/shared-data';
 import { aggregateTax, calculateTaxLine } from '@/lib/tax';
 import type { MenuItem, RestaurantMenu } from '@/types';
 
-import { AlertCircle, Check, Minus, Plus, QrCode, Store, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, Minus, Plus, QrCode, ShoppingBag, Store, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface CartLine {
@@ -49,6 +49,7 @@ export default function CajaPage() {
     const taxLabel = (activeCompany as { default_tax_label?: string } | null)?.default_tax_label ?? 'Impuesto';
     const taxIncluded = (activeCompany as { tax_included_in_price?: boolean } | null)?.tax_included_in_price ?? true;
     const isMounted = useRef(true);
+    const cartRef = useRef<HTMLDivElement>(null);
 
     type OrderType = 'table' | 'delivery' | 'pickup';
 
@@ -382,7 +383,7 @@ export default function CajaPage() {
         <PageShell
             title="Caja"
         >
-            <div className="p-4 sm:p-6">
+            <div className="p-4 pb-24 sm:p-6 sm:pb-6">
                 {loading ? (
                     <CashierSkeleton />
                 ) : (
@@ -470,6 +471,7 @@ export default function CajaPage() {
                             </div>
 
                             {/* Carrito */}
+                            <div ref={cartRef}>
                             <Card className="h-fit rounded-lg shadow-sm md:sticky md:top-4">
                                 <CardHeader className="p-4 pb-2">
                                     <CardTitle className="text-base">Nueva orden</CardTitle>
@@ -622,7 +624,7 @@ export default function CajaPage() {
                                                         value={line.notes ?? ''}
                                                         onChange={(e) => updateNotes(line.item.id, e.target.value)}
                                                         placeholder="Notas (opcional)"
-                                                        className="mt-2 h-7 text-xs"
+                                                        className="mt-2 h-9 text-xs"
                                                         disabled={submitting}
                                                     />
                                                 </div>
@@ -729,10 +731,24 @@ export default function CajaPage() {
                                     </Button>
                                 </CardContent>
                             </Card>
+                            </div>
                         </div>
                     </CashRegisterPanel>
                 )}
             </div>
+
+            {/* Mobile FAB: scroll al carrito cuando hay ítems */}
+            {!loading && cartLines.length > 0 && (
+                <div className="fixed inset-x-4 bottom-4 z-40 md:hidden">
+                    <Button
+                        className="w-full gap-2 shadow-lg"
+                        onClick={() => cartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    >
+                        <ShoppingBag className="h-4 w-4" />
+                        {cartLines.length} {cartLines.length === 1 ? 'ítem' : 'ítems'} · {formatCurrency(total)}
+                    </Button>
+                </div>
+            )}
 
             <Dialog open={menuQrOpen} onOpenChange={setMenuQrOpen}>
                 <DialogContent className="max-w-md">

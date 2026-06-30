@@ -160,7 +160,7 @@ export default function PermissionsMatrix({
                                     const ownerOnly = !!feature.is_owner_only;
                                     return (
                                         <tr key={feature.id} className="hover:bg-muted/10">
-                                            <td className="px-2 py-2 text-sm font-medium sm:px-4">
+                                            <td className="px-2 py-3 text-sm font-medium sm:px-4 sm:py-2">
                                                 {ownerOnly && (
                                                     <span className="text-muted-foreground mr-1.5 align-middle text-[10px] font-normal tracking-wide uppercase">
                                                         Solo dueño
@@ -186,7 +186,7 @@ export default function PermissionsMatrix({
                                                     <td
                                                         key={action.key}
                                                         className={cn(
-                                                            'px-2 py-2 text-center sm:px-4',
+                                                            'px-2 py-3 text-center sm:px-4 sm:py-2',
                                                             !isChecked && !isDisabled && 'bg-muted/5',
                                                             isDisabled && 'opacity-60',
                                                         )}

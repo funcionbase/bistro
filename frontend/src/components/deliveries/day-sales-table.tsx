@@ -39,7 +39,7 @@ export function DaySalesTable({ sortedOrders, orders, sortColumn, sortDirection,
     return (
         <>
             {/* Desktop table */}
-            <div className="bg-card hidden overflow-hidden rounded-lg border shadow-sm md:block">
+            <div className="bg-card hidden overflow-hidden rounded-lg border shadow-sm sm:block">
                 <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-xs uppercase">
                         <tr>
@@ -125,7 +125,7 @@ export function DaySalesTable({ sortedOrders, orders, sortColumn, sortDirection,
             </div>
 
             {/* Mobile list */}
-            <div className="space-y-2 md:hidden">
+            <div className="space-y-2 sm:hidden">
                 {orders.map((order) => {
                     const typeMeta = getOrderTypeMeta(order.order_type);
                     const TypeIcon = typeMeta?.icon ?? ShoppingBag;

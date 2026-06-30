@@ -13,7 +13,7 @@ function HeatmapTooltip({ active, payload, label }: TooltipProps) {
     const hour = label ?? 0;
     const entry = payload[0];
     return (
-        <div className="rounded-lg border bg-white px-3 py-2 shadow-md">
+        <div className="bg-popover text-popover-foreground rounded-lg border px-3 py-2 shadow-md">
             <p className="mb-1 text-sm font-semibold">{`${String(hour).padStart(2, '0')}:00`}</p>
             <p className="text-xs text-[var(--color-primary)]">Órdenes: {entry.value}</p>
             <p className="text-muted-foreground text-xs">

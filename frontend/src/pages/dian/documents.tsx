@@ -136,7 +136,7 @@ export default function DianDocumentsPage() {
                 ) : (
                     <>
                         {/* Desktop table */}
-                        <div className="hidden md:block">
+                        <div className="hidden sm:block">
                             <Card className="overflow-hidden">
                                 <table className="w-full text-sm">
                                     <thead className="bg-muted text-muted-foreground">
@@ -160,7 +160,7 @@ export default function DianDocumentsPage() {
                         </div>
 
                         {/* Mobile cards */}
-                        <div className="space-y-2 md:hidden">
+                        <div className="space-y-2 sm:hidden">
                             {filtered.map((doc) => (
                                 <DocumentCard key={doc.id} doc={doc} onRetry={fetchDocs} />
                             ))}

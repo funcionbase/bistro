@@ -200,7 +200,7 @@ export default function RoleEditor({ role, features, existingRoles = [], onClose
                                             type="button"
                                             title={swatch}
                                             onClick={() => setColor(swatch)}
-                                            className="ring-offset-background focus-visible:ring-ring h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                            className="ring-offset-background focus-visible:ring-ring h-9 w-9 rounded-full border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:h-7 sm:w-7"
                                             style={{
                                                 backgroundColor: swatch,
                                                 borderColor: color === swatch ? 'var(--foreground)' : 'transparent',
@@ -209,7 +209,7 @@ export default function RoleEditor({ role, features, existingRoles = [], onClose
                                         />
                                     ))}
                                     <label
-                                        className="border-border ring-offset-background focus-within:ring-ring relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none"
+                                        className="border-border ring-offset-background focus-within:ring-ring relative h-9 w-9 cursor-pointer overflow-hidden rounded-full border focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none sm:h-7 sm:w-7"
                                         title="Color personalizado"
                                     >
                                         <input
