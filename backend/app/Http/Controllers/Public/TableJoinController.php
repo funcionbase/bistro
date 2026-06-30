@@ -52,7 +52,11 @@ class TableJoinController extends Controller
 
         if ($deviceToken !== null) {
             $guest = $this->tableSessions->resolveGuestByDeviceToken($table, $deviceToken);
-            $alreadyJoined = $guest !== null;
+            // Solo "ya en sesión" si la sesión sigue activa. Una sesión
+            // closed/expired no redirige al menú — el comensal puede abrir una
+            // nueva sesión en la misma mesa sin necesidad del mesero.
+            $alreadyJoined = $guest !== null
+                && ! in_array($guest->session->status, config('tables.terminal_statuses', ['closed', 'expired']), true);
         }
 
         $branch = Branch::query()->whereKey($table->branch_id)->firstOrFail();

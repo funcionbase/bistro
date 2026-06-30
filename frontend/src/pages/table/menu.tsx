@@ -285,18 +285,22 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
         };
     }, [refreshState, session.status]);
 
-    // Cuando el poll detecta que la sesión expiró, parar el intervalo y
-    // volver al menú público para que el comensal pueda unirse de nuevo.
+    // Cuando el poll detecta sesión terminal, detener el intervalo y redirigir:
+    //  - closed → join page para abrir una nueva sesión en la misma mesa.
+    //  - expired → menú público (la sesión caducó por inactividad; el cliente
+    //    puede volver a unirse escaneando el QR de nuevo).
     useEffect(() => {
         if (!isTerminal) return;
         if (pollingRef.current !== null) {
             window.clearInterval(pollingRef.current);
             pollingRef.current = null;
         }
-        if (liveSessionStatus === 'expired') {
+        if (liveSessionStatus === 'closed') {
+            navigate(`/t/${encodeURIComponent(qrToken)}`, { replace: true });
+        } else if (liveSessionStatus === 'expired') {
             navigate(`/menus/${encodeURIComponent(nit)}?table=${encodeURIComponent(table.number)}`, { replace: true });
         }
-    }, [isTerminal, liveSessionStatus, navigate, nit, table.number]);
+    }, [isTerminal, liveSessionStatus, navigate, nit, table.number, qrToken]);
 
     // Cargar el catálogo público del menú.
     useEffect(() => {
