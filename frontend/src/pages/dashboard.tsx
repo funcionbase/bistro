@@ -14,7 +14,6 @@ import { PageShell } from '@/components/page-shell';
 import InstallPwaPrompt from '@/components/pwa/install-pwa-prompt';
 import IosInstallHint from '@/components/pwa/ios-install-hint';
 import UpdateAvailableToast from '@/components/pwa/update-available-toast';
-import BranchFilterTabs from '@/components/reports/branch-filter-tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
@@ -50,7 +49,7 @@ export default function Dashboard() {
     const companyStatus = searchParams.get('company_status') ?? undefined;
     const initialPeriod = (searchParams.get('period') ?? 'today') as Period;
 
-    const { period, setPeriod, branchFilter, setBranchFilter } = usePeriodFilter(initialPeriod);
+    const { period, setPeriod } = usePeriodFilter(initialPeriod);
     const { has: hasPermission, isSystem } = usePermissions();
     // Sin sede activa, los endpoints `/api/v1/metrics/orders/active`,
     // `/cash-register/current` y compañía devuelven 422 NO_ACTIVE_BRANCH.
@@ -71,10 +70,10 @@ export default function Dashboard() {
     // diferidas de Inertia. Re-fetch automático cada 5 min y al cambiar
     // período/sede (la queryKey los incluye).
     const dashboardQuery = useQuery<DashboardData>({
-        queryKey: ['dashboard', period, branchFilter],
+        queryKey: ['dashboard', period],
         queryFn: ({ signal }) =>
             apiClient.get<DashboardData>('/api/v1/dashboard', {
-                params: { period, ...(branchFilter !== 'active' ? { branch: branchFilter } : {}) },
+                params: { period },
                 signal,
             }),
         refetchInterval: canPollMetrics ? 300_000 : false,
@@ -235,8 +234,6 @@ export default function Dashboard() {
                     }
                 />
 
-                <BranchFilterTabs value={branchFilter} onChange={setBranchFilter} />
-
                 {/* KPI Cards — 1 col mobile / 2 tablet / 4 desktop */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {summaryLoading ? (
@@ -276,8 +273,8 @@ export default function Dashboard() {
                     )}
                 </div>
 
-                {/* Paneles — 1 col mobile / 2 cols desktop */}
-                <div className="grid gap-4 lg:grid-cols-2">
+                {/* Paneles — 1 col mobile / 2 cols tablet+ */}
+                <div className="grid gap-4 md:grid-cols-2">
                     <ActiveOrdersPanel data={activeOrders} loading={activeOrdersLoading} />
                     <AbandonmentPanel data={abandonment ?? null} loading={abandonmentLoading || periodLoading} formatCurrency={formatCurrency} />
                 </div>
