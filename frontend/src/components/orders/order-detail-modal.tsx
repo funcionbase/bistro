@@ -77,11 +77,13 @@ export function OrderDetailModal({
     const [fetchedNotes, setFetchedNotes] = useState<KanbanOrderNote[] | null>(null);
     const [fetchedLineItems, setFetchedLineItems] = useState<KanbanOrderLineItem[] | null>(null);
     const [fetchedRelated, setFetchedRelated] = useState<KanbanRelatedOrder[] | null>(null);
+    const [fetchedStatus, setFetchedStatus] = useState<string | null>(null);
     useEffect(() => {
         if (!isOpen || !order) {
             setFetchedNotes(null);
             setFetchedLineItems(null);
             setFetchedRelated(null);
+            setFetchedStatus(null);
             return;
         }
         if (order.notes && order.line_items && order.related_orders) {
@@ -92,9 +94,10 @@ export function OrderDetailModal({
             .then((res) => (res.ok ? res.json() : null))
             .then(
                 (
-                    json: { data?: { notes?: KanbanOrderNote[]; line_items?: KanbanOrderLineItem[]; related_orders?: KanbanRelatedOrder[] } } | null,
+                    json: { data?: { status?: string; notes?: KanbanOrderNote[]; line_items?: KanbanOrderLineItem[]; related_orders?: KanbanRelatedOrder[] } } | null,
                 ) => {
                     if (cancelled || !json?.data) return;
+                    if (json.data.status) setFetchedStatus(json.data.status);
                     if (json.data.notes) setFetchedNotes(json.data.notes);
                     if (json.data.line_items) setFetchedLineItems(json.data.line_items);
                     if (json.data.related_orders) setFetchedRelated(json.data.related_orders);
@@ -110,6 +113,7 @@ export function OrderDetailModal({
 
     const effectiveNotes = order?.notes ?? fetchedNotes ?? null;
     const effectiveRelated = order?.related_orders ?? fetchedRelated ?? null;
+    const effectiveStatus = fetchedStatus ?? order?.status ?? '';
     // Preferimos line_items (filas order_items) sobre items legacy JSON.
     // Para órdenes de mesa con QR, items JSON está null y la verdad vive en
     // order_items. Para delivery/pickup legacy, line_items se construye desde
@@ -160,7 +164,7 @@ export function OrderDetailModal({
     // de mesa. Solo las de domicilio (o legacy con objeto delivery) muestran courier.
     const isTableOrder = order?.order_type === 'table' || (!order?.order_type && !!order?.table_number);
     const showCourierSection = !!order && !isTableOrder && (order.order_type === 'delivery' || !!order.delivery);
-    const isTerminalStatus = !!order && ['completed', 'cancelled', 'refunded', 'abandoned', 'failed'].includes(order.status);
+    const isTerminalStatus = !!order && ['completed', 'cancelled', 'refunded', 'abandoned', 'failed'].includes(effectiveStatus);
 
     return (
         <BottomSheetDialog isOpen={isOpen} onClose={onClose} title={`Orden #${shortOrderCode(order?.id)}`}>
@@ -178,7 +182,7 @@ export function OrderDetailModal({
                             )}
                         </div>
                         <div className="flex items-center gap-2">
-                            <OrderStatusBadge status={order.status} />
+                            <OrderStatusBadge status={effectiveStatus} />
                             <Button type="button" size="sm" variant="outline" onClick={goToFullDetail}>
                                 <ExternalLink className="mr-1.5 h-3 w-3" />
                                 Ver detalle
@@ -396,7 +400,7 @@ export function OrderDetailModal({
                                 )}
 
                                 {/* Asignar repartidor: orden ready o in_transit sin delivery pending */}
-                                {onAssignCourier && !order.delivery && ['ready', 'in_transit'].includes(order.status) && (
+                                {onAssignCourier && !order.delivery && ['ready', 'in_transit'].includes(effectiveStatus) && (
                                     <div className="pt-2">
                                         <Button
                                             type="button"
@@ -414,7 +418,7 @@ export function OrderDetailModal({
                                 {onReassignCourier &&
                                     order.delivery &&
                                     order.delivery.status === 'pending' &&
-                                    orderStatuses.operational.includes(order.status as never) && (
+                                    orderStatuses.operational.includes(effectiveStatus as never) && (
                                         <div className="pt-2">
                                             <Button
                                                 type="button"
@@ -473,11 +477,11 @@ export function OrderDetailModal({
                     <Separator />
                     <div className="space-y-2">
                         <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Facturación DIAN</p>
-                        <DianOrderActions orderId={order.id} orderStatus={order.status} />
+                        <DianOrderActions orderId={order.id} orderStatus={effectiveStatus} />
                     </div>
 
                     {/* Acciones de cancelación / devolución */}
-                    {(onCancelOrder || onRefundOrder) && !['cancelled', 'refunded', 'abandoned'].includes(order.status) && (
+                    {(onCancelOrder || onRefundOrder) && !['cancelled', 'refunded', 'abandoned'].includes(effectiveStatus) && (
                         <>
                             <Separator />
                             <div className="flex flex-wrap gap-2">
@@ -492,7 +496,7 @@ export function OrderDetailModal({
                                         Devolver
                                     </Button>
                                 )}
-                                {onCancelOrder && !payment && order.status !== 'completed' && (
+                                {onCancelOrder && !payment && effectiveStatus !== 'completed' && (
                                     <Button
                                         type="button"
                                         size="sm"
@@ -504,7 +508,7 @@ export function OrderDetailModal({
                                     </Button>
                                 )}
                             </div>
-                            {order.status === 'completed' && !payment && (
+                            {effectiveStatus === 'completed' && !payment && (
                                 <p className="text-muted-foreground text-xs">Una orden completada no puede cancelarse.</p>
                             )}
                         </>

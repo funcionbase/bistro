@@ -199,7 +199,7 @@ function OrderCard({ order, formatCurrency, onSelect, onAssign, justDropped }: O
                     <OrderStatusBadge status={order.status} size="sm" />
                 </div>
                 <div className="text-muted-foreground text-xs">
-                    {order.items.length} {order.items.length === 1 ? 'ítem' : 'ítems'}
+                    {(() => { const n = order.line_items?.length ?? order.items.length; return `${n} ${n === 1 ? 'ítem' : 'ítems'}`; })()}
                 </div>
                 {order.delivery?.deliverer && (
                     <div className="text-primary flex items-center gap-1 text-xs">
