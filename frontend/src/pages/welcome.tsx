@@ -7,6 +7,9 @@ import { useDocumentTitle } from '@/lib/use-document-title';
 import { BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+declare const __FRONTEND_VERSION__: string;
+declare const __BACKEND_VERSION__: string;
+
 const heroStats: Array<{ label: string; value: string }> = [
     { label: 'Operación', value: '24/7' },
     { label: 'Cobros', value: 'Sin fricción' },
@@ -88,7 +91,10 @@ export default function Welcome() {
                 {/* Pie de página con links útiles */}
                 <footer className="border-t border-border px-6 py-4">
                     <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                        <span>© {new Date().getFullYear()} flexyflow · bistro</span>
+                        <span>
+                            © {new Date().getFullYear()} flexyflow · bistro
+                            <span className="ml-2 text-[10px] opacity-40">fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}</span>
+                        </span>
                         <div className="flex flex-wrap items-center gap-4">
                             <Link to="/manual/bistro" className="hover:text-foreground transition-colors">
                                 Manual de usuario
