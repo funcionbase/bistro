@@ -139,7 +139,7 @@ const PublicMenu = lazy(() => import('@/pages/menu/public'));
 function PublicMenuRoute() {
     const { nit } = useParams();
     const [searchParams] = useSearchParams();
-    return <PublicMenu nit={nit ?? null} table={searchParams.get('table')} />;
+    return <PublicMenu nit={nit ?? null} table={searchParams.get('table')} branchToken={searchParams.get('branch')} />;
 }
 
 export const router = createBrowserRouter([

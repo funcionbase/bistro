@@ -381,7 +381,9 @@ export default function OrderShow() {
     const advanceOptions = useMemo(() => {
         if (!order || isTerminal) return [];
         const current = rankOf(order.status);
-        return ADVANCE_STATUSES.filter((e) => e.rank > current);
+        return ADVANCE_STATUSES.filter(
+            (e) => e.rank > current && (e.key !== 'in_transit' || order.order_type === 'delivery'),
+        );
     }, [order, isTerminal]);
 
     // ── Assign table ──────────────────────────────────────────────────────────

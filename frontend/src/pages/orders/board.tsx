@@ -435,6 +435,12 @@ export default function KanbanBoard() {
             return;
         }
 
+        if (newStatus === 'in_transit' && inferOrderType(order) !== 'delivery') {
+            setAssignError('Solo las órdenes de domicilio pueden pasar a "En tránsito".');
+            window.setTimeout(() => setAssignError(null), 4000);
+            return;
+        }
+
 
         const orderId = order.id;
         setDroppedOrderId(orderId);

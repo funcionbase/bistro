@@ -1490,6 +1490,13 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:menu-scan-public')
         ->name('api.public.table.resolve-by-token');
 
+    // QR de menú de sede: `/menus?branch={menu_qr_token}`. Resuelve NIT + branch_id
+    // para que el SPA pueda cargar el menú correcto.
+    Route::get('public/branch-resolve/{menu_qr_token}', [TableResolveController::class, 'showBranchByToken'])
+        ->where(['menu_qr_token' => '[A-Z]{3,13}'])
+        ->middleware('throttle:menu-scan-public')
+        ->name('api.public.branch.resolve');
+
     // Mesa con QR (#191) — flujo público sin auth, identidad por cookie firmada
     // `tdt_*`. Migrado del stack web a la API REST cuando el frontend pasó a
     // SPA standalone: el QR escaneado abre la página SPA `/t/{qr}` y ésta

@@ -27,6 +27,35 @@ use Illuminate\Http\Request;
 class TableResolveController extends Controller
 {
     /**
+     * Resuelve una sede por su `menu_qr_token` (QR de menú de sede:
+     * `/menus?branch={menu_qr_token}`). Devuelve NIT + branch_id para que
+     * el SPA pueda cargar el menú correcto sin exponer el UUID en la URL.
+     */
+    public function showBranchByToken(string $menuQrToken): JsonResponse
+    {
+        $branch = Branch::query()
+            ->where('menu_qr_token', $menuQrToken)
+            ->whereNull('archived_at')
+            ->first();
+
+        if ($branch === null) {
+            return response()->json(['branch_exists' => false], 404);
+        }
+
+        $company = Company::query()->where('nit', $branch->company_nit)->first();
+        if ($company === null || ! $company->canServePublic()) {
+            return response()->json(['branch_exists' => false], 404);
+        }
+
+        return response()->json([
+            'branch_exists' => true,
+            'company_nit' => $branch->company_nit,
+            'branch_id' => (string) $branch->id,
+            'branch_name' => $branch->name,
+        ]);
+    }
+
+    /**
      * Resuelve una mesa por su `qr_token` opaco (nuevo formato de QR:
      * `/menus?table={qr_token}`). Devuelve el mismo payload que `show()`
      * más `company_nit` para que el frontend pueda cargar el menú sin

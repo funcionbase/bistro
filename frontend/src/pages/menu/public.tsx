@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { resolveBackendUrl } from '@/lib/api';
 import { formatCurrency } from '@/lib/coupon-helpers';
 import { type MenuItem, type MenuStructure } from '@/types';
-import { Clock, MapPin, QrCode, ShoppingBag, Users, UtensilsCrossed, WifiOff } from 'lucide-react';
+import { Clock, Info, MapPin, QrCode, ShoppingBag, Users, UtensilsCrossed, WifiOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface PublicMenuProps {
@@ -17,6 +17,8 @@ interface PublicMenuProps {
     table: string | null;
     /** Sede resuelta server-side desde el QR de menú de sede (?table={menu_qr_token}). */
     branch_id?: string | null;
+    /** Token del QR de menú de sede (?branch=CWP). Se resuelve client-side. */
+    branchToken?: string | null;
 }
 
 interface RestaurantBranding {
@@ -81,13 +83,14 @@ function generateUuid(): string {
     });
 }
 
-export default function PublicMenu({ nit, table, branch_id }: PublicMenuProps) {
+export default function PublicMenu({ nit, table, branch_id, branchToken }: PublicMenuProps) {
     const appName = 'flexyflow';
     const initialEffective = nit ?? readLastNit();
     const [effectiveNit, setEffectiveNit] = useState<string | null>(initialEffective);
     const [restaurant, setRestaurant] = useState<RestaurantBranding | null>(null);
     const [state, setState] = useState<LoadState>(initialEffective ? { kind: 'loading' } : { kind: 'no-restaurant' });
     const scanSentRef = useRef(false);
+    const branchResolvedRef = useRef(false);
 
     const [tableStatus, setTableStatus] = useState<{
         qr_token: string;
@@ -242,6 +245,34 @@ export default function PublicMenu({ nit, table, branch_id }: PublicMenuProps) {
             // Telemetría es fire-and-forget.
         });
     }, [effectiveNit, table]);
+
+    // QR de menú de sede: ?branch={menu_qr_token}. Resuelve NIT + branch_id
+    // desde el token opaco, sin exponer esos valores en la URL escaneada.
+    useEffect(() => {
+        if (typeof window === 'undefined' || !branchToken || branchResolvedRef.current) return;
+        branchResolvedRef.current = true;
+        let cancelled = false;
+        fetch(resolveBackendUrl(`/api/v1/public/branch-resolve/${encodeURIComponent(branchToken)}`), {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            credentials: 'omit',
+        })
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error('no-branch'))))
+            .then((json: { branch_exists: boolean; company_nit: string; branch_id: string }) => {
+                if (cancelled || !json.branch_exists) return;
+                setEffectiveNit(json.company_nit);
+                setEffectiveBranchId(json.branch_id);
+                try {
+                    localStorage.setItem(LAST_NIT_KEY, json.company_nit);
+                } catch {
+                    // localStorage bloqueado en modo privado — ignorar.
+                }
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [branchToken]);
 
     useEffect(() => {
         if (!effectiveNit) {
@@ -562,24 +593,37 @@ function MenuContent({ structure, cardStyle = 'default' }: { structure: MenuStru
                         <p className="text-muted-foreground px-3 py-4 text-sm">Sin productos disponibles.</p>
                     ) : (
                         <ul className="space-y-2">
-                            {category.items.map((item) => (
-                                <li key={item.id}>
-                                    <MenuItemRow
-                                        item={item as MenuItem & { available?: boolean; thumbnail_url?: string | null }}
-                                        formatPrice={formatCurrency}
-                                        variant={cardStyle}
-                                        onImageClick={() =>
-                                            setDetail({
-                                                name: item.name,
-                                                description: item.description,
-                                                image_url: item.image_url,
-                                                thumbnail_url: (item as MenuItem & { thumbnail_url?: string | null }).thumbnail_url,
-                                                price: item.price,
-                                            })
-                                        }
-                                    />
-                                </li>
-                            ))}
+                            {category.items.map((item) => {
+                                const openDetail = () =>
+                                    setDetail({
+                                        name: item.name,
+                                        description: item.description,
+                                        image_url: item.image_url,
+                                        thumbnail_url: (item as MenuItem & { thumbnail_url?: string | null }).thumbnail_url,
+                                        price: item.price,
+                                    });
+                                return (
+                                    <li key={item.id}>
+                                        <MenuItemRow
+                                            item={item as MenuItem & { available?: boolean; thumbnail_url?: string | null }}
+                                            formatPrice={formatCurrency}
+                                            variant={cardStyle}
+                                            onImageClick={openDetail}
+                                            action={
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-8 w-8 shrink-0"
+                                                    onClick={openDetail}
+                                                    aria-label={`Ver detalle de ${item.name}`}
+                                                >
+                                                    <Info className="h-4 w-4" />
+                                                </Button>
+                                            }
+                                        />
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                 </section>
