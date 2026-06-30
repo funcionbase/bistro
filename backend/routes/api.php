@@ -954,12 +954,16 @@ Route::prefix('v1')->group(function () {
                 // tipos), por eso NO lleva middleware `permission:` a nivel ruta.
                 Route::post('sync/batch', [SyncController::class, 'batch'])
                     ->name('api.sync.batch');
-                // Constraint regex: el `{id}` solo matchea integers para que
-                // Laravel NO capture rutas hermanas como `orders/pending-approvals`
-                // o `orders/pending-cancellations` (que también viven bajo el
-                // prefijo `orders/`). Sin esto, el routing por first-match enviaba
-                // esas alertas a `OrderController::show("pending-approvals")` y
-                // fallaba el banner del dashboard.
+                // Rutas literales de `orders/*` ANTES del wildcard `orders/{id}`.
+                // Si se registran después, Laravel las captura como {id}="pending-approvals"
+                // y falla al intentar parsear ese string como UUID.
+                Route::get('orders/pending-approvals', [TableSessionController::class, 'pendingApprovals'])
+                    ->middleware('permission:orders.read,read')
+                    ->name('api.orders.pending-approvals');
+                Route::get('orders/pending-cancellations', [TableSessionController::class, 'pendingCancellations'])
+                    ->middleware('permission:orders.read,read')
+                    ->name('api.orders.pending-cancellations');
+
                 Route::get('orders/{id}', [OrderController::class, 'show'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.orders.show');
@@ -988,12 +992,6 @@ Route::prefix('v1')->group(function () {
                 Route::get('table-sessions', [TableSessionController::class, 'index'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.table-sessions.index');
-                Route::get('orders/pending-approvals', [TableSessionController::class, 'pendingApprovals'])
-                    ->middleware('permission:orders.read,read')
-                    ->name('api.orders.pending-approvals');
-                Route::get('orders/pending-cancellations', [TableSessionController::class, 'pendingCancellations'])
-                    ->middleware('permission:orders.read,read')
-                    ->name('api.orders.pending-cancellations');
                 Route::get('table-sessions/billable', [TableSessionController::class, 'billable'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.table-sessions.billable');

@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderNote;
 use App\Models\TableSession;
+use App\Models\TableSessionGuest;
 use App\Models\User;
 use App\Support\OrderTotalCalculator;
 use Illuminate\Http\Request;
@@ -120,6 +121,18 @@ class TableWaiterService
 
             $now = Carbon::now();
 
+            // Si todos los ítems aprobados son del mismo comensal, copiar su
+            // teléfono a client_phone para que el sistema de SMS pueda notificar
+            // cuando la orden entre a cocina o esté lista. Con múltiples comensales
+            // no hay un destinatario unívoco → se deja null (sin SMS).
+            $uniqueGuestIds = $items->pluck('guest_id')->unique()->filter()->values();
+            $clientPhone = null;
+            if ($uniqueGuestIds->count() === 1) {
+                $clientPhone = TableSessionGuest::withoutGlobalScopes()
+                    ->whereKey($uniqueGuestIds->first())
+                    ->value('phone');
+            }
+
             // Crear orden NUEVA para esta tanda. Hereda contexto operativo
             // (company, branch, table) de la buffer + sesión. Status `pending`
             // = la cocina puede empezar; aparece en /orders/board.
@@ -131,6 +144,7 @@ class TableWaiterService
             $newOrder->status = 'pending';
             $newOrder->order_type = 'table';
             $newOrder->table_number = $buffer->table_number;
+            $newOrder->client_phone = $clientPhone;
             $newOrder->total = '0.00';
             $newOrder->subtotal = '0.00';
             $newOrder->ordered_at = $now;
