@@ -55,7 +55,6 @@ const ROUTE_CHUNKS: Record<string, () => Promise<unknown>> = {
     '/company/dian': () => import('@/pages/company/dian'),
     '/dian/documents': () => import('@/pages/dian/documents'),
     '/planner': () => import('@/pages/planner/week'),
-    '/planner/calendar': () => import('@/pages/planner/month'),
     '/settings/appearance': () => import('@/pages/settings/appearance'),
     '/settings/notifications': () => import('@/pages/settings/notifications'),
     '/settings/profile': () => import('@/pages/settings/profile'),

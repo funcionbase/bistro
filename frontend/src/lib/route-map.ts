@@ -417,7 +417,6 @@ export const ROUTE_MAP: Record<string, string> = {
     "password.reset": "/reset-password/{token}",
     "password.store": "/reset-password",
     "password.update": "/settings/password",
-    "planner.month": "/planner/calendar",
     "planner.week": "/planner",
     "profile.destroy": "/settings/profile",
     "profile.edit": "/settings/profile",

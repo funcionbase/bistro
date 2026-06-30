@@ -68,8 +68,7 @@ const CompanySettings = lazy(() => import('@/pages/company/settings'));
 const CompanyTables = lazy(() => import('@/pages/company/tables/index'));
 const CompanyWarehouses = lazy(() => import('@/pages/company/warehouses/index'));
 const CompanyWhatsapp = lazy(() => import('@/pages/company/whatsapp'));
-const PlannerWeek = lazy(() => import('@/pages/planner/week'));
-const PlannerMonth = lazy(() => import('@/pages/planner/month'));
+const Planner = lazy(() => import('@/pages/planner/week'));
 
 const DianConfig = lazy(() => import('@/pages/company/dian'));
 const DianDocuments = lazy(() => import('@/pages/dian/documents'));
@@ -258,8 +257,7 @@ export const router = createBrowserRouter([
                     { path: '/company/whatsapp', element: <CompanyWhatsapp /> },
                     { path: '/company/dian', element: <DianConfig /> },
                     { path: '/dian/documents', element: <DianDocuments /> },
-                    { path: '/planner', element: <PlannerWeek /> },
-                    { path: '/planner/calendar', element: <PlannerMonth /> },
+                    { path: '/planner', element: <Planner /> },
                     { path: '/settings/appearance', element: <SettingsAppearance /> },
                     { path: '/settings/notifications', element: <SettingsNotifications /> },
                     { path: '/settings/profile', element: <SettingsProfile /> },

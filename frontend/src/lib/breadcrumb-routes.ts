@@ -56,8 +56,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
     { pattern: '/employees', label: 'Empleados', parent: '/colaboradores' },
     { pattern: '/employees/create', label: 'Crear colaborador', parent: '/employees' },
     { pattern: '/employees/:id', label: null, parent: '/employees' },
-    { pattern: '/planner/week', label: 'Planificador', parent: '/colaboradores' },
-    { pattern: '/planner/month', label: 'Calendario', parent: '/colaboradores' },
+    { pattern: '/planner', label: 'Planificador', parent: '/colaboradores' },
     { pattern: '/employees/reports', label: 'Informes RH', parent: '/colaboradores' },
 
     { pattern: '/company/settings', label: 'Mi empresa', parent: '/empresa' },

@@ -294,12 +294,6 @@ export function AppSidebar() {
                     permission: 'shifts.read',
                 },
                 {
-                    title: 'Calendario',
-                    url: route('planner.month'),
-                    icon: CalendarRange,
-                    permission: 'shifts.read',
-                },
-                {
                     title: 'Informes RH',
                     url: route('employees.reports'),
                     icon: BarChart2,
