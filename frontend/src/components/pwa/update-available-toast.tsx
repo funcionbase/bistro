@@ -39,7 +39,7 @@ export default function UpdateAvailableToast() {
             <div className="bg-card flex items-center gap-3 rounded-full border border-[color:var(--color-status-warning)]/30 px-4 py-2 shadow-lg">
                 <RefreshCw className="h-4 w-4 text-[color:var(--color-status-warning)]" />
                 <span className="text-sm">
-                    Nueva versión · recarga en {remaining}s
+                    Nueva versión disponible · recarga en {remaining}s
                 </span>
                 <Button size="sm" onClick={() => window.location.reload()}>
                     Ahora
