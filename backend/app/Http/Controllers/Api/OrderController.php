@@ -1108,7 +1108,7 @@ class OrderController extends Controller
                 ->whereNotIn('status', ['served', 'cancelled'])
                 ->update([
                     'status' => 'cancelled',
-                    'cancellation_reason' => 'order_cancelled',
+                    'cancellation_reason' => 'system',
                     'cancelled_at' => now(),
                 ]);
 
