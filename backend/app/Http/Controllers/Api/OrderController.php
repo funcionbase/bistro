@@ -476,18 +476,20 @@ class OrderController extends Controller
      *
      * @param  array<int, array<string, mixed>>  $items
      */
-    public function computeOrderCost(array $items): float
+    public function computeOrderCost(array $items): ?float
     {
         $total = 0.0;
+        $hasCost = false;
         foreach ($items as $line) {
             $cost = $line['cost'] ?? null;
             if ($cost === null) {
                 continue;
             }
+            $hasCost = true;
             $total += (float) $cost * (int) ($line['quantity'] ?? 0);
         }
 
-        return round($total, 2);
+        return $hasCost ? round($total, 2) : null;
     }
 
     public function show(Request $request, string $id): JsonResponse

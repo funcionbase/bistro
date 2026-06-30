@@ -215,7 +215,7 @@ export interface Order {
     company_nit: string;
     status: OrderStatus;
     total: number;
-    cost: number;
+    cost?: number | null;
     ordered_at: string;
 }
 

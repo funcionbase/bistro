@@ -524,7 +524,7 @@ export default function Reports() {
                                                                 {formatCurrency(order.total)}
                                                             </TableCell>
                                                             <TableCell className="text-muted-foreground text-right tabular-nums">
-                                                                {formatCurrency(order.cost)}
+                                                                {order.cost != null ? formatCurrency(order.cost) : '—'}
                                                             </TableCell>
                                                             <TableCell className="text-muted-foreground">{formatDate(order.ordered_at)}</TableCell>
                                                         </TableRow>

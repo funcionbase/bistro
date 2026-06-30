@@ -41,6 +41,9 @@ class GenerateReportPdf implements ShouldQueue
     {
         $query = Order::where('company_nit', $this->companyNit)
             ->where('status', '!=', 'pending_approval')
+            ->where(function ($q): void {
+                $q->where('total', '!=', 0)->orWhereNull('table_session_id');
+            })
             ->whereBetween('ordered_at', [$this->dateFrom->startOfDay(), $this->dateTo->endOfDay()]);
 
         if ($this->status !== 'all') {

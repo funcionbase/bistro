@@ -46,6 +46,13 @@ class OrderReportController extends Controller
 
         $baseQuery = Order::where('company_nit', $companyNit)
             ->where('status', '!=', 'pending_approval')
+            ->where(function ($q): void {
+                // Excluye órdenes contenedor de sesión QR canceladas con total $0.
+                // Estas son buffers que nunca tuvieron ítems aprobados y se cancelaron
+                // al cerrar la mesa; no representan cancelaciones reales.
+                $q->where('total', '!=', 0)
+                    ->orWhereNull('table_session_id');
+            })
             ->whereBetween('ordered_at', [$dateFrom->copy()->startOfDay(), $dateTo->copy()->endOfDay()]);
 
         $summary = $this->buildSummary(clone $baseQuery);
