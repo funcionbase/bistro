@@ -160,7 +160,7 @@ export default function PlannerMonth() {
                     description="El grid de 7 columnas se aprieta en el celular. Para revisar el mes completo, usa tablet o desktop."
                 />
                 <PageHeader
-                    eyebrow="PLANIFICADOR"
+                    eyebrow="CALENDARIO"
                     title="Calendario mensual"
                     description="Vista de cubrimiento del mes. Toca un día para abrir la semana en el planificador."
                     actions={headerActions}

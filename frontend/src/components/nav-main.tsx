@@ -29,7 +29,7 @@ import { APP_SHORTCUTS, type AppShortcut } from '@/lib/shortcuts';
 import { type NavItem } from '@/types';
 import { useCloseMobileSidebar } from '@/hooks/use-close-mobile-sidebar';
 import { ChevronRight } from 'lucide-react';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 function canAccess(item: NavItem, permissions: string[], isSystem: boolean): boolean {
     if (!item.permission) return true;
@@ -257,17 +257,27 @@ function CollapsibleNavGroup({ item, currentUrl }: { item: NavItem; currentUrl: 
     const { state, isMobile } = useSidebar();
     const isCollapsedIcon = state === 'collapsed' && !isMobile;
     const closeMobile = useCloseMobileSidebar();
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (containsActive) setOpen(true);
     }, [containsActive]);
+
+    const handleOpenChange = (next: boolean) => {
+        setOpen(next);
+        if (next) {
+            setTimeout(() => {
+                contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 220);
+        }
+    };
 
     if (isCollapsedIcon) {
         return <CollapsedFlyoutGroup item={item} currentUrl={currentUrl} containsActive={containsActive} />;
     }
 
     return (
-        <Collapsible asChild open={open} onOpenChange={setOpen} className="group/collapsible">
+        <Collapsible asChild open={open} onOpenChange={handleOpenChange} className="group/collapsible">
             <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton tooltip={item.title} isActive={containsActive}>
@@ -276,7 +286,7 @@ function CollapsibleNavGroup({ item, currentUrl }: { item: NavItem; currentUrl: 
                         <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                <CollapsibleContent ref={contentRef}>
                     <SidebarMenuSub>
                         {item.children!.map((sub) =>
                             sub.children && sub.children.length > 0 ? (

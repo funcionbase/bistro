@@ -244,10 +244,24 @@ class WorkforceReportController extends Controller
                 'vinculation_state' => round($state, 2),
                 'other' => round($other, 2),
             ],
-            'estimated_cost' => $this->estimateCost($executed, $employee->pay_type, (float) $employee->pay_rate),
+            'estimated_cost' => $this->estimateCost($executed, $employee->pay_type, $this->effectivePayRate($employee)),
             'pay_type' => $employee->pay_type,
             'vinculation_status' => $employee->vinculation_status,
         ];
+    }
+
+    /**
+     * Devuelve la tarifa efectiva para estimaciones. Si pay_rate es 0 (sin configurar)
+     * y existe base_salary, lo usa como fallback para evitar costos $0 silenciosos.
+     */
+    private function effectivePayRate(mixed $employee): float
+    {
+        $rate = (float) ($employee->pay_rate ?? 0);
+        if ($rate <= 0) {
+            $rate = (float) ($employee->base_salary ?? 0);
+        }
+
+        return $rate;
     }
 
     private function estimateCost(float $executedHours, string $payType, float $payRate): float
@@ -275,7 +289,7 @@ class WorkforceReportController extends Controller
                 return $carry + $this->estimateCost(
                     (float) ($r->executed_hours_raw ?? 0),
                     $r->pay_type,
-                    (float) $r->pay_rate,
+                    $this->effectivePayRate($r),
                 );
             }, 0.0), 2),
         ];

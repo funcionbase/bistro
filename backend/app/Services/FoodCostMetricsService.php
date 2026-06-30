@@ -8,6 +8,7 @@ use App\Models\RestaurantMenu;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Calcula KPIs de food cost (costo de alimentos) en tiempo real.
@@ -356,6 +357,8 @@ final class FoodCostMetricsService
                         : (string) round((float) ($item['cost'] ?? 0), 2);
 
                     $rows[] = [
+                        // DB::table()->upsert() bypasea HasUuids — UUID explícito obligatorio.
+                        'id' => (string) Str::uuid(),
                         'company_nit' => $companyNit,
                         'branch_id' => $menu->branch_id,
                         'menu_id' => $menu->id,

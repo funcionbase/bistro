@@ -21,10 +21,7 @@ interface InviteSuccess {
 
 export default function InviteUserModal({ roles, onInvited }: InviteUserModalProps) {
     const [open, setOpen] = useState(false);
-    const initialRoleId = (() => {
-        const defaultRole = roles.find((r) => !r.is_system) ?? roles[0];
-        return defaultRole ? String(defaultRole.id) : '';
-    })();
+    const initialRoleId = '';
     const [email, setEmail] = useState('');
     const [roleId, setRoleId] = useState<string>(initialRoleId);
     const [errors, setErrors] = useState<Record<string, string>>({});

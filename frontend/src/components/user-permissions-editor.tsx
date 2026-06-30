@@ -99,7 +99,7 @@ export default function UserPermissionsEditor({ member, features, actorPermissio
                 </DialogHeader>
 
                 <form noValidate onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
-                    <div className="flex-1 space-y-4 overflow-y-auto">
+                    <div className="flex-1 min-h-0 space-y-4 overflow-y-auto">
                         <Alert variant="warning">
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription>
