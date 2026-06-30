@@ -9,6 +9,7 @@ use App\Models\CancellationRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderNote;
+use App\Models\Table;
 use App\Models\TableSession;
 use App\Models\TableSessionGuest;
 use App\Models\User;
@@ -18,7 +19,9 @@ use App\Services\TableWaiterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * API del mesero para sesiones de mesa con QR.
@@ -28,7 +31,10 @@ use Illuminate\Validation\Rule;
  */
 class TableSessionController extends Controller
 {
-    public function __construct(private readonly TableWaiterService $waiter) {}
+    public function __construct(
+        private readonly TableWaiterService $waiter,
+        private readonly AuditService $auditService,
+    ) {}
 
     /**
      * Lista las sesiones activas de la sede actual, con count de items
@@ -272,6 +278,7 @@ class TableSessionController extends Controller
 
             $data[] = [
                 'session_id' => $session->id,
+                'order_id' => optional($session->order)->id,
                 'table' => [
                     'id' => $session->table?->id,
                     'number' => $session->table?->number,
@@ -738,6 +745,119 @@ class TableSessionController extends Controller
     /**
      * Carga la sesión asegurando que pertenece a la sede activa del actor.
      */
+    /**
+     * Mesas disponibles para asignar a una sesión: no archivadas y sin sesión
+     * activa en la sede. Resultado estrictamente filtrado por company + branch
+     * del JWT para prevenir cross-branch leakage.
+     */
+    public function availableTables(Request $request): JsonResponse
+    {
+        $branchId = $request->attributes->get('active_branch_id');
+        $companyNit = $request->attributes->get('active_company_nit');
+
+        $occupiedIds = TableSession::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('status', config('tables.active_statuses'))
+            ->whereNotNull('table_id')
+            ->pluck('table_id');
+
+        $tables = Table::query()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->whereNull('archived_at')
+            ->whereNotIn('id', $occupiedIds)
+            ->orderBy('number')
+            ->get(['id', 'number', 'capacity']);
+
+        return response()->json([
+            'data' => $tables->map(fn (Table $t) => [
+                'id' => $t->id,
+                'number' => $t->number,
+                'capacity' => (int) $t->capacity,
+            ])->values()->all(),
+        ]);
+    }
+
+    /**
+     * Asigna una mesa física a la sesión. Solo aplica a sesiones activas sin
+     * mesa asignada (o para reasignar si la mesa cambió). Valida que la mesa
+     * no esté ocupada por otra sesión activa de la misma sede.
+     */
+    public function assignTable(Request $request, string $id): JsonResponse
+    {
+        $branchId = $request->attributes->get('active_branch_id');
+        $companyNit = $request->attributes->get('active_company_nit');
+
+        $validated = $request->validate([
+            'table_id' => ['required', 'string', 'uuid'],
+        ]);
+
+        $session = DB::transaction(function () use ($id, $validated, $branchId, $companyNit) {
+            /** @var TableSession $session */
+            $session = TableSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->whereIn('status', config('tables.active_statuses'))
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            /** @var Table $table */
+            $table = Table::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->whereNull('archived_at')
+                ->lockForUpdate()
+                ->findOrFail($validated['table_id']);
+
+            $conflict = TableSession::query()
+                ->where('table_id', $table->id)
+                ->whereIn('status', config('tables.active_statuses'))
+                ->where('id', '!=', $session->id)
+                ->exists();
+
+            if ($conflict) {
+                throw ValidationException::withMessages([
+                    'table_id' => ['La mesa ya está ocupada por otra sesión activa.'],
+                ]);
+            }
+
+            if ($session->table_id && $session->table_id !== $table->id) {
+                Table::where('id', $session->table_id)
+                    ->where('branch_id', $branchId)
+                    ->update(['status' => 'available']);
+            }
+
+            $session->table_id = $table->id;
+            $session->save();
+
+            $table->status = 'occupied';
+            $table->save();
+
+            Order::where('table_session_id', $session->id)
+                ->update(['table_number' => $table->number]);
+
+            return $session->load('table');
+        });
+
+        $this->auditService->log(
+            'table_session.table_assigned',
+            $this->actor($request),
+            $session,
+            ['table_id' => $validated['table_id'], 'table_number' => $session->table?->number],
+            $request,
+        );
+
+        return response()->json([
+            'data' => [
+                'session_id' => $session->id,
+                'table' => [
+                    'id' => $session->table?->id,
+                    'number' => $session->table?->number,
+                ],
+            ],
+        ]);
+    }
+
     private function loadSession(Request $request, string $id): TableSession
     {
         $branchId = $request->attributes->get('active_branch_id');

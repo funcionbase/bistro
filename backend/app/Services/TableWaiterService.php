@@ -102,6 +102,19 @@ class TableWaiterService
                 ->get();
 
             if ($items->isEmpty()) {
+                // Distinguir doble-aprobación concurrente (idempotente) de request inválido.
+                // Si alguno de los item_ids ya salió de pending_approval, significa que otra
+                // llamada los procesó primero dentro de la misma ventana de 30s de polling.
+                // En ese caso retornamos éxito silencioso para que el frontend refresque.
+                $alreadyProcessed = OrderItem::query()
+                    ->whereIn('id', $itemIds)
+                    ->whereIn('status', ['approved', 'in_kitchen', 'ready', 'served', 'cancelled'])
+                    ->exists();
+
+                if ($alreadyProcessed) {
+                    return ['approved' => 0, 'session' => $lockedSession, 'order' => $buffer];
+                }
+
                 throw new InvalidArgumentException('No hay items por aprobar en esa selección.');
             }
 

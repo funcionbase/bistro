@@ -1,4 +1,5 @@
 import CashRegisterPanel from '@/components/cash-register/cash-register-panel';
+import PendingApprovalsBanner from '@/components/orders/pending-approvals-banner';
 import { MenuQrPoster } from '@/components/company/menu-qr-poster';
 import LiveIndicator from '@/components/dashboard/live-indicator';
 import { NewClientDialog } from '@/components/clients/new-client-dialog';
@@ -271,6 +272,7 @@ export default function TablesPage() {
 
     const operativeGrid = (
         <>
+            <PendingApprovalsBanner />
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />

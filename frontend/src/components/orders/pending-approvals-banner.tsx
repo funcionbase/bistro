@@ -1,5 +1,6 @@
 import { AppLink } from '@/components/app-link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
 import { Bell } from 'lucide-react';
@@ -16,6 +17,7 @@ interface PendingApprovalItem {
 
 interface PendingApprovalSession {
     session_id: string;
+    order_id: string | null;
     table: { id: string | null; number: string | null };
     oldest_submitted_at: string | null;
     items_count: number;
@@ -131,18 +133,25 @@ export default function PendingApprovalsBanner() {
                 {sessions.length === 1 ? 'Pedido esperando aprobación' : `${sessions.length} mesas esperan aprobación`}
             </AlertTitle>
             <AlertDescription>
-                <ul className="list-disc space-y-0.5 pl-5 text-sm">
+                <ul className="space-y-1.5 text-sm">
                     {sessions.map((s) => (
-                        <li key={s.session_id}>
-                            <AppLink href={`/orders/table-sessions/${s.session_id}`} className="font-medium underline underline-offset-2">
-                                Mesa {s.table.number ?? '?'}
-                            </AppLink>
-                            <span className="opacity-80">
-                                {' · '}
-                                {s.items_count} {s.items_count === 1 ? 'plato' : 'platos'}
-                                {' · '}
-                                {formatRelative(s.oldest_submitted_at)}
+                        <li key={s.session_id} className="flex flex-wrap items-center justify-between gap-2">
+                            <span>
+                                <span className="font-medium">
+                                    Mesa {s.table.number ?? 'Sin mesa asignada'}
+                                </span>
+                                <span className="opacity-80">
+                                    {' · '}
+                                    {s.items_count} {s.items_count === 1 ? 'plato' : 'platos'}
+                                    {' · '}
+                                    {formatRelative(s.oldest_submitted_at)}
+                                </span>
                             </span>
+                            <Button variant="outline" size="sm" asChild>
+                                <AppLink href={s.order_id ? `/orders/${s.order_id}` : `/orders/table-sessions/${s.session_id}`}>
+                                    Ver detalle
+                                </AppLink>
+                            </Button>
                         </li>
                     ))}
                 </ul>

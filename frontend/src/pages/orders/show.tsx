@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { NotesEditor } from '@/components/ui/notes-editor';
 import { OrderItemCard, type OrderItemStatus } from '@/components/ui/order-item-card';
 import { PageHeader } from '@/components/ui/page-header';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SplitPaymentSheet } from '@/components/ui/split-payment-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCashRegister } from '@/hooks/use-cash-register';
@@ -266,6 +267,13 @@ export default function OrderShow() {
     const [refundModalOpen, setRefundModalOpen] = useState(false);
     const [assignCourierOpen, setAssignCourierOpen] = useState(false);
 
+    // ── Assign table state ────────────────────────────────────────────────────
+    const [assignTableOpen, setAssignTableOpen] = useState(false);
+    const [availableTables, setAvailableTables] = useState<{ id: string; number: string; capacity: number }[]>([]);
+    const [selectedTableId, setSelectedTableId] = useState('');
+    const [assignTableBusy, setAssignTableBusy] = useState(false);
+    const [assignTableError, setAssignTableError] = useState<string | null>(null);
+
     // ── Data fetching ─────────────────────────────────────────────────────────
 
     const fetchSessionData = useCallback(async (sessionId: string) => {
@@ -375,6 +383,47 @@ export default function OrderShow() {
         const current = rankOf(order.status);
         return ADVANCE_STATUSES.filter((e) => e.rank > current);
     }, [order, isTerminal]);
+
+    // ── Assign table ──────────────────────────────────────────────────────────
+
+    const openAssignTable = useCallback(async () => {
+        try {
+            const resp = await apiFetch('/api/v1/table-sessions/available-tables');
+            if (resp.ok) {
+                const json = (await resp.json()) as { data: { id: string; number: string; capacity: number }[] };
+                setAvailableTables(json.data);
+            }
+        } catch {
+            // show dialog anyway with empty list
+        }
+        setSelectedTableId('');
+        setAssignTableError(null);
+        setAssignTableOpen(true);
+    }, []);
+
+    const submitAssignTable = useCallback(async () => {
+        const sid = order?.table_session_id;
+        if (!sid || !selectedTableId) return;
+        setAssignTableBusy(true);
+        setAssignTableError(null);
+        try {
+            const resp = await apiFetch(`/api/v1/table-sessions/${sid}/assign-table`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ table_id: selectedTableId }),
+            });
+            if (!resp.ok) {
+                const data = (await resp.json().catch(() => ({}))) as { message?: string };
+                throw new Error(data.message ?? 'Error al asignar mesa.');
+            }
+            setAssignTableOpen(false);
+            await fetchAll();
+        } catch (err) {
+            setAssignTableError(err instanceof Error ? err.message : 'Error al asignar mesa.');
+        } finally {
+            setAssignTableBusy(false);
+        }
+    }, [order?.table_session_id, selectedTableId, fetchAll]);
 
     // ── Session mutations (waiter) ────────────────────────────────────────────
 
@@ -665,6 +714,19 @@ export default function OrderShow() {
                                             >
                                                 Agregar nota
                                             </GatedButton>
+                                            {!order?.table_number && !isTerminal && !sessionClosed && (
+                                                <GatedButton
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => void openAssignTable()}
+                                                    disabled={busy}
+                                                    className="w-full sm:w-auto"
+                                                    allowed={canUpdateOrders}
+                                                >
+                                                    Asignar mesa
+                                                </GatedButton>
+                                            )}
                                             <GatedButton
                                                 type="button"
                                                 variant="outline"
@@ -708,7 +770,7 @@ export default function OrderShow() {
                                             ))}
                                         </>
                                     )}
-                                    {!isQrSession && !isTerminal && (
+                                    {(!isQrSession || order?.status === 'pending_approval') && !isTerminal && (
                                         <GatedButton
                                             type="button"
                                             size="sm"
@@ -1500,6 +1562,45 @@ export default function OrderShow() {
                 couriers={couriers}
                 loading={couriersLoading}
             />
+
+            {/* Assign table to QR session */}
+            <BottomSheetDialog
+                isOpen={assignTableOpen}
+                onClose={() => { setAssignTableOpen(false); setAssignTableError(null); }}
+                title="Asignar mesa"
+            >
+                <div className="space-y-4 pt-2">
+                    {availableTables.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">No hay mesas disponibles en este momento.</p>
+                    ) : (
+                        <Select value={selectedTableId} onValueChange={setSelectedTableId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona una mesa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableTables.map((t) => (
+                                    <SelectItem key={t.id} value={t.id}>
+                                        Mesa {t.number} — {t.capacity} personas
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    {assignTableError && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{assignTableError}</AlertDescription>
+                        </Alert>
+                    )}
+                    <Button
+                        onClick={() => void submitAssignTable()}
+                        disabled={!selectedTableId || assignTableBusy || availableTables.length === 0}
+                        className="w-full"
+                    >
+                        {assignTableBusy ? 'Asignando...' : 'Asignar mesa'}
+                    </Button>
+                </div>
+            </BottomSheetDialog>
         </PageShell>
     );
 }

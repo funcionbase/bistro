@@ -1,6 +1,7 @@
 import CashRegisterPanel from '@/components/cash-register/cash-register-panel';
 import { MenuQrPoster } from '@/components/company/menu-qr-poster';
 import BillableTablesPanel from '@/components/orders/billable-tables-panel';
+import PendingApprovalsBanner from '@/components/orders/pending-approvals-banner';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -386,11 +387,12 @@ export default function CajaPage() {
                     <CashierSkeleton />
                 ) : (
                     <CashRegisterPanel>
-                        {/* Mesas con cuentas pendientes de cobro. Polling 12s para
-                        que el cajero vea aparecer mesas a medida que el mesero
-                        aprueba tandas. Cada item enlaza a /caja/table-session/{id}
-                        donde se hace el cobro (todo de una o por comensal). */}
-                        <div className="mb-4">
+                        <div className="mb-4 space-y-3">
+                            <PendingApprovalsBanner />
+                            {/* Mesas con cuentas pendientes de cobro. Polling 12s para
+                            que el cajero vea aparecer mesas a medida que el mesero
+                            aprueba tandas. Cada item enlaza a /caja/table-session/{id}
+                            donde se hace el cobro (todo de una o por comensal). */}
                             <BillableTablesPanel />
                         </div>
                         <div className="grid gap-4 md:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">

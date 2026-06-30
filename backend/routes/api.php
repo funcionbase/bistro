@@ -997,6 +997,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('table-sessions/billable', [TableSessionController::class, 'billable'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.table-sessions.billable');
+                Route::get('table-sessions/available-tables', [TableSessionController::class, 'availableTables'])
+                    ->middleware('permission:orders.read,read')
+                    ->name('api.table-sessions.available-tables');
+                Route::patch('table-sessions/{id}/assign-table', [TableSessionController::class, 'assignTable'])
+                    ->middleware('permission:orders.update,update')
+                    ->name('api.table-sessions.assign-table');
                 Route::get('table-sessions/{id}', [TableSessionController::class, 'show'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.table-sessions.show');

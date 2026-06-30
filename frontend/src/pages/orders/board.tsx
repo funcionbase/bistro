@@ -1,4 +1,5 @@
 import LiveIndicator from '@/components/dashboard/live-indicator';
+import PendingApprovalsBanner from '@/components/orders/pending-approvals-banner';
 import { AssignCourierModal } from '@/components/deliveries/assign-courier-modal';
 import { ReassignModal } from '@/components/deliveries/reassign-modal';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
@@ -464,6 +465,10 @@ export default function KanbanBoard() {
                             description="Arrastra cada orden para avanzar de estado. Solo se permite mover hacia adelante."
                             actions={<LiveIndicator timestamp={lastUpdated} isLive={!loading && !error} />}
                         />
+                    </div>
+
+                    <div className="mx-4 mt-3">
+                        <PendingApprovalsBanner />
                     </div>
 
                     {/* Buscador */}
