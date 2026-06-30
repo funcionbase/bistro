@@ -59,6 +59,7 @@ export const wikiSections: WikiSection[] = [
             { slug: 'compras', label: 'Compras y proveedores' },
             { slug: 'planner', label: 'Planificador de turnos' },
             { slug: 'configuracion', label: 'Configuración' },
+            { slug: 'whatsapp', label: 'WhatsApp del negocio' },
         ],
     },
     {

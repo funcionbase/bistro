@@ -35,9 +35,9 @@ export default function ManualPedidos() {
 
             <h2>El tablero kanban</h2>
             <p>
-                El tablero tiene columnas por estado: <strong>Pendiente → En cocina → Listo → Completado</strong>{' '}
-                (más Domicilio si tienes entregas activas). Cada pedido vive en una tarjeta con la mesa, el cliente,
-                los ítems y el total.
+                El tablero tiene columnas por estado: <strong>Pendiente → En cocina → Listo → Completado</strong>.
+                Si tienes domicilios activos, aparece también la columna <strong>En tránsito</strong> (solo para pedidos
+                a domicilio). Cada pedido vive en una tarjeta con la mesa, el cliente, los ítems y el total.
             </p>
             <p>
                 Puedes mover un pedido de columna arrastrando la tarjeta o usando el menú de la tarjeta. Hay
@@ -55,6 +55,14 @@ export default function ManualPedidos() {
                 Si tienes activado el <strong>auto-confirmar pedidos</strong> en preferencias, la aprobación manual
                 no aplica: los pedidos entran directo en cocina.
             </p>
+
+            <div className="callout callout-info">
+                <p>
+                    <strong>Aviso de aprobaciones pendientes:</strong> cuando hay pedidos esperando aprobación del
+                    mesero, aparece un aviso naranja en la parte superior del tablero, la caja y la vista de mesas.
+                    Un clic te lleva directo al pedido para aprobarlo o rechazarlo sin buscar en el tablero.
+                </p>
+            </div>
 
             <h2>Mover pedidos entre estados</h2>
             <p>

@@ -178,8 +178,8 @@ export default function ManualFidelizacion() {
 
             <h2>Expiración</h2>
             <p>
-                Puedes configurar que los puntos se venzan si el cliente no pide durante mucho tiempo (por defecto,
-                X meses sin actividad). Si lo dejas en 0 meses, los puntos nunca se vencen.
+                Puedes configurar que los puntos se venzan si el cliente no compra durante un tiempo determinado
+                (el período es configurable por ti). Si lo dejas en cero, los puntos nunca se vencen.
             </p>
             <p>
                 La expiración se ejecuta <strong>cada madrugada en un proceso automático</strong>. Al cliente que

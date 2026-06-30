@@ -33,7 +33,7 @@ export default function ManualHorarios() {
             <h2>Excepciones por fecha</h2>
             <p>
                 Para fechas específicas donde el horario cambia (feriados, eventos especiales, temporadas altas),
-                creas una excepción. La excepción sobreescribe el horario semanal ese día.
+                creas una excepción. La excepción reemplaza el horario semanal ese día.
             </p>
             <ul>
                 <li>

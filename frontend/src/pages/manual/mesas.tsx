@@ -52,6 +52,33 @@ export default function ManualMesas() {
                 </p>
             </div>
 
+            <h2>Múltiples rondas de pedidos en la misma sesión</h2>
+            <p>
+                En la misma sesión de mesa, el cliente puede hacer <strong>varias rondas de pedidos</strong> sin
+                cerrar la sesión ni escanear el QR de nuevo. Ordena las entradas, el mesero las aprueba, y más
+                tarde puede pedir el plato fuerte con un segundo pedido en la misma sesión. El total acumulado
+                de la mesa crece con cada ronda aprobada.
+            </p>
+            <p>
+                Desde la vista del mesero, cada ronda de pedidos aparece como un pedido separado dentro de la
+                misma sesión, para que sea fácil ver qué aprobó cuándo.
+            </p>
+
+            <h3>Cancelar un ítem ya aprobado</h3>
+            <p>
+                Si el cliente o el mesero necesita cancelar un ítem que ya fue aprobado (pero que todavía no
+                pasó a la cocina), hay un botón <strong>"Cancelar ítem"</strong> disponible en la tarjeta del
+                pedido. Se puede ingresar un motivo opcional (por ejemplo, "cliente cambió de opinión"). Los
+                ítems cancelados quedan registrados en el historial de la sesión.
+            </p>
+
+            <h3>Asignar mesa a un pedido QR sin mesa</h3>
+            <p>
+                Cuando un pedido llega por QR sin mesa asignada (por ejemplo, de alguien que pidió por el bot
+                de WhatsApp y quiere atenerse en salón), el mesero puede asignarle una mesa física directamente
+                desde la sesión. La mesa queda vinculada al pedido y ya aparece en el mapa.
+            </p>
+
             <h2>La cuenta en vivo</h2>
             <p>
                 El cliente puede ver su cuenta en tiempo real escaneando el QR de la mesa. Puede agregar más

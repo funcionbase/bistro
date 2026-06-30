@@ -163,7 +163,8 @@ export default function ManualConfiguracion() {
             <h2>WhatsApp Cloud API</h2>
             <p>
                 En <strong>configuración → WhatsApp</strong> conectas el número de WhatsApp del negocio. Ver la
-                guía completa en la sección de WhatsApp del negocio (próximamente en este manual).
+                guía completa en{' '}
+                <Link to="/manual/bistro/whatsapp">WhatsApp del negocio</Link>.
             </p>
 
             <div className="callout callout-info">

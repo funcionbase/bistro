@@ -75,8 +75,8 @@ const faqs = [
         a: 'Sí. El programa de fidelización es a nivel de negocio (NIT), no por sede. Un cliente que pide en Laureles y en El Poblado acumula puntos en el mismo saldo. Ver puntos de fidelidad.',
     },
     {
-        q: '¿Puedo importar mis clientes existentes?',
-        a: 'Sí, mediante un archivo CSV. En administración → clientes hay una opción de importación con el formato esperado: nombre, correo, teléfono (con indicativo), y opcionalmente la fecha de nacimiento y etiquetas.',
+        q: '¿Puedo exportar mi base de clientes?',
+        a: 'Sí. En clientes hay una opción de exportación a CSV con los datos básicos: nombre, teléfono, correo, segmento, total gastado, fecha de último pedido y etiquetas. Si necesitas importar una base de clientes existente, escríbenos al soporte para coordinarlo manualmente.',
     },
     {
         q: '¿Las métricas son en tiempo real?',
