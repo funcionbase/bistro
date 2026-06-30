@@ -244,7 +244,8 @@ class TableSessionController extends Controller
         $branchId = $request->attributes->get('active_branch_id');
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $sessions = TableSession::query()
+        // Path 1: sesiones activas (open|locked) — camino principal.
+        $activeSessions = TableSession::query()
             ->where('company_nit', $companyNit)
             ->where('branch_id', $branchId)
             ->whereIn('status', config('tables.active_statuses'))
@@ -256,8 +257,10 @@ class TableSessionController extends Controller
             ->get();
 
         $data = [];
+        $coveredOrderIds = [];
 
-        foreach ($sessions as $session) {
+        foreach ($activeSessions as $session) {
+            // `order` hasOne filtra status=pending_approval, devuelve el buffer.
             $orderId = optional($session->order)->id;
             if ($orderId === null) {
                 continue;
@@ -274,11 +277,12 @@ class TableSessionController extends Controller
                 continue;
             }
 
+            $coveredOrderIds[] = $orderId;
             $guestsById = $session->guests->keyBy('id');
 
             $data[] = [
                 'session_id' => $session->id,
-                'order_id' => optional($session->order)->id,
+                'order_id' => $orderId,
                 'table' => [
                     'id' => $session->table?->id,
                     'number' => $session->table?->number,
@@ -291,6 +295,49 @@ class TableSessionController extends Controller
                     'quantity' => (int) $i->quantity,
                     'notes' => $i->notes,
                     'guest_name' => optional($guestsById->get($i->guest_id))->display_name ?? 'Comensal',
+                    'submitted_at' => optional($i->submitted_at)?->toIso8601String(),
+                ])->values()->all(),
+            ];
+        }
+
+        // Path 2: órdenes `pending_approval` de mesa sin sesión activa (sesión
+        // expirada/cerrada o creadas sin sesión QR). No duplicar las ya cubiertas
+        // por el path 1.
+        $orphanOrders = Order::withoutGlobalScopes()
+            ->where('company_nit', $companyNit)
+            ->where('branch_id', $branchId)
+            ->where('status', 'pending_approval')
+            ->where('order_type', 'table')
+            ->when(! empty($coveredOrderIds), fn ($q) => $q->whereNotIn('id', $coveredOrderIds))
+            ->get();
+
+        foreach ($orphanOrders as $orphan) {
+            $items = OrderItem::query()
+                ->where('order_id', $orphan->id)
+                ->where('status', 'pending_approval')
+                ->whereNotNull('submitted_at')
+                ->orderBy('submitted_at')
+                ->get(['id', 'name', 'quantity', 'notes', 'guest_id', 'submitted_at']);
+
+            if ($items->isEmpty()) {
+                continue;
+            }
+
+            $data[] = [
+                'session_id' => $orphan->table_session_id,
+                'order_id' => $orphan->id,
+                'table' => [
+                    'id' => null,
+                    'number' => $orphan->table_number ?? null,
+                ],
+                'oldest_submitted_at' => optional($items->first()->submitted_at)?->toIso8601String(),
+                'items_count' => $items->count(),
+                'items' => $items->map(fn (OrderItem $i) => [
+                    'id' => $i->id,
+                    'name' => $i->name,
+                    'quantity' => (int) $i->quantity,
+                    'notes' => $i->notes,
+                    'guest_name' => 'Comensal',
                     'submitted_at' => optional($i->submitted_at)?->toIso8601String(),
                 ])->values()->all(),
             ];
@@ -682,9 +729,11 @@ class TableSessionController extends Controller
         ]);
 
         /** @var Order $order */
+        // Prioriza el buffer (pending_approval); si no existe, la orden más reciente.
         $order = Order::query()
             ->withoutGlobalScopes()
             ->where('table_session_id', $session->id)
+            ->orderByRaw("CASE WHEN status = 'pending_approval' THEN 0 ELSE 1 END, ordered_at DESC")
             ->firstOrFail();
 
         try {

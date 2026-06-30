@@ -24,7 +24,7 @@ interface PendingApprovalSession {
     items: PendingApprovalItem[];
 }
 
-const POLL_INTERVAL_MS = 30_000;
+const POLL_INTERVAL_MS = 10_000;
 
 /**
  * Alerta de pedidos pendientes de aprobación.

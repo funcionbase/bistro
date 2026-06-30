@@ -381,7 +381,20 @@ class TableOrderService
     public function stateFor(TableSessionGuest $guest): array
     {
         $session = $guest->session;
-        $order = Order::query()->where('table_session_id', $session->id)->first();
+
+        // Todas las órdenes de la sesión (buffer + aprobadas). Se leen todas
+        // para que el comensal vea el historial completo de su pedido aunque
+        // approveBatch haya movido sus items a una orden nueva.
+        $orderIds = Order::withoutGlobalScopes()
+            ->where('table_session_id', $session->id)
+            ->pluck('id');
+
+        $bufferOrder = $orderIds->isEmpty()
+            ? null
+            : Order::withoutGlobalScopes()
+                ->where('table_session_id', $session->id)
+                ->where('status', 'pending_approval')
+                ->first();
 
         $guests = TableSessionGuest::query()
             ->where('table_session_id', $session->id)
@@ -398,11 +411,12 @@ class TableOrderService
             ])
             ->all();
 
-        $myItems = $order === null
+        $myItems = $orderIds->isEmpty()
             ? []
             : OrderItem::query()
-                ->where('order_id', $order->id)
+                ->whereIn('order_id', $orderIds)
                 ->where('guest_id', $guest->id)
+                ->orderBy('submitted_at')
                 ->orderBy('id')
                 ->get(['id', 'menu_item_id', 'name', 'quantity', 'unit_price', 'notes', 'status', 'cancellation_reason', 'submitted_at'])
                 ->map(fn (OrderItem $i) => [
@@ -420,10 +434,10 @@ class TableOrderService
 
         $guestsByIdForNotes = collect($guests)->keyBy('id');
 
-        $notes = $order === null
+        $notes = $orderIds->isEmpty()
             ? []
             : OrderNote::query()
-                ->where('order_id', $order->id)
+                ->whereIn('order_id', $orderIds)
                 ->orderBy('id')
                 ->get(['id', 'scope', 'body', 'author_type', 'author_id', 'created_at'])
                 ->map(function (OrderNote $n) use ($guestsByIdForNotes) {
@@ -457,17 +471,29 @@ class TableOrderService
             ])
             ->all();
 
+        // Total de sesión calculado sobre todos los items no cancelados del
+        // comensal (no solo el buffer). El frontend ya lo recomputa de my_items,
+        // pero devolvemos el valor server-side para consistencia.
+        $sessionTotal = array_sum(array_map(
+            fn ($i) => $i['status'] !== 'cancelled' ? (float) $i['unit_price'] * $i['quantity'] : 0.0,
+            $myItems,
+        ));
+
         return [
             'session' => [
                 'id' => $session->id,
                 'status' => $session->status,
                 'expires_at' => optional($session->expires_at)?->toIso8601String(),
             ],
-            'order' => $order === null ? null : [
-                'id' => $order->id,
-                'status' => $order->status,
-                'total' => (string) $order->total,
-            ],
+            'order' => $bufferOrder !== null ? [
+                'id' => $bufferOrder->id,
+                'status' => $bufferOrder->status,
+                'total' => number_format($sessionTotal, 2, '.', ''),
+            ] : ($sessionTotal > 0 ? [
+                'id' => null,
+                'status' => 'active',
+                'total' => number_format($sessionTotal, 2, '.', ''),
+            ] : null),
             // guests.id es uuid → cast string, no int (rompía con PHP_INT_MAX).
             'current_guest_id' => (string) $guest->id,
             'guests' => $guests,
@@ -488,6 +514,7 @@ class TableOrderService
     {
         $order = Order::withoutGlobalScopes()
             ->where('table_session_id', $session->id)
+            ->where('status', 'pending_approval')
             ->lockForUpdate()
             ->first();
 

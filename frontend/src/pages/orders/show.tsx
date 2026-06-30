@@ -456,7 +456,7 @@ export default function OrderShow() {
     );
 
     const approveBatch = (itemIds: string[]) => void mutateSession('approve-batch', { item_ids: itemIds });
-    const rejectItem = (itemId: string) => void mutateSession(`items/${itemId}/reject`, { reason: 'Rechazado por mesero' });
+    const rejectItem = (itemId: string, reason?: string) => void mutateSession(`items/${itemId}/reject`, { reason: reason ?? 'Rechazado por mesero' });
     const cancelInKitchen = (itemId: string, reason: string) => void mutateSession(`items/${itemId}/cancel`, { reason });
 
     const resolveCancellation = async (crId: string, decision: 'approved' | 'denied') => {
@@ -1012,6 +1012,14 @@ export default function OrderShow() {
                                                                             cancellationReason={item.cancellation_reason}
                                                                             readOnly
                                                                         />
+                                                                        {item.status === 'approved' && !sessionClosed && canUpdateOrders && (
+                                                                            <CancelApprovedInline
+                                                                                onConfirm={(reason) =>
+                                                                                    rejectItem(item.id, reason || undefined)
+                                                                                }
+                                                                                disabled={busy}
+                                                                            />
+                                                                        )}
                                                                         {(item.status === 'in_kitchen' ||
                                                                             item.status === 'ready') && (
                                                                             <CancelInKitchenInline
@@ -1608,6 +1616,69 @@ export default function OrderShow() {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function CancelApprovedInline({
+    onConfirm,
+    disabled,
+}: {
+    onConfirm: (reason: string) => void;
+    disabled?: boolean;
+}) {
+    const [open, setOpen] = useState(false);
+    const [reason, setReason] = useState('');
+
+    if (!open) {
+        return (
+            <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-destructive hover:text-destructive h-7 px-2 text-xs"
+                onClick={() => setOpen(true)}
+                disabled={disabled}
+            >
+                Cancelar ítem
+            </Button>
+        );
+    }
+
+    return (
+        <div className="bg-muted/40 space-y-2 rounded-lg p-2">
+            <NotesEditor
+                value={reason}
+                onChange={setReason}
+                label="Motivo (opcional)"
+                placeholder="Ej: cliente cambió de opinión"
+            />
+            <div className="flex items-center justify-end gap-2">
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                        setOpen(false);
+                        setReason('');
+                    }}
+                >
+                    Cancelar
+                </Button>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                        onConfirm(reason);
+                        setOpen(false);
+                        setReason('');
+                    }}
+                    disabled={disabled}
+                >
+                    Confirmar
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 function CancelInKitchenInline({
     onConfirm,

@@ -10,6 +10,7 @@ import { resolveBackendUrl } from '@/lib/api';
 import { formatCurrency } from '@/lib/coupon-helpers';
 import { type MenuItem, type MenuStructure } from '@/types';
 import { Clock, Info, MapPin, QrCode, ShoppingBag, Users, UtensilsCrossed, WifiOff } from 'lucide-react';
+import { StickyActionBar } from '@/components/ui/sticky-action-bar';
 import { useEffect, useRef, useState } from 'react';
 
 interface PublicMenuProps {
@@ -543,6 +544,18 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                 {(restaurant?.show_branding ?? true) && <PublicFooter appName={appName} />}
             </div>
 
+            {/* CTA sticky permanente — visible siempre que hay URL de sesión y el mesero no tomó la orden. */}
+            {joinUrl && !tableStatus?.waiter_order_active && (
+                <StickyActionBar>
+                    <Button className="flex w-full items-center justify-center gap-2 shadow-lg" asChild size="lg">
+                        <a href={joinUrl}>
+                            <Users className="h-4 w-4" />
+                            {tableStatus?.active_session ? 'Unirme a la mesa' : 'Realizar pedido'}
+                        </a>
+                    </Button>
+                </StickyActionBar>
+            )}
+
             <Dialog open={askJoin !== null} onOpenChange={(o) => !o && setAskJoin(null)}>
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
@@ -603,7 +616,7 @@ function MenuContent({ structure, cardStyle = 'default' }: { structure: MenuStru
                                         price: item.price,
                                     });
                                 return (
-                                    <li key={item.id}>
+                                    <li key={item.id} onClick={openDetail} className="cursor-pointer">
                                         <MenuItemRow
                                             item={item as MenuItem & { available?: boolean; thumbnail_url?: string | null }}
                                             formatPrice={formatCurrency}
@@ -614,7 +627,7 @@ function MenuContent({ structure, cardStyle = 'default' }: { structure: MenuStru
                                                     size="icon"
                                                     variant="ghost"
                                                     className="h-8 w-8 shrink-0"
-                                                    onClick={openDetail}
+                                                    onClick={(e) => { e.stopPropagation(); openDetail(); }}
                                                     aria-label={`Ver detalle de ${item.name}`}
                                                 >
                                                     <Info className="h-4 w-4" />
