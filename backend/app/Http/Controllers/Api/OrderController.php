@@ -697,23 +697,38 @@ class OrderController extends Controller
             ->whereIn('status', ['pending', 'in_kitchen', 'ready'])
             ->whereNotNull('table_number')
             ->orderBy('ordered_at')
+            ->with(['orderItems' => fn ($q) => $q->orderBy('id')])
             ->get();
 
-        $payload = $orders->map(fn (Order $order) => [
-            'id' => $order->id,
-            'status' => $order->status,
-            'table_number' => $order->table_number,
-            'items' => $order->items ?? [],
-            'item_count' => collect($order->items ?? [])->sum('quantity'),
-            'subtotal' => (float) $order->subtotal,
-            'tax_amount' => (float) $order->tax_amount,
-            'tax_rate' => (float) $order->tax_rate,
-            'tax_included_in_price' => (bool) $order->tax_included_in_price,
-            'total' => (float) $order->total,
-            'tip_amount' => (float) $order->tip_amount,
-            'client_phone' => $order->client_phone,
-            'ordered_at' => $order->ordered_at?->toIso8601String(),
-        ])->values();
+        $payload = $orders->map(function (Order $order): array {
+            // QR orders store items in order_items rows; legacy orders use the JSON column.
+            $items = $order->orderItems->isNotEmpty()
+                ? $order->orderItems->map(fn (OrderItem $i): array => [
+                    'id' => $i->id,
+                    'name' => $i->name,
+                    'quantity' => (int) $i->quantity,
+                    'price' => (float) $i->unit_price,
+                    'category' => '',
+                    'notes' => $i->notes,
+                ])->values()->all()
+                : ($order->items ?? []);
+
+            return [
+                'id' => $order->id,
+                'status' => $order->status,
+                'table_number' => $order->table_number,
+                'items' => $items,
+                'item_count' => collect($items)->sum('quantity'),
+                'subtotal' => (float) $order->subtotal,
+                'tax_amount' => (float) $order->tax_amount,
+                'tax_rate' => (float) $order->tax_rate,
+                'tax_included_in_price' => (bool) $order->tax_included_in_price,
+                'total' => (float) $order->total,
+                'tip_amount' => (float) $order->tip_amount,
+                'client_phone' => $order->client_phone,
+                'ordered_at' => $order->ordered_at?->toIso8601String(),
+            ];
+        })->values();
 
         return response()->json(['data' => $payload]);
     }

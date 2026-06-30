@@ -18,6 +18,7 @@ use App\Models\PrepArea;
 use App\Models\RestaurantMenu;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Rules\SafePlainText;
 use App\Services\AuditService;
 use App\Services\BranchSettingsService;
 use App\Support\SignedAssetUrl;
@@ -573,10 +574,14 @@ class BranchController extends Controller
         $model = $this->resolveBranch($request, $branch);
 
         $validated = $request->validate([
-            'menu_tagline' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'menu_tagline' => ['sometimes', 'nullable', 'string', new SafePlainText(maxBytes: 360, allowWhitespace: true)],
             'menu_card_style' => ['sometimes', 'string', 'in:default,compact,card'],
             'menu_show_branding' => ['sometimes', 'boolean'],
         ]);
+
+        if (isset($validated['menu_tagline']) && $validated['menu_tagline'] !== null) {
+            $validated['menu_tagline'] = SafePlainText::sanitize($validated['menu_tagline'], allowWhitespace: true);
+        }
 
         if (! empty($validated)) {
             $this->branchSettings->setMany($model->company_nit, $model->id, $validated);

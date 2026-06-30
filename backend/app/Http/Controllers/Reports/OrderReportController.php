@@ -45,6 +45,7 @@ class OrderReportController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 25);
 
         $baseQuery = Order::where('company_nit', $companyNit)
+            ->where('status', '!=', 'pending_approval')
             ->whereBetween('ordered_at', [$dateFrom->copy()->startOfDay(), $dateTo->copy()->endOfDay()]);
 
         $summary = $this->buildSummary(clone $baseQuery);

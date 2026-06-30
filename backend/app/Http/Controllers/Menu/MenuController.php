@@ -33,6 +33,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -933,20 +934,30 @@ class MenuController extends Controller
         // bytea via parámetro: Postgres requiere o `\x...` o decode('hex', 'hex').
         // Usamos INSERT raw para que `decode(?, 'hex')` mantenga binding seguro.
         // gen_random_uuid() genera el PK en DB (uuid sin DEFAULT en columna).
-        DB::statement(<<<'SQL'
-            INSERT INTO menu_scan_events
-                (id, company_nit, branch_id, table_number, scanned_at, session_id, user_agent, ip_hash, is_bot)
-            VALUES (gen_random_uuid(), ?, ?::uuid, ?, now(), ?::uuid, ?, CASE WHEN ?::text IS NULL THEN NULL ELSE decode(?, 'hex') END, ?)
-        SQL, [
-            $company->nit,
-            $defaultBranch->id,
-            $validated['table'] ?? null,
-            $sessionId,
-            mb_substr((string) $request->userAgent(), 0, 255) ?: null,
-            $ipHashHex,
-            $ipHashHex,
-            $isBot,
-        ]);
+        // Try-catch: telemetría append-only; cualquier fallo de DB (transient,
+        // FK, cache caído, etc.) debe retornar 204 silencioso, nunca 5xx al cliente.
+        try {
+            DB::statement(<<<'SQL'
+                INSERT INTO menu_scan_events
+                    (id, company_nit, branch_id, table_number, scanned_at, session_id, user_agent, ip_hash, is_bot)
+                VALUES (gen_random_uuid(), ?, ?::uuid, ?, now(), ?::uuid, ?, CASE WHEN ?::text IS NULL THEN NULL ELSE decode(?, 'hex') END, ?)
+            SQL, [
+                $company->nit,
+                $defaultBranch->id,
+                $validated['table'] ?? null,
+                $sessionId,
+                mb_substr((string) $request->userAgent(), 0, 255) ?: null,
+                $ipHashHex,
+                $ipHashHex,
+                $isBot,
+            ]);
+        } catch (\Throwable) {
+            // Telemetría no crítica; loggeamos y seguimos.
+            Log::warning('menu_scan_events insert failed', [
+                'company_nit' => $company->nit,
+                'branch_id' => $defaultBranch->id,
+            ]);
+        }
 
         return response()->json(null, 204);
     }
