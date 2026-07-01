@@ -341,22 +341,7 @@ class CashRegisterService
             ->where('amount', '>', 0)
             ->sum('amount');
 
-        $cashRefunds = (float) PaymentReceipt::where('cash_session_id', $session->id)
-            ->where('payment_method', 'refund')
-            ->sum(DB::raw('-amount'));
-        // refunds tienen amount negativo; -amount → positivo. Pero solo cuentan
-        // los que devolvieron sobre cobros en efectivo. El método registrado en
-        // refund-receipt es 'refund', NO 'cash', así que necesitamos resolver el
-        // método ORIGINAL de cada refund (vía la orden y su payment original).
-        $cashRefunds = (float) DB::table('payment_receipts as ref')
-            ->join('payment_receipts as orig', function ($join) {
-                $join->on('orig.order_id', '=', 'ref.order_id')
-                    ->whereColumn('orig.payment_method', '!=', DB::raw("'refund'"));
-            })
-            ->where('ref.cash_session_id', $session->id)
-            ->where('ref.payment_method', 'refund')
-            ->where('orig.payment_method', 'cash')
-            ->sum(DB::raw('-ref.amount'));
+        $cashRefunds = $this->computeCashRefundsForSession($session->id);
 
         // Propinas en efectivo: sum de orders.tip_amount cuyo receipt principal
         // (no-refund) sea cash y esté vinculado a la sesión.
@@ -372,6 +357,25 @@ class CashRegisterService
             ->sum('amount');
 
         return round((float) $session->opening_amount + $cashGross + $cashTips - $cashRefunds - $cashExpenses, 2);
+    }
+
+    /**
+     * Refunds en efectivo de una sesión: solo los PaymentReceipt con
+     * payment_method='refund' cuyo cobro original fue en efectivo.
+     * El JOIN resuelve el método original porque los refunds siempre se
+     * registran con payment_method='refund', no con el método original.
+     */
+    private function computeCashRefundsForSession(string $sessionId): float
+    {
+        return (float) DB::table('payment_receipts as ref')
+            ->join('payment_receipts as orig', function ($join) {
+                $join->on('orig.order_id', '=', 'ref.order_id')
+                    ->whereColumn('orig.payment_method', '!=', DB::raw("'refund'"));
+            })
+            ->where('ref.cash_session_id', $sessionId)
+            ->where('ref.payment_method', 'refund')
+            ->where('orig.payment_method', 'cash')
+            ->sum(DB::raw('-ref.amount'));
     }
 
     /**
@@ -623,6 +627,12 @@ class CashRegisterService
                 'tips' => 0.0,
             ];
         }
+
+        // Los refunds se registran con payment_method='refund', no con el método
+        // original del cobro. El GROUP BY anterior pone los refunds de efectivo
+        // en byMethod['refund']['refunds'], dejando byMethod['cash']['refunds']=0.
+        // Corregimos con el mismo JOIN que usa computeExpectedCash.
+        $byMethod['cash']['refunds'] = $this->computeCashRefundsForSession($session->id);
 
         $tipRows = DB::table('payment_receipts as pr')
             ->join('orders as o', 'o.id', '=', 'pr.order_id')

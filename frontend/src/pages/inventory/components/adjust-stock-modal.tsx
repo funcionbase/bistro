@@ -75,7 +75,7 @@ export function AdjustStockModal({ open, onClose, onSubmit, ingredient, submitti
                             <Input
                                 id="adj_qty"
                                 type="number"
-                                step="1"
+                                step="any"
                                 min="0"
                                 value={quantity}
                                 onChange={(e) => setQuantity(e.target.value)}

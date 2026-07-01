@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesActiveContext;
 use App\Http\Controllers\Concerns\ResolvesJwtActor;
 use App\Http\Controllers\Controller;
-use App\Jobs\SendOrderStatusSmsJob;
 use App\Models\Chat;
 use App\Models\Company;
 use App\Models\Contact;
@@ -27,15 +26,14 @@ use App\Services\FeaturePermissionService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyService;
 use App\Services\RecipeCostService;
+use App\Services\Sms\OrderStatusSmsDispatcher;
 use App\Services\TableSessionService;
 use App\Services\TaxCalculator;
-use App\Support\PhoneNumber;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -60,6 +58,7 @@ class OrderController extends Controller
         private readonly InventoryService $inventoryService,
         private readonly LoyaltyService $loyaltyService,
         private readonly RecipeCostService $recipeCostService,
+        private readonly OrderStatusSmsDispatcher $smsDispatcher,
     ) {}
 
     /**
@@ -1337,7 +1336,7 @@ class OrderController extends Controller
         $companyNit = $this->activeCompanyNit($request);
         $actor = $this->actingUser($request);
 
-        [$order, $previousStatus, $consumed] = DB::transaction(function () use ($id, $companyNit, $validated, $actor) {
+        [$order, $previousStatus, $consumed, $inventoryWarnings] = DB::transaction(function () use ($id, $companyNit, $validated, $actor) {
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
             $previous = $order->status;
@@ -1347,7 +1346,7 @@ class OrderController extends Controller
 
             if ($previous === $target) {
                 // No-op silencioso: idempotencia para drag-and-drop torpe.
-                return [$order, $previous, false];
+                return [$order, $previous, false, []];
             }
 
             // `completed` = entrega operativa consumada (plato en mesa, domicilio
@@ -1362,8 +1361,9 @@ class OrderController extends Controller
             // inventory_consumed_at). Si no hay receta para algún ítem, se
             // ignora silenciosamente con audit; nunca bloquea el flujo de cocina.
             $consumedNow = false;
+            $inventoryWarnings = [];
             if ($target === 'in_kitchen' && $order->inventory_consumed_at === null) {
-                $this->inventoryService->consumeForOrder($order, $order->items ?? [], $actor, 'order.in_kitchen');
+                $inventoryWarnings = $this->inventoryService->consumeForOrder($order, $order->items ?? [], $actor, 'order.in_kitchen');
                 $order->inventory_consumed_at = now();
                 $order->save();
                 $consumedNow = true;
@@ -1376,7 +1376,7 @@ class OrderController extends Controller
             // todavía en "approved", o completada con tickets colgados).
             $this->syncItemsToOrderStatus($order, $target);
 
-            return [$order, $previous, $consumedNow];
+            return [$order, $previous, $consumedNow, $inventoryWarnings];
         });
 
         if ($previousStatus !== $order->status) {
@@ -1400,71 +1400,9 @@ class OrderController extends Controller
                 'inventory_consumed_at' => $order->inventory_consumed_at
                     ? Carbon::parse($order->inventory_consumed_at)->toIso8601String()
                     : null,
+                'inventory_warnings' => $inventoryWarnings,
             ],
         ]);
-    }
-
-    /**
-     * Registra (idempotente, N-instance-safe) la intención de notificar al
-     * cliente por SMS un cambio de estado de orden (#275) y devuelve el id del
-     * registro a despachar, o null si no aplica / ya existía.
-     *
-     * Se invoca FUERA de la transacción del cambio de estado (vía
-     * dispatchOrderStatusSms, después del commit) para que ningún fallo del SMS
-     * pueda abortar/revertir la mutación de negocio. El dedup sigue siendo
-     * N-instance-safe sin el lock de la orden: `insertOrIgnore` sobre
-     * UNIQUE(order_id, to_status) es atómico, así un segundo intento (otra
-     * instancia EC2, doble click, reintento) viola el unique y devuelve null.
-     * El publish real lo hace `SendOrderStatusSmsJob` (cola `notifications`).
-     *
-     * Guarda `user_id` (quien disparó) para poder avisarle si el envío async
-     * termina en `failed`. No registra si: el estado no es notificable (config),
-     * la orden no tiene teléfono, o el teléfono es inválido (se loguea el
-     * motivo, sin romper el flujo de la orden).
-     */
-    private function recordOrderStatusSmsIntent(Order $order, string $toStatus, ?User $user = null): ?string
-    {
-        $notifiable = (array) config('order_notifications.sms_statuses', []);
-        if (! in_array($toStatus, $notifiable, true)) {
-            return null;
-        }
-
-        $rawPhone = trim((string) ($order->client_phone ?? ''));
-        if ($rawPhone === '') {
-            return null;
-        }
-
-        $e164 = PhoneNumber::toE164($rawPhone);
-        if ($e164 === null) {
-            Log::channel('single')->info('order.sms.skipped_invalid_phone', [
-                'order_id' => $order->id,
-                'to_status' => $toStatus,
-                'phone_masked' => PhoneNumber::mask($rawPhone),
-            ]);
-
-            return null;
-        }
-
-        $id = (string) Str::orderedUuid();
-        $now = now();
-
-        // insertOrIgnore → ON CONFLICT DO NOTHING. Devuelve 1 si insertó, 0 si
-        // ya existía (otra instancia/reintento ganó la carrera). Solo el que
-        // inserta despacha el job.
-        $inserted = DB::table('order_sms_notifications')->insertOrIgnore([
-            'id' => $id,
-            'order_id' => $order->id,
-            'company_nit' => $order->company_nit,
-            'branch_id' => $order->branch_id,
-            'to_status' => $toStatus,
-            'phone' => $e164,
-            'user_id' => $user?->id,
-            'status' => 'queued',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        return $inserted === 1 ? $id : null;
     }
 
     /**
@@ -1473,35 +1411,13 @@ class OrderController extends Controller
      * abortar la txn y revertir el cambio en el tablero (CLAUDE.md §12/§13: el
      * efecto secundario nunca compromete la mutación de negocio ya commiteada).
      *
-     * El dedup sigue siendo N-instance-safe: `insertOrIgnore` sobre
-     * UNIQUE(order_id, to_status) es atómico aún sin el lock de la orden. Se
-     * registra `user_id` para poder avisar al usuario que disparó la acción si
-     * el envío async (SendOrderStatusSmsJob) termina en `failed` (#275 Fase 4).
+     * Delega en `OrderStatusSmsDispatcher` (compartido con KdsTicketService,
+     * TableCashierService, SyncController y OrderSyncController — todos los
+     * caminos que mutan `orders.status` a un estado notificable).
      */
     private function dispatchOrderStatusSms(Order $order, string $toStatus, ?User $user): void
     {
-        try {
-            $intentId = $this->recordOrderStatusSmsIntent($order, $toStatus, $user);
-            if ($intentId !== null) {
-                SendOrderStatusSmsJob::dispatch($intentId);
-            }
-        } catch (\Throwable $e) {
-            // El SMS es best-effort: si el registro/encolado falla, lo dejamos
-            // logueado y seguimos. El cambio de estado YA commiteó.
-            Log::channel('single')->warning('order.sms.dispatch_failed', [
-                'order_id' => $order->id,
-                'to_status' => $toStatus,
-                'error' => $e->getMessage(),
-            ]);
-            // Limpiar la notificación huérfana: el insert ya ocurrió pero el
-            // dispatch falló → marcar failed para no dejarla atascada en 'queued'.
-            if (isset($intentId) && $intentId !== null) {
-                DB::table('order_sms_notifications')
-                    ->where('id', $intentId)
-                    ->where('status', 'queued')
-                    ->update(['status' => 'failed', 'error' => 'dispatch failed: '.$e->getMessage(), 'updated_at' => now()]);
-            }
-        }
+        $this->smsDispatcher->dispatch($order, $toStatus, $user);
     }
 
     /**

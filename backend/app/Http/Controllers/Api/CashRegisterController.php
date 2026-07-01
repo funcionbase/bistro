@@ -19,6 +19,7 @@ use App\Services\FeaturePermissionService;
 use App\Services\ShiftActiveGuardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Sesiones de caja por empresa. Una sola sesión `open` a la vez; cualquier
@@ -323,6 +324,22 @@ class CashRegisterController extends Controller
             $branchId,
             $validated['cash_session_id'] ?? null,
         );
+
+        // Bloquear egresos en efectivo que dejarían la caja con saldo negativo.
+        // Un cajón físico no puede tener efectivo negativo; además los egresos
+        // son append-only e irreversibles, por lo que hay que validar antes.
+        if (($validated['payment_method'] ?? 'cash') === 'cash') {
+            $expectedCash = $this->service->computeExpectedCash($session);
+            if ($validated['amount'] > $expectedCash) {
+                throw ValidationException::withMessages([
+                    'amount' => [
+                        'El egreso supera el efectivo disponible en caja. '
+                        .'Disponible: $'.number_format($expectedCash, 0, ',', '.')
+                        .'. Para corregir un egreso anterior, registra un ingreso en sentido contrario.',
+                    ],
+                ]);
+            }
+        }
 
         $expense = $this->service->recordExpense(
             session: $session,

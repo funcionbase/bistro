@@ -37,6 +37,7 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
+import { useToast } from '@/components/ui/toast';
 import { AlertCircle, RefreshCw, Search, Truck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -291,6 +292,7 @@ export default function KanbanBoard() {
     const token = useToken();
     const isMobile = useIsMobile();
     const formatCurrency = useCurrencyFormatter();
+    const { showToast } = useToast();
     const { has } = usePermissions();
     const canAssignCourier = has('deliveries.create');
     const canReassignCourier = has('deliveries.update');
@@ -381,10 +383,16 @@ export default function KanbanBoard() {
 
     const handleAdvanceStatusFromDetail = (orderId: string, newStatus: string) => {
         setSelectedOrder(null);
-        void updateStatus(orderId, newStatus).catch((err) => {
-            setAssignError(err instanceof Error ? err.message : 'Error al actualizar estado.');
-            window.setTimeout(() => setAssignError(null), 4000);
-        });
+        void updateStatus(orderId, newStatus)
+            .then((warnings) => {
+                if (warnings.length > 0) {
+                    showToast('info', `Stock insuficiente al pasar a cocina: ${warnings.join(', ')} quedó en negativo.`, 8000);
+                }
+            })
+            .catch((err) => {
+                setAssignError(err instanceof Error ? err.message : 'Error al actualizar estado.');
+                window.setTimeout(() => setAssignError(null), 4000);
+            });
     };
 
     const handleReassignFromDetail = (orderId: string, deliveryId: string) => {
@@ -448,9 +456,15 @@ export default function KanbanBoard() {
             setDroppedOrderId((current) => (current === orderId ? null : current));
         }, 650);
 
-        void updateStatus(orderId, newStatus).catch((err) => {
-            setAssignError(err instanceof Error ? err.message : 'Error al actualizar estado.');
-        });
+        void updateStatus(orderId, newStatus)
+            .then((warnings) => {
+                if (warnings.length > 0) {
+                    showToast('info', `Stock insuficiente al pasar a cocina: ${warnings.join(', ')} quedó en negativo.`, 8000);
+                }
+            })
+            .catch((err) => {
+                setAssignError(err instanceof Error ? err.message : 'Error al actualizar estado.');
+            });
     };
 
     const activeEstado = ESTADOS.find((e) => e.key === mobileColumn) ?? ESTADOS[0];

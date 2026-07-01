@@ -122,7 +122,7 @@ interface UseOrdersReturn {
     error: string | null;
     lastUpdated: Date | undefined;
     refresh: () => Promise<void>;
-    updateStatus: (orderId: string, status: string) => Promise<void>;
+    updateStatus: (orderId: string, status: string) => Promise<string[]>;
 }
 
 const POLL_INTERVAL_MS = 30_000;
@@ -174,7 +174,7 @@ export function useOrders(token: string | null): UseOrdersReturn {
     }, [token]);
 
     const updateStatus = useCallback(
-        async (orderId: string, status: string): Promise<void> => {
+        async (orderId: string, status: string): Promise<string[]> => {
             // Actualización optimista. Bump de época para que cualquier poll en
             // vuelo descarte su payload (con el status viejo) al volver.
             mutationEpoch.current += 1;
@@ -192,6 +192,9 @@ export function useOrders(token: string | null): UseOrdersReturn {
                 const json = await res.json().catch(() => ({}));
                 throw new Error((json as { message?: string }).message ?? 'Error al actualizar estado.');
             }
+
+            const json = await res.json().catch(() => ({})) as { data?: { inventory_warnings?: string[] } };
+            return json.data?.inventory_warnings ?? [];
         },
         [fetchOrders],
     );

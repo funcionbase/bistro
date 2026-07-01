@@ -523,9 +523,11 @@ class InventoryService
      * (`allowNegativeStock=true`).
      *
      * @param  array<int, array<string, mixed>>  $items  snapshot de order.items[]
+     * @return list<string> nombres de insumos que quedaron en stock negativo
      */
-    public function consumeForOrder(Order $order, array $items, ?User $actor, string $referencePrefix): void
+    public function consumeForOrder(Order $order, array $items, ?User $actor, string $referencePrefix): array
     {
+        $negativeStockWarnings = [];
         $aggregated = [];
         foreach ($items as $line) {
             $itemId = $line['id'] ?? null;
@@ -537,7 +539,7 @@ class InventoryService
         }
 
         if (empty($aggregated)) {
-            return;
+            return [];
         }
 
         $recipes = Recipe::withoutBranchScope()
@@ -625,9 +627,12 @@ class InventoryService
                         'consumed' => $consumed,
                         'new_quantity' => $newQuantity,
                     ]);
+                    $negativeStockWarnings[] = $ingredient->name;
                 }
             }
         }
+
+        return $negativeStockWarnings;
     }
 
     private function weightedAverageCost(

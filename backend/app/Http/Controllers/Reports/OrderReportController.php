@@ -250,7 +250,10 @@ class OrderReportController extends Controller
                 ->sum(DB::raw('-amount'));
         }
 
-        $grossRevenue = (float) ($completed?->total_sum ?? 0);
+        // Bruto incluye órdenes completadas Y devueltas: la devolución es un
+        // asiento separado (PaymentReceipt negativo); excluir la venta original
+        // del bruto provocaría doble descuento al restar `$totalRefunded` abajo.
+        $grossRevenue = (float) ($completed?->total_sum ?? 0) + (float) ($refunded?->total_sum ?? 0);
 
         return [
             'total_orders' => $orders->sum('cnt'),
@@ -296,7 +299,8 @@ class OrderReportController extends Controller
         foreach ($byBranchOrders->groupBy('branch_id') as $branchId => $rows) {
             $rowsByStatus = $rows->keyBy('status');
             $completed = $rowsByStatus->get('completed');
-            $grossRevenue = (float) ($completed?->total_sum ?? 0);
+            $refundedOrders = $rowsByStatus->get('refunded');
+            $grossRevenue = (float) ($completed?->total_sum ?? 0) + (float) ($refundedOrders?->total_sum ?? 0);
             $refunded = (float) ($refundsByBranch[$branchId] ?? 0);
 
             $out[] = [
