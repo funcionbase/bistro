@@ -1300,6 +1300,28 @@ export default function OrderShow() {
                                         </section>
                                     )}
 
+                                    {/* Refund info (non-QR) */}
+                                    {!isQrSession && order.refund && (order.refund.total_refunded_all ?? order.refund.total_refunded ?? 0) > 0 && (
+                                        <section className="space-y-2">
+                                            <h2 className="text-foreground text-sm font-semibold">Devolución</h2>
+                                            <div className="border-border bg-card space-y-1.5 rounded-2xl border p-4">
+                                                <DetailRow
+                                                    label="Total devuelto"
+                                                    value={formatCurrency(order.refund.total_refunded_all ?? order.refund.total_refunded ?? 0)}
+                                                />
+                                                {(order.refund.remaining_refundable ?? 0) > 0 && (
+                                                    <DetailRow
+                                                        label="Remanente reembolsable"
+                                                        value={formatCurrency(order.refund.remaining_refundable ?? 0)}
+                                                    />
+                                                )}
+                                                {order.refund.reference && (
+                                                    <DetailRow label="Referencia" value={order.refund.reference} />
+                                                )}
+                                            </div>
+                                        </section>
+                                    )}
+
                                     {/* Delivery info */}
                                     {order.order_type === 'delivery' && order.delivery_address && (
                                         <section className="space-y-2">

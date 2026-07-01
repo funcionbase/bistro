@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLoyalty } from '@/hooks/use-loyalty';
 import { formatCurrency, formatDate } from '@/lib/coupon-helpers';
 import { cn } from '@/lib/utils';
-import { AlertCircle, Award, CheckCircle2, Sparkles, Wallet } from 'lucide-react';
+import { AlertCircle, Award, CheckCircle2, HelpCircle, Sparkles, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
 interface LoyaltyPanelProps {
@@ -89,7 +90,28 @@ export function LoyaltyPanel({ token, phone, canEdit }: LoyaltyPanelProps) {
                             highlight
                             icon={<Wallet className="h-3 w-3" />}
                         />
-                        <Stat label="Lifetime" value={`${account.lifetime_earned.toLocaleString('es-CO')} pts`} />
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="cursor-help">
+                                        <Stat
+                                            label={
+                                                <span className="flex items-center gap-1">
+                                                    Lifetime
+                                                    <HelpCircle className="h-3 w-3" />
+                                                </span>
+                                            }
+                                            value={`${account.lifetime_earned.toLocaleString('es-CO')} pts`}
+                                        />
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                                    Suma histórica de puntos ganados por compras. Los ajustes manuales
+                                    suman al Saldo pero no al Lifetime, por eso el Saldo puede superar
+                                    este valor.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                         <Stat label="Tier actual" value={account.tier.toUpperCase()} />
                         <Stat label="Última actividad" value={formatDate(account.last_activity_at)} />
                     </div>
@@ -259,7 +281,7 @@ export function LoyaltyPanel({ token, phone, canEdit }: LoyaltyPanelProps) {
     );
 }
 
-function Stat({ label, value, highlight, icon }: { label: string; value: string; highlight?: boolean; icon?: React.ReactNode }) {
+function Stat({ label, value, highlight, icon }: { label: React.ReactNode; value: string; highlight?: boolean; icon?: React.ReactNode }) {
     return (
         <div className={cn('rounded-md p-3', highlight ? 'bg-accent text-accent-foreground' : 'bg-muted/40')}>
             <div

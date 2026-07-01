@@ -149,6 +149,7 @@ class CrmService
                         });
                     }
                 })
+                ->withCount('orderItems')
                 ->orderByDesc('ordered_at')
                 ->limit(50)
                 ->get(['id', 'branch_id', 'status', 'order_type', 'total', 'discount_amount', 'items', 'ordered_at']);
@@ -205,7 +206,11 @@ class CrmService
                     'order_type' => $order->order_type,
                     'total' => (float) $order->total,
                     'discount_amount' => (float) $order->discount_amount,
-                    'items_count' => is_array($order->items) ? count($order->items) : 0,
+                    // Órdenes post-#191 guardan ítems en order_items (relación);
+                    // las antiguas usan el JSON. Prefiere order_items_count cuando > 0.
+                    'items_count' => $order->order_items_count > 0
+                        ? $order->order_items_count
+                        : (is_array($order->items) ? count($order->items) : 0),
                     'ordered_at' => $order->ordered_at?->toIso8601String(),
                 ])->all(),
                 'chats' => $chats->map(fn (Chat $chat) => [
