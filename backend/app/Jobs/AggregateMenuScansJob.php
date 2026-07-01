@@ -49,15 +49,17 @@ class AggregateMenuScansJob implements ShouldQueue
         $start = $date->copy()->startOfDay();
         $end = $date->copy()->addDay()->startOfDay();
 
-        // El UPSERT mantiene un único rollup por (company_nit, scan_date, table_number).
+        // El UPSERT mantiene un único rollup por (company_nit, scan_date,
+        // table_number, branch_id) — la PK real de menu_scan_daily_rollup.
         // COALESCE convierte NULL → '' para mantener una sola fila por "QR sin mesa".
         $sql = <<<'SQL'
             INSERT INTO menu_scan_daily_rollup (
-                company_nit, scan_date, table_number,
+                company_nit, branch_id, scan_date, table_number,
                 total_scans, unique_sessions, created_at, updated_at
             )
             SELECT
                 company_nit,
+                branch_id,
                 ?::date AS scan_date,
                 COALESCE(table_number, '') AS table_number,
                 COUNT(*) AS total_scans,
@@ -66,8 +68,8 @@ class AggregateMenuScansJob implements ShouldQueue
             FROM menu_scan_events
             WHERE scanned_at >= ? AND scanned_at < ?
               AND is_bot = false
-            GROUP BY company_nit, COALESCE(table_number, '')
-            ON CONFLICT (company_nit, scan_date, table_number) DO UPDATE
+            GROUP BY company_nit, branch_id, COALESCE(table_number, '')
+            ON CONFLICT (company_nit, scan_date, table_number, branch_id) DO UPDATE
                 SET total_scans = EXCLUDED.total_scans,
                     unique_sessions = EXCLUDED.unique_sessions,
                     updated_at = now();
