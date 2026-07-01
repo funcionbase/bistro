@@ -13,7 +13,8 @@ import { PositionTag } from '@/components/ui/position-tag';
 import { employeeStatusBadge, employeeStatusLabel, useEmployeeStatuses } from '@/hooks/use-employee-statuses';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
-import { AlertCircle, Briefcase, CalendarDays, IdCard, Info, Pencil, UserCircle, Wallet } from 'lucide-react';
+import { useSharedData } from '@/lib/shared-data';
+import { AlertCircle, Briefcase, CalendarDays, IdCard, Info, MapPin, Pencil, UserCircle, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 
@@ -80,6 +81,9 @@ function formatDate(iso: string | null): string {
 export default function MeIndex() {
     const token = useToken();
     const employeeStatuses = useEmployeeStatuses();
+    // Sedes con acceso vienen del bootstrap (mismas que alimentan el sidebar y
+    // el switcher). Owner/admin (is_system) acceden a todas por bypass.
+    const { branches, role: sharedRole, activeBranch } = useSharedData();
     const [data, setData] = useState<MeData | null>(null);
     const [employee, setEmployee] = useState<EmployeeProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -225,6 +229,39 @@ export default function MeIndex() {
                             )}
                             {data.active_company_name && (
                                 <DetailRow label="Empresa activa" value={<span className="text-sm font-medium">{data.active_company_name}</span>} />
+                            )}
+                            {data.active_company_name && (
+                                <DetailRow
+                                    label="Sedes con acceso"
+                                    value={
+                                        sharedRole?.is_system ? (
+                                            <span className="text-sm font-medium">Todas las sedes</span>
+                                        ) : (branches ?? []).length > 0 ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {(branches ?? []).map((b) => {
+                                                    const isActive = activeBranch?.id === b.id;
+                                                    return (
+                                                        <Badge
+                                                            key={b.id}
+                                                            variant="outline"
+                                                            className={
+                                                                isActive
+                                                                    ? 'border-primary/40 bg-primary/15 text-primary gap-1'
+                                                                    : 'text-muted-foreground gap-1'
+                                                            }
+                                                        >
+                                                            <MapPin className="h-3 w-3" />
+                                                            {b.name}
+                                                            {isActive && <span className="text-[10px] font-semibold uppercase"> · activa</span>}
+                                                        </Badge>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground text-sm">Sin sede asignada</span>
+                                        )
+                                    }
+                                />
                             )}
                         </div>
                     </DashboardPanel>
