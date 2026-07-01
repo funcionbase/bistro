@@ -431,8 +431,9 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                     return;
                 }
                 if (status < 500) {
-                    const json = await res.json().catch(() => ({}));
-                    throw new Error((json as { message?: string }).message ?? 'No se pudo registrar el egreso.');
+                    const json = await res.json().catch(() => ({})) as { message?: string; errors?: Record<string, string[]> };
+                    const firstFieldError = json.errors ? Object.values(json.errors)[0]?.[0] : undefined;
+                    throw new Error(firstFieldError ?? json.message ?? 'No se pudo registrar el egreso.');
                 }
             } catch (e) {
                 if (status !== null && status < 500) throw e;

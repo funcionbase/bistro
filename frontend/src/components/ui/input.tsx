@@ -12,22 +12,18 @@ const DECIMAL_PASTE = /[.,eE]/;
  * Input del DS.
  *
  * **Política global de inputs numéricos:** cuando `type="number"`, la captura es
- * SOLO de enteros. La base de datos conserva decimales para cálculos, pero
- * ningún input del panel permite tipear/pegar decimales. Esto se centraliza acá
- * para garantizar cobertura uniforme (todos los `type="number"` pasan por este
- * primitive):
- * - `step` fraccionario (0.01, 0.001, …) se neutraliza a `1` para que el spinner
- *   no genere decimales; un `step` entero explícito se respeta.
- * - `inputMode` se fuerza a `numeric` (teclado sin punto decimal en móvil).
- * - Se bloquean las teclas `.`, `,`, `e`, `E` y el pegado de valores con
- *   separador decimal / exponente. Los handlers del consumidor se encadenan.
+ * SOLO de enteros, EXCEPTO cuando se pasa `step="any"` (señal HTML estándar de
+ * que el campo acepta decimales, p.ej. cantidades de kg/g/L en inventario).
+ * - Sin `step="any"`: bloques `.`, `,`, `e`, `E` y spinner entero.
+ * - Con `step="any"`: decimales libres, `inputMode="decimal"` en móvil.
  */
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
     ({ className, type, step, inputMode, onKeyDown, onPaste, ...props }, ref) => {
         const isNumber = type === 'number';
+        const allowDecimal = isNumber && step === 'any';
 
         const resolvedStep = React.useMemo(() => {
-            if (!isNumber) {
+            if (!isNumber || step === 'any') {
                 return step;
             }
             const numeric = typeof step === 'number' ? step : step != null ? Number(step) : NaN;
@@ -35,14 +31,14 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
         }, [isNumber, step]);
 
         const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-            if (isNumber && DECIMAL_KEYS.has(event.key)) {
+            if (isNumber && !allowDecimal && DECIMAL_KEYS.has(event.key)) {
                 event.preventDefault();
             }
             onKeyDown?.(event);
         };
 
         const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
-            if (isNumber && DECIMAL_PASTE.test(event.clipboardData.getData('text'))) {
+            if (isNumber && !allowDecimal && DECIMAL_PASTE.test(event.clipboardData.getData('text'))) {
                 event.preventDefault();
             }
             onPaste?.(event);
@@ -52,7 +48,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
             <input
                 type={type}
                 step={resolvedStep}
-                inputMode={isNumber ? 'numeric' : inputMode}
+                inputMode={isNumber ? (allowDecimal ? 'decimal' : 'numeric') : inputMode}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 className={cn(

@@ -146,8 +146,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            // In debug mode keep full field-level validation detail for DX
-            if (config('app.debug') && $e instanceof ValidationException) {
+            // ValidationException siempre usa el handler nativo de Laravel
+            // para preservar el campo `errors` con mensajes por campo.
+            // (el handler custom solo devuelve `message`, perdiendo `errors`).
+            if ($e instanceof ValidationException) {
                 return null;
             }
 

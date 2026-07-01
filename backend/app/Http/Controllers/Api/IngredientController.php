@@ -357,7 +357,8 @@ class IngredientController extends Controller
             }
         }
 
-        $weightedCost = bccomp($totalQty, '0', 3) > 0 ? bcdiv($totalValue, $totalQty, 2) : '0.00';
+        // bccomp != 0 cubre stock positivo Y negativo (valor/qty = costo positivo cuando ambos son negativos).
+        $weightedCost = bccomp($totalQty, '0', 3) !== 0 ? bcdiv($totalValue, $totalQty, 2) : '0.00';
 
         return [
             'id' => $i->id,
