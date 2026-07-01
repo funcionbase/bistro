@@ -10,6 +10,7 @@ use App\Models\PaymentReceipt;
 use App\Models\TableSession;
 use App\Models\TableSessionGuest;
 use App\Models\User;
+use App\Services\Sms\OrderStatusSmsDispatcher;
 use App\Support\OrderTotalCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -49,6 +50,7 @@ class TableCashierService
         private readonly TableSessionService $sessions,
         private readonly CashRegisterService $cashRegister,
         private readonly OrderTotalCalculator $totals,
+        private readonly OrderStatusSmsDispatcher $smsDispatcher,
     ) {}
 
     /**
@@ -242,7 +244,9 @@ class TableCashierService
     ): PaymentReceipt {
         $this->guardPaymentMethod($input['payment_method'], allowRefund: false);
 
-        return DB::transaction(function () use ($session, $input, $actor, $request) {
+        $closedOrder = null;
+
+        $receipt = DB::transaction(function () use ($session, $input, $actor, $request, &$closedOrder) {
             // Idempotencia por client_uuid (unique partial index garantiza
             // no duplicar). Si ya existe, devuelve el receipt anterior.
             $existing = PaymentReceipt::withoutBranchScope()
@@ -366,10 +370,21 @@ class TableCashierService
 
             // Si todos los items están pagados, cierra la sesión y la
             // orden pasa a completed.
-            $this->maybeCloseSession($order, $lockedSession);
+            if ($this->maybeCloseSession($order, $lockedSession)) {
+                $closedOrder = $order;
+            }
 
             return $receipt;
         });
+
+        // SMS al cliente FUERA de la txn de cobro (#275): su fallo nunca
+        // revierte el pago ya commiteado. `maybeCloseSession` es el camino
+        // dominante de cierre de orden en mesas QR — antes no disparaba SMS.
+        if ($closedOrder !== null) {
+            $this->smsDispatcher->dispatch($closedOrder, 'completed', $actor);
+        }
+
+        return $receipt;
     }
 
     /**
@@ -386,7 +401,9 @@ class TableCashierService
     ): PaymentReceipt {
         $this->guardPaymentMethod($input['payment_method'], allowRefund: false);
 
-        return DB::transaction(function () use ($session, $input, $actor, $request) {
+        $closedOrders = [];
+
+        $result = DB::transaction(function () use ($session, $input, $actor, $request, &$closedOrders) {
             $existing = PaymentReceipt::withoutBranchScope()
                 ->where('client_uuid', $input['client_uuid'])
                 ->first();
@@ -545,7 +562,10 @@ class TableCashierService
                     request: $request,
                 );
 
-                $this->maybeCloseSession($order->refresh(), $lockedSession);
+                $order->refresh();
+                if ($this->maybeCloseSession($order, $lockedSession)) {
+                    $closedOrders[] = $order;
+                }
 
                 if ($idx === 0) {
                     $primaryReceipt = $receipt;
@@ -557,6 +577,14 @@ class TableCashierService
             // endpoint. La UI puede listar todos mirando `state.receipts`.
             return $primaryReceipt ?? $receiptsCreated[0];
         });
+
+        // SMS al cliente FUERA de la txn de cobro (#275), una notificación por
+        // cada orden que quedó completed (una sesión puede tener N órdenes).
+        foreach ($closedOrders as $closedOrder) {
+            $this->smsDispatcher->dispatch($closedOrder, 'completed', $actor);
+        }
+
+        return $result;
     }
 
     /**
@@ -672,9 +700,11 @@ class TableCashierService
 
     /**
      * Si ya no quedan items pendientes de pago, cierra la sesión y
-     * promueve la orden a `completed`.
+     * promueve la orden a `completed`. Devuelve `true` si esta llamada
+     * completó la orden (el caller usa esto para disparar el SMS #275
+     * fuera de la transacción, una vez commiteada).
      */
-    private function maybeCloseSession(Order $order, TableSession $session): void
+    private function maybeCloseSession(Order $order, TableSession $session): bool
     {
         // Si la orden recién cobrada todavía tiene items consumibles sin pagar,
         // no podemos completarla.
@@ -685,7 +715,7 @@ class TableCashierService
             ->exists();
 
         if ($unpaidExists) {
-            return;
+            return false;
         }
 
         $order->status = 'completed';
@@ -707,11 +737,11 @@ class TableCashierService
             ->whereNotIn('status', $terminalStatuses)
             ->exists();
 
-        if ($remainingOpen) {
-            return;
+        if (! $remainingOpen) {
+            $this->sessions->closeSession($session);
         }
 
-        $this->sessions->closeSession($session);
+        return true;
     }
 
     /**

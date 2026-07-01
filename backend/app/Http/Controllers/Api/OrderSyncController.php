@@ -17,6 +17,7 @@ use App\Rules\SafePlainText;
 use App\Services\AuditService;
 use App\Services\CashRegisterService;
 use App\Services\FeaturePermissionService;
+use App\Services\Sms\OrderStatusSmsDispatcher;
 use App\Services\TaxCalculator;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +59,7 @@ class OrderSyncController extends Controller
         private readonly AuditService $auditService,
         private readonly CashRegisterService $cashRegister,
         private readonly OrderController $orderController,
+        private readonly OrderStatusSmsDispatcher $smsDispatcher,
     ) {}
 
     public function syncBatch(Request $request): JsonResponse
@@ -132,6 +134,16 @@ class OrderSyncController extends Controller
                     if (! empty($result['receipt_created'])) {
                         $aggregateReceipts['count']++;
                         $aggregateReceipts['amount'] += (float) ($result['total'] ?? 0);
+
+                        // SMS al cliente (#275) FUERA de la txn de `syncSingle` (ya
+                        // commiteada): la orden offline con pago incluido llega
+                        // directo a `completed` y antes nunca notificaba.
+                        if (! empty($result['server_id'])) {
+                            $paidOrder = Order::withoutGlobalScopes()->find($result['server_id']);
+                            if ($paidOrder !== null) {
+                                $this->smsDispatcher->dispatch($paidOrder, 'completed', $actingUser);
+                            }
+                        }
                     }
                 }
             } catch (Throwable $e) {

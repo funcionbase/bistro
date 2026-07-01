@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\AuditService;
 use App\Services\CashRegisterService;
 use App\Services\FeaturePermissionService;
+use App\Services\Sms\OrderStatusSmsDispatcher;
 use App\Services\TaxCalculator;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -69,6 +70,7 @@ class SyncController extends Controller
         private readonly AuditService $auditService,
         private readonly CashRegisterService $cashRegister,
         private readonly OrderController $orderController,
+        private readonly OrderStatusSmsDispatcher $smsDispatcher,
     ) {}
 
     public function batch(Request $request): JsonResponse
@@ -149,6 +151,16 @@ class SyncController extends Controller
                 // Alimentar el id_map para resolver dependencias de ops siguientes.
                 if (! empty($op['entity_ref']) && ! empty($result['server_id'])) {
                     $idMap[$op['entity_ref']] = $result['server_id'];
+                }
+
+                // SMS al cliente (#275) FUERA de la txn de `applyOrderClose` (ya
+                // commiteada al volver acá): antes este camino de cobro offline
+                // nunca notificaba, solo `OrderController::closeWithPayment`.
+                if ($type === 'order.close' && ($result['status'] ?? null) === 'created' && ! empty($result['server_id'])) {
+                    $closedOrder = Order::withoutGlobalScopes()->find($result['server_id']);
+                    if ($closedOrder !== null) {
+                        $this->smsDispatcher->dispatch($closedOrder, 'completed', $actingUser);
+                    }
                 }
 
                 $results[] = $result;

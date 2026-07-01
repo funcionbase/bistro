@@ -8,6 +8,7 @@ use App\Models\KdsStation;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Services\Sms\OrderStatusSmsDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ class KdsTicketService
     public function __construct(
         private readonly AuditService $audit,
         private readonly InventoryService $inventory,
+        private readonly OrderStatusSmsDispatcher $smsDispatcher,
     ) {}
 
     /**
@@ -45,7 +47,7 @@ class KdsTicketService
     {
         $updated = $this->transition($item, 'approved', 'in_kitchen', 'in_kitchen_at', 'kds.item.in_kitchen', $actor, $request);
 
-        $this->maybePromoteOrderStatus($updated->order_id);
+        $this->maybePromoteOrderStatus($updated->order_id, $actor);
 
         return $updated;
     }
@@ -58,7 +60,7 @@ class KdsTicketService
     {
         $updated = $this->transition($item, 'in_kitchen', 'ready', 'ready_at', 'kds.item.ready', $actor, $request);
 
-        $this->maybePromoteOrderStatus($updated->order_id);
+        $this->maybePromoteOrderStatus($updated->order_id, $actor);
 
         return $updated;
     }
@@ -195,8 +197,14 @@ class KdsTicketService
      * Si todos los items consumibles de la orden están `ready` o `served`,
      * promueve la orden a `ready`. Esto sirve para que el mesero/caja vean
      * que la mesa ya tiene todo listo.
+     *
+     * El SMS de cambio de estado (#275) se dispara fuera de este lock, ya
+     * commiteado: el KDS es el camino dominante por el que una orden llega
+     * a `in_kitchen`/`ready`, así que sin este dispatch el cliente nunca
+     * recibía esas dos notificaciones (solo las disparadas por el drag
+     * manual del kanban en `OrderController::updateStatus`).
      */
-    private function maybePromoteOrderStatus(string $orderId): void
+    private function maybePromoteOrderStatus(string $orderId, User $actor): void
     {
         /** @var Order $order */
         $order = Order::query()->whereKey($orderId)->lockForUpdate()->first();
@@ -228,6 +236,7 @@ class KdsTicketService
                     $order->status = 'in_kitchen';
                     $this->maybeConsumeInventory($order);
                     $order->save();
+                    $this->smsDispatcher->dispatch($order, 'in_kitchen', $actor);
                 }
             }
 
@@ -236,6 +245,7 @@ class KdsTicketService
 
         $order->status = 'ready';
         $order->save();
+        $this->smsDispatcher->dispatch($order, 'ready', $actor);
     }
 
     /**
