@@ -6,6 +6,7 @@ import { NavUser } from '@/components/nav-user';
 import { RestaurantIdentity } from '@/components/restaurant-identity';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import { isFullyBlocked } from '@/lib/company-status';
+import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isCourierOnlyMode } from '@/lib/courier-mode';
 import { route } from '@/lib/route-compat';
 import { useSharedData } from '@/lib/shared-data';
@@ -94,12 +95,16 @@ export function AppSidebar() {
     // visual evita que el operador vea opciones que llevan a un redirect.
     // El estado past_due NO se filtra: el cliente sigue operando normal,
     // solo ve el banner blando con countdown.
-    const { activeCompany, permissions = [], role } = useSharedData();
+    const { activeCompany, permissions = [], role, branches } = useSharedData();
     const isSuspended = activeCompany ? isFullyBlocked(activeCompany.status) : false;
     // #119: rol Domiciliario u otro courier-only — sidebar reducido a
     // "Mis entregas" + Mi perfil (en footer). Decisión por permisos, no
     // por nombre del rol, para sobrevivir renombres.
     const isCourierOnly = isCourierOnlyMode(permissions, role?.is_system === true);
+    // Usuario sin sede asignada: rol no-sistema con cero sedes accesibles. El
+    // sidebar se reduce a "Dashboard" (que muestra el mensaje de "pedí una
+    // sede a tu gerente/dueño"). Sin sede no puede operar nada branch-scoped.
+    const noBranch = !isSuspended && !!role && hasNoBranchAssigned(role.is_system === true, (branches ?? []).length);
 
     const dayToDayItems: NavItem[] = [
         {
@@ -405,11 +410,12 @@ export function AppSidebar() {
     // Filtro de mora: solo Dashboard + Mi empresa cuando la empresa está
     // suspended. Se computan sub-arrays para no romper el shape esperado por
     // `NavMain` y se omite el render de las secciones vacías.
-    const visibleDayToDay = isSuspended
-        ? dayToDayItems.filter((item) => item.title === 'Dashboard')
-        : isCourierOnly
-          ? dayToDayItems.filter((item) => item.title === 'Mis entregas')
-          : dayToDayItems;
+    const visibleDayToDay =
+        isSuspended || noBranch
+            ? dayToDayItems.filter((item) => item.title === 'Dashboard')
+            : isCourierOnly
+              ? dayToDayItems.filter((item) => item.title === 'Mis entregas')
+              : dayToDayItems;
     // Empresa suspendida: solo permitimos ver el submenu "Empresa" (que
     // contiene "Mi empresa" — punto de entrada al cierre de billing).
     // Antes "Mi empresa" era item plano; ahora vive bajo "Empresa".
@@ -417,7 +423,7 @@ export function AppSidebar() {
 
     // #119: courier-only oculta secciones que no le aplican. El switcher de
     // empresa/sede sigue arriba porque puede pertenecer a >1 sede.
-    const showCatalogAndOps = !isSuspended && !isCourierOnly;
+    const showCatalogAndOps = !isSuspended && !isCourierOnly && !noBranch;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -432,7 +438,7 @@ export function AppSidebar() {
                 {showCatalogAndOps && <NavMain label="Catálogo y clientes" items={catalogItems} />}
                 {showCatalogAndOps && <NavMain label="Operaciones" items={operationsItems} />}
                 {showCatalogAndOps && <NavMain label="Equipo" items={teamItems} />}
-                {!isCourierOnly && <NavMain label="Administración" items={visibleAdmin} />}
+                {!isCourierOnly && !noBranch && <NavMain label="Administración" items={visibleAdmin} />}
             </SidebarContent>
 
             <SidebarFooter>

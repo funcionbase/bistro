@@ -25,11 +25,12 @@ import { usePeriodFilter } from '@/hooks/use-period-filter';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useWidgetFetch } from '@/hooks/use-widget-fetch';
 import { apiClient } from '@/lib/api-client';
+import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isFullyBlocked, isPendingVerification } from '@/lib/company-status';
 import { useSharedData } from '@/lib/shared-data';
 import { type DashboardData, type MetricActiveOrders, type Period } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, AlertCircle, AlertTriangle, DollarSign, Package, ShoppingBag, TrendingDown, Truck } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, DollarSign, MapPin, Package, ShoppingBag, TrendingDown, Truck } from 'lucide-react';
 import { useMemo } from 'react';
 
 
@@ -58,8 +59,12 @@ export default function Dashboard() {
     //
     // Cuando la empresa está `suspended` (#193), `EnsureCompanyNotBlocked`
     // devuelve 403 `company_payment_blocked` en cualquier endpoint operativo.
-    const { activeBranch, activeCompany, role } = useSharedData();
+    const { activeBranch, activeCompany, role, branches } = useSharedData();
     const hasActiveBranch = Boolean(activeBranch?.id);
+    // Usuario de rol no-sistema sin sede asignada: no puede operar nada
+    // branch-scoped. El sidebar ya lo redujo a Dashboard; acá le explicamos
+    // por qué y qué hacer (pedir sede a su gerente/dueño).
+    const noBranchAssigned = !!role && hasNoBranchAssigned(role.is_system === true, (branches ?? []).length);
     const isCompanySuspended = activeCompany ? isFullyBlocked(activeCompany.status) : false;
     const canPollMetrics = hasActiveBranch && !isCompanySuspended;
     // Visible para Propietario y Administrador (is_system=true), no para Empleado.
@@ -138,6 +143,29 @@ export default function Dashboard() {
         const alertOverdue = durRows.some((d) => (d.average_duration_minutes ?? 0) > OVERDUE_THRESHOLD_MIN);
         return { total, completed, cancelled, inProgress, avgDuration, alertOverdue };
     }, [deliveries]);
+
+    if (noBranchAssigned) {
+        return (
+            <PageShell title="Dashboard">
+                <UpdateAvailableToast />
+                <div className="space-y-6 p-4 sm:p-6 md:p-8">
+                    <PageHeader eyebrow="DASHBOARD" title="Dashboard" />
+                    <Alert variant="warning" role="alert" aria-live="polite">
+                        <MapPin className="h-5 w-5" />
+                        <AlertTitle>No tienes una sede asignada</AlertTitle>
+                        <AlertDescription className="space-y-2 pt-1">
+                            <p>
+                                Tu rol es <span className="text-foreground font-semibold">{role?.name ?? '—'}</span>, pero necesitas tener al
+                                menos una sede asignada para operar. La caja, las comandas, el inventario, las entregas y los reportes
+                                funcionan por sede.
+                            </p>
+                            <p>Contacta al gerente o al propietario de tu empresa para que te asignen una sede.</p>
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            </PageShell>
+        );
+    }
 
     return (
         <PageShell title="Dashboard">
