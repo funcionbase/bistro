@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 const stats = [
     { value: '+ de 25', label: 'módulos documentados' },
     { value: '100%', label: 'en español colombiano' },
-    { value: '$100K/mes', label: 'por empresa · sedes ilimitadas' },
+    { value: '$300K/mes', label: 'por empresa · sedes ilimitadas' },
 ];
 
 export default function ManualIndex() {
@@ -19,7 +19,7 @@ export default function ManualIndex() {
             metaDescription="Manual de usuario de bistro.flexyflow.co: guías de pedidos, caja, menús, clientes, reportes, DIAN y más."
         >
             {/* Stats */}
-            <div className="mb-8 grid grid-cols-3 gap-4">
+            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {stats.map((s) => (
                     <div key={s.label} className="rounded-2xl border border-border bg-card p-4 text-center">
                         <p className="text-2xl font-semibold text-primary">{s.value}</p>

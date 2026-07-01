@@ -392,6 +392,17 @@ body {
     padding: 0.6rem 0.75rem;
     border-bottom: 1px solid var(--color-border-light);
 }
+/* En móvil las tablas anchas (18 en el manual) desbordan el viewport y hacían
+   scroll horizontal de toda la página. Las volvemos scrollables en su propia
+   caja: display:block deja al <table> comportarse como contenedor con overflow.
+   Solo <=640px para no alterar el layout de escritorio. */
+@media (max-width: 640px) {
+    .wiki-prose table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
 .wiki-prose kbd {
     font-family: monospace;
     border: 1px solid var(--color-border-light);

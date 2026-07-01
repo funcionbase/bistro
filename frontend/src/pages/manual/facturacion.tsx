@@ -36,7 +36,7 @@ export default function ManualFacturacion() {
             <ul>
                 <li>
                     <strong>Plan contratado.</strong> Hoy todos los negocios arrancan en el{' '}
-                    <em>Plan Default</em> ($100.000 COP/mes, IVA 19% incluido). Si tu asesor te configuró un
+                    <em>Plan Default</em> ($300.000 COP/mes, IVA 19% incluido). Si tu asesor te configuró un
                     descuento por código promocional, lo ves marcado con un ícono de porcentaje.
                 </li>
                 <li>
