@@ -17,29 +17,18 @@ function DynamicFavicon() {
     const { activeCompany } = useSharedData();
 
     useEffect(() => {
-        const applyFavicon = () => {
-            const href = activeCompany?.logo_url
-                ? activeCompany.logo_url
-                : document.documentElement.classList.contains('dark')
-                  ? '/images/logo-white-font.svg'
-                  : '/images/logo-black-font.svg';
+        // El favicon por defecto (/favicon.svg) ya trae su propio fondo, así que
+        // no depende del tema; solo se sobreescribe con el logo de la empresa activa.
+        const href = activeCompany?.logo_url ?? '/favicon.svg';
 
-            let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-            if (!link) {
-                link = document.createElement('link');
-                link.rel = 'icon';
-                link.type = 'image/svg+xml';
-                document.head.appendChild(link);
-            }
-            link.href = href;
-        };
-
-        applyFavicon();
-
-        const observer = new MutationObserver(applyFavicon);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
-        return () => observer.disconnect();
+        let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            link.type = 'image/svg+xml';
+            document.head.appendChild(link);
+        }
+        link.href = href;
     }, [activeCompany?.logo_url]);
 
     return null;

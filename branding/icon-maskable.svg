@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500" role="img" aria-label="bistro">
   <title>bistro</title>
-  <rect width="500" height="500" rx="110" ry="110" fill="#f6f5f3"/>
+  <rect width="500" height="500" rx="0" ry="0" fill="#f6f5f3"/>
   <g transform="translate(73.19,444.42) scale(0.57692,-0.57692)" fill="#1E232E"><path d="M27 260C27 200 7 -53 140 -53C200 -53 200 7 240 33C407 27 587 120 587 313C587 400 540 540 433 540C287 540 260 347 187 300V367C187 447 193 527 193 607C193 660 193 727 120 727C60 727 53 647 47 600C47 573 33 460 33 440C33 427 27 313 27 273ZM413 380C440 380 440 333 440 313C440 240 360 167 293 167C293 200 373 380 413 380Z"/></g>
 </svg>

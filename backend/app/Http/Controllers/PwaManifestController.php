@@ -36,7 +36,9 @@ class PwaManifestController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $brandColor = '#FF6B35';
+        // Default "principal": fondo blanco de marca (#f6f5f3). Se sobreescribe
+        // con el `menu_primary_color` de la empresa activa si la hay.
+        $brandColor = '#f6f5f3';
         $companyName = null;
         $companyNit = null;
 
@@ -139,6 +141,9 @@ class PwaManifestController extends Controller
         }
 
         return [
+            // SVG adaptativo al theme del sistema (fondo blanco/letra oscura por
+            // defecto, invierte en dark). Los PNG quedan de fallback estático.
+            ['src' => '/favicon.svg', 'sizes' => 'any', 'type' => 'image/svg+xml', 'purpose' => 'any'],
             ['src' => '/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
             ['src' => '/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
             ['src' => '/icons/icon-192-maskable.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'maskable'],

@@ -1031,13 +1031,10 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 
 ### Iconos
 
-- `public/icons/icon-{192,512}{,-maskable}.png`, `public/icons/apple-touch-icon-180.png`.
-- Generados con `bistro/frontend/scripts/generate-pwa-icons.mjs` (sharp + SVG fuente). Re-ejecutar si cambia el logo:
-  ```bash
-  cd application && node scripts/generate-pwa-icons.mjs
-  ```
-- Sharp se instala on-demand (`npm install --no-save sharp`); no se commitea en `package.json`.
-- A partir de Fase 2 (#140) los iconos default se generan desde `public/images/logo-black-font.svg` (logo flexyflow texto negro sobre fondo blanco). Cuando una empresa sube su logo, los iconos por-empresa se rasterizan server-side vía `App\Services\LogoIconRasterizer` y se sirven dinámicamente desde el manifest.
+- `public/icons/icon-{192,512}{,-maskable}.png`, `public/icons/apple-touch-icon-180.png`, `public/favicon.{ico,svg}`.
+- **Fuente única: `bistro/branding/`** (ver `bistro/branding/README.md`). El set desplegable vive en `branding/web/**` y las apps lo **heredan** vía `branding/sync.mjs`, cableado en `predev`/`prebuild` del frontend (`npm run sync:branding` a mano). El backend hereda las mismas copias (`node branding/sync.mjs`). NO editar los assets dentro de `*/public/` — se pisan en cada sync.
+- El ícono es la "b" de la FlexyFont al 90% del alto (5% margen). **Default: fondo blanco `#f6f5f3` + letra oscura `#1E232E`.** El favicon SVG (`/favicon.svg`) es **adaptativo al theme del sistema** vía `@media (prefers-color-scheme: dark)` embebido: en dark invierte a fondo oscuro + letra clara. `theme-color` también adapta (metas con `media` en `index.html`). Los PNG del PWA son estáticos (default blanco); el launcher instalado no adapta por limitación de plataforma, pero el manifest incluye `/favicon.svg` como ícono `any` para navegadores que sí lo rasterizan por theme.
+- Cuando una empresa sube su logo, los iconos por-empresa se rasterizan server-side vía `App\Services\LogoIconRasterizer` y se sirven dinámicamente desde el manifest; `DynamicFavicon` (app-sidebar-layout) usa el logo de la empresa activa o cae a `/favicon.svg`.
 
 ### Modo offline — Fase 2 (issue #140)
 

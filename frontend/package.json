@@ -1,9 +1,12 @@
 {
     "name": "frontend-bistro-flexyflow",
-    "version": "1.36.0",
+    "version": "1.36.2",
     "private": true,
     "type": "module",
     "scripts": {
+        "sync:branding": "node ../branding/sync.mjs",
+        "predev": "node ../branding/sync.mjs",
+        "prebuild": "node ../branding/sync.mjs",
         "build": "vite build",
         "dev": "vite",
         "preview": "vite preview",

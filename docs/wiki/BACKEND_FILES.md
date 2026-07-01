@@ -2337,7 +2337,7 @@ Cada PR debe actualizar la página correspondiente del wiki cuando modifique end
 
 ### Iconos servidos
 
-`public/icons/icon-{192,512}.png`, `icon-{192,512}-maskable.png`, `apple-touch-icon-180.png`. Generados desde el SVG fuente vía `bistro/frontend/scripts/generate-pwa-icons.mjs` (sharp).
+`public/icons/icon-{192,512}.png`, `icon-{192,512}-maskable.png`, `apple-touch-icon-180.png`, `public/favicon.{ico,svg}`. **Fuente única: `bistro/branding/`** — el backend hereda las copias corriendo `node branding/sync.mjs` (ver `bistro/branding/README.md`); no editar los assets en `public/` a mano. El default es la "b" de la FlexyFont sobre `#1E232E`. Las páginas de error (`resources/views/errors/layout.blade.php`) referencian `/favicon.svg` para que un endpoint API alcanzado por accidente muestre la marca, no el default de Laravel. Los iconos por-empresa se siguen rasterizando en runtime vía `LogoIconRasterizer`.
 
 ### Notas
 

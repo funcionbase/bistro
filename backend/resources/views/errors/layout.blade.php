@@ -62,9 +62,11 @@
          real en navegadores modernos; el PNG 192 cubre los que no renderizan
          SVG; favicon.ico es el fallback clásico. --}}
     <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="icon" href="/images/logo-black-font.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f5f3">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1E232E">
 
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
