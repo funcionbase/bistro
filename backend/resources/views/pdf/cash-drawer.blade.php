@@ -116,12 +116,33 @@
         <tbody>
             @php $cash = $summary['by_method']['cash']; @endphp
             <tr>
-                <td>Cobros en efectivo</td>
+                <td>Saldo inicial (base de caja)</td>
+                <td class="text-right">$ {{ number_format($summary['cash_opening_amount'] ?? 0, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>+ Cobros en efectivo</td>
                 <td class="text-right">$ {{ number_format($cash['gross'], 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <td>+ Propinas recibidas en efectivo</td>
                 <td class="text-right">$ {{ number_format($cash['tips'], 0, ',', '.') }}</td>
+            </tr>
+            {{-- Entradas de efectivo (no-venta) desglosadas por categoría + total. --}}
+            @foreach ($summary['cash_incomes_by_category'] ?? [] as $cat => $amount)
+                <tr>
+                    <td>+ {{ config('cash_register.income_categories')[$cat] ?? $cat }}</td>
+                    <td class="text-right">$ {{ number_format($amount, 0, ',', '.') }}</td>
+                </tr>
+            @endforeach
+            @if (($summary['cash_incomes_total'] ?? 0) > 0)
+                <tr>
+                    <td>Total entradas de efectivo</td>
+                    <td class="text-right">$ {{ number_format($summary['cash_incomes_total'], 0, ',', '.') }}</td>
+                </tr>
+            @endif
+            <tr>
+                <td>− Egresos en efectivo</td>
+                <td class="text-right">$ {{ number_format($summary['cash_expenses_total'] ?? 0, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <td>− Devoluciones en efectivo</td>

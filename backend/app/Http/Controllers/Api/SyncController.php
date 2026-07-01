@@ -143,6 +143,7 @@ class SyncController extends Controller
                         'order.close' => $this->applyOrderClose($op, $companyNit, $branchId, $actingUser, $request, $idMap),
                         'cash.open' => $this->applyCashOpen($op, $companyNit, $branchId, $actingUser),
                         'cash.expense' => $this->applyCashExpense($op, $companyNit, $branchId, $actingUser),
+                        'cash.income' => $this->applyCashIncome($op, $companyNit, $branchId, $actingUser),
                         'cash.close' => $this->applyCashClose($op, $companyNit, $branchId, $actingUser, $request),
                         default => ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'unsupported_op_type'],
                     };
@@ -513,6 +514,44 @@ class SyncController extends Controller
         );
 
         return ['op_id' => $op['op_id'], 'status' => 'created', 'server_id' => $expense->id, 'amount' => (float) $expense->amount];
+    }
+
+    /**
+     * Entrada de efectivo offline (aporte/préstamo/ajuste). Espejo de
+     * applyCashExpense: idempotente por client_uuid, exige sesión abierta.
+     *
+     * @param  array<string, mixed>  $op
+     * @return array<string, mixed>
+     */
+    private function applyCashIncome(array $op, string $companyNit, string $branchId, ?User $actingUser): array
+    {
+        if ($actingUser === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_actor'];
+        }
+        $payload = $op['payload'];
+        $clientUuid = $payload['client_uuid'] ?? null;
+        if (! is_string($clientUuid) || $clientUuid === '') {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'missing_client_uuid'];
+        }
+
+        $session = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        if ($session === null) {
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_open_cash_session'];
+        }
+
+        $occurredAtClient = isset($payload['occurred_at_client']) ? Carbon::parse($payload['occurred_at_client']) : null;
+        $income = $this->cashRegister->recordIncome(
+            $session,
+            $actingUser,
+            (float) ($payload['amount'] ?? 0),
+            (string) ($payload['category'] ?? ''),
+            $payload['description'] ?? null,
+            (string) ($payload['payment_method'] ?? 'cash'),
+            $clientUuid,
+            $occurredAtClient,
+        );
+
+        return ['op_id' => $op['op_id'], 'status' => 'created', 'server_id' => $income->id, 'amount' => (float) $income->amount];
     }
 
     /**

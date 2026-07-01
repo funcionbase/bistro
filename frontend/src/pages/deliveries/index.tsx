@@ -5,6 +5,8 @@ import { ReassignModal } from '@/components/deliveries/reassign-modal';
 import { RefundOrderModal } from '@/components/deliveries/refund-order-modal';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { PageShell } from '@/components/page-shell';
+import CashDrawerCard from '@/components/reports/cash-drawer-card';
+import CashSessionsCard from '@/components/reports/cash-sessions-card';
 import ExportPdfButton from '@/components/reports/export-pdf-button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,7 @@ import { useDaySales, todayBogota, type DaySalesParams, type DaySalesSummary as 
 import { useDaySalesActions } from '@/hooks/use-day-sales-actions';
 import { useDaySalesSort } from '@/hooks/use-day-sales-sort';
 import { useOrderStatuses } from '@/hooks/use-order-statuses';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 
@@ -33,6 +36,7 @@ export default function DaySalesIndex() {
     const { showToast } = useToast();
     const formatCurrency = useCurrencyFormatter();
     const orderStatuses = useOrderStatuses();
+    const { has: hasPermission } = usePermissions();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const today = todayBogota();
@@ -340,6 +344,16 @@ export default function DaySalesIndex() {
                                 formatCurrency={formatCurrency}
                                 onOpenOrder={(orderId) => void openOrderDetail(orderId)}
                             />
+                        )}
+
+                        {/* Informe de cierre de caja (arqueo). Concilia el efectivo
+                            físico con las ventas registradas del período. Gated por
+                            reports.read — el backend también lo exige. */}
+                        {hasPermission('reports.read') && (
+                            <div className="space-y-6 pt-2">
+                                <CashDrawerCard dateFrom={applied.dateFrom} dateTo={applied.dateTo} />
+                                <CashSessionsCard dateFrom={applied.dateFrom} dateTo={applied.dateTo} detailed />
+                            </div>
                         )}
                     </div>
                 )}

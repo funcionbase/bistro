@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\CashRegister;
 use App\Models\CashRegisterExpense;
+use App\Models\CashRegisterIncome;
 use App\Models\CashRegisterSession;
 use App\Models\Order;
 use App\Models\PaymentReceipt;
@@ -356,7 +357,13 @@ class CashRegisterService
             ->where('payment_method', 'cash')
             ->sum('amount');
 
-        return round((float) $session->opening_amount + $cashGross + $cashTips - $cashRefunds - $cashExpenses, 2);
+        // Entradas de efectivo (no-venta) inyectadas a la caja durante el turno.
+        // Suman al esperado igual que los cobros en efectivo.
+        $cashIncomes = (float) CashRegisterIncome::forSession($session->id)
+            ->where('payment_method', 'cash')
+            ->sum('amount');
+
+        return round((float) $session->opening_amount + $cashGross + $cashTips + $cashIncomes - $cashRefunds - $cashExpenses, 2);
     }
 
     /**
@@ -459,6 +466,90 @@ class CashRegisterService
     public function expensesForSession(CashRegisterSession $session): Collection
     {
         return CashRegisterExpense::forSession($session->id)
+            ->with('createdBy:id,name')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Registra una entrada de efectivo (aporte de socio, préstamo, ajuste…)
+     * contra una sesión abierta. Espejo de recordExpense: append-only,
+     * idempotente por client_uuid, exige sesión `open`. Incrementa el efectivo
+     * esperado cuando `paymentMethod = cash`.
+     */
+    public function recordIncome(
+        CashRegisterSession $session,
+        User $createdBy,
+        float $amount,
+        string $category,
+        ?string $description = null,
+        string $paymentMethod = 'cash',
+        ?string $clientUuid = null,
+        ?Carbon $occurredAtClient = null,
+    ): CashRegisterIncome {
+        $categories = array_keys(config('cash_register.income_categories', []));
+        $methods = config('cash_register.income_payment_methods', ['cash', 'card', 'transfer']);
+
+        if (! in_array($category, $categories, true)) {
+            throw ValidationException::withMessages([
+                'category' => 'Categoría de ingreso inválida.',
+            ]);
+        }
+
+        if (! in_array($paymentMethod, $methods, true)) {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Método de pago inválido para ingreso.',
+            ]);
+        }
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'El monto del ingreso debe ser positivo.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod, $clientUuid, $occurredAtClient) {
+            // Idempotencia offline: ingreso ya aplicado (client_uuid) → devolverlo.
+            if ($clientUuid !== null) {
+                $byClient = CashRegisterIncome::query()->where('client_uuid', $clientUuid)->lockForUpdate()->first();
+                if ($byClient) {
+                    return $byClient;
+                }
+            }
+
+            $fresh = CashRegisterSession::whereKey($session->id)->lockForUpdate()->first();
+
+            if (! $fresh || $fresh->status !== 'open') {
+                throw ValidationException::withMessages([
+                    'cash_register' => 'La sesión de caja no está abierta — no se pueden registrar entradas.',
+                ]);
+            }
+
+            return CashRegisterIncome::create([
+                'cash_session_id' => $fresh->id,
+                'company_nit' => $fresh->company_nit,
+                'branch_id' => $fresh->branch_id,
+                'client_uuid' => $clientUuid,
+                'amount' => round($amount, 2),
+                'category' => $category,
+                'payment_method' => $paymentMethod,
+                'description' => $description,
+                'created_by_user_id' => $createdBy->id,
+                'created_at' => now(),
+                'occurred_at_client' => $occurredAtClient,
+            ]);
+        });
+    }
+
+    /**
+     * Entradas de la sesión, de más reciente a más antigua, con el usuario que
+     * registró cada una.
+     *
+     * @return Collection<int, CashRegisterIncome>
+     */
+    public function incomesForSession(CashRegisterSession $session): Collection
+    {
+        return CashRegisterIncome::forSession($session->id)
             ->with('createdBy:id,name')
             ->orderByDesc('created_at')
             ->get();
@@ -669,6 +760,25 @@ class CashRegisterService
             $expensesByCategory[$row->category] = ($expensesByCategory[$row->category] ?? 0.0) + $total;
         }
 
+        $incomeRows = CashRegisterIncome::forSession($session->id)
+            ->selectRaw('payment_method, category, SUM(amount) AS total, COUNT(*) AS count')
+            ->groupBy('payment_method', 'category')
+            ->get();
+
+        $incomesTotal = 0.0;
+        $incomesCount = 0;
+        $incomesByMethod = ['cash' => 0.0, 'card' => 0.0, 'transfer' => 0.0];
+        $incomesByCategory = [];
+        foreach ($incomeRows as $row) {
+            $total = (float) $row->total;
+            $incomesTotal += $total;
+            $incomesCount += (int) $row->count;
+            if (isset($incomesByMethod[$row->payment_method])) {
+                $incomesByMethod[$row->payment_method] += $total;
+            }
+            $incomesByCategory[$row->category] = ($incomesByCategory[$row->category] ?? 0.0) + $total;
+        }
+
         $expected = $this->computeExpectedCash($session);
 
         $orderCount = (int) Order::where('company_nit', $session->company_nit)
@@ -702,6 +812,12 @@ class CashRegisterService
                 'count' => $expensesCount,
                 'by_method' => array_map(fn ($v) => round($v, 2), $expensesByMethod),
                 'by_category' => array_map(fn ($v) => round($v, 2), $expensesByCategory),
+            ],
+            'incomes' => [
+                'total' => round($incomesTotal, 2),
+                'count' => $incomesCount,
+                'by_method' => array_map(fn ($v) => round($v, 2), $incomesByMethod),
+                'by_category' => array_map(fn ($v) => round($v, 2), $incomesByCategory),
             ],
         ];
     }

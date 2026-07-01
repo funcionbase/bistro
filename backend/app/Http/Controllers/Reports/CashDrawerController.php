@@ -152,11 +152,27 @@ class CashDrawerController extends Controller
             ->whereBetween('created_at', [$from->copy()->utc(), $to->copy()->utc()])
             ->sum('amount');
 
+        // Entradas de efectivo (no-venta): aportes/préstamos/ajustes. Suman al
+        // cajón físico. Desglosadas por categoría para el PDF de cierre.
+        $incomeRows = DB::table('cash_register_incomes')
+            ->where('company_nit', $companyNit)
+            ->where('payment_method', 'cash')
+            ->whereBetween('created_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->selectRaw('category, SUM(amount) AS total')
+            ->groupBy('category')
+            ->get();
+
+        $cashIncomesTotal = (float) $incomeRows->sum('total');
+        $cashIncomesByCategory = $incomeRows
+            ->mapWithKeys(fn ($r) => [$r->category => round((float) $r->total, 2)])
+            ->all();
+
         // Cash drawer físico: saldo inicial + efectivo cobrado + propinas en efectivo
-        //                     - refunds en efectivo - egresos en efectivo.
+        //                     + entradas en efectivo - refunds en efectivo - egresos en efectivo.
         $cashDrawer = $openingTotal
             + $byMethod['cash']['gross']
             + $byMethod['cash']['tips']
+            + $cashIncomesTotal
             - $byMethod['cash']['refunds']
             - $cashExpensesTotal;
 
@@ -179,6 +195,8 @@ class CashDrawerController extends Controller
             'cash_drawer_expected' => round($cashDrawer, 2),
             'cash_opening_amount' => round($openingTotal, 2),
             'cash_expenses_total' => round($cashExpensesTotal, 2),
+            'cash_incomes_total' => round($cashIncomesTotal, 2),
+            'cash_incomes_by_category' => $cashIncomesByCategory,
             'orders_count' => $orderCount,
         ];
     }

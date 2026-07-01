@@ -89,6 +89,7 @@ export type OutboxOpType =
     | 'order.close'
     | 'order.refund'
     | 'cash.expense'
+    | 'cash.income'
     | 'cash.close';
 
 export type OutboxOpStatus = 'queued' | 'in_flight' | 'applied' | 'conflict' | 'failed';

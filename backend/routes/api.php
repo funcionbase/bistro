@@ -679,6 +679,15 @@ Route::prefix('v1')->group(function () {
                 Route::get('sessions/{id}/expenses', [CashRegisterController::class, 'expensesIndex'])
                     ->middleware('permission:reports.read,read')
                     ->name('api.cashRegister.expenses.index');
+
+                // Entradas de efectivo (aportes, préstamos, ajustes): ingresos NO
+                // por venta que suman al efectivo esperado. Append-only.
+                Route::post('incomes', [CashRegisterController::class, 'storeIncome'])
+                    ->middleware('permission:orders.update,update')
+                    ->name('api.cashRegister.incomes.store');
+                Route::get('sessions/{id}/incomes', [CashRegisterController::class, 'incomesIndex'])
+                    ->middleware('permission:reports.read,read')
+                    ->name('api.cashRegister.incomes.index');
             });
 
             // Features — requiere poder ver roles

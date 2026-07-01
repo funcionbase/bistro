@@ -92,6 +92,8 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 |---|---|---|---|
 | `cash_register.open` | `CashRegisterController::open` | `opening_amount`, `branch_id` | `orders.update` (operativo) |
 | `cash_register.close` | `CashRegisterController::close` | `closing_amount`, `expected`, `diff` | `orders.update` |
+| `cash.expense.recorded` | `CashRegisterController::storeExpense` | `amount`, `category`, `payment_method`, `cash_session_id` | `orders.update` |
+| `cash.income.recorded` | `CashRegisterController::storeIncome` | `amount`, `category`, `payment_method`, `cash_session_id` | `orders.update` |
 | `cash_register.bypass_switch_lock` | `CashRegisterController::switchBranch` (con bypass) | `session_id`, `from_branch_id`, `to_branch_id` | `cash_register.bypass_switch_lock` |
 
 ### Multi-sede sensibles

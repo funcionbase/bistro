@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesActiveContext;
 use App\Http\Controllers\Concerns\ResolvesJwtActor;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CashRegister\StoreCashIncomeRequest;
 use App\Http\Requests\CashRegister\StoreCashRegisterRequest;
 use App\Http\Requests\CashRegister\UpdateCashRegisterRequest;
 use App\Models\CashRegister;
 use App\Models\CashRegisterExpense;
+use App\Models\CashRegisterIncome;
 use App\Models\CashRegisterSession;
 use App\Models\RestaurantMenu;
 use App\Rules\SafePlainText;
@@ -17,6 +19,7 @@ use App\Services\BusinessHoursService;
 use App\Services\CashRegisterService;
 use App\Services\FeaturePermissionService;
 use App\Services\ShiftActiveGuardService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -237,15 +240,39 @@ class CashRegisterController extends Controller
         $this->permissionService->assertPermission($request, 'reports', 'read');
         $companyNit = $this->activeCompanyNit($request);
 
-        $perPage = min((int) $request->input('per_page', 25), 100);
+        $validated = $request->validate([
+            'date_from' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+        ]);
 
-        $paginated = CashRegisterSession::forCompany($companyNit)
+        $perPage = min((int) $request->input('per_page', 25), 100);
+        // `detailed=1`: anexa el arqueo por turno (ventas por método, egresos e
+        // ingresos) para el informe de cierre de caja. El historial simple del
+        // panel de reportes no lo pide y evita el costo del liveSummary.
+        $detailed = $request->boolean('detailed');
+
+        $query = CashRegisterSession::forCompany($companyNit)
             ->with(['openedBy:id,name', 'closedBy:id,name', 'cashRegister:id,name'])
-            ->orderByDesc('opened_at')
-            ->paginate($perPage);
+            ->orderByDesc('opened_at');
+
+        // Filtro por día de APERTURA en TZ Bogota (un turno que cruza medianoche
+        // se agrupa por su día de apertura). Mismo rango que CashDrawerController.
+        if (! empty($validated['date_from']) || ! empty($validated['date_to'])) {
+            $tz = config('orders.timezone', 'America/Bogota');
+            $today = Carbon::now($tz)->toDateString();
+            $from = Carbon::parse($validated['date_from'] ?? $today, $tz)->startOfDay();
+            $to = Carbon::parse($validated['date_to'] ?? $validated['date_from'] ?? $today, $tz)->endOfDay();
+            $query->whereBetween('opened_at', [$from->copy()->utc(), $to->copy()->utc()]);
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        $map = $detailed
+            ? fn (CashRegisterSession $s) => $this->serializeSessionDetailed($s)
+            : fn (CashRegisterSession $s) => $this->serializeSession($s);
 
         return response()->json([
-            'data' => $paginated->getCollection()->map(fn (CashRegisterSession $s) => $this->serializeSession($s))->all(),
+            'data' => $paginated->getCollection()->map($map)->all(),
             'pagination' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page' => $paginated->lastPage(),
@@ -290,6 +317,29 @@ class CashRegisterController extends Controller
             'opened_by' => $s->openedBy ? ['id' => $s->openedBy->id, 'name' => $s->openedBy->name] : null,
             'closed_by' => $s->closedBy ? ['id' => $s->closedBy->id, 'name' => $s->closedBy->name] : null,
         ];
+    }
+
+    /**
+     * Sesión + arqueo del turno (ventas por método, egresos, ingresos) para el
+     * informe de cierre de caja. Sirve para turnos abiertos y cerrados: los
+     * SUMs se calculan por `cash_session_id`, no dependen del estado.
+     *
+     * @return array<string, mixed>
+     */
+    private function serializeSessionDetailed(CashRegisterSession $s): array
+    {
+        // ponytail: liveSummary hace varias queries por sesión; un rango de
+        // informe trae pocas sesiones (1-3/día). Si un rango grande se pone
+        // lento, batchear los GROUP BY por cash_session_id en una sola query.
+        $live = $this->service->liveSummary($s);
+
+        return array_merge($this->serializeSession($s), [
+            'breakdown' => [
+                'by_method' => $live['by_method'],
+                'expenses' => $live['expenses'],
+                'incomes' => $live['incomes'],
+            ],
+        ]);
     }
 
     /**
@@ -403,6 +453,96 @@ class CashRegisterController extends Controller
             'description' => $e->description,
             'created_at' => $e->created_at?->toIso8601String(),
             'created_by' => $e->createdBy ? ['id' => $e->createdBy->id, 'name' => $e->createdBy->name] : null,
+        ];
+    }
+
+    /**
+     * Registra una entrada de efectivo (aporte de socio, préstamo, ajuste…)
+     * contra la sesión activa. Append-only — no hay PUT/DELETE asociado.
+     * A diferencia del egreso, no valida "supera el efectivo": una entrada solo
+     * SUMA al cajón, nunca lo deja negativo.
+     */
+    public function storeIncome(StoreCashIncomeRequest $request): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'orders', 'update');
+
+        $validated = $request->validated();
+
+        $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
+        $user = $this->actingUser($request);
+        if (! $user) {
+            return response()->json(['message' => 'Usuario no autenticado.'], 401);
+        }
+
+        $session = $this->service->resolveSessionForCharge(
+            $companyNit,
+            $branchId,
+            $validated['cash_session_id'] ?? null,
+        );
+
+        $income = $this->service->recordIncome(
+            session: $session,
+            createdBy: $user,
+            amount: (float) $validated['amount'],
+            category: $validated['category'],
+            description: $validated['description'] ?? null,
+            paymentMethod: $validated['payment_method'] ?? 'cash',
+        );
+
+        $this->auditService->log('cash.income.recorded', $user, $income, [
+            'amount' => (float) $income->amount,
+            'category' => $income->category,
+            'payment_method' => $income->payment_method,
+            'description' => $income->description,
+            'cash_session_id' => $income->cash_session_id,
+        ]);
+
+        return response()->json([
+            'data' => $this->serializeIncome($income->loadMissing('createdBy:id,name')),
+        ], 201);
+    }
+
+    /**
+     * Lista las entradas de una sesión. Endpoint de auditoría — usa permiso de
+     * lectura de reportes.
+     */
+    public function incomesIndex(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'reports', 'read');
+        $companyNit = $this->activeCompanyNit($request);
+
+        $session = CashRegisterSession::forCompany($companyNit)->findOrFail($id);
+
+        $incomes = $this->service->incomesForSession($session);
+
+        $byCategory = [];
+        foreach ($incomes as $inc) {
+            $byCategory[$inc->category] = ($byCategory[$inc->category] ?? 0.0) + (float) $inc->amount;
+        }
+
+        return response()->json([
+            'data' => $incomes->map(fn (CashRegisterIncome $i) => $this->serializeIncome($i))->all(),
+            'summary' => [
+                'total' => round((float) $incomes->sum(fn (CashRegisterIncome $i) => (float) $i->amount), 2),
+                'count' => $incomes->count(),
+                'by_category' => array_map(fn ($v) => round($v, 2), $byCategory),
+            ],
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeIncome(CashRegisterIncome $i): array
+    {
+        return [
+            'id' => $i->id,
+            'cash_session_id' => $i->cash_session_id,
+            'amount' => (float) $i->amount,
+            'category' => $i->category,
+            'payment_method' => $i->payment_method,
+            'description' => $i->description,
+            'created_at' => $i->created_at?->toIso8601String(),
+            'created_by' => $i->createdBy ? ['id' => $i->createdBy->id, 'name' => $i->createdBy->name] : null,
         ];
     }
 

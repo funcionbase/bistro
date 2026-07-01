@@ -30,6 +30,12 @@ export interface CashSessionLiveSummary {
         by_method: Record<PaymentMethod, number>;
         by_category: Record<string, number>;
     };
+    incomes: {
+        total: number;
+        count: number;
+        by_method: Record<PaymentMethod, number>;
+        by_category: Record<string, number>;
+    };
 }
 
 export type CashExpenseCategory = 'domiciliario_pago' | 'proveedor' | 'imprevisto' | 'propina_distribuida' | 'otro';
@@ -39,6 +45,16 @@ export const CASH_EXPENSE_CATEGORIES: Record<CashExpenseCategory, string> = {
     proveedor: 'Proveedor',
     imprevisto: 'Imprevisto',
     propina_distribuida: 'Propina distribuida',
+    otro: 'Otro',
+};
+
+export type CashIncomeCategory = 'aporte_socio' | 'prestamo' | 'ajuste_positivo' | 'otro';
+
+/** Espejo de config('cash_register.income_categories'). */
+export const CASH_INCOME_CATEGORIES: Record<CashIncomeCategory, string> = {
+    aporte_socio: 'Aporte de socio',
+    prestamo: 'Préstamo / inyección',
+    ajuste_positivo: 'Ajuste positivo',
     otro: 'Otro',
 };
 
@@ -111,6 +127,7 @@ interface UseCashRegisterReturn {
     openSession: (openingAmount: number, notes?: string, cashRegisterId?: string) => Promise<void>;
     closeSession: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
     recordExpense: (input: { amount: number; category: CashExpenseCategory; description?: string; payment_method?: PaymentMethod }) => Promise<void>;
+    recordIncome: (input: { amount: number; category: CashIncomeCategory; description?: string; payment_method?: PaymentMethod }) => Promise<void>;
 }
 
 /** Resumen `live` en cero para una sesión provisional offline. */
@@ -122,6 +139,7 @@ function emptyLiveSummary(): CashSessionLiveSummary {
         orders_count: 0,
         pending_orders: 0,
         expenses: { total: 0, count: 0, by_method: { cash: 0, card: 0, transfer: 0, nequi: 0, daviplata: 0 }, by_category: {} },
+        incomes: { total: 0, count: 0, by_method: { cash: 0, card: 0, transfer: 0, nequi: 0, daviplata: 0 }, by_category: {} },
     };
 }
 
@@ -470,6 +488,66 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         [refresh, companyNit, branchId, session?.id],
     );
 
+    const recordIncome = useCallback(
+        async (input: { amount: number; category: CashIncomeCategory; description?: string; payment_method?: PaymentMethod }) => {
+            let status: number | null = null;
+            try {
+                const res = await apiFetch('/api/v1/cash-register/incomes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: input.amount,
+                        category: input.category,
+                        description: input.description ?? null,
+                        payment_method: input.payment_method ?? 'cash',
+                        cash_session_id: session?.id ?? null,
+                    }),
+                });
+                status = res.status;
+                if (res.ok) {
+                    await refresh();
+                    return;
+                }
+                if (status < 500) {
+                    const json = (await res.json().catch(() => ({}))) as { message?: string; errors?: Record<string, string[]> };
+                    const firstFieldError = json.errors ? Object.values(json.errors)[0]?.[0] : undefined;
+                    throw new Error(firstFieldError ?? json.message ?? 'No se pudo registrar la entrada.');
+                }
+            } catch (e) {
+                if (status !== null && status < 500) throw e;
+            }
+
+            // Entrada offline.
+            if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede registrar entrada offline.');
+            const { putOutboxOp } = await import('@/lib/offline/db');
+            const { uuidv4 } = await import('@/lib/offline/uuid');
+            const { refreshPendingCount } = await import('@/lib/offline/sync-engine');
+            const nowIso = new Date().toISOString();
+            await putOutboxOp({
+                op_id: uuidv4(),
+                type: 'cash.income',
+                company_nit: companyNit,
+                branch_id: branchId,
+                payload: {
+                    client_uuid: uuidv4(),
+                    amount: input.amount,
+                    category: input.category,
+                    description: input.description ?? null,
+                    payment_method: input.payment_method ?? 'cash',
+                    occurred_at_client: nowIso,
+                    cash_session_id: session?.id ?? null,
+                },
+                created_at_client: nowIso,
+                attempts: 0,
+                status: 'queued',
+                last_error: null,
+                conflict: null,
+            });
+            await refreshPendingCount();
+        },
+        [refresh, companyNit, branchId, session?.id],
+    );
+
     useEffect(() => {
         void refresh();
         const interval = setInterval(() => void refresh(), POLL_INTERVAL_MS);
@@ -509,5 +587,6 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
         openSession,
         closeSession,
         recordExpense,
+        recordIncome,
     };
 }

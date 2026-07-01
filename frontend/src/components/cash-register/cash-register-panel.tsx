@@ -1,5 +1,6 @@
 import CashRegisterPicker from '@/components/cash-register/cash-register-picker';
 import ExpenseModal from '@/components/cash-register/expense-modal';
+import IncomeModal from '@/components/cash-register/income-modal';
 import { AchievementMark } from '@/components/ui/achievement-mark';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import {
     CASH_EXPENSE_CATEGORIES,
     useCashRegister,
     type CashExpenseCategory,
+    type CashIncomeCategory,
     type CashRegister,
     type CashSession,
     type CloseSessionResult,
@@ -18,7 +20,7 @@ import {
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useToken } from '@/hooks/use-token';
 import type { PaymentMethod } from '@/types';
-import { AlertCircle, CheckCircle2, Lock, MinusCircle, RotateCcw, Unlock } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lock, MinusCircle, PlusCircle, RotateCcw, Unlock } from 'lucide-react';
 import { useState } from 'react';
 
 /**
@@ -36,7 +38,7 @@ interface Props {
 
 export default function CashRegisterPanel({ children }: Props) {
     const token = useToken();
-    const { session, loading, error, registers, selectedRegisterId, selectedRegister, selectRegister, openSession, closeSession, refresh, recordExpense } =
+    const { session, loading, error, registers, selectedRegisterId, selectedRegister, selectRegister, openSession, closeSession, refresh, recordExpense, recordIncome } =
         useCashRegister(token);
 
     if (loading) {
@@ -84,6 +86,7 @@ export default function CashRegisterPanel({ children }: Props) {
                 onClose={closeSession}
                 onRefresh={refresh}
                 onRecordExpense={recordExpense}
+                onRecordIncome={recordIncome}
                 showChangeCaja={activeRegisters.length > 1}
                 onChangeCaja={() => selectRegister(null)}
                 hasOtherOpenRegisters={hasOtherOpenRegisters}
@@ -216,6 +219,7 @@ function ActiveSessionBanner({
     onClose,
     onRefresh,
     onRecordExpense,
+    onRecordIncome,
     showChangeCaja,
     onChangeCaja,
     hasOtherOpenRegisters,
@@ -229,6 +233,12 @@ function ActiveSessionBanner({
         description?: string;
         payment_method?: PaymentMethod;
     }) => Promise<void>;
+    onRecordIncome: (input: {
+        amount: number;
+        category: CashIncomeCategory;
+        description?: string;
+        payment_method?: PaymentMethod;
+    }) => Promise<void>;
     showChangeCaja: boolean;
     onChangeCaja: () => void;
     hasOtherOpenRegisters: boolean;
@@ -236,6 +246,7 @@ function ActiveSessionBanner({
     const formatCurrency = useCurrencyFormatter();
     const [showClose, setShowClose] = useState(false);
     const [showExpense, setShowExpense] = useState(false);
+    const [showIncome, setShowIncome] = useState(false);
 
     const openedAt = session.opened_at
         ? new Date(session.opened_at).toLocaleString('es-CO', {
@@ -252,6 +263,8 @@ function ActiveSessionBanner({
 
     const expenses = session.live.expenses;
     const cashExpensesTotal = expenses?.by_method?.cash ?? 0;
+    const incomes = session.live.incomes;
+    const cashIncomesTotal = incomes?.by_method?.cash ?? 0;
     const registerLabel = session.cash_register_name ? ` · ${session.cash_register_name}` : '';
 
     return (
@@ -282,6 +295,11 @@ function ActiveSessionBanner({
                     </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
+                    {cashIncomesTotal > 0 && (
+                        <span className="text-[color:var(--color-status-safe)] tabular-nums">
+                            Entradas cash: <strong>+{formatCurrency(cashIncomesTotal)}</strong>
+                        </span>
+                    )}
                     {cashExpensesTotal > 0 && (
                         <span className="text-[color:var(--color-status-warning)] tabular-nums">
                             Egresos cash: <strong>−{formatCurrency(cashExpensesTotal)}</strong>
@@ -290,6 +308,10 @@ function ActiveSessionBanner({
                     <span className="text-[color:var(--color-status-safe)] tabular-nums">
                         Esperado en efectivo: <strong>{formatCurrency(session.live.expected_cash)}</strong>
                     </span>
+                    <Button size="sm" variant="outline" onClick={() => setShowIncome(true)}>
+                        <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+                        Entrada
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => setShowExpense(true)}>
                         <MinusCircle className="mr-1.5 h-3.5 w-3.5" />
                         Egreso
@@ -316,6 +338,8 @@ function ActiveSessionBanner({
             {showClose && <CloseSessionDialog session={session} onClose={() => setShowClose(false)} onSubmit={onClose} onRefresh={onRefresh} hasOtherOpenRegisters={hasOtherOpenRegisters} />}
 
             {showExpense && <ExpenseModal onClose={() => setShowExpense(false)} onSubmit={onRecordExpense} />}
+
+            {showIncome && <IncomeModal onClose={() => setShowIncome(false)} onSubmit={onRecordIncome} />}
         </>
     );
 }
