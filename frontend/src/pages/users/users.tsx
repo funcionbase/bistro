@@ -172,6 +172,36 @@ export default function Users() {
         await fetchData();
     };
 
+    /**
+     * Asigna/quita a UN usuario el acceso a una sede (branch_users) desde el
+     * modal de detalle. Reusa el endpoint bulk-assign con un solo user_id.
+     * Optimista: refleja el cambio al instante y revierte con refetch si falla.
+     */
+    const handleBranchToggle = async (userId: string, branchId: string, action: 'attach' | 'detach') => {
+        setMembers((prev) =>
+            prev.map((m) => {
+                if (m.user_id !== userId) return m;
+                const current = m.branch_ids ?? [];
+                const next = action === 'attach' ? Array.from(new Set([...current, branchId])) : current.filter((id) => id !== branchId);
+                return { ...m, branch_ids: next };
+            }),
+        );
+        try {
+            const res = await apiFetch('/api/v1/company/branches/bulk-assign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ branch_id: branchId, user_ids: [userId], action }),
+            });
+            if (!res.ok) {
+                await reportError(res, 'No se pudo actualizar la sede.');
+                await fetchData();
+            }
+        } catch {
+            showToast('error', 'Error de conexión al asignar la sede.');
+            await fetchData();
+        }
+    };
+
     const handleBulkRoleChange = async (userIds: string[], roleId: string) => {
         const results = await Promise.allSettled(
             userIds.map((userId) =>
@@ -294,6 +324,7 @@ export default function Users() {
                     onToggleStatus={canManage ? handleToggleStatus : undefined}
                     onEditPermissions={handleEditPermissions}
                     onRemoveUser={handleRemoveUser}
+                    onBranchToggle={canManage ? handleBranchToggle : undefined}
                 />
             </div>
         </PageShell>

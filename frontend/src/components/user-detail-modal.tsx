@@ -2,6 +2,7 @@ import RoleBadge from '@/components/role-badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DetailRow } from '@/components/ui/detail-row';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import type { Branch, CompanyMember, CompanyRole } from '@/types';
-import { KeyRound, MapPin, ShieldOff, Trash2, UserCheck } from 'lucide-react';
+import { KeyRound, Loader2, MapPin, ShieldOff, Trash2, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 
 interface UserDetailModalProps {
@@ -24,6 +25,7 @@ interface UserDetailModalProps {
     onToggleStatus?: (userId: string, newStatus: 'active' | 'inactive') => Promise<void>;
     onEditPermissions?: (member: CompanyMember) => void;
     onRemoveUser: (userId: string) => Promise<void>;
+    onBranchToggle?: (userId: string, branchId: string, action: 'attach' | 'detach') => Promise<void>;
 }
 
 function statusBadge(status?: string) {
@@ -70,11 +72,13 @@ export default function UserDetailModal({
     onToggleStatus,
     onEditPermissions,
     onRemoveUser,
+    onBranchToggle,
 }: UserDetailModalProps) {
     const [savingRole, setSavingRole] = useState(false);
     const [busy, setBusy] = useState(false);
     const [confirmRemove, setConfirmRemove] = useState(false);
     const [confirmToggle, setConfirmToggle] = useState(false);
+    const [branchBusyId, setBranchBusyId] = useState<string | null>(null);
 
     if (!member) return null;
 
@@ -119,10 +123,22 @@ export default function UserDetailModal({
         }
     };
 
+    const assignedBranchIds = new Set(member.branch_ids ?? []);
+
+    const handleBranch = async (branchId: string, action: 'attach' | 'detach') => {
+        if (!onBranchToggle) return;
+        setBranchBusyId(branchId);
+        try {
+            await onBranchToggle(member.user_id, branchId, action);
+        } finally {
+            setBranchBusyId(null);
+        }
+    };
+
     return (
         <>
             <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Detalle del usuario</DialogTitle>
                     </DialogHeader>
@@ -161,7 +177,9 @@ export default function UserDetailModal({
                             <DetailRow
                                 label="Sedes"
                                 value={
-                                    memberBranches.length > 0 ? (
+                                    role?.is_system ? (
+                                        <span className="text-muted-foreground">Todas las sedes</span>
+                                    ) : memberBranches.length > 0 ? (
                                         <div className="flex flex-wrap items-center justify-end gap-1">
                                             {memberBranches.map((b) => (
                                                 <Badge key={b.id} variant="outline" className="border-primary/30 bg-primary/10 text-primary gap-1">
@@ -171,7 +189,7 @@ export default function UserDetailModal({
                                             ))}
                                         </div>
                                     ) : (
-                                        <span className="text-muted-foreground">—</span>
+                                        <span className="text-muted-foreground">Sin sede asignada</span>
                                     )
                                 }
                             />
@@ -203,6 +221,47 @@ export default function UserDetailModal({
                                             </SelectContent>
                                         </Select>
                                     </div>
+
+                                    {/*
+                                     * Asignación de sede (branch_users). Un rol
+                                     * operativo necesita acceso a la sede para
+                                     * operar caja/comandas/entregas. Los roles
+                                     * de sistema (owner/admin) acceden a todas
+                                     * por bypass, así que no se editan aquí.
+                                     */}
+                                    {!role?.is_system && onBranchToggle && branches.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Sedes con acceso</Label>
+                                            <div className="divide-border overflow-hidden rounded-lg border">
+                                                {branches.map((b) => {
+                                                    const assigned = assignedBranchIds.has(b.id);
+                                                    const isBusy = branchBusyId === b.id;
+                                                    return (
+                                                        <label
+                                                            key={b.id}
+                                                            className="border-border hover:bg-muted/50 flex min-h-11 cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
+                                                        >
+                                                            <Checkbox
+                                                                checked={assigned}
+                                                                disabled={isBusy}
+                                                                onCheckedChange={() => void handleBranch(b.id, assigned ? 'detach' : 'attach')}
+                                                                aria-label={`Acceso a ${b.name}`}
+                                                            />
+                                                            <MapPin className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                            <span className="min-w-0 flex-1 truncate text-sm">
+                                                                {b.name}
+                                                                {b.is_default && <span className="text-muted-foreground"> · principal</span>}
+                                                            </span>
+                                                            {isBusy && <Loader2 className="text-muted-foreground h-4 w-4 shrink-0 animate-spin" />}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-muted-foreground text-xs">
+                                                Define en qué sedes puede operar (caja, comandas, entregas).
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <div className="flex flex-wrap gap-2">
                                         {onToggleStatus && !isSelf && (
