@@ -41,7 +41,7 @@ class CashDrawerController extends Controller
         $from = Carbon::parse($validated['date_from'] ?? $today, $tz)->startOfDay();
         $to = Carbon::parse($validated['date_to'] ?? $today, $tz)->endOfDay();
 
-        $summary = $this->buildSummary($companyNit, $from, $to);
+        $summary = $this->buildSummary($companyNit, $from, $to, $request->attributes->get('active_branch_id'));
 
         return response()->json([
             'period' => [
@@ -67,7 +67,7 @@ class CashDrawerController extends Controller
         $from = Carbon::parse($validated['date_from'] ?? $today, $tz)->startOfDay();
         $to = Carbon::parse($validated['date_to'] ?? $today, $tz)->endOfDay();
 
-        $summary = $this->buildSummary($companyNit, $from, $to);
+        $summary = $this->buildSummary($companyNit, $from, $to, $request->attributes->get('active_branch_id'));
 
         return $this->pdfExportService->exportCashDrawer($companyNit, [
             'from' => $from->copy()->setTimezone($tz),
@@ -82,11 +82,21 @@ class CashDrawerController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function buildSummary(string $companyNit, Carbon $from, Carbon $to): array
+    private function buildSummary(string $companyNit, Carbon $from, Carbon $to, ?string $branchId = null): array
     {
-        // Receipts agrupados por método (usa paid_at en UTC, columna timestamp).
+        // Los timestamps se persisten en wall-clock del APP_TIMEZONE (Bogotá);
+        // los límites del período se convierten a ese tz, NO a UTC (corría la
+        // ventana +5h). Los modelos Eloquent (PaymentReceipt/Order) filtran por
+        // sede vía BranchScope; los DB::table() de abajo replican ese filtro a
+        // mano — sin él, un reporte de sede mezclaba aperturas/egresos/ingresos
+        // de TODAS las sedes.
+        $appTz = config('app.timezone');
+        $fromDb = $from->copy()->setTimezone($appTz);
+        $toDb = $to->copy()->setTimezone($appTz);
+
+        // Receipts agrupados por método (branch-scoped vía BranchScope).
         $rows = PaymentReceipt::where('company_nit', $companyNit)
-            ->whereBetween('paid_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->whereBetween('paid_at', [$fromDb, $toDb])
             ->whereNotNull('payment_method')
             ->selectRaw('payment_method,
                 SUM(CASE WHEN amount >= 0 THEN amount ELSE 0 END) AS gross,
@@ -120,7 +130,8 @@ class CashDrawerController extends Controller
         $tipRows = DB::table('payment_receipts as pr')
             ->join('orders as o', 'o.id', '=', 'pr.order_id')
             ->where('pr.company_nit', $companyNit)
-            ->whereBetween('pr.paid_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->when($branchId !== null, fn ($q) => $q->where('pr.branch_id', $branchId))
+            ->whereBetween('pr.paid_at', [$fromDb, $toDb])
             ->whereNotNull('pr.payment_method')
             ->where('pr.payment_method', '!=', 'refund')
             ->where('o.tip_amount', '>', 0)
@@ -143,21 +154,24 @@ class CashDrawerController extends Controller
         // restar egresos en efectivo — igual que CashRegisterService::computeExpectedCash.
         $openingTotal = (float) DB::table('cash_register_sessions')
             ->where('company_nit', $companyNit)
-            ->whereBetween('opened_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->whereBetween('opened_at', [$fromDb, $toDb])
             ->sum('opening_amount');
 
         $cashExpensesTotal = (float) DB::table('cash_register_expenses')
             ->where('company_nit', $companyNit)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->where('payment_method', 'cash')
-            ->whereBetween('created_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->whereBetween('created_at', [$fromDb, $toDb])
             ->sum('amount');
 
         // Entradas de efectivo (no-venta): aportes/préstamos/ajustes. Suman al
         // cajón físico. Desglosadas por categoría para el PDF de cierre.
         $incomeRows = DB::table('cash_register_incomes')
             ->where('company_nit', $companyNit)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->where('payment_method', 'cash')
-            ->whereBetween('created_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->whereBetween('created_at', [$fromDb, $toDb])
             ->selectRaw('category, SUM(amount) AS total')
             ->groupBy('category')
             ->get();
@@ -178,8 +192,8 @@ class CashDrawerController extends Controller
 
         // Conteo de órdenes operadas en el período (por paid_at).
         $orderCount = (int) Order::where('company_nit', $companyNit)
-            ->whereHas('receipts', function ($q) use ($from, $to) {
-                $q->whereBetween('paid_at', [$from->copy()->utc(), $to->copy()->utc()])
+            ->whereHas('receipts', function ($q) use ($fromDb, $toDb) {
+                $q->whereBetween('paid_at', [$fromDb, $toDb])
                     ->where('payment_method', '!=', 'refund');
             })
             ->count();

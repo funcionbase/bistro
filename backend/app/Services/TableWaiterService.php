@@ -140,13 +140,18 @@ class TableWaiterService
             $newOrder->company_nit = $buffer->company_nit;
             $newOrder->branch_id = $buffer->branch_id;
             $newOrder->table_session_id = $lockedSession->id;
-            $newOrder->session_id = $buffer->session_id;
             $newOrder->status = 'pending';
             $newOrder->order_type = 'table';
             $newOrder->table_number = $buffer->table_number;
             $newOrder->client_phone = $clientPhone;
             $newOrder->total = '0.00';
             $newOrder->subtotal = '0.00';
+            // Snapshot tributario heredado de la buffer (congelado al abrir la
+            // sesión) — coherente con appendItems, que usa el snapshot de la
+            // orden y no el estado actual de la empresa.
+            $newOrder->snapshot_default_tax_rate = $buffer->snapshot_default_tax_rate;
+            $newOrder->tax_regime = $buffer->tax_regime;
+            $newOrder->tax_included_in_price = $buffer->tax_included_in_price;
             $newOrder->ordered_at = $now;
             $newOrder->save();
 

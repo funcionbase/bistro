@@ -22,7 +22,6 @@ use App\Services\ShiftActiveGuardService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Sesiones de caja por empresa. Una sola sesión `open` a la vez; cualquier
@@ -262,7 +261,11 @@ class CashRegisterController extends Controller
             $today = Carbon::now($tz)->toDateString();
             $from = Carbon::parse($validated['date_from'] ?? $today, $tz)->startOfDay();
             $to = Carbon::parse($validated['date_to'] ?? $validated['date_from'] ?? $today, $tz)->endOfDay();
-            $query->whereBetween('opened_at', [$from->copy()->utc(), $to->copy()->utc()]);
+            // opened_at se guarda en wall-clock del APP_TIMEZONE (no UTC).
+            $query->whereBetween('opened_at', [
+                $from->copy()->setTimezone(config('app.timezone')),
+                $to->copy()->setTimezone(config('app.timezone')),
+            ]);
         }
 
         $paginated = $query->paginate($perPage);
@@ -375,22 +378,9 @@ class CashRegisterController extends Controller
             $validated['cash_session_id'] ?? null,
         );
 
-        // Bloquear egresos en efectivo que dejarían la caja con saldo negativo.
-        // Un cajón físico no puede tener efectivo negativo; además los egresos
-        // son append-only e irreversibles, por lo que hay que validar antes.
-        if (($validated['payment_method'] ?? 'cash') === 'cash') {
-            $expectedCash = $this->service->computeExpectedCash($session);
-            if ($validated['amount'] > $expectedCash) {
-                throw ValidationException::withMessages([
-                    'amount' => [
-                        'El egreso supera el efectivo disponible en caja. '
-                        .'Disponible: $'.number_format($expectedCash, 0, ',', '.')
-                        .'. Para corregir un egreso anterior, registra un ingreso en sentido contrario.',
-                    ],
-                ]);
-            }
-        }
-
+        // El bloqueo de egresos en efectivo que dejarían la caja negativa se
+        // valida DENTRO de recordExpense (bajo lock de la sesión) para que dos
+        // egresos concurrentes no pasen ambos el chequeo (TOCTOU).
         $expense = $this->service->recordExpense(
             session: $session,
             createdBy: $user,
@@ -398,6 +388,7 @@ class CashRegisterController extends Controller
             category: $validated['category'],
             description: $validated['description'] ?? null,
             paymentMethod: $validated['payment_method'] ?? 'cash',
+            enforceNonNegativeCash: true,
         );
 
         $this->auditService->log('cash.expense.recorded', $user, $expense, [

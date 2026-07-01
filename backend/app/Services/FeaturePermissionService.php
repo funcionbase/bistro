@@ -261,12 +261,22 @@ class FeaturePermissionService
                         continue;
                     }
 
-                    [$group, $action] = explode('.', $featureSlug, 2) + [null, null];
-                    if ($action === null) {
-                        continue;
-                    }
+                    // La clave es el slug completo del feature. El gate depende
+                    // del sufijo: si es una acción CRUD, usa su columna can_*;
+                    // para slugs especiales (deliveries.self_assign,
+                    // cash_register.operate_others, employees.view_salary, …)
+                    // el grant canónico es can_read — igual que las rutas
+                    // (`permission:<slug>,read`) y resolveRoleAndPermissions.
+                    // Antes se buscaba una columna inexistente (can_self_assign)
+                    // y estos permisos quedaban SIEMPRE denegados para roles
+                    // no-system aunque estuvieran asignados.
+                    $dotPos = strrpos($featureSlug, '.');
+                    $suffix = $dotPos !== false ? substr($featureSlug, $dotPos + 1) : null;
+                    $column = in_array($suffix, ['read', 'create', 'update', 'delete'], true)
+                        ? "can_{$suffix}"
+                        : 'can_read';
 
-                    $matrix["{$group}.{$action}"] = (bool) $permission->{"can_{$action}"};
+                    $matrix[$featureSlug] = (bool) $permission->{$column};
                 }
 
                 return $matrix;

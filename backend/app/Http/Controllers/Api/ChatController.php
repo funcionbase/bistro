@@ -10,6 +10,7 @@ use App\Http\Resources\ChatMessageResource;
 use App\Http\Resources\ChatResource;
 use App\Jobs\MarkWhatsappMessageReadJob;
 use App\Models\Branch;
+use App\Models\BranchUser;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Contact;
@@ -433,6 +434,23 @@ class ChatController extends Controller
                 'message' => 'Sede destino no encontrada en esta empresa.',
                 'code' => 'BRANCH_NOT_FOUND',
             ], 404);
+        }
+
+        // Autorización composable documentada en la ruta: owner O
+        // (chats.reassign_branch + ACCESO a la sede destino). Sin este check
+        // un no-owner podía mover chats hacia sedes donde no opera.
+        if (! $isOwner) {
+            $hasTargetAccess = BranchUser::query()
+                ->where('branch_id', $target->id)
+                ->where('user_id', (string) ($payload['sub'] ?? ''))
+                ->exists();
+
+            if (! $hasTargetAccess) {
+                return response()->json([
+                    'message' => 'No tienes acceso a la sede destino.',
+                    'code' => 'CHAT_REASSIGN_TARGET_FORBIDDEN',
+                ], 403);
+            }
         }
 
         if ($chat->branch_id === $target->id) {

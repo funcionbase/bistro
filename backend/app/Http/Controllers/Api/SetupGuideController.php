@@ -128,7 +128,7 @@ class SetupGuideController extends Controller
             [
                 'id' => 'company_info',
                 'title' => 'Personaliza tu marca',
-                'description' => 'Sube tu logo y horario de atención. Se muestran en los recibos y en el portal de tus clientes.',
+                'description' => 'Sube tu logo. Se muestra en los recibos y en el portal de tus clientes.',
                 'url' => '/company/preferences',
                 'completed' => $company?->logo_path !== null,
                 'optional' => true,

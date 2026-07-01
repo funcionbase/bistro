@@ -858,7 +858,7 @@ Route::prefix('v1')->group(function () {
                 // propio o admin) vive en el controller.
                 Route::middleware('throttle:30,1')->group(function () {
                     Route::post('deliveries/orders/{orderId}/self-assign', [DeliveryController::class, 'selfAssign'])
-                        ->where('orderId', '[0-9]+')
+                        ->where('orderId', '[0-9a-fA-F-]{36}')
                         ->middleware('permission:deliveries.self_assign,read')
                         ->name('api.deliveries.self-assign');
                     Route::put('deliveries/{id}/revert', [DeliveryController::class, 'revert'])

@@ -24,7 +24,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -248,7 +247,6 @@ class OrderSyncController extends Controller
                 'company_nit' => $companyNit,
                 'branch_id' => $this->activeBranchId($request),
                 'client_uuid' => $payloadOrder['client_uuid'],
-                'session_id' => 'caja-offline-'.Str::uuid()->toString(),
                 'client_phone' => $payloadOrder['client_phone'] ?? null,
                 'order_type' => $payloadOrder['order_type'],
                 'table_number' => $payloadOrder['order_type'] === 'table' ? ($payloadOrder['table_number'] ?? null) : null,

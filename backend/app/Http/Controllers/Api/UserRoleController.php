@@ -114,9 +114,12 @@ class UserRoleController extends Controller
         $oldRole = $membership->role;
         $newRole = CompanyRole::where('company_nit', $companyNit)->findOrFail($validated['company_role_id']);
 
-        $isOwnerOrAdmin = fn (CompanyRole $role): bool => (bool) $role->is_system;
+        // Regla canónica (ROLES_SYSTEM.md): SOLO el último owner es inviolable.
+        // is_system cobija owner+admin+employee; usarlo aquí bloqueaba también
+        // degradar al único Admin o Empleado, lo cual es legítimo.
+        $isOwnerRole = fn (CompanyRole $role): bool => $role->name === config('roles.role_names.owner');
 
-        if ($isOwnerOrAdmin($oldRole) && ! $isOwnerOrAdmin($newRole)) {
+        if ($isOwnerRole($oldRole) && ! $isOwnerRole($newRole)) {
             $remainingCount = CompanyUser::where('company_nit', $companyNit)
                 ->where('company_role_id', $oldRole->id)
                 ->count();
@@ -145,6 +148,12 @@ class UserRoleController extends Controller
 
         // El usuario cambió de rol → su matriz de permisos cacheada quedó vieja.
         FeaturePermissionService::forgetCompanyCache($companyNit);
+
+        // Invalidar su sesión activa: `role.is_system` viaja horneado en el
+        // JWT y varios middlewares lo usan como bypass — sin esto, un usuario
+        // degradado conservaba acceso total hasta que expirara el token.
+        // Mismo mecanismo que updateStatus() al desactivar.
+        $this->jwtService->invalidateUserActiveSession($membership->user_id);
 
         return new JsonResource($membership->fresh(['user', 'role']));
     }
@@ -273,8 +282,22 @@ class UserRoleController extends Controller
 
         $membership = CompanyUser::where('company_nit', $companyNit)
             ->where('user_id', $id)
-            ->with('user')
+            ->with(['user', 'role'])
             ->firstOrFail();
+
+        // No dejar la empresa sin ningún owner activo: desactivar al único
+        // owner con status=active la bloquearía operativamente.
+        if ($validated['status'] === 'inactive'
+            && $membership->role?->name === config('roles.role_names.owner')) {
+            $activeOwners = CompanyUser::where('company_nit', $companyNit)
+                ->where('company_role_id', $membership->company_role_id)
+                ->where('status', 'active')
+                ->count();
+
+            if ($activeOwners <= 1) {
+                abort(403, 'No puedes desactivar al único propietario activo de la empresa.');
+            }
+        }
 
         DB::transaction(function () use ($membership, $validated, $request, $companyNit) {
             $previousStatus = $membership->status;
@@ -322,7 +345,9 @@ class UserRoleController extends Controller
 
         $role = $membership->role;
 
-        if ($role->is_system) {
+        // Último-owner inviolable (ROLES_SYSTEM.md). Antes se aplicaba a todo
+        // rol is_system y bloqueaba desvincular al único Admin/Empleado.
+        if ($role->name === config('roles.role_names.owner')) {
             $remaining = CompanyUser::where('company_nit', $companyNit)
                 ->where('company_role_id', $role->id)
                 ->count();
