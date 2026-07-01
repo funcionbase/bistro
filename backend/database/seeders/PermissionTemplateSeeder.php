@@ -53,6 +53,12 @@ class PermissionTemplateSeeder extends Seeder
             'kds.update' => [false, false, true, false],
         ];
         $cashierMap = [
+            // orders.create habilita abrir caja (cash-register/open exige
+            // `orders.create,create`) y la pantalla POS (crear órdenes walk-in).
+            // can_read=true además hace visible el ítem "Caja" en el sidebar
+            // (gate `permission: 'orders.create'`). Sin esto el Cajero ni ve ni
+            // puede operar la caja — justo su función principal.
+            'orders.create' => [true, true, false, false],
             'orders.read' => [false, true, false, false],
             'orders.update' => [false, false, true, false],
             'menu.read' => [false, true, false, false],

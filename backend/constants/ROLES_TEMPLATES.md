@@ -82,6 +82,7 @@ significa:
 
 | Slug | C | R | U | D |
 |---|---|---|---|---|
+| `orders.create` | ✅ | ✅ | - | - |
 | `orders.read` | - | ✅ | - | - |
 | `orders.update` | - | - | ✅ | - |
 | `menu.read` | - | ✅ | - | - |
