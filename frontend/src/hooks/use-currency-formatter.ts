@@ -1,12 +1,10 @@
-export function useCurrencyFormatter() {
-    const formatCurrency = (price: number): string => {
-        return new Intl.NumberFormat('es-CO', {
-            style: 'currency',
-            currency: 'COP',
-            maximumFractionDigits: 0,
-            minimumFractionDigits: 0,
-        }).format(price);
-    };
+import { formatCurrency } from '@/lib/formatters';
 
+/**
+ * @deprecated Usar `formatCurrency` de `@/lib/formatters` directamente.
+ * Se conserva como alias para no tocar todos los consumidores de una;
+ * delega al formateador canónico (trunca a peso, §13).
+ */
+export function useCurrencyFormatter() {
     return formatCurrency;
 }

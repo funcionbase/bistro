@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { DELIVERY_REASON_LABELS, type Delivery } from '@/types';
 import { CheckCircle2, LoaderCircle, MapPin, MoreVertical, Phone } from 'lucide-react';
+import { formatCurrency as formatCurrencyCOP } from '@/lib/formatters';
 
 export type MyDeliveryAction = 'complete' | 'open_actions';
 
@@ -118,17 +119,11 @@ export function MyDeliveryCard({ delivery, onAction, busy = false }: MyDeliveryC
     );
 }
 
-const currency = new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-});
-
 function formatCurrency(value: number): string {
     if (!Number.isFinite(value)) {
         return '—';
     }
-    return currency.format(value);
+    return formatCurrencyCOP(value);
 }
 
 function reasonLabel(reason: Delivery['status_change_reason']): string | null {

@@ -27,6 +27,7 @@ import type { MenuItem, RestaurantMenu } from '@/types';
 
 import { AlertCircle, Check, Minus, Plus, QrCode, ShoppingBag, Store, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 
 interface CartLine {
     item: MenuItem;
@@ -545,7 +546,8 @@ export default function CajaPage() {
                                             <Input
                                                 id="delivery-address"
                                                 value={deliveryAddress}
-                                                onChange={(e) => setDeliveryAddress(e.target.value)}
+                                                onChange={(e) => setDeliveryAddress(sanitizePlainText(e.target.value, 500, true, false))}
+                                            maxLength={500}
                                                 placeholder="Calle 123 #45-67, apto 802"
                                                 disabled={submitting}
                                             />
@@ -622,7 +624,8 @@ export default function CajaPage() {
                                                     </div>
                                                     <Input
                                                         value={line.notes ?? ''}
-                                                        onChange={(e) => updateNotes(line.item.id, e.target.value)}
+                                                        onChange={(e) => updateNotes(line.item.id, sanitizePlainText(e.target.value, 500, true, false))}
+                                                    maxLength={500}
                                                         placeholder="Notas (opcional)"
                                                         className="mt-2 h-9 text-xs"
                                                         disabled={submitting}
@@ -683,11 +686,11 @@ export default function CajaPage() {
                                             <div className="flex gap-1">
                                                 <Input
                                                     value={couponInput}
-                                                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                                                    onChange={(e) => setCouponInput(sanitizePlainText(e.target.value.toUpperCase(), 60, false, false))}
+                                                    maxLength={60}
                                                     placeholder="Código de cupón"
                                                     className="h-7 text-xs uppercase"
                                                     disabled={submitting || validatingCoupon || cartLines.length === 0}
-                                                    maxLength={60}
                                                 />
                                                 <Button
                                                     type="button"

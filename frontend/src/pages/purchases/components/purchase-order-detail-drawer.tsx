@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { AttachmentsPanel } from './attachments-panel';
 import { MarkPaidModal } from './mark-paid-modal';
 import { ReasonPromptModal } from './void-po-modal';
+import { formatCurrency } from '@/lib/formatters';
 
 const STATUS_VARIANT: Record<PurchaseStatus, NonNullable<BadgeProps['variant']>> = {
     draft: 'secondary',
@@ -21,7 +22,7 @@ const STATUS_VARIANT: Record<PurchaseStatus, NonNullable<BadgeProps['variant']>>
 };
 
 function fmt(v: string | number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(v));
+    return formatCurrency(Number(v));
 }
 
 interface Props {

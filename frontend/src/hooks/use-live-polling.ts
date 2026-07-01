@@ -28,7 +28,10 @@ export function useLivePolling({ intervalMs, onTick }: Options): Return {
 
     useEffect(() => {
         if (!enabled) return;
-        const interval = setInterval(() => void onTickRef.current(), intervalMs);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void onTickRef.current();
+        }, intervalMs);
         const autoOff = setTimeout(() => {
             setEnabled(false);
             setActivatedAt(null);

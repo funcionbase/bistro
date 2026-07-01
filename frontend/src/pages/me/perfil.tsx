@@ -11,6 +11,7 @@ import { employeeStatusBadge, employeeStatusLabel, useEmployeeStatuses } from '@
 import { apiFetch } from '@/lib/api';
 import { AlertCircle, Briefcase, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatDateTime } from '@/lib/datetime';
 
 type Profile = {
     id: string;
@@ -44,7 +45,7 @@ const payTypeLabels: Record<string, string> = {
 
 function formatDate(iso: string | null): string {
     if (!iso) return '—';
-    return new Date(iso + 'T00:00:00').toLocaleDateString('es-CO', {
+    return formatDateTime(iso + 'T00:00:00', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',

@@ -43,3 +43,14 @@ export function stripCountryPrefix(input: string): string {
 export function isValidColombianMobile(digits: string): boolean {
     return /^3\d{9}$/.test(digits);
 }
+
+/**
+ * Enmascara un móvil de 10 dígitos para mostrarlo sin exponer PII completa:
+ * "3001234567" → "300 *** 4567". Otros largos se devuelven tal cual.
+ */
+export function maskPhone(phone: string): string {
+    if (phone.length !== 10) {
+        return phone;
+    }
+    return `${phone.slice(0, 3)} *** ${phone.slice(6)}`;
+}

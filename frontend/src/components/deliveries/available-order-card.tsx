@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Clock, LoaderCircle, MapPin, Package, Phone, ShoppingBag } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatters';
 
 export interface AvailableOrder {
     id: string;
@@ -21,11 +22,6 @@ interface AvailableOrderCardProps {
     busy?: boolean;
 }
 
-const currency = new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-});
 
 /**
  * Card de orden disponible para auto-asignación (#119).
@@ -51,7 +47,7 @@ export function AvailableOrderCard({ order, onTake, busy = false }: AvailableOrd
                     </div>
                     <span className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs">
                         <ShoppingBag className="h-3 w-3" aria-hidden="true" />
-                        {Number.isFinite(total) ? currency.format(total) : '—'}
+                        {Number.isFinite(total) ? formatCurrency(total) : '—'}
                     </span>
                 </header>
 

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { GuestBadge } from '@/components/ui/guest-badge';
 import { cn } from '@/lib/utils';
 import { Check, X } from 'lucide-react';
+import { formatDateTimeShort } from '@/lib/datetime';
 
 interface CancellationRequestCardProps {
     /** ID del CancellationRequest. */
@@ -81,7 +82,7 @@ export function CancellationRequestCard({
                 {reason && <p className="text-muted-foreground mt-1 text-xs italic">"{reason}"</p>}
                 {createdAt && (
                     <p className="text-muted-foreground mt-1 text-[11px]">
-                        Solicitado {new Date(createdAt).toLocaleString('es-CO')}
+                        Solicitado {formatDateTimeShort(createdAt)}
                     </p>
                 )}
             </div>

@@ -9,6 +9,7 @@ import type { KanbanOrder } from '@/hooks/use-orders';
 import { apiFetch } from '@/lib/api';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 
 interface RefundOrderModalProps {
     order: KanbanOrder;
@@ -139,9 +140,9 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
                         <Input
                             id="refund-ref"
                             value={reference}
-                            onChange={(e) => setReference(e.target.value)}
-                            placeholder="Ej. 000123456"
+                            onChange={(e) => setReference(sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
+                            placeholder="Ej. 000123456"
                         />
                     </div>
                 )}
@@ -153,9 +154,9 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
                     <Input
                         id="refund-reason"
                         value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Ej. plato equivocado"
+                        onChange={(e) => setReason(sanitizePlainText(e.target.value, 255, true, false))}
                         maxLength={255}
+                        placeholder="Ej. plato equivocado"
                     />
                 </div>
 

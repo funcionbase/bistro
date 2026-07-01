@@ -208,17 +208,12 @@ export function AppSidebar() {
                     businessCapability: 'inventory',
                 },
                 {
-                    title: 'Compras',
+                    // Página unificada: órdenes de compra + catálogo de
+                    // proveedores en tabs (/purchases?tab=proveedores).
+                    title: 'Compras y proveedores',
                     url: route('purchases'),
                     icon: ShoppingCart,
-                    permission: 'purchases.read',
-                    businessCapability: 'inventory',
-                },
-                {
-                    title: 'Proveedores',
-                    url: route('suppliers'),
-                    icon: Truck,
-                    permission: 'suppliers.read',
+                    anyPermission: ['purchases.read', 'suppliers.read'],
                     businessCapability: 'inventory',
                 },
                 {

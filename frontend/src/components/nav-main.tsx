@@ -32,8 +32,11 @@ import { ChevronRight } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 function canAccess(item: NavItem, permissions: string[], isSystem: boolean): boolean {
-    if (!item.permission) return true;
     if (isSystem) return true;
+    if (item.anyPermission) {
+        return item.anyPermission.some((p) => permissions.includes(p));
+    }
+    if (!item.permission) return true;
     return permissions.includes(item.permission);
 }
 

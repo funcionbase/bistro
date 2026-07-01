@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { CheckCircle2, Clock, MapPin, QrCode, ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { formatCurrency } from '@/lib/formatters';
 
 const TERMINAL_SESSION_STATUSES = ['closed', 'expired'] as const;
 
@@ -860,11 +861,3 @@ function formatPhone(raw: string): string {
     return raw;
 }
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value);
-}

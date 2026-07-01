@@ -111,7 +111,10 @@ export function useTables(token: string | null): UseTablesReturn {
 
     useEffect(() => {
         void fetchTables();
-        const interval = setInterval(() => void fetchTables(), POLL_INTERVAL_MS);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchTables();
+        }, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [fetchTables]);
 

@@ -32,13 +32,11 @@ import { type DashboardData, type MetricActiveOrders, type Period } from '@/type
 import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, AlertTriangle, DollarSign, MapPin, Package, ShoppingBag, TrendingDown, Truck } from 'lucide-react';
 import { useMemo } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 
 const OVERDUE_THRESHOLD_MIN = 45;
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
-}
 
 function formatDuration(minutes: number | null): string {
     if (minutes === null) return '—';

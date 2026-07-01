@@ -39,10 +39,8 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
     { pattern: '/loyalty/reports', label: 'Fidelización', parent: '/contactos' },
 
     { pattern: '/inventory', label: 'Existencias', parent: '/inventario' },
-    { pattern: '/purchases', label: 'Compras', parent: '/inventario' },
+    { pattern: '/purchases', label: 'Compras y proveedores', parent: '/inventario' },
     { pattern: '/purchases/:id', label: null, parent: '/purchases' },
-    { pattern: '/suppliers', label: 'Proveedores', parent: '/inventario' },
-    { pattern: '/suppliers/:id', label: null, parent: '/suppliers' },
     { pattern: '/company/warehouses', label: 'Bodegas', parent: '/inventario' },
 
     { pattern: '/company/metrics', label: 'Métricas', parent: '/analisis' },

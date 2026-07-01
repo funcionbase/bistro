@@ -21,7 +21,6 @@ const ROUTE_CHUNKS: Record<string, () => Promise<unknown>> = {
     '/me': () => import('@/pages/me/index'),
     '/me/profile': () => import('@/pages/me/perfil'),
     '/me/schedule': () => import('@/pages/me/agenda'),
-    '/suppliers': () => import('@/pages/suppliers/index'),
     '/loyalty/reports': () => import('@/pages/loyalty/reports'),
     '/billing': () => import('@/pages/billing/index'),
     '/clients': () => import('@/pages/clients/index'),

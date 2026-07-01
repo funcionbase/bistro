@@ -1,6 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MetricHeatmapHour } from '@/types';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { formatCurrency } from '@/lib/formatters';
 
 interface TooltipProps {
     active?: boolean;
@@ -18,7 +19,7 @@ function HeatmapTooltip({ active, payload, label }: TooltipProps) {
             <p className="text-xs text-[var(--color-primary)]">Órdenes: {entry.value}</p>
             <p className="text-muted-foreground text-xs">
                 Ingresos:{' '}
-                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(entry.payload.revenue)}
+                {formatCurrency(entry.payload.revenue)}
             </p>
         </div>
     );

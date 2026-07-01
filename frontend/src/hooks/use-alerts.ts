@@ -95,6 +95,7 @@ export function useAlerts(status: AlertStatus | 'all' = 'active', pollMs = 5 * 6
         void fetchAll();
         if (pollMs <= 0) return;
         const id = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
             void fetchAll();
         }, pollMs);
         return () => window.clearInterval(id);

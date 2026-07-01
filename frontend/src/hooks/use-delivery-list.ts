@@ -65,7 +65,10 @@ export function useDeliveryList(token: string | null, pollingMs = 0): UseDeliver
     useEffect(() => {
         void fetchDeliveries();
         if (!pollingMs) return;
-        const interval = setInterval(() => void fetchDeliveries(), pollingMs);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchDeliveries();
+        }, pollingMs);
         return () => clearInterval(interval);
     }, [fetchDeliveries, pollingMs]);
 

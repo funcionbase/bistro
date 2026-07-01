@@ -3,12 +3,15 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Ingredient, IngredientFormPayload } from '@/types/inventory';
 import type { PurchaseOrderCreatePayload, PurchaseOrderDetail, PurchaseOrderItemPayload } from '@/types/purchases';
-import type { Supplier } from '@/types/suppliers';
+import type { Supplier, SupplierFormPayload } from '@/types/suppliers';
 import { LoaderCircle, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { IngredientFormModal } from '../../inventory/components/ingredient-form-modal';
+import { SupplierFormModal } from './supplier-form-modal';
+import { formatCurrency } from '@/lib/formatters';
 
 interface LineDraft {
     ingredient_id: string;
@@ -34,10 +37,16 @@ interface Props {
     onCreateIngredient: (payload: IngredientFormPayload) => Promise<Ingredient>;
     /** Aviso al padre para refrescar el catálogo de insumos. */
     onIngredientCreated?: () => void;
+    /** Si el usuario puede crear proveedores (permiso `suppliers.create`). */
+    canCreateSupplier?: boolean;
+    /** Crea un proveedor y lo devuelve para autoseleccionarlo (sin salir del editor). */
+    onCreateSupplier?: (payload: SupplierFormPayload) => Promise<Supplier>;
+    /** Aviso al padre para refrescar el catálogo de proveedores. */
+    onSupplierCreated?: () => void;
 }
 
 function fmt(n: number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+    return formatCurrency(n);
 }
 
 /** Trunca un valor numérico (string) a su parte entera, conservando '' como ''. */
@@ -61,6 +70,9 @@ export function PurchaseOrderEditor({
     canCreateIngredient,
     onCreateIngredient,
     onIngredientCreated,
+    canCreateSupplier = false,
+    onCreateSupplier,
+    onSupplierCreated,
 }: Props) {
     const [supplierId, setSupplierId] = useState<string>('');
     const [expectedDate, setExpectedDate] = useState('');
@@ -74,6 +86,13 @@ export function PurchaseOrderEditor({
     const [ingredientLineIdx, setIngredientLineIdx] = useState<number | null>(null);
     const [creatingIngredient, setCreatingIngredient] = useState(false);
     const [ingredientErrors, setIngredientErrors] = useState<Record<string, string[]>>({});
+
+    // Proveedores creados dentro del editor (mismo patrón que insumos): evita
+    // el paso redundante de salir a otra pestaña para crear el proveedor.
+    const [locallyCreatedSuppliers, setLocallyCreatedSuppliers] = useState<Supplier[]>([]);
+    const [showSupplierForm, setShowSupplierForm] = useState(false);
+    const [creatingSupplier, setCreatingSupplier] = useState(false);
+    const [supplierErrors, setSupplierErrors] = useState<Record<string, string[]>>({});
 
     useEffect(() => {
         if (open) {
@@ -94,6 +113,9 @@ export function PurchaseOrderEditor({
             setShowIngredientForm(false);
             setIngredientLineIdx(null);
             setIngredientErrors({});
+            setLocallyCreatedSuppliers([]);
+            setShowSupplierForm(false);
+            setSupplierErrors({});
         }
     }, [open, editing]);
 
@@ -109,7 +131,19 @@ export function PurchaseOrderEditor({
         return Array.from(map.values());
     }, [ingredients, locallyCreated]);
 
-    const supplierOptions = useMemo<ComboboxOption[]>(() => suppliers.map((s) => ({ value: s.id, label: s.name })), [suppliers]);
+    // Catálogo efectivo de proveedores: props + recién creados (dedupe por id).
+    const allSuppliers = useMemo(() => {
+        const map = new Map<string, Supplier>();
+        for (const s of suppliers) {
+            map.set(s.id, s);
+        }
+        for (const s of locallyCreatedSuppliers) {
+            map.set(s.id, s);
+        }
+        return Array.from(map.values());
+    }, [suppliers, locallyCreatedSuppliers]);
+
+    const supplierOptions = useMemo<ComboboxOption[]>(() => allSuppliers.map((s) => ({ value: s.id, label: s.name })), [allSuppliers]);
     const ingredientOptions = useMemo<ComboboxOption[]>(
         () => allIngredients.map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` })),
         [allIngredients],
@@ -165,6 +199,24 @@ export function PurchaseOrderEditor({
         setIngredientLineIdx(idx);
         setIngredientErrors({});
         setShowIngredientForm(true);
+    }
+
+    async function handleCreateSupplier(payload: SupplierFormPayload) {
+        if (!onCreateSupplier) return;
+        setCreatingSupplier(true);
+        setSupplierErrors({});
+        try {
+            const created = await onCreateSupplier(payload);
+            setLocallyCreatedSuppliers((prev) => [created, ...prev]);
+            setSupplierId(created.id);
+            setShowSupplierForm(false);
+            onSupplierCreated?.();
+        } catch (err) {
+            const apiErr = err as { errors?: Record<string, string[]>; message?: string };
+            setSupplierErrors(apiErr?.errors ?? { name: [apiErr?.message ?? 'No se pudo crear el proveedor.'] });
+        } finally {
+            setCreatingSupplier(false);
+        }
     }
 
     async function handleCreateIngredient(payload: IngredientFormPayload) {
@@ -242,6 +294,22 @@ export function PurchaseOrderEditor({
                                     searchPlaceholder="Buscar proveedor…"
                                     emptyText="No hay proveedores."
                                     disabled={!!editing}
+                                    footer={
+                                        canCreateSupplier && !editing && onCreateSupplier ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="w-full justify-start"
+                                                onClick={() => {
+                                                    setSupplierErrors({});
+                                                    setShowSupplierForm(true);
+                                                }}
+                                            >
+                                                <Plus className="mr-1 h-3.5 w-3.5" /> Crear proveedor
+                                            </Button>
+                                        ) : undefined
+                                    }
                                 />
                                 {err('supplier_id') && <p className="text-destructive text-xs">{err('supplier_id')}</p>}
                             </div>
@@ -369,7 +437,8 @@ export function PurchaseOrderEditor({
                                 id="notes"
                                 rows={2}
                                 value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
+                                onChange={(e) => setNotes(sanitizePlainText(e.target.value, 2000, true, false))}
+                                maxLength={2000}
                                 className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm shadow-sm"
                             />
                         </div>
@@ -397,6 +466,15 @@ export function PurchaseOrderEditor({
                 editing={null}
                 submitting={creatingIngredient}
                 errors={ingredientErrors}
+            />
+
+            <SupplierFormModal
+                open={showSupplierForm}
+                onClose={() => setShowSupplierForm(false)}
+                onSubmit={handleCreateSupplier}
+                editing={null}
+                submitting={creatingSupplier}
+                errors={supplierErrors}
             />
         </>
     );

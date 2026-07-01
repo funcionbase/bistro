@@ -16,6 +16,7 @@ import { todayInBogota } from '@/lib/datetime';
 
 import { AlertCircle, ArrowLeft, Download, FileBarChart, FileText, Info, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 type Row = {
     employee_id: string;
@@ -56,11 +57,7 @@ function formatHours(value: number): string {
 }
 
 function formatCop(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0,
-    }).format(value);
+    return formatCurrency(value);
 }
 
 function computeRange(period: Period, customFrom: string, customTo: string): { from: string; to: string } {

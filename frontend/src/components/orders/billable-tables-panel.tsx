@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 import { Receipt, Users } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 interface BillableOrder {
     id: string;
@@ -25,13 +26,6 @@ interface BillableSession {
 
 const POLL_INTERVAL_MS = 30_000;
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0,
-    }).format(value);
-}
 
 /**
  * Panel para el cajero que lista las mesas con órdenes pendientes de cobro.
@@ -72,7 +66,10 @@ export default function BillableTablesPanel() {
     useEffect(() => {
         mountedRef.current = true;
         void fetchData();
-        const id = window.setInterval(() => void fetchData(), POLL_INTERVAL_MS);
+        const id = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchData();
+        }, POLL_INTERVAL_MS);
         return () => {
             mountedRef.current = false;
             window.clearInterval(id);

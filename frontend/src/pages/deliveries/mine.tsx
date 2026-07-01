@@ -144,7 +144,10 @@ export default function MyDeliveriesPage() {
     useEffect(() => {
         if (tab !== 'available') return;
         void fetchAvailable();
-        const id = window.setInterval(() => void fetchAvailable(), POLL_AVAILABLE_MS);
+        const id = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchAvailable();
+        }, POLL_AVAILABLE_MS);
         return () => window.clearInterval(id);
     }, [tab, fetchAvailable]);
 

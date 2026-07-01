@@ -50,13 +50,7 @@ export function useCompanyColor(): UseCompanyColorReturn {
 
         let isMounted = true;
 
-        const urlToken = new URLSearchParams(window.location.search).get('token');
-        const extraHeaders: Record<string, string> = {};
-        if (urlToken) {
-            extraHeaders['Authorization'] = `Bearer ${urlToken}`;
-        }
-
-        apiFetch('/api/v1/companies/settings/menu_primary_color', { headers: extraHeaders })
+        apiFetch('/api/v1/companies/settings/menu_primary_color')
             .then((res) => res.json())
             .then((data) => {
                 if (!isMounted) return;
@@ -96,9 +90,7 @@ export function useCompanyColor(): UseCompanyColorReturn {
         setColorError(null);
         setSavingColor(true);
         try {
-            const urlToken = new URLSearchParams(window.location.search).get('token');
             const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (urlToken) headers['Authorization'] = `Bearer ${urlToken}`;
             const response = await apiFetch('/api/v1/companies/settings', {
                 method: 'PATCH',
                 headers,

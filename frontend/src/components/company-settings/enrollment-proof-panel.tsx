@@ -3,6 +3,7 @@ import { DashboardPanel } from '@/components/ui/dashboard-panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { EnrollmentProofPreview } from '@/hooks/use-enrollment-proof';
 import { FileText, LoaderCircle } from 'lucide-react';
+import { formatDateTime } from '@/lib/datetime';
 
 interface EnrollmentProofPanelProps {
     proofData: EnrollmentProofPreview | null;
@@ -44,7 +45,7 @@ export function EnrollmentProofPanel({ proofData, proofLoading, proofError, proo
                         <p className="text-muted-foreground text-xs">
                             {formatBytes(proofData.file_size)}
                             {proofData.uploaded_at &&
-                                ` · subida el ${new Date(proofData.uploaded_at).toLocaleDateString('es-CO', {
+                                ` · subida el ${formatDateTime(proofData.uploaded_at, {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric',

@@ -199,7 +199,10 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
 
     useEffect(() => {
         void fetchChats();
-        const interval = setInterval(() => void fetchChats(), POLL_INTERVAL_MS);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchChats();
+        }, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [fetchChats]);
 
@@ -209,7 +212,10 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
             return;
         }
         void fetchChatDetail(selectedChatId);
-        const interval = setInterval(() => void fetchChatDetail(selectedChatId), POLL_INTERVAL_MS);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchChatDetail(selectedChatId);
+        }, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [selectedChatId, fetchChatDetail]);
 

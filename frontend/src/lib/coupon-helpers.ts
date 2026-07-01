@@ -1,4 +1,8 @@
+import { formatCurrency } from '@/lib/formatters';
 import type { Coupon, CouponStatus, CouponType } from '@/types/coupon';
+
+// Re-export por compatibilidad: el canónico vive en '@/lib/formatters'.
+export { formatCurrency } from '@/lib/formatters';
 
 export function formatCouponType(type: CouponType): string {
     return type === 'percentage' ? 'Porcentaje' : 'Monto fijo';
@@ -9,15 +13,6 @@ export function formatDiscountValue(coupon: Coupon): string {
         return `${coupon.value}%`;
     }
     return formatCurrency(coupon.value);
-}
-
-export function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(amount);
 }
 
 export function formatDate(dateStr: string | null): string {

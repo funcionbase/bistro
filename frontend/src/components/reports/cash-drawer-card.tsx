@@ -9,6 +9,7 @@ import { apiFetch } from '@/lib/api';
 import type { PaymentReceiptMethod } from '@/types';
 import { Banknote, CreditCard, Download, QrCode, RefreshCw, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 /**
  * Cierre de caja — muestra cobros, devoluciones y propinas por método de pago.
@@ -46,9 +47,6 @@ const METHOD_ICONS: Record<PaymentReceiptMethod, typeof Banknote> = {
     refund: Undo2,
 };
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
-}
 
 export default function CashDrawerCard({
     branchFilter = 'active',

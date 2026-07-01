@@ -21,6 +21,8 @@ export interface NavItem {
     icon?: LucideIcon | null;
     isActive?: boolean;
     permission?: string;
+    /** Visible si el usuario tiene AL MENOS UNO de estos permisos (OR). */
+    anyPermission?: string[];
     comingSoon?: boolean;
     children?: NavItem[];
     /**

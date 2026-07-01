@@ -41,6 +41,7 @@ import { MovementsDrawer } from './components/movements-drawer';
 import { RecordEntryModal } from './components/record-entry-modal';
 import { RecordWasteModal } from './components/record-waste-modal';
 import { TransferStockModal } from './components/transfer-stock-modal';
+import { formatCurrency as formatCurrencyCOP } from '@/lib/formatters';
 
 
 function formatStock(value: string, unit: string): string {
@@ -49,7 +50,7 @@ function formatStock(value: string, unit: string): string {
 }
 
 function formatCurrency(value: string | number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(value));
+    return formatCurrencyCOP(Number(value));
 }
 
 export default function InventoryIndex() {

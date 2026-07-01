@@ -47,6 +47,7 @@ export function useActiveAutoApply(orderTotal: number, clientPhone?: string): Ac
     useEffect(() => {
         void check();
         const id = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
             void check();
         }, 60_000);
         return () => window.clearInterval(id);

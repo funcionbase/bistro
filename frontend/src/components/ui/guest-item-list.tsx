@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { GuestBadge } from '@/components/ui/guest-badge';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/formatters';
+import { maskPhone } from '@/lib/phone';
 
 interface ItemForCashier {
     id: string;
@@ -13,6 +15,8 @@ interface ItemForCashier {
     status: string;
     paid_at: string | null;
     paid_receipt_id: string | null;
+    /** Item ya devuelto (receipt negativo emitido). No admite otro refund. */
+    refunded_at?: string | null;
 }
 
 interface GuestBreakdown {
@@ -108,7 +112,9 @@ export function GuestItemList({
                                 </span>
                             </div>
                             <div className="mt-1 flex items-center gap-1.5">
-                                {item.paid_at ? (
+                                {item.refunded_at ? (
+                                    <Badge variant="critical">Devuelto</Badge>
+                                ) : item.paid_at ? (
                                     <>
                                         <Badge
                                             variant="secondary"
@@ -153,16 +159,4 @@ export function GuestItemList({
     );
 }
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value);
-}
 
-function maskPhone(phone: string): string {
-    if (phone.length !== 10) return phone;
-    return `${phone.slice(0, 3)} *** ${phone.slice(6)}`;
-}

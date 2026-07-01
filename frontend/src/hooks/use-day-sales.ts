@@ -92,7 +92,10 @@ export function useDaySales(token: string | null, params: DaySalesParams): UseDa
 
     useEffect(() => {
         void fetchOrders();
-        const interval = setInterval(() => void fetchOrders(), POLL_INTERVAL_MS);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchOrders();
+        }, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [fetchOrders]);
 

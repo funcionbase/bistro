@@ -529,7 +529,8 @@ export default function ChatsPage() {
                                             <input
                                                 type="text"
                                                 value={draft}
-                                                onChange={(e) => setDraft(e.target.value)}
+                                                onChange={(e) => setDraft(sanitizePlainText(e.target.value, 4000, true, false))}
+                                                maxLength={4000}
                                                 placeholder="Escribe un mensaje..."
                                                 className="border-input bg-background focus:ring-primary flex-1 rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                                                 disabled={sending || !canUpdate}

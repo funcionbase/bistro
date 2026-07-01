@@ -41,6 +41,10 @@ import { useCourierAssignment } from '@/hooks/use-courier-assignment';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatCurrency } from '@/lib/formatters';
+import { maskPhone } from '@/lib/phone';
+import { formatDateTime, formatDateTimeShort } from '@/lib/datetime';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 
 // ── Session / cashier data types ──────────────────────────────────────────────
 
@@ -102,6 +106,7 @@ interface ItemForCashier {
     status: string;
     paid_at: string | null;
     paid_receipt_id: string | null;
+    refunded_at?: string | null;
 }
 
 interface GuestBreakdown {
@@ -1144,7 +1149,7 @@ export default function OrderShow() {
                                                             )}
                                                         </div>
                                                         <span className="text-muted-foreground text-xs">
-                                                            {r.paid_at ? new Date(r.paid_at).toLocaleString('es-CO') : ''}
+                                                            {r.paid_at ? formatDateTimeShort(r.paid_at) : ''}
                                                         </span>
                                                     </div>
                                                 ))}
@@ -1500,7 +1505,7 @@ export default function OrderShow() {
                     <ConfirmDialog
                         open={!!refundItem}
                         title={`Devolver "${refundItem?.name ?? ''}"`}
-                        message={`Se creará un comprobante de devolución por ${refundItem ? formatCurrency(Number.parseFloat(refundItem.amount)) : ''}. El item quedará como cancelado. Esta acción no es reversible.`}
+                        message={`Se creará un comprobante de devolución por ${refundItem ? formatCurrency(Number.parseFloat(refundItem.amount)) : ''}. El item quedará marcado como devuelto; la venta original se conserva. Esta acción no es reversible.`}
                         confirmLabel="Devolver"
                         onConfirm={() => void submitRefund()}
                         onCancel={() => setRefundItem(null)}
@@ -1536,9 +1541,9 @@ export default function OrderShow() {
                                     <Input
                                         id="refund-ref"
                                         value={refundReference}
-                                        onChange={(e) => setRefundReference(e.target.value)}
-                                        placeholder="Ej: voucher reverso 8732"
+                                        onChange={(e) => setRefundReference(sanitizePlainText(e.target.value, 120, false, false))}
                                         maxLength={120}
+                                        placeholder="Ej: voucher reverso 8732"
                                         className="mt-1"
                                     />
                                 </div>
@@ -1797,7 +1802,7 @@ function ClosedOrderSummary({
     }, null);
 
     const fmt = (d: string) =>
-        new Date(d).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+        formatDateTime(d, { dateStyle: 'medium', timeStyle: 'short' });
 
     return (
         <section className="border-border bg-card space-y-4 rounded-2xl border p-4 shadow-sm">
@@ -2037,14 +2042,6 @@ function buildPageDescription(
     return parts.join(' · ');
 }
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value);
-}
 
 function formatDuration(seconds: number): string {
     if (seconds < 60) return `${seconds}s`;
@@ -2056,10 +2053,6 @@ function formatDuration(seconds: number): string {
     return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
 }
 
-function maskPhone(phone: string): string {
-    if (phone.length !== 10) return phone;
-    return `${phone.slice(0, 3)} *** ${phone.slice(6)}`;
-}
 
 function GatedButton({ allowed, children, disabled, className, ...props }: ComponentProps<typeof Button> & { allowed: boolean }) {
     if (allowed) return <Button {...props} className={className} disabled={disabled}>{children}</Button>;

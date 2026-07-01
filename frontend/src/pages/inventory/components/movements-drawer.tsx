@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Ingredient, IngredientMovement } from '@/types/inventory';
 import { ArrowRight, History, Warehouse as WarehouseIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatDateTimeShort } from '@/lib/datetime';
 
 interface Props {
     open: boolean;
@@ -103,7 +104,7 @@ export function MovementsDrawer({ open, onClose, ingredient, fetchMovements }: P
                                     <div className="flex items-center justify-between">
                                         <Badge variant={variant}>{TYPE_LABEL[m.type] ?? m.type}</Badge>
                                         <span className="text-muted-foreground text-xs">
-                                            {m.created_at ? new Date(m.created_at).toLocaleString('es-CO') : '—'}
+                                            {m.created_at ? formatDateTimeShort(m.created_at) : '—'}
                                         </span>
                                     </div>
                                     <div className="mt-2 flex items-baseline justify-between">
