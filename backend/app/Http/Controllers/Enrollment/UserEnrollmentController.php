@@ -4,18 +4,15 @@ namespace App\Http\Controllers\Enrollment;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Enrollment\UserEnrollmentRequest;
-use App\Models\CompanyInvitation;
-use App\Models\CompanyRole;
 use App\Models\Employee;
 use App\Models\User;
 use App\Models\UserAcceptance;
 use App\Services\Account\AccountEmailChangeService;
 use App\Services\AuditService;
-use App\Services\Enrollment\EmployeeProvisioningService;
+use App\Services\Enrollment\InvitationAcceptanceService;
 use App\Services\JwtService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Registra los datos personales del usuario en el primer login (paso de enrollment).
@@ -31,7 +28,7 @@ class UserEnrollmentController extends Controller
     public function __construct(
         private readonly JwtService $jwtService,
         private readonly AuditService $auditService,
-        private readonly EmployeeProvisioningService $employeeProvisioning,
+        private readonly InvitationAcceptanceService $invitationAcceptance,
         private readonly AccountEmailChangeService $accountEmailChange,
     ) {}
 
@@ -87,7 +84,7 @@ class UserEnrollmentController extends Controller
                 ]);
             }
 
-            $this->processInvitations($user);
+            $this->invitationAcceptance->acceptAllPendingFor($user, 'user_enrollment_with_invitation');
             $this->linkExistingEmployees($user);
 
             $this->auditService->log('user.enrolled', $user, $user, [
@@ -108,61 +105,6 @@ class UserEnrollmentController extends Controller
                 'enrollment_step' => $companies->isEmpty() ? 'company' : 'complete',
             ])
             ->withCookie($this->jwtService->buildCookie($token));
-    }
-
-    private function processInvitations(User $user): void
-    {
-        $pendingInvitations = CompanyInvitation::where('email', $user->email)
-            ->where('status', 'pending')
-            ->get();
-
-        foreach ($pendingInvitations as $invitation) {
-            if ($invitation->isExpired()) {
-                $invitation->update(['status' => 'expired']);
-
-                continue;
-            }
-
-            // company_users.company_role_id es NOT NULL. Si la invitación no
-            // trae rol explícito (legacy o creada antes del campo), elegimos
-            // el primer rol no-system de la empresa como fallback, o cualquier
-            // rol si no hay no-system. Mismo patrón que InvitedEnrollmentController.
-            $companyRoleId = $invitation->company_role_id
-                ?? CompanyRole::query()
-                    ->where('company_nit', $invitation->company_nit)
-                    ->where('is_system', false)
-                    ->value('id')
-                ?? CompanyRole::query()
-                    ->where('company_nit', $invitation->company_nit)
-                    ->value('id');
-
-            if ($companyRoleId === null) {
-                Log::warning('UserEnrollmentController: empresa sin roles, saltando invitación', [
-                    'invitation_id' => $invitation->id,
-                    'company_nit' => $invitation->company_nit,
-                ]);
-
-                continue;
-            }
-
-            $user->companyMemberships()->create([
-                'company_nit' => $invitation->company_nit,
-                'company_role_id' => $companyRoleId,
-            ]);
-
-            $invitation->update(['status' => 'accepted']);
-
-            $this->auditService->log('invitation.accepted', $user, $invitation);
-
-            // Sin perfil employees el guard de turno activo en caja bloquea
-            // al invitado aunque tenga la membership + permisos. Lo
-            // garantizamos acá (idempotente: linkea por email o crea).
-            $this->employeeProvisioning->ensureProfileFor(
-                $user,
-                $invitation->company_nit,
-                'user_enrollment_with_invitation',
-            );
-        }
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Enrollment\InvitationAcceptanceService;
 use App\Services\JwtService;
 use App\Support\PostLoginRedirect;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,7 @@ class GoogleAuthController extends Controller
     public function __construct(
         private readonly JwtService $jwtService,
         private readonly AuditService $auditService,
+        private readonly InvitationAcceptanceService $invitationAcceptance,
     ) {}
 
     public function redirect(): RedirectResponse
@@ -97,6 +99,14 @@ class GoogleAuthController extends Controller
             return redirect()->route('enrollment.user')
                 ->withCookie($this->jwtService->buildCookie($token));
         }
+
+        // Usuario YA enrolado: aceptar acá cualquier invitación pendiente a su
+        // correo. El auto-accept de invitaciones sólo corría en el signup nuevo
+        // (`/enrollment/user`); sin esto, invitar a una cuenta existente dejaba
+        // la invitación `pending` para siempre y el usuario nunca entraba a la
+        // empresa nueva. Cumple la promesa del correo ("apenas entres, tu acceso
+        // queda activo").
+        $this->invitationAcceptance->acceptAllPendingFor($user);
 
         $companies = $user->companies()->get();
 
