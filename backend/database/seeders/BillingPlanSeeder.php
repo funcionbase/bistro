@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
  * Seeder del catálogo de planes SaaS.
  *
  * #246 — reemplazó los 4 planes legacy (Starter/Básico/Pro/Enterprise) por
- * UN plan único "Default" de $100.000 COP/mes (IVA 19% incluido). Decisión
+ * UN plan único "Default" de $300.000 COP/mes (IVA 19% incluido). Decisión
  * comercial: pricing por uso de plataforma sin tiers, descuentos via promo
  * codes.
  *
@@ -29,8 +29,8 @@ class BillingPlanSeeder extends Seeder
             ['slug' => config('billing.default_plan_slug', 'default')],
             [
                 'name' => 'Plan Default',
-                'description' => 'Acceso completo a la plataforma FlexyFlow. $100.000 COP/mes (IVA 19% incluido).',
-                'price' => 100000.00,
+                'description' => 'Acceso completo a la plataforma FlexyFlow. $300.000 COP/mes (IVA 19% incluido).',
+                'price' => 300000.00,
                 'currency' => 'COP',
                 'billing_cycle' => 'monthly',
                 'features' => [

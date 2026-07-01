@@ -81,6 +81,17 @@ Schedule::command('billing:generate-monthly-invoices')
     ->onOneServer()
     ->withoutOverlapping(60);
 
+// One-time (#alza-precio) — el alza del snapshot de las subscriptions
+// existentes ($100.000 → $300.000) NO se agenda: se ejecuta a mano UNA sola vez
+// el 2026-07-01 con `php artisan billing:apply-plan-price-hike`. El comando es
+// idempotente (solo toca snapshots en 100k), así que un segundo disparo es
+// no-op. Se deja este bloque comentado por trazabilidad — no borrar.
+// Schedule::command('billing:apply-plan-price-hike')
+//     ->dailyAt('04:00')
+//     ->timezone(config('app.timezone', 'America/Bogota'))
+//     ->onOneServer()
+//     ->withoutOverlapping(15);
+
 // #246 — Expira `company_promo_codes.status='active'` cuya ends_at < hoy.
 //
 // N-instance safe:
