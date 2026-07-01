@@ -7,6 +7,7 @@ export interface SetupStep {
     description: string;
     url: string;
     completed: boolean;
+    optional: boolean;
 }
 
 export interface SetupGuideData {

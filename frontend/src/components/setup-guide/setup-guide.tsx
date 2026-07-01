@@ -4,24 +4,26 @@ import { Card } from '@/components/ui/card';
 import { type SetupStep, useSetupGuide } from '@/hooks/use-setup-guide';
 import { ArrowRight, CheckCircle2, X } from 'lucide-react';
 
-function StepRow({ step, index }: { step: SetupStep; index: number }) {
+function StepRow({ step, marker }: { step: SetupStep; marker: string }) {
     return (
-        <div className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+        <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
             {step.completed ? (
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-[color:var(--color-status-safe)]" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--color-status-safe)]" />
             ) : (
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-muted-foreground text-xs text-muted-foreground">
-                    {index + 1}
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-muted-foreground text-xs text-muted-foreground">
+                    {marker}
                 </span>
             )}
 
             <div className="min-w-0 flex-1">
                 <p className={`text-sm font-medium ${step.completed ? 'text-muted-foreground line-through' : ''}`}>{step.title}</p>
+                {/* La descripción explica el "para qué" de cada paso: la ocultamos
+                    solo cuando ya está hecho para no saturar la lista. */}
                 {!step.completed && <p className="text-xs text-muted-foreground">{step.description}</p>}
             </div>
 
             {!step.completed && (
-                <Button asChild variant="outline" size="sm" className="shrink-0 gap-1">
+                <Button asChild variant="outline" size="sm" className="mt-0.5 shrink-0 gap-1">
                     <AppLink href={step.url}>
                         Ir
                         <ArrowRight className="h-3 w-3" />
@@ -37,8 +39,9 @@ export function SetupGuide() {
 
     if (isLoading || !data || data.dismissed) return null;
 
-    const completedCount = data.steps.filter((s) => s.completed).length;
-    const total = data.steps.length;
+    const essentials = data.steps.filter((s) => !s.optional);
+    const optionals = data.steps.filter((s) => s.optional);
+    const essentialsDone = essentials.filter((s) => s.completed).length;
 
     return (
         <Card className="p-6">
@@ -46,7 +49,7 @@ export function SetupGuide() {
                 <div>
                     <h2 className="text-base font-semibold">Configura tu restaurante</h2>
                     <p className="mt-0.5 text-sm text-muted-foreground">
-                        {completedCount} de {total} completados
+                        {essentialsDone} de {essentials.length} pasos esenciales
                     </p>
                 </div>
                 <Button
@@ -71,11 +74,26 @@ export function SetupGuide() {
                     </Button>
                 </div>
             ) : (
-                <div className="mt-4 divide-y divide-border">
-                    {data.steps.map((step, index) => (
-                        <StepRow key={step.id} step={step} index={index} />
-                    ))}
-                </div>
+                <>
+                    <div className="mt-4 divide-y divide-border">
+                        {essentials.map((step, index) => (
+                            <StepRow key={step.id} step={step} marker={String(index + 1)} />
+                        ))}
+                    </div>
+
+                    {optionals.length > 0 && (
+                        <>
+                            <p className="mt-5 mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Opcional · mejora tu operación
+                            </p>
+                            <div className="divide-y divide-border">
+                                {optionals.map((step) => (
+                                    <StepRow key={step.id} step={step} marker="+" />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </>
             )}
         </Card>
     );

@@ -50,7 +50,13 @@ class SetupGuideController extends Controller
             ->get(['id', 'address']);
 
         $steps = $this->buildSteps($nit, $company, $branches);
-        $allDone = collect($steps)->every(fn (array $s) => $s['completed']);
+        // El "¡Listo!" depende solo de los pasos esenciales (dirección, caja,
+        // menú). Los opcionales (marca, equipo, mesas) no bloquean: un local
+        // solo-domicilios o de un único dueño debe poder llegar al estado
+        // completo sin invitar empleados ni configurar mesas.
+        $allDone = collect($steps)
+            ->reject(fn (array $s) => $s['optional'])
+            ->every(fn (array $s) => $s['completed']);
 
         return response()->json(compact('steps', 'dismissed', 'allDone'));
     }
@@ -73,7 +79,7 @@ class SetupGuideController extends Controller
 
     /**
      * @param  Collection<int, Branch>  $branches
-     * @return list<array{id: string, title: string, description: string, url: string, completed: bool}>
+     * @return list<array{id: string, title: string, description: string, url: string, completed: bool, optional: bool}>
      */
     private function buildSteps(string $nit, ?Company $company, Collection $branches): array
     {
@@ -86,48 +92,62 @@ class SetupGuideController extends Controller
         $hasTables = $branchIds->isNotEmpty()
             && Table::query()->whereIn('branch_id', $branchIds)->whereNull('archived_at')->exists();
 
+        // El owner siempre tiene su propio Employee (creado en el enrolamiento),
+        // así que `> 1` = ya invitó a alguien real del equipo. Con `exists()`
+        // este paso nacía verde para todos y nunca empujaba a sumar al equipo.
+        $hasTeam = Employee::query()->where('company_nit', $nit)->whereNull('archived_at')->count() > 1;
+
+        // Orden = prioridad. Primero los 3 esenciales que hacen operar el
+        // restaurante (cobrar un pedido); luego los opcionales que mejoran la
+        // operación pero no la bloquean.
         return [
             [
-                'id' => 'company_info',
-                'title' => 'Información de empresa',
-                'description' => 'Agrega el nombre, logo y horario de atención',
-                'url' => '/company/preferences',
-                'completed' => $company?->logo_path !== null,
-            ],
-            [
                 'id' => 'branch_setup',
-                'title' => 'Configura tu sede',
-                'description' => 'Personaliza la dirección y datos de tu local',
+                'title' => 'Completa la dirección de tu sede',
+                'description' => 'Aparece en tus recibos y facturas, y ubica tu local para los domicilios.',
                 'url' => '/company/branches',
                 'completed' => $hasAddressedBranch,
+                'optional' => false,
             ],
             [
                 'id' => 'cash_register',
-                'title' => 'Agrega tu caja registradora',
-                'description' => 'Crea la caja de tu sede para empezar a cobrar',
+                'title' => 'Abre tu caja registradora',
+                'description' => 'Sin caja no puedes cobrar ni cerrar pedidos: ahí queda registrada cada venta del día.',
                 'url' => '/company/branches',
                 'completed' => $hasCashRegister,
+                'optional' => false,
             ],
             [
                 'id' => 'menu',
                 'title' => 'Crea tu menú',
-                'description' => 'Agrega los productos que vas a vender',
+                'description' => 'Agrega los productos y precios que vas a vender. Sin menú no hay nada que cobrar.',
                 'url' => '/menu',
                 'completed' => RestaurantMenu::query()->where('company_nit', $nit)->exists(),
+                'optional' => false,
+            ],
+            [
+                'id' => 'company_info',
+                'title' => 'Personaliza tu marca',
+                'description' => 'Sube tu logo y horario de atención. Se muestran en los recibos y en el portal de tus clientes.',
+                'url' => '/company/preferences',
+                'completed' => $company?->logo_path !== null,
+                'optional' => true,
             ],
             [
                 'id' => 'employees',
-                'title' => 'Agrega empleados',
-                'description' => 'Invita a tu equipo y asígnales roles',
+                'title' => 'Invita a tu equipo',
+                'description' => 'Suma meseros, cocina o cajeros con sus permisos. Si trabajas solo, puedes saltarlo.',
                 'url' => '/employees',
-                'completed' => Employee::query()->where('company_nit', $nit)->whereNull('archived_at')->exists(),
+                'completed' => $hasTeam,
+                'optional' => true,
             ],
             [
                 'id' => 'tables',
-                'title' => 'Configura las mesas',
-                'description' => 'Organiza el salón (opcional si haces domicilios)',
+                'title' => 'Organiza el salón',
+                'description' => 'Crea las mesas si atiendes en sitio. Si solo haces domicilios, no lo necesitas.',
                 'url' => '/orders/tables?tab=config',
                 'completed' => $hasTables,
+                'optional' => true,
             ],
         ];
     }
