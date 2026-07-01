@@ -162,7 +162,7 @@ function TableJoinSkeleton() {
 function TableJoinForm({ context }: { context: TableJoinContext }) {
     const { qrToken, table, branch, company, phoneRegexHint } = context;
     const navigate = useNavigate();
-    const appName = 'flexyflow';
+    const appName = 'bistro';
     const accent = useMemo(
         () => (/^#[0-9a-fA-F]{6}$/.test(company.primary_color) ? company.primary_color : '#0F172A'),
         [company.primary_color],
@@ -419,7 +419,7 @@ function TableJoinForm({ context }: { context: TableJoinContext }) {
                                 ) : (
                                     <div
                                         className="bg-foreground text-background border-foreground/10 flex size-12 shrink-0 items-center justify-center rounded-2xl border sm:size-14"
-                                        aria-label="flexyflow"
+                                        aria-label="bistro"
                                     >
                                         <AppLogoIcon className="size-6 fill-current sm:size-7" />
                                     </div>

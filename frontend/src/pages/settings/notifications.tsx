@@ -90,7 +90,7 @@ function StatusCard({ isSupported, isStandalone, permission, isSubscribed, busy,
                 <Smartphone className="h-4 w-4" />
                 <AlertTitle>Instala la app para recibir notificaciones</AlertTitle>
                 <AlertDescription>
-                    En móvil toca "Compartir → Añadir a pantalla de inicio". En desktop usa "Instalar Flexyflow" desde el menú del navegador. Una vez
+                    En móvil toca "Compartir → Añadir a pantalla de inicio". En desktop usa "Instalar bistro" desde el menú del navegador. Una vez
                     instalada, vuelve acá para activar.
                 </AlertDescription>
             </Alert>

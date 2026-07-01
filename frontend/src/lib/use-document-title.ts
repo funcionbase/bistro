@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const APP_NAME = 'flexyflow';
+const APP_NAME = 'bistro';
 
 /**
  * Setea `document.title` en el shell SPA.

@@ -16,7 +16,7 @@
  * tras 10s para que un nuevo chunk error fresco pueda recuperar también.
  */
 
-const RECOVERY_FLAG = 'flexyflow:chunk-recovery-attempted';
+const RECOVERY_FLAG = 'bistro:chunk-recovery-attempted';
 const RECOVERY_CLEAR_MS = 10_000;
 
 /**

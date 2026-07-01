@@ -85,7 +85,7 @@ export default function InstallPwaPrompt() {
                     </div>
                     <div className="min-w-0 flex-1">
                         <p id="pwa-install-title" className="text-foreground text-sm font-semibold tracking-tight">
-                            Instala flexyflow en este dispositivo
+                            Instala bistro en este dispositivo
                         </p>
                         <p id="pwa-install-desc" className="text-muted-foreground mt-0.5 text-xs">
                             Más rápido · Funciona sin internet

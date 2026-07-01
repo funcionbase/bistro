@@ -42,7 +42,7 @@ export function SpaSharedDataBridge({ bootstrap, children }: { bootstrap: Bootst
 
     const value = useMemo<SharedData>(
         () => ({
-            name: 'flexyflow',
+            name: 'bistro',
             quote: { message: '', author: '' },
             auth: { user: bootstrap.auth.user as SharedData['auth']['user'] },
             activeCompany: bootstrap.activeCompany,

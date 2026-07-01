@@ -1,6 +1,6 @@
 import AppLogoIcon from './app-logo-icon';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Flexyflow';
+const appName = import.meta.env.VITE_APP_NAME || 'bistro';
 
 export default function AppLogo() {
     return (

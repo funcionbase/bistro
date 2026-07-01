@@ -21,7 +21,7 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope & {
     __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
@@ -75,13 +75,30 @@ registerRoute(
     }),
 );
 
+// Fotos de usuario (logos de empresa, imágenes de producto): son inmutables una
+// vez subidas → CacheFirst agresivo está bien.
 registerRoute(
-    ({ url, request }) =>
-        request.destination === 'image' &&
-        (url.pathname.startsWith('/storage/') || url.pathname.startsWith('/images/') || url.pathname.startsWith('/icons/')),
+    ({ url, request }) => request.destination === 'image' && url.pathname.startsWith('/storage/'),
     new CacheFirst({
         cacheName: 'pos-images',
         plugins: [new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }), new CacheableResponsePlugin({ statuses: [0, 200] })],
+    }),
+);
+
+// Branding de la app (logo, íconos PWA, favicon): cambian en cada deploy. Con
+// CacheFirst quedaban pegados hasta 7 días → el usuario no veía el logo nuevo.
+// StaleWhileRevalidate sirve el cache al instante pero revalida en segundo plano,
+// así el próximo load ya trae el nuevo. El cacheName versionado (`-v2`) fuerza un
+// cache limpio en esta activación → el logo nuevo se ve de una.
+registerRoute(
+    ({ url }) =>
+        url.pathname.startsWith('/images/') ||
+        url.pathname.startsWith('/icons/') ||
+        url.pathname === '/favicon.svg' ||
+        url.pathname === '/favicon.ico',
+    new StaleWhileRevalidate({
+        cacheName: 'pos-branding-v2',
+        plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 }), new CacheableResponsePlugin({ statuses: [0, 200] })],
     }),
 );
 
@@ -129,7 +146,7 @@ self.addEventListener('push', (event) => {
         payload = event.data.json() as PushPayload;
     } catch {
         // Si el payload no es JSON, mostramos texto plano sin URL.
-        payload = { title: 'Flexyflow', body: event.data.text() };
+        payload = { title: 'bistro', body: event.data.text() };
     }
 
     // `renotify` no está en el typing standard de NotificationOptions pero

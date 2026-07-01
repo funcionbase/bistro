@@ -72,12 +72,12 @@ class PwaManifestController extends Controller
         }
 
         $name = $companyName !== null
-            ? "panel flexy · {$companyName}"
-            : 'panel flexy';
+            ? "bistro flexy · {$companyName}"
+            : 'bistro flexy';
 
         $manifest = [
             'name' => $name,
-            'short_name' => 'panel flexy',
+            'short_name' => 'bistro flexy',
             'description' => 'POS, caja y menú digital para tu empresa.',
             'start_url' => '/dashboard',
             'scope' => '/',

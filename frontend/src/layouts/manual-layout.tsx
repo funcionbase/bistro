@@ -96,8 +96,8 @@ export default function ManualLayout({
             <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
                 <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
                     <a href="https://bistro.flexyflow.co" className="flex shrink-0 items-center gap-2">
-                        <img src="/images/logo-black-font.svg" alt="flexyflow" className="h-7 w-auto dark:hidden" />
-                        <img src="/images/logo-white-font.svg" alt="flexyflow" className="hidden h-7 w-auto dark:block" />
+                        <img src="/images/logo-black-font.svg" alt="bistro" className="h-7 w-auto dark:hidden" />
+                        <img src="/images/logo-white-font.svg" alt="bistro" className="hidden h-7 w-auto dark:block" />
                     </a>
                     <span className="hidden text-muted-foreground sm:block">/</span>
                     <Link to={MANUAL_BASE} className="hidden text-sm text-muted-foreground hover:text-foreground sm:block">

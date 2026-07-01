@@ -85,7 +85,7 @@ function generateUuid(): string {
 }
 
 export default function PublicMenu({ nit, table, branch_id, branchToken }: PublicMenuProps) {
-    const appName = 'flexyflow';
+    const appName = 'bistro';
     const initialEffective = nit ?? readLastNit();
     const [effectiveNit, setEffectiveNit] = useState<string | null>(initialEffective);
     const [restaurant, setRestaurant] = useState<RestaurantBranding | null>(null);

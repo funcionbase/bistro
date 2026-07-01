@@ -40,28 +40,28 @@ const VARIANT_COPY: Record<
         eyebrow: 'Bienvenido',
         title: 'Entra con tu cuenta de Google.',
         description:
-            'Acceso sin contraseñas, con la identidad que ya usas. En segundos estás dentro de flexyflow.',
+            'Acceso sin contraseñas, con la identidad que ya usas. En segundos estás dentro de bistro.',
         documentTitle: 'Iniciar sesión',
     },
     register: {
         eyebrow: 'Empieza ahora',
         title: 'Crea tu cuenta con Google.',
         description:
-            'Tu identidad Google se usa para abrir la cuenta de flexyflow. Después eliges empresa y sede.',
+            'Tu identidad Google se usa para abrir la cuenta de bistro. Después eliges empresa y sede.',
         documentTitle: 'Crear cuenta',
     },
     'forgot-password': {
         eyebrow: 'Sin contraseñas',
         title: 'No hay nada que recuperar.',
         description:
-            'En flexyflow no hay contraseñas: entrás con Google y listo. Si perdiste el acceso a tu cuenta de Google, recuperalo desde Google directamente.',
+            'En bistro no hay contraseñas: entrás con Google y listo. Si perdiste el acceso a tu cuenta de Google, recuperalo desde Google directamente.',
         documentTitle: 'Recuperar acceso',
     },
     'reset-password': {
         eyebrow: 'Sin contraseñas',
         title: 'Este enlace ya no aplica.',
         description:
-            'flexyflow usa Google para autenticar. Continúa con tu cuenta Google y entrarás directamente.',
+            'bistro usa Google para autenticar. Continúa con tu cuenta Google y entrarás directamente.',
         documentTitle: 'Restablecer contraseña',
     },
     'verify-email': {

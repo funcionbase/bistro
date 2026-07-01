@@ -56,7 +56,7 @@ export default function AuthHeroLayout({
     panelFooter,
     children,
 }: AuthHeroLayoutProps) {
-    const name = 'flexyflow';
+    const name = 'bistro';
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {

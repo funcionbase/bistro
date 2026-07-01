@@ -34,8 +34,8 @@ export default function Welcome() {
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16">
                             {/* Columna izquierda: logo + hero + acceso */}
                             <div className="flex flex-col gap-8 md:col-span-7 md:gap-10 lg:col-span-7">
-                                <img src="/images/logo-black-font.svg" alt="flexyflow" className="block h-9 w-auto md:h-10 dark:hidden" />
-                                <img src="/images/logo-white-font.svg" alt="flexyflow" className="hidden h-9 w-auto md:h-10 dark:block" />
+                                <img src="/images/logo-black-font.svg" alt="bistro" className="block h-9 w-auto md:h-10 dark:hidden" />
+                                <img src="/images/logo-white-font.svg" alt="bistro" className="hidden h-9 w-auto md:h-10 dark:block" />
 
                                 <HeroHeadline
                                     eyebrow="Bienvenido"

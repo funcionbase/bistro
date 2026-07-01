@@ -47,7 +47,7 @@ const MESSAGES = [
     'El archivo más honesto de internet: te dice que no te lleva a ningún lado.',
     'Querías inspeccionar. Te inspeccionamos de vuelta. Estás leyendo, ¿ves?',
     'El frontend se ve. El criterio para armarlo, no se descarga.',
-    'Ctrl+S: 0. Curiosidad: 1. flexyflow: presente.',
+    'Ctrl+S: 0. Curiosidad: 1. bistro: presente.',
     'Te llevas un recuerdo, no un repositorio.',
     'Si esto fuera un restaurante, te acabamos de servir el pan de cortesía.',
     'Guardar la web no la hace tuya. Pero este HTML, sí. Disfrútalo.',
@@ -57,7 +57,7 @@ const MESSAGES = [
     'Esto no frena la ingeniería inversa. Solo la hace más graciosa.',
     'Tu Ctrl+S fue escuchado, valorado y educadamente ignorado.',
     'Aquí tienes algo que guardar: no todo lo público vale la pena copiarse.',
-    'El menú está a la vista. La receta, no. Bienvenido a flexyflow.',
+    'El menú está a la vista. La receta, no. Bienvenido a bistro.',
     'Guardaste la página. Te diste cuenta de que tenía sentido del humor.',
     'Un frontend bonito es fácil de ver y difícil de igualar. Pruébalo.',
     'Esto es lo que pasa cuando un dev aburrido escribe el easter egg.',
@@ -81,7 +81,7 @@ function buildHtml(message: string): string {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>flexyflow — Ctrl+S interceptado</title>
+<title>bistro — Ctrl+S interceptado</title>
 <meta name="robots" content="noindex" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -196,7 +196,7 @@ function buildHtml(message: string): string {
     <span class="tag">Construimos la operación digital de tu negocio</span>
   </main>
   <footer>
-    <span>flexyflow · SaaaaaaS :(</span>
+    <span>bistro · SaaaaaaS :(</span>
     <a href="https://flexyflow.co">flexyflow.co</a>
   </footer>
 </body>

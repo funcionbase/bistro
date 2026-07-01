@@ -195,8 +195,8 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
             if (evBranch !== branchId) return;
             setSelectedRegisterId(id);
         };
-        window.addEventListener('flexyflow:register-changed', handler);
-        return () => window.removeEventListener('flexyflow:register-changed', handler);
+        window.addEventListener('bistro:register-changed', handler);
+        return () => window.removeEventListener('bistro:register-changed', handler);
     }, [branchId]);
 
     const selectRegister = useCallback(
@@ -209,7 +209,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 localStorage.removeItem(selectedRegisterKey(branchId));
                 setSelectedRegisterId(null);
             }
-            window.dispatchEvent(new CustomEvent('flexyflow:register-changed', { detail: { branchId, id } }));
+            window.dispatchEvent(new CustomEvent('bistro:register-changed', { detail: { branchId, id } }));
         },
         [branchId],
     );

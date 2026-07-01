@@ -38,7 +38,7 @@ const HERO_HIGHLIGHTS: Array<{ label: string; value: string }> = [
 export default function EnrollmentUser() {
     useDocumentTitle('Completar perfil');
     const navigate = useNavigate();
-    const name = 'flexyflow';
+    const name = 'bistro';
     const legalUrls = useBootstrap().data?.legalUrls;
 
     const [step, setStep] = useState(1);

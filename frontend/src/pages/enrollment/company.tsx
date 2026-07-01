@@ -53,7 +53,7 @@ type FormErrors = Record<string, string | undefined>;
 export default function EnrollmentCompany() {
     useDocumentTitle('Registrar empresa');
     const navigate = useNavigate();
-    const name = 'flexyflow';
+    const name = 'bistro';
     const bootstrap = useBootstrap().data;
     const availableBanks = bootstrap?.availableBanks ?? [];
     const contractUrl = bootstrap?.legalUrls?.contract;

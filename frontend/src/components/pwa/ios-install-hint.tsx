@@ -59,7 +59,7 @@ export default function IosInstallHint() {
                         <Share className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">Instala flexyflow en este iPhone/iPad</p>
+                        <p className="text-sm font-semibold">Instala bistro en este iPhone/iPad</p>
                         <ol className="text-muted-foreground mt-1 list-decimal pl-4 text-xs">
                             <li>Toca el botón Compartir en Safari</li>
                             <li>Selecciona &laquo;Añadir a pantalla de inicio&raquo;</li>
