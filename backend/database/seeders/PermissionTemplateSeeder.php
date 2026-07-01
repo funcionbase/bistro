@@ -69,6 +69,16 @@ class PermissionTemplateSeeder extends Seeder
             'dian.recipients.write' => [false, false, true, false],
             'dian.print' => [false, false, true, false],
         ];
+        // Domiciliario "courier-only": sólo ve y toma sus propias entregas.
+        // NO recibe orders.read/menu.read/reports.read ni ningún FULL_NAV
+        // permission — esa selección es justo la que activa el "courier mode"
+        // del sidebar (solo "Mis entregas") + redirect a /my-deliveries.
+        // Ver App\Support\PostLoginRedirect y lib/courier-mode.ts.
+        $courierMap = [
+            'deliveries.read' => [false, true, false, false],
+            'deliveries.self_assign' => [false, true, false, false],
+            'deliveries.update' => [false, false, true, false],
+        ];
 
         // Roles operativos administrativos. Mismo modelo que los
         // del flujo de mesa: is_system=false, asignables/renombrables.
@@ -189,7 +199,7 @@ class PermissionTemplateSeeder extends Seeder
             'dian.print' => [false, false, true, false],
         ];
 
-        $roleTypes = ['owner', 'admin', 'employee', 'waiter', 'cook', 'cashier', 'manager', 'accountant', 'marketing', 'inventory_manager', 'supervisor'];
+        $roleTypes = ['owner', 'admin', 'employee', 'waiter', 'cook', 'cashier', 'courier', 'manager', 'accountant', 'marketing', 'inventory_manager', 'supervisor'];
 
         foreach ($roleTypes as $roleType) {
             foreach ($features as $feature) {
@@ -287,6 +297,7 @@ class PermissionTemplateSeeder extends Seeder
                     'waiter' => $waiterMap[$slug] ?? [false, false, false, false],
                     'cook' => $cookMap[$slug] ?? [false, false, false, false],
                     'cashier' => $cashierMap[$slug] ?? [false, false, false, false],
+                    'courier' => $courierMap[$slug] ?? [false, false, false, false],
                     'manager' => $managerMap[$slug] ?? [false, false, false, false],
                     'accountant' => $accountantMap[$slug] ?? [false, false, false, false],
                     'marketing' => $marketingMap[$slug] ?? [false, false, false, false],

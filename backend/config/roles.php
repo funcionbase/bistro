@@ -12,7 +12,7 @@ return [
     // empresas "vacías" para reproducir bugs sin estos roles.
     'bootstrap_templates' => array_filter(array_map(
         'trim',
-        explode(',', env('ROLES_BOOTSTRAP_TEMPLATES', 'waiter,cook,cashier,manager,accountant,marketing,inventory_manager,supervisor')),
+        explode(',', env('ROLES_BOOTSTRAP_TEMPLATES', 'waiter,cook,cashier,courier,manager,accountant,marketing,inventory_manager,supervisor')),
     )),
 
     'default_employee_permissions' => array_map('trim', explode(',', env('DEFAULT_EMPLOYEE_PERMISSIONS', 'orders.read,chats.read,clients.read'))),
@@ -28,6 +28,9 @@ return [
         'waiter' => 'Mesero',
         'cook' => 'Cocinero',
         'cashier' => 'Cajero',
+        // Domiciliario: rol operativo courier-only (#119). is_system=false,
+        // renombrable. Sólo ve/toma sus entregas → activa el "courier mode".
+        'courier' => 'Domiciliario',
         // Roles operativos administrativos (#215 F4). Mismo modelo que los
         // de #191: is_system=false, asignables/renombrables, sembrables
         // vía `php artisan roles:sync-templates`.
@@ -48,6 +51,7 @@ return [
         'waiter' => '#0EA5E9',
         'cook' => '#F97316',
         'cashier' => '#16A34A',
+        'courier' => '#0891B2',           // cyan-600 — "en la calle", distinto de waiter (sky).
         'manager' => '#14B8A6',          // teal-500 — diferenciable de waiter (sky).
         'accountant' => '#475569',        // slate-600 — sobrio, distinto de employee slate-400.
         'marketing' => '#EC4899',         // pink-500 — brand-ish.

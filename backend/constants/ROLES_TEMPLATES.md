@@ -34,6 +34,12 @@ significa:
 | `cook` | Cocinero | `#F97316` | KDS exclusivo: ver y operar la pantalla de cocina (`kds.read` + `kds.update`) y mover el estado de items (`orders.update`). |
 | `cashier` | Cajero | `#16A34A` | Caja con pago dividido: ver órdenes, cerrar/refund, ver reportes propios. |
 
+### Domicilios (#119)
+
+| `role_type` | Nombre localizado | Color | Para qué se diseñó |
+|---|---|---|---|
+| `courier` | Domiciliario | `#0891B2` | Courier-only: sólo ve (`deliveries.read`) y toma (`deliveries.self_assign`) sus entregas y las actualiza (`deliveries.update`). **NO** recibe ningún `FULL_NAV` permission — esa selección es justo la que activa el "courier mode" del sidebar (solo "Mis entregas") + redirect a `/my-deliveries`. |
+
 ### Administrativos (#215 F4)
 
 | `role_type` | Nombre localizado | Color | Para qué se diseñó |
@@ -82,6 +88,14 @@ significa:
 | `reports.read` | - | ✅ | - | - |
 | `clients.read` | - | ✅ | - | - |
 | `kds.read` | - | ✅ | - | - |
+
+### `courier`
+
+| Slug | C | R | U | D |
+|---|---|---|---|---|
+| `deliveries.read` | - | ✅ | - | - |
+| `deliveries.self_assign` | - | ✅ | - | - |
+| `deliveries.update` | - | - | ✅ | - |
 
 ### `manager`
 

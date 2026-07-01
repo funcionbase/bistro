@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
  * Roles que crea (todos `is_system=false` — el owner los puede
  * renombrar/eliminar):
  *  - Flujo mesa QR (#191 F7): waiter, cook, cashier.
+ *  - Domicilios (#119): courier (Domiciliario, courier-only).
  *  - Administrativos (#215 F4): manager, accountant, marketing,
  *    inventory_manager, supervisor.
  *
@@ -38,11 +39,11 @@ class SyncRoleTemplatesCommand extends Command
     /** @var string */
     protected $signature = 'roles:sync-templates
         {--company=* : NIT(s) específicos a sincronizar. Si se omite, todas las empresas.}
-        {--role=waiter,cook,cashier,manager,accountant,marketing,inventory_manager,supervisor : Tipos de rol a sincronizar (csv).}
+        {--role=waiter,cook,cashier,courier,manager,accountant,marketing,inventory_manager,supervisor : Tipos de rol a sincronizar (csv).}
         {--dry-run : Muestra cambios sin escribir.}';
 
     /** @var string */
-    protected $description = 'Sincroniza los roles operativos (waiter/cook/cashier + manager/accountant/marketing/inventory_manager/supervisor) en empresas existentes según PermissionTemplate.';
+    protected $description = 'Sincroniza los roles operativos (waiter/cook/cashier/courier + manager/accountant/marketing/inventory_manager/supervisor) en empresas existentes según PermissionTemplate.';
 
     public function handle(): int
     {
