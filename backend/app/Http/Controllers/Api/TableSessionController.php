@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CancellationRequest;
+use App\Models\Contact;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderNote;
@@ -300,16 +301,26 @@ class TableSessionController extends Controller
             ];
         }
 
-        // Path 2: órdenes `pending_approval` de mesa sin sesión activa (sesión
-        // expirada/cerrada o creadas sin sesión QR). No duplicar las ya cubiertas
-        // por el path 1.
+        // Path 2: órdenes `pending_approval` sin sesión activa — mesas con
+        // sesión expirada/cerrada Y pedidos públicos sin mesa (para llevar /
+        // domicilio desde el QR de sede). No duplicar las cubiertas por path 1.
         $orphanOrders = Order::withoutGlobalScopes()
             ->where('company_nit', $companyNit)
             ->where('branch_id', $branchId)
             ->where('status', 'pending_approval')
-            ->where('order_type', 'table')
+            ->whereIn('order_type', ['table', 'pickup', 'delivery'])
             ->when(! empty($coveredOrderIds), fn ($q) => $q->whereNotIn('id', $coveredOrderIds))
             ->get();
+
+        // Nombre del cliente por phone (CRM) para los pedidos sin mesa. Los
+        // contacts coexisten en formato 10 dígitos y 57+10 — buscar ambos.
+        $phones = $orphanOrders->pluck('client_phone')->filter()->unique()->values();
+        $contactNames = $phones->isEmpty()
+            ? collect()
+            : Contact::withoutBranchScope()
+                ->where('company_nit', $companyNit)
+                ->whereIn('phone', $phones->flatMap(fn ($p) => [$p, '57'.$p])->all())
+                ->pluck('name', 'phone');
 
         foreach ($orphanOrders as $orphan) {
             $items = OrderItem::query()
@@ -323,9 +334,18 @@ class TableSessionController extends Controller
                 continue;
             }
 
+            $clientName = $orphan->client_phone
+                ? ($contactNames[$orphan->client_phone] ?? $contactNames['57'.$orphan->client_phone] ?? null)
+                : null;
+
             $data[] = [
                 'session_id' => $orphan->table_session_id,
                 'order_id' => $orphan->id,
+                'order_type' => $orphan->order_type,
+                'client_name' => $clientName,
+                'client_phone' => $orphan->client_phone,
+                'delivery_address' => $orphan->delivery_address,
+                'total' => (string) $orphan->total,
                 'table' => [
                     'id' => null,
                     'number' => $orphan->table_number ?? null,

@@ -577,10 +577,16 @@ class BranchController extends Controller
             'menu_tagline' => ['sometimes', 'nullable', 'string', new SafePlainText(maxBytes: 360, allowWhitespace: true)],
             'menu_card_style' => ['sometimes', 'string', 'in:default,compact,card'],
             'menu_show_branding' => ['sometimes', 'boolean'],
+            // Precio del envío a domicilio (COP). null = sin costo configurado.
+            'delivery_fee' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999'],
         ]);
 
         if (isset($validated['menu_tagline']) && $validated['menu_tagline'] !== null) {
             $validated['menu_tagline'] = SafePlainText::sanitize($validated['menu_tagline'], allowWhitespace: true);
+        }
+
+        if (array_key_exists('delivery_fee', $validated) && $validated['delivery_fee'] !== null) {
+            $validated['delivery_fee'] = number_format((float) $validated['delivery_fee'], 2, '.', '');
         }
 
         if (! empty($validated)) {

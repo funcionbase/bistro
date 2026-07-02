@@ -16,8 +16,13 @@ interface PendingApprovalItem {
 }
 
 interface PendingApprovalSession {
-    session_id: string;
+    session_id: string | null;
     order_id: string | null;
+    /** table | pickup | delivery — ausente en entradas de sesión activa (path 1). */
+    order_type?: string;
+    client_name?: string | null;
+    client_phone?: string | null;
+    delivery_address?: string | null;
     table: { id: string | null; number: string | null };
     oldest_submitted_at: string | null;
     items_count: number;
@@ -138,11 +143,9 @@ export default function PendingApprovalsBanner() {
             <AlertDescription>
                 <ul className="space-y-1.5 text-sm">
                     {sessions.map((s) => (
-                        <li key={s.session_id} className="flex flex-wrap items-center justify-between gap-2">
+                        <li key={s.order_id ?? s.session_id} className="flex flex-wrap items-center justify-between gap-2">
                             <span>
-                                <span className="font-medium">
-                                    Mesa {s.table.number ?? 'Sin mesa asignada'}
-                                </span>
+                                <span className="font-medium">{formatEntryLabel(s)}</span>
                                 <span className="opacity-80">
                                     {' · '}
                                     {s.items_count} {s.items_count === 1 ? 'plato' : 'platos'}
@@ -161,6 +164,18 @@ export default function PendingApprovalsBanner() {
             </AlertDescription>
         </Alert>
     );
+}
+
+/**
+ * Etiqueta de la entrada: mesa para el flujo QR de mesa; tipo + cliente para
+ * los pedidos públicos sin mesa (para llevar / domicilio del QR de sede).
+ */
+function formatEntryLabel(s: PendingApprovalSession): string {
+    if (s.order_type === 'pickup' || s.order_type === 'delivery') {
+        const who = s.client_name || s.client_phone || 'Cliente';
+        return `${s.order_type === 'delivery' ? 'Domicilio' : 'Para llevar'} · ${who}`;
+    }
+    return `Mesa ${s.table.number ?? 'Sin mesa asignada'}`;
 }
 
 function formatRelative(iso: string | null): string {

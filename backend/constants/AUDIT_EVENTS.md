@@ -71,6 +71,8 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `order.status_changed` | `OrderController::updateStatus` | `order_id`, `from`, `to`, `inventory_consumed` | `orders.update` |
 | `order.sms_sent` | `SendOrderStatusSmsJob::handle` (#275) | `order_id`, `to_status`, `phone` (enmascarado), `provider`, `provider_message_id`, `segments` | Efecto colateral de `orders.update` — sin permiso propio. Sin actor (system action — job de cola). |
 | `order.sms_failed` | `SendOrderStatusSmsJob::handle` (#275) | `order_id`, `to_status`, `phone` (enmascarado), `provider`, `error` | Efecto colateral de `orders.update` — sin permiso propio. Sin actor (system action — job de cola). |
+| `order.created_by_customer` | `Public\BranchOrderController::store` (pedido sin mesa por QR de sede) | `company_nit`, `branch_id`, `order_type` (pickup/delivery), `client_phone`, `items_count`, `delivery_fee`, `total` | Público sin JWT — sin actor. |
+| `order.approved` | `OrderController::approve` (pedidos públicos sin mesa) | `order_id`, `order_type`, `total` | `orders.update` |
 
 ### Cocina (KDS #115)
 

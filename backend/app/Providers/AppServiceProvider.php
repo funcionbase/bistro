@@ -110,6 +110,15 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip().':'.$nit);
         });
 
+        // Pedido público sin mesa desde el QR de sede: escritura → límite
+        // apretado. 5/min por IP+token frena spam de órdenes basura sin
+        // estorbar a un cliente legítimo (1 pedido por visita).
+        RateLimiter::for('branch-order-public', function (Request $request) {
+            $token = $request->route('menu_qr_token') ?? 'unknown';
+
+            return Limit::perMinute(5)->by($request->ip().':'.$token);
+        });
+
         // KDS device-token (#115): tablets de cocina con polling cada 2s
         // pueden hacer hasta ~30 req/min en lectura + acciones manuales del
         // cocinero. 60/min per token da margen sin invitar abuso. La key es

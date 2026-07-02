@@ -385,6 +385,9 @@ export default function OrderShow() {
 
     const advanceOptions = useMemo(() => {
         if (!order || isTerminal) return [];
+        // pending_approval no está en el kanban: se resuelve con "Aprobar pedido"
+        // (o cancelar), nunca con updateStatus — el backend lo rechaza.
+        if (order.status === 'pending_approval') return [];
         const current = rankOf(order.status);
         return ADVANCE_STATUSES.filter(
             (e) => e.rank > current && (e.key !== 'in_transit' || order.order_type === 'delivery'),
@@ -638,6 +641,25 @@ export default function OrderShow() {
         setAssignCourierOpen(false);
     };
 
+    // ── Aprobación de pedidos públicos sin mesa (pickup/delivery del QR de sede) ──
+
+    const approveOrder = async () => {
+        setBusy(true);
+        setStatusError(null);
+        try {
+            const resp = await apiFetch(`/api/v1/orders/${orderId}/approve`, { method: 'POST' });
+            if (!resp.ok) {
+                const data = (await resp.json().catch(() => ({}))) as { message?: string };
+                throw new Error(data.message ?? 'No se pudo aprobar el pedido.');
+            }
+            await fetchAll();
+        } catch (err) {
+            setStatusError(err instanceof Error ? err.message : 'Error aprobando el pedido.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
     // ── Status advance (non-QR orders) ────────────────────────────────────────
 
     const advanceStatus = async (status: string) => {
@@ -747,7 +769,21 @@ export default function OrderShow() {
                                             </GatedButton>
                                         </>
                                     )}
-                                    {!isQrSession && !isTerminal && (
+                                    {/* Pedido público sin mesa esperando aprobación: el staff valida
+                                        los datos (dirección incluida) y aprueba — pasa a "pending". */}
+                                    {!isQrSession && order?.status === 'pending_approval' && (
+                                        <GatedButton
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => void approveOrder()}
+                                            disabled={busy}
+                                            className="w-full sm:w-auto"
+                                            allowed={canUpdateOrders}
+                                        >
+                                            Aprobar pedido
+                                        </GatedButton>
+                                    )}
+                                    {!isQrSession && !isTerminal && order?.status !== 'pending_approval' && (
                                         <GatedButton
                                             type="button"
                                             size="sm"

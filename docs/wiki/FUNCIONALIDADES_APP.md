@@ -2731,6 +2731,32 @@ Middleware: jwt (sin company.access)
 
 Diseñado para que `pedidos.flexyflow.co` cargue el menú antes de obtener cart JWT (precarga UX).
 
+#### 9.12.1 Pedido público sin mesa desde el QR de sede
+
+Desde `/menus?branch={menu_qr_token}` (QR de menú de sede) el cliente arma un
+carrito local y envía un pedido **para llevar o domicilio** sin mesa:
+
+```
+POST /api/v1/public/branch/{menu_qr_token}/orders
+Throttle: branch-order-public (5/min por IP+token). Sin auth.
+Payload: type (pickup|delivery), customer_name, customer_phone,
+         address + neighborhood (solo delivery), items[{id, quantity, notes?}]
+```
+
+- Mismas puertas que el menú público: empresa activa, horario abierto, caja abierta.
+- La orden nace `status=pending_approval` (items `pending_approval` + `submitted_at`)
+  y cae al banner de aprobaciones de caja/tablero. El staff valida los datos
+  (dirección/barrio a mano, no hay validación automática) y aprueba con
+  `POST /api/v1/orders/{id}/approve` (→ `pending`, items → `approved`) o cancela.
+- Precios SIEMPRE del menú activo de la sede. El envío entra como línea
+  `order_items` sintética (`menu_item_id='delivery_fee'`, "Domicilio", tax 0),
+  con el precio configurado por sede (`branch_settings.delivery_fee`, editable en
+  `/company/branches` → branding del menú).
+- Domicilios solo dentro de la ciudad de la sede (`branches.city`) — aviso
+  informativo en el checkout público; la verificación es manual en la aprobación.
+- Cliente vinculado al CRM por phone (upsert de `Contact` con nombre).
+- Auditoría: `order.created_by_customer` (sin actor) y `order.approved`.
+
 ### 9.13 Resumen de los 18 endpoints de menú
 
 | Método | URL | Permission | Notas |

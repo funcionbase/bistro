@@ -20,6 +20,7 @@ class BranchSettingsService
         'menu_tagline',
         'menu_card_style',
         'menu_show_branding',
+        'delivery_fee',
     ];
 
     private const TYPE_MAP = [
@@ -28,6 +29,9 @@ class BranchSettingsService
         'menu_tagline' => 'string',
         'menu_card_style' => 'string',
         'menu_show_branding' => 'boolean',
+        // Precio del envío a domicilio (COP, decimal:2 como string). null/0 =
+        // envío sin costo. Consumido por el pedido público sin mesa.
+        'delivery_fee' => 'string',
     ];
 
     public function get(string $branchId, string $key, mixed $default = null): mixed
@@ -79,7 +83,7 @@ class BranchSettingsService
     }
 
     /**
-     * @param array<string, mixed> $settings
+     * @param  array<string, mixed>  $settings
      */
     public function setMany(string $companyNit, string $branchId, array $settings): void
     {
@@ -139,6 +143,7 @@ class BranchSettingsService
             'menu_tagline' => null,
             'menu_card_style' => 'default',
             'menu_show_branding' => true,
+            'delivery_fee' => null,
         ];
     }
 }

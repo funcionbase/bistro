@@ -851,6 +851,7 @@ class MenuController extends Controller
         $payload = [
             'commercial_name' => $company->commercial_name,
             'branch_name' => null,
+            'branch_city' => null,
             'logo_url' => SignedAssetUrl::for($company->logo_path),
             'primary_color' => (string) $this->companySettings->get($company->nit, 'menu_primary_color', '#FF6B35'),
             'header_image_url' => null,
@@ -858,10 +859,15 @@ class MenuController extends Controller
             'tagline' => null,
             'card_style' => 'default',
             'show_branding' => true,
+            'delivery_fee' => null,
         ];
 
         if ($branchId !== null) {
-            $payload['branch_name'] = Branch::find($branchId)?->name;
+            $branch = Branch::find($branchId);
+            $payload['branch_name'] = $branch?->name;
+            // Ciudad de la sede: el pedido a domicilio solo cubre esta ciudad
+            // (aviso al comensal en el checkout público).
+            $payload['branch_city'] = $branch?->city;
             $bs = $this->branchSettings->all($branchId);
             $disk = (string) config('filesystems.default');
             $payload['header_image_url'] = $bs['menu_header_image_url'] ? SignedAssetUrl::for($bs['menu_header_image_url'], $disk) : null;
@@ -869,6 +875,9 @@ class MenuController extends Controller
             $payload['tagline'] = $bs['menu_tagline'] ?? null;
             $payload['card_style'] = $bs['menu_card_style'] ?? 'default';
             $payload['show_branding'] = (bool) ($bs['menu_show_branding'] ?? true);
+            $payload['delivery_fee'] = isset($bs['delivery_fee']) && $bs['delivery_fee'] !== null && $bs['delivery_fee'] !== ''
+                ? round((float) $bs['delivery_fee'], 2)
+                : null;
         }
 
         return $payload;

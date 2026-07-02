@@ -20,6 +20,8 @@ interface BranchSettings {
     menu_tagline: string | null;
     menu_card_style: 'default' | 'compact' | 'card';
     menu_show_branding: boolean;
+    /** Precio del envío a domicilio (COP) para pedidos por QR de sede. null = sin costo. */
+    delivery_fee: string | null;
 }
 
 interface BranchMenuBrandingProps {
@@ -86,6 +88,7 @@ export function BranchMenuBranding({ branchId }: BranchMenuBrandingProps) {
                     menu_tagline: settings.menu_tagline?.trim() || null,
                     menu_card_style: settings.menu_card_style,
                     menu_show_branding: settings.menu_show_branding,
+                    delivery_fee: settings.delivery_fee?.trim() ? Number(settings.delivery_fee) : null,
                 }),
             });
             const data = (await res.json()) as { settings: BranchSettings };
@@ -204,6 +207,22 @@ export function BranchMenuBranding({ branchId }: BranchMenuBrandingProps) {
                         <SelectItem value="card">Card — imagen grande arriba</SelectItem>
                     </SelectContent>
                 </Select>
+            </div>
+
+            {/* Precio del envío a domicilio */}
+            <div className="space-y-1.5">
+                <Label htmlFor={`delivery-fee-${branchId}`}>Precio del envío a domicilio (COP)</Label>
+                <Input
+                    id={`delivery-fee-${branchId}`}
+                    inputMode="numeric"
+                    placeholder="Ej: 5000"
+                    maxLength={7}
+                    value={settings.delivery_fee ? String(Math.round(Number(settings.delivery_fee))) : ''}
+                    onChange={(e) => setSettings({ ...settings, delivery_fee: e.target.value.replace(/\D/g, '').slice(0, 7) || null })}
+                />
+                <p className="text-muted-foreground text-[11px]">
+                    Se suma al pedido a domicilio hecho desde el QR del menú de esta sede. Vacío = envío sin costo.
+                </p>
             </div>
 
             {/* Mostrar branding */}

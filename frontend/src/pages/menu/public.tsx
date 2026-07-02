@@ -6,10 +6,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { HeroHeadline } from '@/components/ui/hero-headline';
 import { MenuItemRow } from '@/components/ui/menu-item-row';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { resolveBackendUrl } from '@/lib/api';
 import { formatCurrency } from '@/lib/coupon-helpers';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { type MenuItem, type MenuStructure } from '@/types';
-import { Clock, Info, MapPin, QrCode, ShoppingBag, Users, UtensilsCrossed, WifiOff } from 'lucide-react';
+import { Clock, Info, MapPin, Minus, Plus, QrCode, ShoppingBag, Users, UtensilsCrossed, WifiOff } from 'lucide-react';
 import { StickyActionBar } from '@/components/ui/sticky-action-bar';
 import { useEffect, useRef, useState } from 'react';
 
@@ -25,6 +28,8 @@ interface PublicMenuProps {
 interface RestaurantBranding {
     commercial_name: string;
     branch_name?: string | null;
+    /** Ciudad de la sede — los domicilios solo cubren esta ciudad. */
+    branch_city?: string | null;
     logo_url: string | null;
     primary_color: string;
     header_image_url?: string | null;
@@ -32,6 +37,15 @@ interface RestaurantBranding {
     tagline?: string | null;
     card_style?: 'default' | 'compact' | 'card';
     show_branding?: boolean;
+    /** Precio del envío a domicilio (COP) configurado por la sede. */
+    delivery_fee?: number | null;
+}
+
+interface CartLine {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
 }
 
 interface PublicMenuPayload {
@@ -109,6 +123,90 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
     );
     const [askJoin, setAskJoin] = useState<'new' | 'join' | null>(null);
     const askedRef = useRef(false);
+
+    // Pedido sin mesa desde el QR de sede (?branch=): carrito local + checkout
+    // (para llevar / domicilio). La orden nace pending_approval y la aprueba
+    // caja. Solo disponible en el flujo de branch-token, sin mesa asociada.
+    const [cart, setCart] = useState<Record<string, CartLine>>({});
+    const [checkoutOpen, setCheckoutOpen] = useState(false);
+    const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
+    const [custName, setCustName] = useState('');
+    const [custPhone, setCustPhone] = useState('');
+    const [custAddress, setCustAddress] = useState('');
+    const [custNeighborhood, setCustNeighborhood] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [placedOrder, setPlacedOrder] = useState<{ order_id: string; total: string; order_type: string } | null>(null);
+
+    const canOrder = !!branchToken && !!effectiveBranchId && !tableStatus && state.kind === 'menu';
+    const cartLines = Object.values(cart);
+    const cartCount = cartLines.reduce((acc, l) => acc + l.quantity, 0);
+    const cartItemsTotal = cartLines.reduce((acc, l) => acc + l.price * l.quantity, 0);
+    const deliveryFee = orderType === 'delivery' ? (restaurant?.delivery_fee ?? 0) : 0;
+    const cartTotal = cartItemsTotal + deliveryFee;
+
+    const addToCart = (item: { id: string; name: string; price: number }) => {
+        setCart((prev) => {
+            const current = prev[item.id]?.quantity ?? 0;
+            return { ...prev, [item.id]: { id: item.id, name: item.name, price: item.price, quantity: Math.min(99, current + 1) } };
+        });
+    };
+
+    const changeQuantity = (id: string, delta: number) => {
+        setCart((prev) => {
+            const line = prev[id];
+            if (!line) return prev;
+            const quantity = line.quantity + delta;
+            if (quantity < 1) {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            }
+            return { ...prev, [id]: { ...line, quantity: Math.min(99, quantity) } };
+        });
+    };
+
+    const phoneValid = /^3\d{9}$/.test(custPhone.trim());
+    const checkoutValid =
+        cartLines.length > 0 &&
+        custName.trim().length >= 2 &&
+        phoneValid &&
+        (orderType === 'pickup' || (custAddress.trim().length >= 5 && custNeighborhood.trim().length >= 2));
+
+    const submitOrder = async () => {
+        if (!branchToken || !checkoutValid || submitting) return;
+        setSubmitting(true);
+        setSubmitError(null);
+        try {
+            const res = await fetch(resolveBackendUrl(`/api/v1/public/branch/${encodeURIComponent(branchToken)}/orders`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                credentials: 'omit',
+                body: JSON.stringify({
+                    type: orderType,
+                    customer_name: custName.trim(),
+                    customer_phone: custPhone.trim(),
+                    address: orderType === 'delivery' ? custAddress.trim() : null,
+                    neighborhood: orderType === 'delivery' ? custNeighborhood.trim() : null,
+                    items: cartLines.map((l) => ({ id: l.id, quantity: l.quantity })),
+                }),
+            });
+            const json = (await res.json().catch(() => null)) as
+                | { data?: { order_id: string; total: string; order_type: string }; message?: string }
+                | null;
+            if (!res.ok || !json?.data) {
+                setSubmitError(json?.message ?? 'No pudimos enviar el pedido. Intenta de nuevo.');
+                return;
+            }
+            setPlacedOrder(json.data);
+            setCart({});
+            setCheckoutOpen(false);
+        } catch {
+            setSubmitError('No pudimos enviar el pedido. Revisa tu conexión e intenta de nuevo.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     useEffect(() => {
         if (typeof window === 'undefined' || !nit) return;
@@ -530,7 +628,11 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                         />
                     )}
                     {state.kind === 'menu' && (
-                        <MenuContent structure={state.payload.structure} cardStyle={restaurant?.card_style ?? 'default'} />
+                        <MenuContent
+                            structure={state.payload.structure}
+                            cardStyle={restaurant?.card_style ?? 'default'}
+                            onAdd={canOrder ? addToCart : undefined}
+                        />
                     )}
                 </main>
 
@@ -562,6 +664,161 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                 </StickyActionBar>
             )}
 
+            {/* Carrito del pedido sin mesa (QR de sede): aparece al agregar el primer plato. */}
+            {canOrder && cartCount > 0 && (
+                <StickyActionBar>
+                    <Button className="flex w-full items-center justify-center gap-2 shadow-lg" size="lg" onClick={() => setCheckoutOpen(true)}>
+                        <ShoppingBag className="h-4 w-4" />
+                        Realizar pedido · {cartCount} {cartCount === 1 ? 'ítem' : 'ítems'} · {formatCurrency(cartItemsTotal)}
+                    </Button>
+                </StickyActionBar>
+            )}
+
+            {/* Checkout del pedido sin mesa (para llevar / domicilio). */}
+            <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+                <DialogContent className="max-h-[90svh] max-w-sm overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Tu pedido</DialogTitle>
+                        <DialogDescription>
+                            El restaurante confirmará tu pedido antes de prepararlo.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        {/* Líneas del carrito con stepper */}
+                        <ul className="divide-border divide-y">
+                            {cartLines.map((line) => (
+                                <li key={line.id} className="flex items-center gap-2 py-2">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-foreground truncate text-sm font-medium">{line.name}</p>
+                                        <p className="text-muted-foreground text-xs">{formatCurrency(line.price)}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => changeQuantity(line.id, -1)} aria-label={`Quitar uno de ${line.name}`}>
+                                            <Minus className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <span className="w-6 text-center text-sm tabular-nums">{line.quantity}</span>
+                                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => changeQuantity(line.id, 1)} aria-label={`Agregar uno de ${line.name}`}>
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+
+                        {/* Tipo de pedido */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button type="button" variant={orderType === 'pickup' ? 'default' : 'outline'} onClick={() => setOrderType('pickup')}>
+                                Para llevar
+                            </Button>
+                            <Button type="button" variant={orderType === 'delivery' ? 'default' : 'outline'} onClick={() => setOrderType('delivery')}>
+                                Domicilio
+                            </Button>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="order-name">Tu nombre</Label>
+                            <Input
+                                id="order-name"
+                                autoComplete="name"
+                                maxLength={80}
+                                value={custName}
+                                onChange={(e) => setCustName(sanitizePlainText(e.target.value, 80, true, false))}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="order-phone">Celular</Label>
+                            <Input
+                                id="order-phone"
+                                inputMode="tel"
+                                autoComplete="tel"
+                                placeholder="3001234567"
+                                maxLength={10}
+                                value={custPhone}
+                                onChange={(e) => setCustPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            />
+                        </div>
+
+                        {orderType === 'delivery' && (
+                            <>
+                                <p className="text-muted-foreground text-xs">
+                                    {restaurant?.branch_city
+                                        ? `Solo hacemos domicilios en ${restaurant.branch_city}.`
+                                        : 'Solo hacemos domicilios en la ciudad de la sede.'}
+                                </p>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="order-address">Dirección</Label>
+                                    <Input
+                                        id="order-address"
+                                        autoComplete="street-address"
+                                        placeholder="Ej: Calle 10 # 5-23, apto 201"
+                                        maxLength={160}
+                                        value={custAddress}
+                                        onChange={(e) => setCustAddress(sanitizePlainText(e.target.value, 160, true, false))}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="order-neighborhood">Barrio</Label>
+                                    <Input
+                                        id="order-neighborhood"
+                                        placeholder="Ej: Centro"
+                                        maxLength={80}
+                                        value={custNeighborhood}
+                                        onChange={(e) => setCustNeighborhood(sanitizePlainText(e.target.value, 80, true, false))}
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Totales */}
+                        <div className="border-border space-y-1 border-t pt-3 text-sm">
+                            <div className="text-muted-foreground flex justify-between">
+                                <span>Productos</span>
+                                <span className="tabular-nums">{formatCurrency(cartItemsTotal)}</span>
+                            </div>
+                            {orderType === 'delivery' && (
+                                <div className="text-muted-foreground flex justify-between">
+                                    <span>Envío</span>
+                                    <span className="tabular-nums">{deliveryFee > 0 ? formatCurrency(deliveryFee) : 'Sin costo'}</span>
+                                </div>
+                            )}
+                            <div className="text-foreground flex justify-between font-semibold">
+                                <span>Total</span>
+                                <span className="tabular-nums">{formatCurrency(cartTotal)}</span>
+                            </div>
+                        </div>
+
+                        {submitError && <p className="text-destructive text-sm">{submitError}</p>}
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-2">
+                        <Button variant="outline" onClick={() => setCheckoutOpen(false)} disabled={submitting}>
+                            Seguir mirando
+                        </Button>
+                        <Button onClick={() => void submitOrder()} disabled={!checkoutValid || submitting}>
+                            {submitting ? 'Enviando…' : 'Enviar pedido'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirmación: el pedido quedó esperando aprobación de la empresa. */}
+            <Dialog open={placedOrder !== null} onOpenChange={(o) => !o && setPlacedOrder(null)}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>¡Pedido enviado!</DialogTitle>
+                        <DialogDescription>
+                            {placedOrder?.order_type === 'delivery'
+                                ? `El restaurante confirmará tu domicilio en breve. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`
+                                : `El restaurante confirmará tu pedido en breve para que pases a recogerlo. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button onClick={() => setPlacedOrder(null)}>Entendido</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={askJoin !== null} onOpenChange={(o) => !o && setAskJoin(null)}>
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
@@ -586,7 +843,16 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
     );
 }
 
-function MenuContent({ structure, cardStyle = 'default' }: { structure: MenuStructure; cardStyle?: 'default' | 'compact' | 'card' }) {
+function MenuContent({
+    structure,
+    cardStyle = 'default',
+    onAdd,
+}: {
+    structure: MenuStructure;
+    cardStyle?: 'default' | 'compact' | 'card';
+    /** Si viene, cada plato muestra un botón "+" que lo agrega al carrito (pedido sin mesa). */
+    onAdd?: (item: { id: string; name: string; price: number }) => void;
+}) {
     const [detail, setDetail] = useState<MenuItemDetailDialogItem | null>(null);
 
     if (!structure?.categories?.length) {
@@ -629,15 +895,29 @@ function MenuContent({ structure, cardStyle = 'default' }: { structure: MenuStru
                                             variant={cardStyle}
                                             onImageClick={openDetail}
                                             action={
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-8 w-8 shrink-0"
-                                                    onClick={(e) => { e.stopPropagation(); openDetail(); }}
-                                                    aria-label={`Ver detalle de ${item.name}`}
-                                                >
-                                                    <Info className="h-4 w-4" />
-                                                </Button>
+                                                onAdd ? (
+                                                    <Button
+                                                        size="icon"
+                                                        className="h-8 w-8 shrink-0"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onAdd({ id: item.id, name: item.name, price: item.price });
+                                                        }}
+                                                        aria-label={`Agregar ${item.name} al pedido`}
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 shrink-0"
+                                                        onClick={(e) => { e.stopPropagation(); openDetail(); }}
+                                                        aria-label={`Ver detalle de ${item.name}`}
+                                                    >
+                                                        <Info className="h-4 w-4" />
+                                                    </Button>
+                                                )
                                             }
                                         />
                                     </li>

@@ -87,6 +87,7 @@ use App\Http\Controllers\Enrollment\EnrollmentProofController;
 use App\Http\Controllers\Enrollment\InvitedEnrollmentController;
 use App\Http\Controllers\Enrollment\UserEnrollmentController;
 use App\Http\Controllers\Menu\MenuController;
+use App\Http\Controllers\Public\BranchOrderController;
 use App\Http\Controllers\Public\TableJoinController;
 use App\Http\Controllers\Public\TableMenuController;
 use App\Http\Controllers\Public\TableOrderController;
@@ -984,6 +985,10 @@ Route::prefix('v1')->group(function () {
                 Route::patch('orders/{id}/status', [OrderController::class, 'updateStatus'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.updateStatus');
+                // Aprobación de pedidos públicos sin mesa (para llevar/domicilio).
+                Route::post('orders/{id}/approve', [OrderController::class, 'approve'])
+                    ->middleware('permission:orders.update,update')
+                    ->name('api.orders.approve');
                 Route::post('orders/{id}/items', [OrderController::class, 'appendItems'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.appendItems');
@@ -1510,6 +1515,14 @@ Route::prefix('v1')->group(function () {
         ->where(['menu_qr_token' => '[A-Z]{3,13}'])
         ->middleware('throttle:menu-scan-public')
         ->name('api.public.branch.resolve');
+
+    // Pedido público sin mesa (para llevar / domicilio) desde el QR de sede.
+    // Nace pending_approval y cae a caja para aprobación manual. Precios del
+    // menú activo en BD, nunca del payload (CLAUDE.md §13).
+    Route::post('public/branch/{menu_qr_token}/orders', [BranchOrderController::class, 'store'])
+        ->where(['menu_qr_token' => '[A-Z]{3,13}'])
+        ->middleware('throttle:branch-order-public')
+        ->name('api.public.branch.orders.store');
 
     // Mesa con QR (#191) — flujo público sin auth, identidad por cookie firmada
     // `tdt_*`. Migrado del stack web a la API REST cuando el frontend pasó a

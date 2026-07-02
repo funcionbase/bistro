@@ -1379,6 +1379,66 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * Aprueba una orden `pending_approval` creada por el cliente SIN sesión de
+     * mesa (pedido público para llevar / domicilio desde el QR de sede). La
+     * orden pasa a `pending` (entra al kanban) y sus items a `approved`.
+     *
+     * Las órdenes de sesión de mesa NO pasan por aquí — se aprueban por tanda
+     * vía `TableSessionController::approveBatch` (flujo #191).
+     */
+    public function approve(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'orders', 'update');
+
+        $companyNit = $this->activeCompanyNit($request);
+        $actor = $this->actingUser($request);
+
+        $order = DB::transaction(function () use ($id, $companyNit) {
+            /** @var Order $order */
+            $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
+
+            if ($order->status !== 'pending_approval') {
+                throw ValidationException::withMessages([
+                    'status' => 'Solo se pueden aprobar órdenes pendientes de aprobación.',
+                ]);
+            }
+
+            if ($order->table_session_id !== null) {
+                throw ValidationException::withMessages([
+                    'status' => 'Las órdenes de mesa se aprueban por tanda desde la sesión.',
+                ]);
+            }
+
+            $order->status = 'pending';
+            $order->save();
+
+            OrderItem::query()
+                ->where('order_id', $order->id)
+                ->where('status', 'pending_approval')
+                ->update(['status' => 'approved', 'approved_at' => now()]);
+
+            return $order;
+        });
+
+        $this->auditService->log('order.approved', $actor, $order, [
+            'order_id' => $order->id,
+            'order_type' => $order->order_type,
+            'total' => (string) $order->total,
+        ]);
+
+        // Parity con updateStatus: notificar al cliente si `pending` es estado
+        // notificable — el dispatcher decide, fuera de la txn.
+        $this->dispatchOrderStatusSms($order, $order->status, $actor);
+
+        return response()->json([
+            'data' => [
+                'id' => $order->id,
+                'status' => $order->status,
+            ],
+        ]);
+    }
+
     public function updateStatus(Request $request, string $id): JsonResponse
     {
         $this->permissionService->assertPermission($request, 'orders', 'update');
