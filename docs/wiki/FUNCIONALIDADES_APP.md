@@ -6375,6 +6375,8 @@ El QR impreso por mesa/sede apunta a `/menus/{nit}` y nunca cambia — el menú 
 
 3. **Analítica de escaneos (`menu_scan_events`)**: tabla particionada mensualmente por `scanned_at` con red de seguridad (default partition). Cron horario `partitions:ensure` pre-crea particiones del mes anterior, actual, siguiente y +2; drena la default re-routing filas a sus particiones mensuales correctas. `AggregateMenuScansJob` (diario) UPSERT a `menu_scan_daily_rollup` para reportes baratos. `DropOldMenuScanPartitionsJob` (diario) borra particiones >90 días. Bot detection vía `BotDetectionService` (UA blocklist + Referer check + honeypot) marca `is_bot=true` sin descartar — los reportes filtran via índices parciales.
 
+4. **Panel de escaneos en `/company/metrics` (#294)**: `GET /api/v1/metrics/menu-scans` (permiso `reports.read`, períodos today/week/month/custom, consolidación multi-sede) lee el rollup diario y le une el día en curso agregado en vivo desde `menu_scan_events`. El panel (`MenuScansPanel`) muestra total de escaneos, sesiones únicas (suma de únicos por día×mesa×sede — el rollup no conserva `session_id`), barras escaneos/día y desglose por mesa (top 10) y por sede (solo vista consolidada).
+
 ---
 
 ## 22. Variables de entorno relevantes al negocio

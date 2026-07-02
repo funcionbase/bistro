@@ -346,7 +346,7 @@ Sin lógica de auth ni permisos. Todas presentacionales, accesibles (Radix donde
 | `widget-error-state.tsx` | display | Empty state con retry |
 | `skeleton-chart.tsx`, `skeleton-deliveries.tsx`, `skeleton-heatmap.tsx`, `skeleton-metric-card.tsx` | display | Skeletons de cada panel |
 
-#### `components/metrics/` (~9)
+#### `components/metrics/` (~10)
 
 | Archivo | Tipo | Notas |
 |---------|------|-------|
@@ -359,6 +359,7 @@ Sin lógica de auth ni permisos. Todas presentacionales, accesibles (Radix donde
 | `active-orders-panel.tsx` | display | Conteos por estado |
 | `heatmap-panel.tsx` | display | Wraps `HeatmapChart` |
 | `offline-operation-panel.tsx` | display | KPIs de la sincronización offline (#140): órdenes pendientes, sincronizadas en 24h, conflictos. Color rojo si hay pendientes que bloqueen cierre de caja |
+| `menu-scans-panel.tsx` | fetch propio | Escaneos del menú QR (#294): total + sesiones únicas, barras escaneos/día (recharts), desglose por mesa (top 10) y por sede (solo consolidado). Consume `GET /api/v1/metrics/menu-scans`; respeta filtro de sede y período de la página |
 
 #### `components/alerts/` (~2, issue #124)
 

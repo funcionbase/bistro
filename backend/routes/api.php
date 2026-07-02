@@ -756,6 +756,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('items/top', [MetricsController::class, 'topItems'])->name('api.metrics.items.top');
                 Route::get('carts/abandonment', [MetricsController::class, 'cartAbandonment'])->name('api.metrics.carts.abandonment');
                 Route::get('sms/counts', [MetricsController::class, 'smsCounts'])->name('api.metrics.sms.counts');
+                // #294: escaneos del menú QR desde menu_scan_daily_rollup.
+                Route::get('menu-scans', [MetricsController::class, 'menuScans'])->name('api.metrics.menu-scans');
 
                 Route::get('kpis/today', [MetricsController::class, 'kpisToday'])->name('api.metrics.kpis.today');
                 Route::get('orders/active', [MetricsController::class, 'activeOrders'])->name('api.metrics.orders.active');
