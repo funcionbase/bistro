@@ -8,6 +8,7 @@ use App\Http\Requests\Metrics\GetActiveOrdersRequest;
 use App\Http\Requests\Metrics\GetActivityHeatmapRequest;
 use App\Http\Requests\Metrics\GetDishMarginRequest;
 use App\Http\Requests\Metrics\GetKpisRequest;
+use App\Http\Requests\Metrics\GetMenuScansRequest;
 use App\Http\Requests\Metrics\GetMetricsAbandmentRequest;
 use App\Http\Requests\Metrics\GetMetricsHeatmapRequest;
 use App\Http\Requests\Metrics\GetMetricsSummaryRequest;
@@ -242,6 +243,22 @@ class MetricsController extends Controller
         [$dateFrom, $dateTo] = $this->parseDates($request->validated(), $period);
 
         return response()->json($this->metricsService->getSmsCounts($companyNit, $branchId, $period, $dateFrom, $dateTo));
+    }
+
+    /**
+     * Escaneos del menú QR (#294): total, sesiones únicas, serie diaria y
+     * desgloses por mesa/sede leyendo menu_scan_daily_rollup (+ día en curso
+     * desde menu_scan_events). `active_branch_id` decide sede vs consolidado.
+     */
+    public function menuScans(GetMenuScansRequest $request): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'read');
+        $companyNit = $request->attributes->get('active_company_nit');
+        $branchId = $request->attributes->get('active_branch_id');
+        $period = $request->validated()['period'] ?? 'today';
+        [$dateFrom, $dateTo] = $this->parseDates($request->validated(), $period);
+
+        return response()->json($this->metricsService->getMenuScans($companyNit, $branchId, $period, $dateFrom, $dateTo));
     }
 
     /** @param array<string, mixed> $validated

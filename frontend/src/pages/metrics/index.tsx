@@ -8,6 +8,7 @@ import FoodCostPanel from '@/components/metrics/food-cost-panel';
 import HeatmapPanel from '@/components/metrics/heatmap-panel';
 import KpiCard from '@/components/metrics/kpi-card';
 import MenuEngineeringPanel from '@/components/metrics/menu-engineering-panel';
+import MenuScansPanel from '@/components/metrics/menu-scans-panel';
 import OfflineOperationPanel from '@/components/metrics/offline-operation-panel';
 import { PageShell } from '@/components/page-shell';
 import BranchFilterTabs from '@/components/reports/branch-filter-tabs';
@@ -377,6 +378,15 @@ export default function MetricsIndex({ foodCostAlertThreshold = '0.30' }: Metric
 
                 {/* Operación offline (issue #140) */}
                 <OfflineOperationPanel period={period} formatCurrency={formatCurrency} enabled={isCustomReady && !!activeToken} />
+
+                {/* Escaneos del menú QR (issue #294) */}
+                <MenuScansPanel
+                    period={period}
+                    dateFrom={appliedDateFrom}
+                    dateTo={appliedDateTo}
+                    branchFilter={branchFilter}
+                    enabled={isCustomReady && !!activeToken}
+                />
 
                 {/* Menu engineering (issue #114) */}
                 <MenuEngineeringPanel

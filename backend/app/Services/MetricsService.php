@@ -735,6 +735,103 @@ class MetricsService
         ];
     }
 
+    /**
+     * Escaneos del menú QR (#294): lee menu_scan_daily_rollup (historia durable,
+     * agregada por AggregateMenuScansJob hasta D-1) y le une el día en curso
+     * agregado en vivo desde menu_scan_events (is_bot = false) — sin eso el
+     * período "today" siempre daría cero porque el rollup corre para ayer.
+     *
+     * La agregación pesada ocurre en SQL (rollup pre-agregado + GROUP BY del día
+     * vivo); el regroup en PHP opera sobre filas ya agregadas (≤ días × sedes ×
+     * mesas). `unique_sessions` es la suma de únicos por (día, mesa, sede) — la
+     * granularidad del rollup, que no conserva session_id: una sesión que escanea
+     * dos mesas o dos días cuenta en cada grupo (aproximación no reconstruible).
+     *
+     * @return array<string, mixed>
+     */
+    public function getMenuScans(string $companyNit, ?string $branchId, string $period, ?Carbon $dateFrom, ?Carbon $dateTo): array
+    {
+        [$start, $end] = $this->resolveDates($period, $dateFrom, $dateTo);
+        $branchKey = $branchId ?? 'all';
+        $key = "metrics:menu-scans:{$companyNit}:{$branchKey}:{$period}:{$start->getTimestamp()}:{$end->getTimestamp()}";
+
+        $data = Cache::flexible($key, [$this->metricsTtl, $this->metricsTtl * 5], function () use ($companyNit, $branchId, $start, $end) {
+            $todayStart = Carbon::now($this->timezone)->startOfDay();
+            $branchFilter = $branchId !== null ? 'AND branch_id = ?' : '';
+
+            // `scan_date < hoy` en el rollup evita doble conteo si el job se
+            // re-ejecutó manualmente para el día en curso (upsert idempotente).
+            $sql = "
+                SELECT scan_date::text AS scan_date, branch_id, table_number, total_scans::int AS total_scans, unique_sessions::int AS unique_sessions
+                FROM menu_scan_daily_rollup
+                WHERE company_nit = ?
+                  AND scan_date >= ?::date AND scan_date <= ?::date AND scan_date < ?::date
+                  {$branchFilter}
+                UNION ALL
+                SELECT ?::text, branch_id, COALESCE(table_number, ''), COUNT(*)::int, COUNT(DISTINCT session_id)::int
+                FROM menu_scan_events
+                WHERE company_nit = ?
+                  AND scanned_at >= ? AND scanned_at <= ?
+                  AND is_bot = false
+                  {$branchFilter}
+                GROUP BY branch_id, COALESCE(table_number, '')
+            ";
+
+            $liveStart = $start->greaterThan($todayStart) ? $start : $todayStart;
+
+            $bindings = [$companyNit, $start->toDateString(), $end->toDateString(), $todayStart->toDateString()];
+            if ($branchId !== null) {
+                $bindings[] = $branchId;
+            }
+            $bindings = array_merge($bindings, [$todayStart->toDateString(), $companyNit, $liveStart->toDateTimeString(), $end->toDateTimeString()]);
+            if ($branchId !== null) {
+                $bindings[] = $branchId;
+            }
+
+            $rows = collect(DB::select($sql, $bindings));
+
+            $daily = $rows->groupBy('scan_date')
+                ->map(fn ($group, $date): array => [
+                    'date' => $date,
+                    'total_scans' => (int) $group->sum('total_scans'),
+                    'unique_sessions' => (int) $group->sum('unique_sessions'),
+                ])
+                ->sortKeys()->values()->all();
+
+            $byTable = $rows->filter(fn ($row): bool => $row->table_number !== '')
+                ->groupBy('table_number')
+                ->map(fn ($group, $table): array => [
+                    'table_number' => (string) $table,
+                    'total_scans' => (int) $group->sum('total_scans'),
+                ])
+                ->sortByDesc('total_scans')->take(10)->values()->all();
+
+            $byBranch = [];
+            if ($branchId === null) {
+                $grouped = $rows->groupBy('branch_id')->map(fn ($group): int => (int) $group->sum('total_scans'));
+                $branchNames = Branch::query()->whereIn('id', $grouped->keys()->all())->pluck('name', 'id');
+                $byBranch = $grouped->map(fn (int $count, string $bid): array => [
+                    'branch_id' => $bid,
+                    'branch_name' => $branchNames[$bid] ?? '—',
+                    'total_scans' => $count,
+                ])->sortByDesc('total_scans')->values()->all();
+            }
+
+            return [
+                'total_scans' => (int) $rows->sum('total_scans'),
+                'unique_sessions' => (int) $rows->sum('unique_sessions'),
+                'daily' => $daily,
+                'by_table' => $byTable,
+                'by_branch' => $byBranch,
+            ];
+        });
+
+        return [
+            'period' => ['from' => $start->toIso8601String(), 'to' => $end->toIso8601String(), 'label' => $period],
+            'data' => $data,
+        ];
+    }
+
     private function resolveDates(string $period, ?Carbon $dateFrom, ?Carbon $dateTo): array
     {
         if ($period === 'custom' && $dateFrom && $dateTo) {

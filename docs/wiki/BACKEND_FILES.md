@@ -583,7 +583,7 @@ Diseño operativo:
 - **Partición DEFAULT** como red de seguridad (clock-skew, cron caído).
 - **`php artisan partitions:ensure`** (cron horario): pre-crea particiones del mes anterior, actual, siguiente y +2; drena la default re-routing filas a sus particiones mensuales (transacción por mes con buffer temporal — necesario porque Postgres rechaza `CREATE TABLE PARTITION OF` si la default contiene filas del rango). Soporta clock-skew arbitrario.
 - **Sin trigger BEFORE INSERT** que cree particiones inline: Postgres genera auto-deadlock (CREATE TABLE PARTITION OF requiere ACCESS EXCLUSIVE sobre el parent que el INSERT ya tiene en ROW EXCLUSIVE).
-- **`AggregateMenuScansJob`** (diario 03:15): UPSERT a `menu_scan_daily_rollup` con `total_scans`, `unique_sessions` agrupado por `(company_nit, scan_date, table_number)` filtrando `is_bot=false`. Reportes futuros leen de aquí, no de la tabla cruda.
+- **`AggregateMenuScansJob`** (diario 03:15): UPSERT a `menu_scan_daily_rollup` con `total_scans`, `unique_sessions` agrupado por `(company_nit, scan_date, table_number)` filtrando `is_bot=false`. Los reportes leen de aquí, no de la tabla cruda: `GET /api/v1/metrics/menu-scans` (#294, `MetricsController::menuScans` → `MetricsService::getMenuScans`) une el rollup (historia) con el día en curso agregado en vivo desde `menu_scan_events` — sin eso `period=today` daría siempre cero porque el job corre para D-1. Permiso `reports.read`, consolidación `branch.consolidate`. UI: `MenuScansPanel` en `/company/metrics`.
 - **`DropOldMenuScanPartitionsJob`** (diario 03:30): DROP atómico de particiones cuyo límite superior es ≤ hace 90 días. El rollup permanece (filas pequeñas, retención indefinida).
 - **`BotDetectionService`** marca `is_bot=true` (no descarta) en base a: UA en blocklist, Referer ausente o no apunta a `/menus/{nit}`, honeypot `_h` con valor. El flag se persiste y los índices parciales lo filtran de reportes — bots quedan auditables.
 
@@ -867,11 +867,12 @@ Header `X-Whatsapp-Verification-Code` transporta el OTP de 6 dígitos. La policy
 
 #### Métricas (`/api/v1/metrics/*`)
 
-10 endpoints. Todos requieren `permission:reports.read,read`. Cache TTL configurable.
+11 endpoints. Todos requieren `permission:reports.read,read`. Cache TTL configurable.
 
 | Método | URL | TTL caché |
 |--------|-----|-----------|
 | GET | `metrics/summary` | `dashboard_summary_cache_ttl` (60s) |
+| GET | `metrics/menu-scans` | `dashboard_metrics_cache_ttl` (300s) |
 | GET | `metrics/kpis/today` | 60s |
 | GET | `metrics/orders/active` | 30s |
 | GET | `metrics/orders/heatmap` | `dashboard_heatmap_cache_ttl` (600s) |
