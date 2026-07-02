@@ -374,14 +374,18 @@ class CashRegisterService
      */
     private function computeCashRefundsForSession(string $sessionId): float
     {
+        // whereExists (no JOIN): una orden pagada con N receipts cash (pagos
+        // parciales de mesa) multiplicaba el refund N veces en el JOIN,
+        // inflando el descuento sobre expected_cash.
         return (float) DB::table('payment_receipts as ref')
-            ->join('payment_receipts as orig', function ($join) {
-                $join->on('orig.order_id', '=', 'ref.order_id')
-                    ->whereColumn('orig.payment_method', '!=', DB::raw("'refund'"));
-            })
             ->where('ref.cash_session_id', $sessionId)
             ->where('ref.payment_method', 'refund')
-            ->where('orig.payment_method', 'cash')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('payment_receipts as orig')
+                    ->whereColumn('orig.order_id', 'ref.order_id')
+                    ->where('orig.payment_method', 'cash');
+            })
             ->sum(DB::raw('-ref.amount'));
     }
 
