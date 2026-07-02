@@ -11,8 +11,9 @@ import { ApiError, apiClient } from '@/lib/api-client';
 import { companyStatusBadgeVariant, companyStatusLabel, isSelectable } from '@/lib/company-status';
 import { reloadContext } from '@/lib/navigate-compat';
 import { route } from '@/lib/route-compat';
+import { useLogout } from '@/lib/use-logout';
 import { type Company } from '@/types';
-import { AlertCircle, Building2, Lock, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Building2, Lock, LogOut, ShieldAlert } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '@/lib/use-document-title';
@@ -83,6 +84,7 @@ export default function CompanySelectorRoute() {
     useDocumentTitle('Seleccionar empresa');
 
     const navigate = useNavigate();
+    const logout = useLogout();
     const bootstrap = useBootstrap();
     const [selecting, setSelecting] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -228,6 +230,10 @@ export default function CompanySelectorRoute() {
                                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                                     <Button variant="outline" onClick={() => navigate('/enrollment/company')} className="w-full sm:w-auto">
                                         Registrar otra empresa
+                                    </Button>
+                                    <Button variant="ghost" onClick={() => logout()} className="w-full sm:w-auto">
+                                        <LogOut />
+                                        Cerrar sesión
                                     </Button>
                                     <p className="text-muted-foreground text-xs">
                                         {companies.length === 1 ? '1 empresa en tu cuenta' : `${companies.length} empresas en tu cuenta`}

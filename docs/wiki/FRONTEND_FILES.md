@@ -127,7 +127,7 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 | `reset-password.tsx` | `/reset-password` | `AuthSimpleLayout` | `POST route('password.store')` | Requiere `token` y `email` de la URL |
 | `verify-email.tsx` | `/verify-email` | `AppLayout` | `POST route('verification.send')` | Reenvío de verificación + logout |
 | `confirm-password.tsx` | `/confirm-password` | `AppLayout` | `POST route('password.confirm')` | Confirmación antes de acción sensible |
-| `company-selector.tsx` | `/auth/company-selector` | sin layout | `POST /api/v1/auth/select-company` | Multi-empresa: lista companies del JWT, llama `setToken()` con nuevo JWT |
+| `company-selector.tsx` | `/auth/company-selector` | sin layout | `POST /api/v1/auth/select-company` | Multi-empresa: lista companies del JWT, llama `setToken()` con nuevo JWT; botón "Cerrar sesión" (`useLogout`) junto a "Registrar otra empresa" |
 | `branch-selector.tsx` | `/auth/branch-selector` | sin layout | `POST /api/v1/auth/switch-branch` | Multi-sede (#117): tarjetas de sedes accesibles. Persiste última en `localStorage['flexyflow.last_branch_id:<nit>']` y auto-selecciona si sigue accesible. Redirige a `/dashboard` |
 
 ### Enrollment (`pages/enrollment/`, 2 páginas)
