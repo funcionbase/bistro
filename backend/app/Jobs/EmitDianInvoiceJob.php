@@ -15,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Emisión asíncrona DIAN para invoices SaaS de FlexyFlow.
+ * Emisión asíncrona DIAN para invoices SaaS de flexyflow.
  *
  * Disparado por `BillingService::generateMonthlyInvoices` después del commit
  * de la invoice. Reusa `MockDianProvider` por ahora (pendiente integración con

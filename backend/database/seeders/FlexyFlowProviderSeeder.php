@@ -11,9 +11,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Configura FlexyFlow como empresa-proveedora SaaS para emisión DIAN (#246 PR-1.5).
+ * Configura flexyflow como empresa-proveedora SaaS para emisión DIAN (#246 PR-1.5).
  *
- * Asume que la Company de FlexyFlow ya existe (creada manualmente o por el flujo
+ * Asume que la Company de flexyflow ya existe (creada manualmente o por el flujo
  * de enrollment normal). Este seeder solo asegura:
  *  - Resoluciones DIAN para `invoice` y `credit_note` (idempotente firstOrCreate).
  *  - `DianProviderConfig` con `provider_slug='mock'` y `environment='habilitacion'`.
@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
  *
  * En dev/qa, si la Company no existe pero el operador definió
  * `FLEXYFLOW_NIT`, igual NO la crea — emite warn y skipea. Para tener una
- * Company FlexyFlow en local, usar el enrollment regular.
+ * Company flexyflow en local, usar el enrollment regular.
  *
  * Cuando se contrate Factura1/Siigo/Carvajal: solo cambia el `provider_slug`
  * de esta config en BD (rotación documentada en migration data por separado).
@@ -46,7 +46,7 @@ class FlexyFlowProviderSeeder extends Seeder
 
         if ($company === null) {
             $this->command?->warn(
-                "FlexyFlow Company NIT={$nit} no existe — skip resoluciones DIAN. ".
+                "flexyflow Company NIT={$nit} no existe — skip resoluciones DIAN. ".
                 'Registrá la empresa por el flujo normal y re-corré el seeder.'
             );
 
@@ -56,7 +56,7 @@ class FlexyFlowProviderSeeder extends Seeder
         $this->ensureResolutions($company->nit);
         $this->ensureProviderConfig($company->nit);
 
-        $this->command?->info("FlexyFlow SaaS provider: empresa {$company->nit} + resoluciones + MockProvider asegurados.");
+        $this->command?->info("flexyflow SaaS provider: empresa {$company->nit} + resoluciones + MockProvider asegurados.");
     }
 
     private function ensureResolutions(string $nit): void

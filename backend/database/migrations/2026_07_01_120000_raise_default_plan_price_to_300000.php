@@ -24,9 +24,9 @@ return new class extends Migration
 
     private const NEW_PRICE = 300000.00;
 
-    private const OLD_DESCRIPTION = 'Acceso completo a la plataforma FlexyFlow. $100.000 COP/mes (IVA 19% incluido).';
+    private const OLD_DESCRIPTION = 'Acceso completo a la plataforma flexyflow. $100.000 COP/mes (IVA 19% incluido).';
 
-    private const NEW_DESCRIPTION = 'Acceso completo a la plataforma FlexyFlow. $300.000 COP/mes (IVA 19% incluido).';
+    private const NEW_DESCRIPTION = 'Acceso completo a la plataforma flexyflow. $300.000 COP/mes (IVA 19% incluido).';
 
     public function up(): void
     {

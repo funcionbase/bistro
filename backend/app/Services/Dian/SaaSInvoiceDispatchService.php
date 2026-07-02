@@ -14,16 +14,16 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Orquesta la emisión DIAN para invoices SaaS (FlexyFlow → empresa cliente).
+ * Orquesta la emisión DIAN para invoices SaaS (flexyflow → empresa cliente).
  *
  * Reusa `ResolutionConsecutiveAllocator` + `CufeCudeGenerator` existentes
  * pero opera sobre `Invoice` en vez de `Order` (que es el camino de
  * `DianDispatchService`).
  *
  * Flujo:
- *   1. Resuelve issuer (FlexyFlow desde `config('billing.flexyflow.*')`).
+ *   1. Resuelve issuer (flexyflow desde `config('billing.flexyflow.*')`).
  *   2. Asigna consecutivo atómico (lockForUpdate sobre la resolución `invoice`
- *      activa del NIT FlexyFlow).
+ *      activa del NIT flexyflow).
  *   3. Computa CUFE con SHA-384 sobre input canónico (CufeCudeGenerator).
  *   4. Persiste `electronic_documents` con status `queued`, snapshot del
  *      provider activo (mock) y vincula al invoice (`invoices.electronic_document_id`).
@@ -63,7 +63,7 @@ class SaaSInvoiceDispatchService
 
             $issuer = Company::query()->where('nit', $flexyNit)->first();
             if ($issuer === null) {
-                throw new RuntimeException("FlexyFlow company NIT={$flexyNit} no existe — corre FlexyFlowProviderSeeder.");
+                throw new RuntimeException("flexyflow company NIT={$flexyNit} no existe — corre FlexyFlowProviderSeeder.");
             }
 
             $resolution = DianResolution::query()
@@ -74,7 +74,7 @@ class SaaSInvoiceDispatchService
                 ->first();
 
             if ($resolution === null) {
-                throw new RuntimeException("FlexyFlow no tiene resolución DIAN tipo 'invoice' activa.");
+                throw new RuntimeException("flexyflow no tiene resolución DIAN tipo 'invoice' activa.");
             }
 
             $allocation = $this->allocator->allocate($resolution);
@@ -109,7 +109,7 @@ class SaaSInvoiceDispatchService
             }
 
             if ($branchId === '') {
-                throw new RuntimeException("No hay branch disponible para vincular el ElectronicDocument (FlexyFlow NIT={$flexyNit}).");
+                throw new RuntimeException("No hay branch disponible para vincular el ElectronicDocument (flexyflow NIT={$flexyNit}).");
             }
 
             $electronicDoc = ElectronicDocument::query()->create([

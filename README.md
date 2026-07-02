@@ -1,4 +1,4 @@
-# 🍽️ FlexyFlow · Bistro
+# 🍽️ flexyflow · Bistro
 
 > SaaS multi-empresa para restaurantes en Colombia: empresas, sedes, menús, pedidos, facturación de suscripción y RBAC granular. Primera app del monorepo [`apps-flexyflow-co`](../README.md).
 
@@ -64,6 +64,6 @@ cd .. && npm run dev   # API + cola + Vite (HMR) en paralelo
 
 ## 📄 Licencia
 
-Software **propietario** © 2026 FlexyFlow — no es código abierto. Uso/copia/despliegue requieren autorización por escrito. Ver [`../LICENSE`](../LICENSE).
+Software **propietario** © 2026 flexyflow — no es código abierto. Uso/copia/despliegue requieren autorización por escrito. Ver [`../LICENSE`](../LICENSE).
 
 Mantenedor: **Cristian Marin** · [@cristianmarint](https://github.com/cristianmarint) · cristian@flexyflow.co

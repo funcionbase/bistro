@@ -29,7 +29,7 @@ class BillingPlanSeeder extends Seeder
             ['slug' => config('billing.default_plan_slug', 'default')],
             [
                 'name' => 'Plan Default',
-                'description' => 'Acceso completo a la plataforma FlexyFlow. $300.000 COP/mes (IVA 19% incluido).',
+                'description' => 'Acceso completo a la plataforma flexyflow. $300.000 COP/mes (IVA 19% incluido).',
                 'price' => 300000.00,
                 'currency' => 'COP',
                 'billing_cycle' => 'monthly',
