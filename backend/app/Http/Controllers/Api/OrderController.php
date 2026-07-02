@@ -711,7 +711,9 @@ class OrderController extends Controller
             ->whereIn('status', ['pending', 'in_kitchen', 'ready'])
             ->whereNotNull('table_number')
             ->orderBy('ordered_at')
-            ->with(['orderItems' => fn ($q) => $q->orderBy('id')])
+            // Cancelados fuera: no deben aparecer en la vista de mesas ni sumar
+            // al item_count (paridad con la proyección orders.items JSON).
+            ->with(['orderItems' => fn ($q) => $q->where('status', '!=', 'cancelled')->orderBy('id')])
             ->get();
 
         $payload = $orders->map(function (Order $order): array {
@@ -1034,7 +1036,7 @@ class OrderController extends Controller
                 $paymentData['change_returned'] = round($amountReceived - $expectedTotal, 2);
             }
 
-            PaymentReceipt::create([
+            $receipt = PaymentReceipt::create([
                 'order_id' => $order->id,
                 'company_nit' => $companyNit,
                 'branch_id' => $order->branch_id,
@@ -1060,6 +1062,12 @@ class OrderController extends Controller
             // La orden quedó cerrada: cualquier item aún abierto en cocina pasa
             // a `served` para que salga del KDS y el estado quede consistente.
             $this->markOpenKitchenItemsServed($order);
+
+            // El receipt cubre el total de la orden: marcar TODOS los items no
+            // cancelados como pagados. Sin esto, el cobro de mesa
+            // (TableCashierService) los seguía viendo con paid_at NULL y ofrecía
+            // re-cobrarlos (doble cobro).
+            $this->markOrderItemsPaid($order, $receipt->id, $paidAt);
 
             return [$order, $paidAt, $paymentData];
         });
@@ -1517,6 +1525,25 @@ class OrderController extends Controller
             ->update([
                 'status' => 'served',
                 'served_at' => now(),
+            ]);
+    }
+
+    /**
+     * Marca como pagados (paid_at + paid_receipt_id) los items no cancelados
+     * que aún no tengan pago, cuando un receipt cubre el TOTAL de la orden
+     * (closeWithPayment y los cierres offline). Es el espejo del stamping por
+     * item de TableCashierService::payPartial/payAll — sin él, el cobro de
+     * mesa seguía mostrando esos items como pendientes (doble cobro).
+     */
+    public function markOrderItemsPaid(Order $order, string $receiptId, Carbon $paidAt): void
+    {
+        OrderItem::query()
+            ->where('order_id', $order->id)
+            ->whereNull('paid_at')
+            ->where('status', '!=', 'cancelled')
+            ->update([
+                'paid_at' => $paidAt,
+                'paid_receipt_id' => $receiptId,
             ]);
     }
 

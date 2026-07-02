@@ -25,8 +25,8 @@ use Illuminate\Support\Carbon;
  *    `SUM(unit_price * quantity) WHERE paid_at IS NULL AND status NOT IN ('cancelled')`.
  *  - Cancelaciones se rastrean por `cancellation_reason` ∈ config tables item_statuses.
  *
- * @property int $id
- * @property int $order_id
+ * @property string $id
+ * @property string $order_id
  * @property string $menu_item_id
  * @property int|null $guest_id
  * @property string $name
@@ -45,7 +45,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $served_at
  * @property Carbon|null $cancelled_at
  * @property Carbon|null $paid_at
- * @property int|null $paid_receipt_id
+ * @property string|null $paid_receipt_id
  * @property Carbon|null $refunded_at
  * @property string|null $refund_receipt_id
  */
