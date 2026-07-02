@@ -462,7 +462,7 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem>
-                                <SidebarMenuButton className="text-muted-foreground/70 pointer-events-none" aria-disabled="true">
+                                <SidebarMenuButton size="sm" className="text-muted-foreground/70 pointer-events-none" aria-disabled="true">
                                     <Info className="h-4 w-4" />
                                     <span>
                                         fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}

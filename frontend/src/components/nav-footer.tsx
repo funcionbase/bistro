@@ -15,7 +15,7 @@ export function NavFooter({
                 <SidebarMenu className="group-data-[collapsible=icon]:items-center">
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild className="text-muted-foreground hover:text-foreground">
+                            <SidebarMenuButton asChild size="sm" className="text-muted-foreground hover:text-foreground">
                                 <a href={item.url} target="_blank" rel="noopener noreferrer">
                                     {item.icon && <Icon iconNode={item.icon} className="h-4 w-4" />}
                                     <span>{item.title}</span>
