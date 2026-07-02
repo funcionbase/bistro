@@ -26,8 +26,8 @@ interface StickyActionBarProps {
  * etc.). El `pb-safe-1` hace `max(1rem, env(safe-area-inset-bottom, 1rem))`
  * para que el botón no quede tapado por el home indicator del iPhone.
  *
- * El bloque incluye un gradient sutil arriba para separar visualmente del
- * contenido scrollable sin necesidad de border duro.
+ * Fondo sólido con border-t para separar del contenido scrollable (sin
+ * gradient: generaba un fade inferior→superior no deseado en la PWA).
  *
  * Uso:
  * ```tsx
@@ -43,7 +43,7 @@ export function StickyActionBar({ children, className, fixed = true, innerMaxWid
         <div
             className={cn(
                 fixed ? 'fixed inset-x-0 bottom-0 z-30' : 'sticky bottom-0 z-30',
-                'bg-gradient-to-t from-background via-background/95 to-background/0 px-4 pt-3 pb-safe-1',
+                'border-t border-border bg-background px-4 pt-3 pb-safe-1',
                 className,
             )}
         >
