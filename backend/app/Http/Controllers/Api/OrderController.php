@@ -291,6 +291,7 @@ class OrderController extends Controller
                     'unit_cost' => isset($line['cost']) && $line['cost'] !== null
                         ? number_format((float) $line['cost'], 2, '.', '')
                         : null,
+                    'tax_rate' => $line['tax_rate'],
                     'quantity' => (int) $line['quantity'],
                     'category' => $line['category'] ?? null,
                     'notes' => $line['notes'] ?? null,

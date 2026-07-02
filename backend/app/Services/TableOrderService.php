@@ -40,6 +40,7 @@ class TableOrderService
     public function __construct(
         private readonly AuditService $audit,
         private readonly OrderTotalCalculator $totals,
+        private readonly TaxCalculator $taxes,
     ) {}
 
     /**
@@ -75,6 +76,12 @@ class TableOrderService
             $item->name = (string) ($menuItem['name'] ?? 'Item');
             $item->unit_price = (string) number_format((float) ($menuItem['price'] ?? 0), 2, '.', '');
             $item->unit_cost = isset($menuItem['cost']) ? (string) number_format((float) $menuItem['cost'], 2, '.', '') : null;
+            // Snapshot de la tasa efectiva por línea (item del menú > default
+            // congelado en la orden), paridad con buildOrderLines de caja (#293).
+            $item->tax_rate = $this->taxes->resolveRate(
+                isset($menuItem['tax_rate']) ? (float) $menuItem['tax_rate'] : null,
+                (float) ($order->snapshot_default_tax_rate ?? 0),
+            );
             $item->quantity = $quantity;
             $item->category = isset($menuItem['category']) ? (string) $menuItem['category'] : null;
             $item->notes = $notes;
@@ -542,9 +549,8 @@ class TableOrderService
         $order->ordered_at = Carbon::now();
 
         // Snapshot tributario al nacer la orden (paridad con el flujo de caja).
-        // El flujo QR aún no calcula impuestos, pero congelar el régimen acá
-        // deja la data lista para cuando entre IVA/INC/DIAN sin reconstruir
-        // historia. Ver issue de consolidación de totales.
+        // OrderTotalCalculator usa este snapshot (no el estado vivo de la
+        // empresa) para el desglose subtotal/tax_amount de la cuenta (#293).
         $company = Company::query()
             ->where('nit', $session->company_nit)
             ->first(['nit', 'default_tax_rate', 'tax_regime', 'tax_included_in_price']);

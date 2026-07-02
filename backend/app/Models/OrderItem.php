@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $unit_price decimal:2
  * @property string|null $unit_cost decimal:2
+ * @property string|null $tax_rate decimal:2 — tasa efectiva snapshoteada al crear la línea; null = usar orders.snapshot_default_tax_rate
  * @property int $quantity
  * @property string|null $category
  * @property string|null $notes
@@ -58,6 +59,7 @@ class OrderItem extends Model
         'name',
         'unit_price',
         'unit_cost',
+        'tax_rate',
         'quantity',
         'category',
         'notes',
@@ -80,6 +82,7 @@ class OrderItem extends Model
         return [
             'unit_price' => 'decimal:2',
             'unit_cost' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
             'quantity' => 'integer',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',

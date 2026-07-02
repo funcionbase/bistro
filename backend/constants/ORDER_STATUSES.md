@@ -104,9 +104,14 @@ Fuente: `config/orders.php:142-199`.
 
 ### Invariante `orders.total`
 
-`orders.total = SUM(items.price * items.quantity) WHERE item.status ∉ excluded_from_total`
+`orders.total = SUM(line_total) WHERE item.status ∉ excluded_from_total` — neto del descuento si hay cupón.
 
-Helper único: `OrderController::computeItemsTotal`. Llamarlo en cada mutación de `items[]` (CLAUDE.md §12).
+El desglose por línea (`subtotal`/`tax_amount`/`total`) lo produce **`TaxCalculator::calculateLine`** en ambos flujos (#293):
+
+- **Caja** (`OrderController::buildOrderLines` / `appendItems`): calcula sobre las líneas del payload y persiste el desglose en `orders.items` JSON + agregados en la orden.
+- **Mesas QR** (`App\Support\OrderTotalCalculator::recalculateAndSave`): recalcula desde filas `order_items` en cada mutación (add/edit/cancel/approve) y persiste `subtotal`, `tax_amount`, `tax_rate` y `total`.
+
+Ambos usan el **snapshot tributario de la orden** (`tax_included_in_price`, `snapshot_default_tax_rate`, y `order_items.tax_rate` por línea con fallback al default), nunca el estado vivo de la empresa.
 
 ---
 
