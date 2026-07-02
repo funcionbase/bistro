@@ -4,7 +4,17 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { RestaurantIdentity } from '@/components/restaurant-identity';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader } from '@/components/ui/sidebar';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { isFullyBlocked } from '@/lib/company-status';
 import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isCourierOnlyMode } from '@/lib/courier-mode';
@@ -22,6 +32,7 @@ import {
     Clock,
     FileText,
     Contact as ContactIcon,
+    Info,
     KanbanSquare,
     LayoutGrid,
     LineChart,
@@ -443,13 +454,23 @@ export function AppSidebar() {
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 {/* Versiones desplegadas (antes en el footer de welcome.tsx).
-                    Mismo wrapper SidebarGroup + px-2 que los items de NavFooter
-                    para quedar alineado con "Manual de usuario". Oculto en modo
-                    icono porque el texto no cabe. */}
+                    Mismo markup que un item de NavFooter (icono + text-sm en
+                    SidebarMenuButton) para alinear y dimensionar igual que
+                    "Manual de usuario" y los items del nav. No es clickeable.
+                    Oculto en modo icono porque el texto no cabe. */}
                 <SidebarGroup className="py-0 group-data-[collapsible=icon]:hidden">
-                    <span className="text-muted-foreground/60 px-2 text-[10px]">
-                        fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}
-                    </span>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton className="text-muted-foreground/70 pointer-events-none" aria-disabled="true">
+                                    <Info className="h-4 w-4" />
+                                    <span>
+                                        fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}
+                                    </span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroupContent>
                 </SidebarGroup>
                 <NavUser />
             </SidebarFooter>
