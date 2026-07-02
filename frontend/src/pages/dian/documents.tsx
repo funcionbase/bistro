@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDocumentPdfUrl, listDocuments, retryDocument } from '@/lib/dian-api';
+import { formatDateTimeShort } from '@/lib/datetime';
 import {
     type DianDocumentStatus,
     type DianDocumentType,
@@ -186,7 +187,7 @@ function DocumentTableRow({ doc, onRetry }: { doc: DianElectronicDocument; onRet
                 )}
             </td>
             <td className="px-3 py-2 text-muted-foreground">
-                {doc.issued_at ? new Date(doc.issued_at).toLocaleString('es-CO') : '—'}
+                {doc.issued_at ? formatDateTimeShort(doc.issued_at) : '—'}
             </td>
             <td className="px-3 py-2 text-muted-foreground">#{doc.order_id ?? '—'}</td>
             <td className="px-3 py-2 text-muted-foreground font-mono text-xs">
@@ -213,7 +214,7 @@ function DocumentCard({ doc, onRetry }: { doc: DianElectronicDocument; onRetry: 
                 <div className="text-xs text-[color:var(--color-status-critical)]">{doc.rejection_reason}</div>
             )}
             <div className="text-xs text-muted-foreground">
-                {doc.issued_at ? new Date(doc.issued_at).toLocaleString('es-CO') : '—'} · orden #{doc.order_id ?? '—'}
+                {doc.issued_at ? formatDateTimeShort(doc.issued_at) : '—'} · orden #{doc.order_id ?? '—'}
             </div>
             <div className="pt-1">
                 <DocumentActions doc={doc} onRetry={onRetry} />

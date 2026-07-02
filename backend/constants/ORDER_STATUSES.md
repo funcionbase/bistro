@@ -94,6 +94,14 @@ Fuente: `config/orders.php:142-199`.
 ]
 ```
 
+> **Nota (2026-07-01):** `cancellation_reason='refunded'` quedó **legacy** — solo
+> describe filas históricas. El refund de un item pagado (`TableCashierService::refundItem`)
+> ya NO cancela el item ni recalcula `orders.total`: la venta queda intacta y la
+> devolución vive únicamente en el `PaymentReceipt` negativo (CLAUDE.md §13).
+> El item devuelto se marca con `order_items.refunded_at` + `refund_receipt_id`
+> (bloquea doble refund). Si los refunds acumulados cubren `orders.total` de una
+> orden `completed`, la orden pasa a `refunded` (paridad con `OrderController::refund`).
+
 ### Invariante `orders.total`
 
 `orders.total = SUM(items.price * items.quantity) WHERE item.status ∉ excluded_from_total`

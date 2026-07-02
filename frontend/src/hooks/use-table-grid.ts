@@ -90,6 +90,7 @@ export function useTableGrid({ token, refreshOrders }: UseTableGridArgs): UseTab
         // Polling para reflejar sesiones que abren/cierran sin tener que
         // recargar la página. 8s es lo mismo que useTables — quedan sincros.
         const id = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
             if (!cancelled) void fetchDefinedTables();
         }, POLL_INTERVAL_MS);
         return () => {

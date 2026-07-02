@@ -122,13 +122,8 @@ export function useCompanySettings(): UseCompanySettingsReturn {
     const [tokenReady, setTokenReady] = useState(false);
 
     useEffect(() => {
-        if (!activeToken) {
-            const urlToken = new URLSearchParams(window.location.search).get('token');
-            if (urlToken) {
-                localStorage.setItem('token', urlToken);
-            }
-        }
-        // Espera un ciclo para que useToken() lo detecte
+        // Espera un ciclo para que useToken() lo detecte (el ?token= legacy
+        // ya lo consumió spa/main.tsx vía setToken()).
         setTimeout(() => setTokenReady(true), 0);
     }, [activeToken]);
 
@@ -143,13 +138,7 @@ export function useCompanySettings(): UseCompanySettingsReturn {
 
         let isMounted = true;
 
-        const urlToken = new URLSearchParams(window.location.search).get('token');
-        const extraHeaders: Record<string, string> = {};
-        if (urlToken) {
-            extraHeaders['Authorization'] = `Bearer ${urlToken}`;
-        }
-
-        apiFetch('/api/v1/company', { headers: extraHeaders })
+        apiFetch('/api/v1/company')
             .then((res) => res.json())
             .then((data) => {
                 if (!isMounted) return;
@@ -268,11 +257,7 @@ export function useCompanySettings(): UseCompanySettingsReturn {
             if (logoFile) formData.append('logo', logoFile);
 
             // Obtiene el token de la URL si existe
-            const urlToken = new URLSearchParams(window.location.search).get('token');
             const headers: Record<string, string> = {};
-            if (urlToken) {
-                headers['Authorization'] = `Bearer ${urlToken}`;
-            }
             const response = await apiFetch('/api/v1/company', {
                 method: 'POST',
                 body: formData,

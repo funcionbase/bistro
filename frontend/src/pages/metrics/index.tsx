@@ -32,6 +32,7 @@ import type {
 
 import { Activity, DollarSign, ShoppingBag, TrendingDown } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 
 const PERIOD_OPTIONS: ReadonlyArray<{ value: MetricPeriod; label: string }> = [
@@ -41,9 +42,6 @@ const PERIOD_OPTIONS: ReadonlyArray<{ value: MetricPeriod; label: string }> = [
     { value: 'custom', label: 'Personalizado' },
 ];
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
-}
 
 /**
  * branchFilter:

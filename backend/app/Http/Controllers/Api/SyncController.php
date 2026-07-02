@@ -25,7 +25,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -251,7 +250,6 @@ class SyncController extends Controller
                 'company_nit' => $companyNit,
                 'branch_id' => $branchId,
                 'client_uuid' => $clientUuid,
-                'session_id' => 'caja-offline-'.Str::uuid()->toString(),
                 'client_phone' => $payload['client_phone'] ?? null,
                 'order_type' => $payload['order_type'] ?? 'pickup',
                 'table_number' => ($payload['order_type'] ?? null) === 'table' ? ($payload['table_number'] ?? null) : null,

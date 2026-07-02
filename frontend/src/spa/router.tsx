@@ -29,7 +29,6 @@ const Dashboard = lazy(() => import('@/pages/dashboard'));
 const MeIndex = lazy(() => import('@/pages/me/index'));
 const MePerfil = lazy(() => import('@/pages/me/perfil'));
 const MeAgenda = lazy(() => import('@/pages/me/agenda'));
-const Suppliers = lazy(() => import('@/pages/suppliers/index'));
 const LoyaltyReports = lazy(() => import('@/pages/loyalty/reports'));
 const Billing = lazy(() => import('@/pages/billing/index'));
 const ClientsIndex = lazy(() => import('@/pages/clients/index'));
@@ -216,7 +215,6 @@ export const router = createBrowserRouter([
                     { path: '/me', element: <MeIndex /> },
                     { path: '/me/profile', element: <MePerfil /> },
                     { path: '/me/schedule', element: <MeAgenda /> },
-                    { path: '/suppliers', element: <Suppliers /> },
                     { path: '/loyalty/reports', element: <LoyaltyReports /> },
                     { path: '/billing', element: <Billing /> },
                     { path: '/clients', element: <ClientsIndex /> },

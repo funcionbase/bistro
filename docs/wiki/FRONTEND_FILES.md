@@ -257,23 +257,25 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 | `inventory/components/MovementsDrawer.tsx` | drawer | `inventory.read` | `GET /api/v1/inventory/movements?ingredient_id=` | Historial inmutable por insumo. Tipos: entry (verde), waste (rojo), adjustment (amber), recipe_consumption (azul), transfer_in/out (gris). Muestra qty, unit_cost, total_cost, ref, actor |
 | `inventory/components/InventoryValuationChart.tsx` | embebido | `inventory.read` | `GET /api/v1/inventory/history/valuation` | Recharts: serie temporal de valorización por bodega. Tooltip con valor + delta vs día anterior |
 
-### Compras a proveedores (`pages/purchases/`, issue #118)
+### Compras y proveedores (`pages/purchases/`, issue #118 — página UNIFICADA 2026-07-01)
+
+> `/purchases` fusiona las antiguas páginas de compras y proveedores en tabs
+> **Órdenes | Proveedores** (`?tab=proveedores`). Un solo ítem en el sidebar
+> ("Compras y proveedores", visible con `anyPermission: [purchases.read, suppliers.read]`).
+> La ruta `/suppliers` se eliminó por completo (cae al 404 del SPA). Los
+> catálogos (proveedores, insumos) se cargan una vez y se comparten entre
+> tabs y el editor.
 
 | Archivo | URL/embebido | Permiso | APIs | Notas |
 |---------|--------------|---------|------|-------|
-| `purchases/index.tsx` | `/purchases` | `purchases.read` | `GET /api/v1/purchases?status=&page=`, drawer detail | Tabla paginada de OC con filtros (estado, proveedor, fechas). Cards KPI por estado (draft, submitted, received, paid, cancelled, voided). Hook: `usePurchases` |
-| `purchases/components/PurchaseOrderEditor.tsx` | modal | `purchases.create/update` | `POST/PATCH /api/v1/purchases/*` | Editor de OC. Selector de proveedor (con search), agregar líneas (insumo + qty + unit_price), suma automática (subtotal/tax/total). Botón Guardar como borrador o Enviar (`submit`). Sin enviar pasa a `submitted` |
+| `purchases/index.tsx` | `/purchases` (+`?tab=proveedores`) | `purchases.read` y/o `suppliers.read` (tabs gateados individualmente) | `GET /api/v1/purchases?status=&page=`, drawer detail | Contenedor con tabs. Tab Órdenes: tabla paginada de OC con filtros + KPIs. El botón "Nueva orden" solo se bloquea si falta catálogo Y el usuario no puede crearlo inline (antes bloqueaba siempre). Hooks: `usePurchases`, `useSuppliers`, `useInventory` compartidos |
+| `purchases/components/suppliers-panel.tsx` | tab Proveedores | `suppliers.read` | `GET /api/v1/suppliers?search=&archived=`, CRUD vía modal | Contenido de la antigua `/suppliers`: KPIs, búsqueda, filtro archivados, tabla con editar/archivar/restaurar. "Crear proveedor" gateado por `suppliers.create` |
+| `purchases/components/PurchaseOrderEditor.tsx` | modal | `purchases.create/update` | `POST/PATCH /api/v1/purchases/*` | Editor de OC. Selector de proveedor con **quick-create inline** ("+ Crear proveedor" en el footer del combobox, gateado por `suppliers.create` — crea y autoselecciona sin salir del editor, mismo patrón que insumos). Líneas (insumo + qty + unit_price) con quick-create de insumo, suma automática (subtotal/tax/total). Notas saneadas (§5, maxBytes 2000) |
+| `purchases/components/supplier-form-modal.tsx` | modal (tab Proveedores + quick-create del editor) | `suppliers.create/update` | `POST/PATCH /api/v1/suppliers/*` | Crear/editar proveedor. Datos: nombre, NIT, contacto, email, tel, dirección, payment_terms_days. Validación NIT colombiano |
 | `purchases/components/PurchaseOrderDetailDrawer.tsx` | drawer | `purchases.read` | `GET /api/v1/purchases/{id}` | Detalle drawer con líneas, totales, status timeline. Acciones según estado: Confirmar entrega (`receive`), Pagar (`pay`), Cancelar/Anular. Pestañas: Detalle, Adjuntos, Auditoría |
 | `purchases/components/AttachmentsPanel.tsx` | embebido en drawer | `purchases.read/update` | `GET/POST/DELETE /api/v1/purchases/{id}/attachments/*` | Lista adjuntos con preview (image) o icono (PDF). Upload (10 MB max, pdf/jpg/png). Soft-delete |
 | `purchases/components/MarkPaidModal.tsx` | modal | `purchases.pay` | `POST /api/v1/purchases/{id}/pay` | Registrar pago. Selector método (cash/card/transfer), referencia (obligatoria para card/transfer), monto (= total OC, no se acepta otro), fecha (default hoy) |
 | `purchases/components/VoidPOModal.tsx` | modal | `purchases.delete` | `POST /api/v1/purchases/{id}/void` | Anular OC post-recepción. Crea nota crédito automática + revierte inventario. Exige motivo (≥ 10 chars). Confirmación destructiva |
-
-### Proveedores (`pages/suppliers/`, issue #118)
-
-| Archivo | URL/embebido | Permiso | APIs | Notas |
-|---------|--------------|---------|------|-------|
-| `suppliers/index.tsx` | `/suppliers` | `suppliers.read` | `GET /api/v1/suppliers?search=&archived=`, CRUD vía modal | Tabla con búsqueda y filtro archivados. Columnas: nombre, NIT, contacto, tel, días de crédito, # insumos vinculados. Acciones: editar, archivar, restaurar. Hook: `useSuppliers` |
-| `suppliers/components/SupplierFormModal.tsx` | modal | `suppliers.create/update` | `POST/PATCH /api/v1/suppliers/*` | Crear/editar proveedor. Tabs: Datos (nombre, NIT, contacto, email, tel, dirección, payment_terms_days) e Insumos (alias × precio histórico desde `SupplierIngredient`). Validación NIT colombiano |
 
 ### Empresa: sedes, bodegas, impresoras
 
@@ -644,7 +646,7 @@ Mapa canónico en `src/lib/shortcuts.ts` (`APP_SHORTCUTS`). Motor de secuencias 
 | `lib/api.ts` | `apiFetch(url, options)` | Wrapper de fetch. Inyecta `Authorization: Bearer`, `?token=`, `credentials: include`. Maneja `X-Cookie-Migrated`, `X-Refresh-Token`, 401 de sesión revocada. `console.debug` activo |
 | `lib/token.ts` | `getToken()`, `setToken()`, `clearToken()`, `subscribeToken()`, `markCookieMigrated()`, `AUTH_MARKER` | localStorage key `company_token`. Sincroniza con suscriptores. Escucha eventos `navigate` de Inertia |
 | `lib/utils.ts` | `cn(...inputs)` | Combina `clsx` + `tailwind-merge` |
-| `lib/formatters.ts` | `formatCOP`, `formatMonthYear`, `formatDate`, `formatInvoicePeriod`, `nextBillingDate`, `formatNumber`, `formatPhoneCO`, `formatDelta` | Todos en `es-CO`. `formatPhoneCO` convierte `573XXXXXXXXXX` ↔ `+57 3XX XXX XXXX` |
+| `lib/formatters.ts` | `formatCOP`, **`formatCurrency`** (canónico COP con símbolo, trunca a peso §13), `formatMonthYear`, `formatDate`, `formatInvoicePeriod`, `nextBillingDate`, `formatNumber`, `formatPhoneCO`, `formatDelta` | Todos en `es-CO`. `formatCurrency` reemplazó ~29 copias locales (auditoría 2026-07-01); `use-currency-formatter` quedó deprecado como alias. `formatPhoneCO` convierte `573XXXXXXXXXX` ↔ `+57 3XX XXX XXXX` |
 | `lib/calculate-discount.ts` | `calculateDiscount(coupon, total)` | Cálculo monto descuento |
 | `lib/coupon-helpers.ts` | `getCouponStatus`, `getDiscountLabel`, `formatScheduleSummary`, `WEEKDAYS_ES` | Helpers de UI para cupones (formato tipo, valor, estado, resumen de programación happy hour #125) |
 | `lib/generate-coupon-code.ts` | `generateCouponCode()` | Random alfanumérico mayúscula |

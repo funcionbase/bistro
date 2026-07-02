@@ -5,6 +5,7 @@ import { OrderItemCard } from '@/components/ui/order-item-card';
 import { cn } from '@/lib/utils';
 import { Check, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 interface BatchItem {
     id: string;
@@ -158,14 +159,6 @@ export function BatchApprovalCard({
     );
 }
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value);
-}
 
 function formatRelative(iso: string): string {
     const date = new Date(iso);

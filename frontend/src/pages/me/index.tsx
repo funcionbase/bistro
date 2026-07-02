@@ -16,6 +16,7 @@ import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
 import { AlertCircle, Briefcase, CalendarDays, IdCard, Info, MapPin, Pencil, UserCircle, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatDateTime } from '@/lib/datetime';
 
 
 type UserProfile = {
@@ -71,7 +72,7 @@ const userStatusMeta: Record<string, { label: string; variant: 'safe' | 'warning
 
 function formatDate(iso: string | null): string {
     if (!iso) return '—';
-    return new Date(iso + 'T00:00:00').toLocaleDateString('es-CO', {
+    return formatDateTime(iso + 'T00:00:00', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',

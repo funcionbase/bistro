@@ -10,6 +10,8 @@ import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 import { CheckCircle2, ChevronDown, ChevronRight, RefreshCw, Unlock } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatCurrency as formatCurrencyCOP } from '@/lib/formatters';
+import { formatDateTimeShort } from '@/lib/datetime';
 
 /**
  * Historial de sesiones de caja (turnos) — el informe de cierre de caja.
@@ -71,13 +73,9 @@ const METHOD_LABELS: Record<string, string> = { cash: 'Efectivo', card: 'Tarjeta
 
 function formatCurrency(value: number | null): string {
     if (value === null) return '—';
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
+    return formatCurrencyCOP(value);
 }
 
-function formatDateTime(iso: string | null): string {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bogota' });
-}
 
 function formatTime(iso: string | null): string {
     if (!iso) return '—';
@@ -356,11 +354,11 @@ export default function CashSessionsCard({
                                         </TableCell>
                                         <TableCell className="text-muted-foreground text-xs">{s.cash_register_name ?? '—'}</TableCell>
                                         <TableCell className="text-xs">
-                                            <div>{formatDateTime(s.opened_at)}</div>
+                                            <div>{formatDateTimeShort(s.opened_at)}</div>
                                             {s.opened_by && <div className="text-muted-foreground">{s.opened_by.name}</div>}
                                         </TableCell>
                                         <TableCell className="text-xs">
-                                            <div>{formatDateTime(s.closed_at)}</div>
+                                            <div>{formatDateTimeShort(s.closed_at)}</div>
                                             {s.closed_by && <div className="text-muted-foreground">{s.closed_by.name}</div>}
                                         </TableCell>
                                         <TableCell className="text-right tabular-nums">{formatCurrency(s.opening_amount)}</TableCell>

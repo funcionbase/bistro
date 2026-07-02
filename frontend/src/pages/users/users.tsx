@@ -71,11 +71,6 @@ export default function Users() {
     useEffect(() => {
         isMounted.current = true;
 
-        if (!activeToken) {
-            const urlToken = new URLSearchParams(window.location.search).get('token');
-            if (urlToken) localStorage.setItem('token', urlToken);
-        }
-
         const timer = setTimeout(() => {
             fetchData();
         }, 0);

@@ -30,6 +30,7 @@ import { type Order, type OrderStatus, type ReportSummary } from '@/types';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { Link2, RefreshCw } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 
 interface Pagination {
     current_page: number;
@@ -82,9 +83,6 @@ const PERIOD_OPTIONS: ReadonlyArray<{ value: Period; label: string }> = [
 ];
 
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
-}
 
 function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleString('es-CO', {
@@ -269,7 +267,7 @@ export default function Reports() {
                 setLoading(false);
             }
         },
-        [activeToken, period, dateFrom, dateTo, buildQuery],
+        [activeToken, period, dateFrom, dateTo, specificDay, buildQuery],
     );
 
     useEffect(() => {

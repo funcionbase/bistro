@@ -56,10 +56,20 @@ class User extends Authenticatable
         'status',
     ];
 
-    /** @var list<string> */
+    /**
+     * CIBER-01: `cedula` (documento) y `google_id` (identificador de auth) NO
+     * deben aparecer en serializaciones crudas del modelo (p.ej. cuando un
+     * `Delivery` carga su `deliverer`). Los endpoints self (Me/Account) los
+     * exponen vía `->only([...])`/acceso explícito, que ignoran `$hidden`, así
+     * que ocultarlos aquí no los rompe.
+     *
+     * @var list<string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
+        'cedula',
+        'google_id',
     ];
 
     protected function casts(): array

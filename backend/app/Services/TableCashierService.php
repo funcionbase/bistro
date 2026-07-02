@@ -11,7 +11,6 @@ use App\Models\TableSession;
 use App\Models\TableSessionGuest;
 use App\Models\User;
 use App\Services\Sms\OrderStatusSmsDispatcher;
-use App\Support\OrderTotalCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +48,6 @@ class TableCashierService
         private readonly AuditService $audit,
         private readonly TableSessionService $sessions,
         private readonly CashRegisterService $cashRegister,
-        private readonly OrderTotalCalculator $totals,
         private readonly OrderStatusSmsDispatcher $smsDispatcher,
     ) {}
 
@@ -135,6 +133,7 @@ class TableCashierService
                     'status' => $i->status,
                     'paid_at' => optional($i->paid_at)->toIso8601String(),
                     'paid_receipt_id' => $i->paid_receipt_id,
+                    'refunded_at' => optional($i->refunded_at)->toIso8601String(),
                 ];
             })->values()->all();
 
@@ -170,6 +169,7 @@ class TableCashierService
                     'status' => $i->status,
                     'paid_at' => optional($i->paid_at)->toIso8601String(),
                     'paid_receipt_id' => $i->paid_receipt_id,
+                    'refunded_at' => optional($i->refunded_at)->toIso8601String(),
                 ];
             })->values()->all();
             $guestBreakdowns->prepend([
@@ -629,6 +629,12 @@ class TableCashierService
                 throw new InvalidArgumentException('No se puede devolver un item que aún no ha sido pagado.');
             }
 
+            // Guard anti doble-refund: antes cada intento (client_uuid nuevo)
+            // creaba OTRO receipt negativo sobre el mismo item.
+            if ($item->refunded_at !== null) {
+                throw new InvalidArgumentException('Este item ya fue devuelto.');
+            }
+
             /** @var Order $order */
             $order = Order::query()->withoutGlobalScopes()->whereKey($item->order_id)->lockForUpdate()->firstOrFail();
 
@@ -670,13 +676,27 @@ class TableCashierService
             ];
             $receipt->save();
 
-            // Marcar item cancelled con reason=refunded.
-            $item->status = 'cancelled';
-            $item->cancellation_reason = 'refunded';
-            $item->cancelled_at = Carbon::now();
+            // La VENTA queda intacta (CLAUDE.md §13): el item conserva su
+            // status y `orders.total` NO se recalcula — la devolución es un
+            // asiento nuevo (el receipt negativo). Antes se cancelaba el item
+            // y se reducía el total, lo que mutaba retroactivamente una orden
+            // completed y producía doble descuento en reportes (total reducido
+            // + refund del receipt restado otra vez).
+            $item->refunded_at = Carbon::now();
+            $item->refund_receipt_id = $receipt->id;
             $item->save();
 
-            $this->totals->recalculateAndSave($order);
+            // Espejo de OrderController::refund: si los refunds acumulados
+            // cubren el total de una orden completed, pasa a `refunded`.
+            $totalRefunded = (float) PaymentReceipt::withoutBranchScope()
+                ->where('order_id', $order->id)
+                ->where('payment_method', 'refund')
+                ->sum(DB::raw('-amount'));
+
+            if ($order->status === 'completed' && $totalRefunded >= (float) $order->total - 0.001) {
+                $order->status = 'refunded';
+                $order->save();
+            }
 
             $this->audit->log(
                 'table.payment.refunded',
@@ -720,6 +740,17 @@ class TableCashierService
 
         $order->status = 'completed';
         $order->save();
+
+        // La orden quedó cerrada: items aún abiertos en cocina pasan a `served`
+        // para que salgan del KDS (mismo comportamiento que
+        // OrderController::closeWithPayment). Todos ya están pagados aquí.
+        OrderItem::query()
+            ->where('order_id', $order->id)
+            ->whereIn('status', (array) config('orders.item_statuses.operational'))
+            ->update([
+                'status' => 'served',
+                'served_at' => Carbon::now(),
+            ]);
 
         // La sesión se cierra solo cuando TODAS sus órdenes operativas están
         // pagadas (cada una `completed` / terminal). Una sesión puede tener

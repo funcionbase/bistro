@@ -77,7 +77,7 @@ export default function InvoiceList({ token, companyNit }: Props) {
             }
             const data = await res.json();
             if (win) win.location.href = data.url;
-            else window.open(data.url, '_blank');
+            else window.open(data.url, '_blank', 'noopener,noreferrer');
         } catch {
             win?.close();
             setError('Error de conexión al generar el PDF.');

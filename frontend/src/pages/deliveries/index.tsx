@@ -28,7 +28,7 @@ import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 
 import { AlertCircle, Inbox, RefreshCw, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export default function DaySalesIndex() {
@@ -65,14 +65,17 @@ export default function DaySalesIndex() {
         status: initStatuses.length === 1 ? initStatuses[0] : 'all',
     });
 
-    function syncUrl(from: string, to: string, q: string, min: string, max: string, statuses: string[]) {
-        const params: Record<string, string> = { from, to };
-        if (q) params.q = q;
-        if (min) params.min = min;
-        if (max) params.max = max;
-        if (statuses.length > 0) params.status = statuses.join(',');
-        setSearchParams(params, { replace: true });
-    }
+    const syncUrl = useCallback(
+        (from: string, to: string, q: string, min: string, max: string, statuses: string[]) => {
+            const params: Record<string, string> = { from, to };
+            if (q) params.q = q;
+            if (min) params.min = min;
+            if (max) params.max = max;
+            if (statuses.length > 0) params.status = statuses.join(',');
+            setSearchParams(params, { replace: true });
+        },
+        [setSearchParams],
+    );
 
     useEffect(() => {
         const t = setTimeout(() => {
@@ -80,7 +83,7 @@ export default function DaySalesIndex() {
             syncUrl(draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters);
         }, 400);
         return () => clearTimeout(t);
-    }, [draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters]);
+    }, [draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters, syncUrl]);
 
     const { orders, summary, period, loading, error, refresh, lastUpdated } = useDaySales(token, applied);
 

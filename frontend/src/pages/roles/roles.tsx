@@ -67,11 +67,6 @@ export default function Roles() {
     useEffect(() => {
         isMounted.current = true;
 
-        if (!activeToken) {
-            const urlToken = new URLSearchParams(window.location.search).get('token');
-            if (urlToken) localStorage.setItem('token', urlToken);
-        }
-
         fetchData();
 
         return () => {

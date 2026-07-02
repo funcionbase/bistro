@@ -74,7 +74,10 @@ class TableOrderController extends Controller
         unset($qrToken);
         $guest = $this->requireGuest($request);
 
-        $item = OrderItem::query()->whereKey($itemId)->firstOrFail();
+        // CIBER-03: scope estructural por el guest dueño del item. Antes se
+        // resolvía por UUID global y la pertenencia dependía solo del guard en
+        // el service; ahora un item ajeno es 404 en la query.
+        $item = OrderItem::query()->whereKey($itemId)->where('guest_id', $guest->id)->firstOrFail();
 
         try {
             $updated = $this->orders->updateItem(
@@ -106,7 +109,8 @@ class TableOrderController extends Controller
         unset($qrToken);
         $guest = $this->requireGuest($request);
 
-        $item = OrderItem::query()->whereKey($itemId)->firstOrFail();
+        // CIBER-03: scope estructural por el guest dueño del item (ver updateItem).
+        $item = OrderItem::query()->whereKey($itemId)->where('guest_id', $guest->id)->firstOrFail();
         $reason = $request->input('reason');
 
         try {

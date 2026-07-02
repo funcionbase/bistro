@@ -116,8 +116,15 @@ class MetricsController extends Controller
             default => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
         };
 
+        // occurred_at se persiste en wall-clock del APP_TIMEZONE (Bogotá);
+        // comparar contra ->utc() corría la ventana +5h. Además ->utc() sin
+        // copy() mutaba $from/$to y el payload `period` salía en UTC.
+        $appTz = config('app.timezone');
+        $fromDb = $from->copy()->setTimezone($appTz);
+        $toDb = $to->copy()->setTimezone($appTz);
+
         $rows = OfflineSyncEvent::forCompany($companyNit)
-            ->whereBetween('occurred_at', [$from->utc(), $to->utc()])
+            ->whereBetween('occurred_at', [$fromDb, $toDb])
             ->selectRaw('event_type,
                 SUM("count") AS total_count,
                 SUM(total_amount) AS total_amount')
@@ -133,12 +140,12 @@ class MetricsController extends Controller
         ];
 
         $daily = OfflineSyncEvent::forCompany($companyNit)
-            ->whereBetween('occurred_at', [$from->utc(), $to->utc()])
+            ->whereBetween('occurred_at', [$fromDb, $toDb])
             ->whereIn('event_type', ['order_synced', 'receipt_synced'])
-            ->selectRaw("DATE(occurred_at AT TIME ZONE '".$tz."') AS day,
+            ->selectRaw('DATE(occurred_at) AS day,
                 event_type,
-                SUM(\"count\") AS total_count,
-                SUM(total_amount) AS total_amount")
+                SUM("count") AS total_count,
+                SUM(total_amount) AS total_amount')
             ->groupBy('day', 'event_type')
             ->orderBy('day')
             ->get();

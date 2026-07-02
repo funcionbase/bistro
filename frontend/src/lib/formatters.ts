@@ -25,6 +25,23 @@ export function formatCOP(amount: number): string {
     }).format(Math.trunc(amount));
 }
 
+/**
+ * Formato canónico de moneda COP con símbolo ($ 12.500), sin decimales.
+ * §13: presentación trunca a peso — antes ~28 copias locales redondeaban vía
+ * Intl y el mismo monto podía pintar distinto entre pantallas.
+ */
+export function formatCurrency(value: number): string {
+    if (!Number.isFinite(value)) {
+        value = 0;
+    }
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Math.trunc(value));
+}
+
 export function formatMonthYear(isoDate: string): string {
     const str = parseIsoDateUtc(isoDate).toLocaleString('es-CO', { month: 'short', year: 'numeric', timeZone: 'UTC' });
     return str.charAt(0).toUpperCase() + str.slice(1);

@@ -17,6 +17,7 @@ import { useCompanyPromoCode } from '@/hooks/use-company-promo-code';
 import { type BillingSubscriptionData } from '@/types';
 import { FileText } from 'lucide-react';
 import { useState } from 'react';
+import { formatDateTime } from '@/lib/datetime';
 
 interface BillingTabProps {
     billingData: BillingSubscriptionData | null;
@@ -105,7 +106,7 @@ export function BillingTab({
                             <span className="text-muted-foreground text-sm">
                                 Aceptado el{' '}
                                 {acceptedContract.accepted_at
-                                    ? new Date(acceptedContract.accepted_at).toLocaleDateString('es-CO', {
+                                    ? formatDateTime(acceptedContract.accepted_at, {
                                           year: 'numeric',
                                           month: 'long',
                                           day: 'numeric',
@@ -129,7 +130,7 @@ export function BillingTab({
                                             <>
                                                 {' '}
                                                 publicada el{' '}
-                                                {new Date(acceptedContract.latest_published.published_at).toLocaleDateString('es-CO', {
+                                                {formatDateTime(acceptedContract.latest_published.published_at, {
                                                     year: 'numeric',
                                                     month: 'long',
                                                     day: 'numeric',
@@ -159,7 +160,7 @@ export function BillingTab({
                                     <DialogDescription>
                                         Snapshot inmutable aceptado el{' '}
                                         {acceptedContract.accepted_at
-                                            ? new Date(acceptedContract.accepted_at).toLocaleDateString('es-CO', {
+                                            ? formatDateTime(acceptedContract.accepted_at, {
                                                   year: 'numeric',
                                                   month: 'long',
                                                   day: 'numeric',

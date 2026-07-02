@@ -402,6 +402,7 @@ class CashRegisterService
         string $paymentMethod = 'cash',
         ?string $clientUuid = null,
         ?Carbon $occurredAtClient = null,
+        bool $enforceNonNegativeCash = false,
     ): CashRegisterExpense {
         $categories = array_keys(config('cash_register.expense_categories', []));
         $methods = config('cash_register.expense_payment_methods', ['cash', 'card', 'transfer']);
@@ -424,7 +425,7 @@ class CashRegisterService
             ]);
         }
 
-        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod, $clientUuid, $occurredAtClient) {
+        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod, $clientUuid, $occurredAtClient, $enforceNonNegativeCash) {
             // Idempotencia offline: egreso ya aplicado (client_uuid) → devolverlo.
             if ($clientUuid !== null) {
                 $byClient = CashRegisterExpense::query()->where('client_uuid', $clientUuid)->lockForUpdate()->first();
@@ -439,6 +440,23 @@ class CashRegisterService
                 throw ValidationException::withMessages([
                     'cash_register' => 'La sesión de caja no está abierta — no se pueden registrar egresos.',
                 ]);
+            }
+
+            // Chequeo anti-negativo DENTRO del lock de la sesión: dos egresos
+            // concurrentes quedan serializados y el segundo ve el efectivo ya
+            // descontado. Solo aplica al flujo online (el replay offline no se
+            // bloquea: el egreso ya ocurrió físicamente en el cajón).
+            if ($enforceNonNegativeCash && $paymentMethod === 'cash') {
+                $expectedCash = $this->computeExpectedCash($fresh);
+                if (round($amount, 2) > $expectedCash) {
+                    throw ValidationException::withMessages([
+                        'amount' => [
+                            'El egreso supera el efectivo disponible en caja. '
+                            .'Disponible: $'.number_format($expectedCash, 0, ',', '.')
+                            .'. Para corregir un egreso anterior, registra un ingreso en sentido contrario.',
+                        ],
+                    ]);
+                }
             }
 
             return CashRegisterExpense::create([

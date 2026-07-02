@@ -118,22 +118,35 @@ final class AlertEngine
     }
 
     /**
-     * Inserta el evento o actualiza el del día si ya existe (dedup index).
-     * Mantiene dismissed/actioned si el usuario ya manejó el evento del día.
+     * Inserta el evento o actualiza uno existente para no duplicar el feed.
+     *
+     * Dos niveles de dedupe:
+     *  1. Evento del día (cualquier estado) — obligatorio por el UNIQUE parcial
+     *     por DATE(triggered_at). Mantiene dismissed/actioned si el usuario ya
+     *     manejó el evento del día.
+     *  2. Evento ACTIVO de días anteriores con el mismo (rule, target): una
+     *     condición persistente ("Sin ventas en 14 días") se refresca en vez de
+     *     crear una copia diaria — antes el feed acumulaba N alertas idénticas,
+     *     una por corrida diaria, hasta que el usuario las descartara una a una.
+     *     `triggered_at` se conserva (refleja desde cuándo está activa). Si el
+     *     usuario la descartó, la condición re-alerta al día siguiente con un
+     *     evento nuevo (comportamiento previo intacto).
      */
     private function persist(AlertRule $rule, AlertEventDraft $draft): bool
     {
         return DB::transaction(function () use ($rule, $draft): bool {
+            $targetFilter = function ($q) use ($draft): void {
+                if ($draft->targetId === null) {
+                    $q->whereNull('target_id');
+                } else {
+                    $q->where('target_id', $draft->targetId);
+                }
+            };
+
             $existing = AlertEvent::query()
                 ->where('alert_rule_id', $rule->id)
                 ->where('target_type', $draft->targetType)
-                ->where(function ($q) use ($draft) {
-                    if ($draft->targetId === null) {
-                        $q->whereNull('target_id');
-                    } else {
-                        $q->where('target_id', $draft->targetId);
-                    }
-                })
+                ->where($targetFilter)
                 ->whereRaw('DATE(triggered_at) = CURRENT_DATE')
                 ->lockForUpdate()
                 ->first();
@@ -142,6 +155,23 @@ final class AlertEngine
                 $existing->payload = $draft->payload;
                 $existing->severity = $draft->severity;
                 $existing->save();
+
+                return false;
+            }
+
+            $openPrevious = AlertEvent::query()
+                ->where('alert_rule_id', $rule->id)
+                ->where('target_type', $draft->targetType)
+                ->where($targetFilter)
+                ->whereNull('dismissed_at')
+                ->whereNull('actioned_at')
+                ->lockForUpdate()
+                ->first();
+
+            if ($openPrevious !== null) {
+                $openPrevious->payload = $draft->payload;
+                $openPrevious->severity = $draft->severity;
+                $openPrevious->save();
 
                 return false;
             }

@@ -10,6 +10,7 @@ use App\Http\Resources\ChatMessageResource;
 use App\Http\Resources\ChatResource;
 use App\Jobs\MarkWhatsappMessageReadJob;
 use App\Models\Branch;
+use App\Models\BranchUser;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Contact;
@@ -21,10 +22,12 @@ use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
 use App\Services\Whatsapp\WhatsappOutboundMessageSender;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -183,6 +186,35 @@ class ChatController extends Controller
             'dispatched' => true,
             'meta_message_id' => $latestInbound->meta_message_id,
         ]);
+    }
+
+    /**
+     * CIBER-05: stream autenticado de la media de un mensaje de chat. Antes se
+     * servía por el proxy anónimo `/storage-proxy/chat-media/*` (sin auth ni
+     * scope de empresa). Ahora resuelve el mensaje scopeado a la empresa activa
+     * + `chats.read` y recién ahí firma la URL S3 (302, TTL corto). El `<img>`
+     * del SPA adjunta la cookie JWT (SameSite=None) → autentica.
+     */
+    public function mediaUrl(Request $request, string $id, string $messageId): RedirectResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'read');
+
+        $companyNit = $request->attributes->get('active_company_nit');
+
+        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+
+        /** @var ChatMessage $message */
+        $message = ChatMessage::query()
+            ->whereKey($messageId)
+            ->where('chat_id', $chat->id)
+            ->whereNotNull('media_path')
+            ->firstOrFail();
+
+        $disk = (string) config('filesystems.default');
+        $url = Storage::disk($disk)
+            ->temporaryUrl($message->media_path, now()->addMinutes(15));
+
+        return redirect()->away($url, 302);
     }
 
     /**
@@ -433,6 +465,23 @@ class ChatController extends Controller
                 'message' => 'Sede destino no encontrada en esta empresa.',
                 'code' => 'BRANCH_NOT_FOUND',
             ], 404);
+        }
+
+        // Autorización composable documentada en la ruta: owner O
+        // (chats.reassign_branch + ACCESO a la sede destino). Sin este check
+        // un no-owner podía mover chats hacia sedes donde no opera.
+        if (! $isOwner) {
+            $hasTargetAccess = BranchUser::query()
+                ->where('branch_id', $target->id)
+                ->where('user_id', (string) ($payload['sub'] ?? ''))
+                ->exists();
+
+            if (! $hasTargetAccess) {
+                return response()->json([
+                    'message' => 'No tienes acceso a la sede destino.',
+                    'code' => 'CHAT_REASSIGN_TARGET_FORBIDDEN',
+                ], 403);
+            }
         }
 
         if ($chat->branch_id === $target->id) {

@@ -55,9 +55,16 @@ class EnsureCompanyAccess
             return response()->json(['message' => 'No tienes acceso a esta empresa.'], 403);
         }
 
+        // Alias grueso para display y defensa en profundidad. El brazo 'admin'
+        // compara contra el nombre canónico del rol ("Administrador"); antes
+        // comparaba con 'admin' en inglés y era código muerto — todo is_system
+        // caía en 'owner'. El fallback is_system→'owner' se conserva para no
+        // cambiar la semántica de Empleado (is_system=true).
+        $roleName = $membership->role?->name ?? '';
         $userRole = match (true) {
+            $roleName === config('roles.role_names.owner') => 'owner',
+            $roleName === config('roles.role_names.admin') => 'admin',
             $membership->role?->is_system === true => 'owner',
-            strtolower($membership->role?->name ?? '') === 'admin' => 'admin',
             default => 'member',
         };
 

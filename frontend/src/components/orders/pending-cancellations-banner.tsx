@@ -97,7 +97,10 @@ export default function PendingCancellationsBanner() {
         }
 
         void fetchData();
-        const id = window.setInterval(() => void fetchData(), POLL_INTERVAL_MS);
+        const id = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchData();
+        }, POLL_INTERVAL_MS);
         return () => {
             mountedRef.current = false;
             window.clearInterval(id);

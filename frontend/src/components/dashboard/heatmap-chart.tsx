@@ -1,5 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import type { MetricWeeklyHeatmap } from '@/types';
+import { formatCurrency } from '@/lib/formatters';
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon→Sun
 const DAY_LABELS: Record<number, string> = {
@@ -21,9 +22,6 @@ const DAY_FULL: Record<number, string> = {
     6: 'Sábado',
 };
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
-}
 
 interface HeatmapChartProps {
     data: MetricWeeklyHeatmap | null;

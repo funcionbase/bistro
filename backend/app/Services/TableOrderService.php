@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Events\OrderItemSubmittedForApproval;
 use App\Models\CancellationRequest;
+use App\Models\Company;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderNote;
@@ -533,13 +534,26 @@ class TableOrderService
         $order->company_nit = $session->company_nit;
         $order->branch_id = $session->branch_id;
         $order->table_session_id = $session->id;
-        $order->session_id = (string) $session->id;
         $order->status = 'pending_approval';
         $order->order_type = 'table';
         $order->table_number = $tableNumber;
         $order->total = '0.00';
         $order->subtotal = '0.00';
         $order->ordered_at = Carbon::now();
+
+        // Snapshot tributario al nacer la orden (paridad con el flujo de caja).
+        // El flujo QR aún no calcula impuestos, pero congelar el régimen acá
+        // deja la data lista para cuando entre IVA/INC/DIAN sin reconstruir
+        // historia. Ver issue de consolidación de totales.
+        $company = Company::query()
+            ->where('nit', $session->company_nit)
+            ->first(['nit', 'default_tax_rate', 'tax_regime', 'tax_included_in_price']);
+        if ($company !== null) {
+            $order->snapshot_default_tax_rate = (float) $company->default_tax_rate;
+            $order->tax_regime = $company->tax_regime;
+            $order->tax_included_in_price = (bool) $company->tax_included_in_price;
+        }
+
         $order->save();
 
         return $order;

@@ -224,12 +224,12 @@ class MetricsService
             $tz = $this->timezone;
             $branchFilter = $branchId !== null ? 'AND branch_id = ?' : '';
 
-            // Postgres trata cada `?` como un placeholder posicional distinto, así que
-            // EXTRACT(... AT TIME ZONE ?) en SELECT y en GROUP BY son expresiones diferentes.
-            // Agrupamos por la posición de la columna (1) para evitar el grouping error.
+            // ordered_at se persiste en wall-clock del APP_TIMEZONE (Bogotá), así
+            // que EXTRACT(HOUR) directo ya da la hora local. `AT TIME ZONE` la
+            // re-interpretaba contra la sesión PG (UTC) y corría la hora +5.
             $rows = DB::select(
                 "SELECT
-                    EXTRACT(HOUR FROM ordered_at AT TIME ZONE ?)::int AS hour,
+                    EXTRACT(HOUR FROM ordered_at)::int AS hour,
                     COUNT(*) AS orders,
                     COALESCE(SUM(total), 0) AS revenue
                 FROM orders
@@ -240,8 +240,8 @@ class MetricsService
                 GROUP BY 1
                 ORDER BY 1 ASC",
                 $branchId !== null
-                    ? [$tz, $companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}', $branchId]
-                    : [$tz, $companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}']
+                    ? [$companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}', $branchId]
+                    : [$companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}']
             );
 
             $byHour = collect($rows)->keyBy('hour');
@@ -405,7 +405,7 @@ class MetricsService
                     COALESCE(SUM(rev), 0)::float AS revenue
                 FROM (
                     SELECT
-                        EXTRACT(HOUR FROM ordered_at AT TIME ZONE ?)::int AS hour,
+                        EXTRACT(HOUR FROM ordered_at)::int AS hour,
                         CASE WHEN status IN ({$inRevenue}) THEN total ELSE 0 END AS rev
                     FROM orders
                     WHERE company_nit = ?
@@ -414,7 +414,7 @@ class MetricsService
                 ) sub
                 GROUP BY hour
                 ORDER BY hour ASC",
-                $branchId !== null ? [$tz, $companyNit, $start, $end, $branchId] : [$tz, $companyNit, $start, $end]
+                $branchId !== null ? [$companyNit, $start, $end, $branchId] : [$companyNit, $start, $end]
             );
 
             $byHour = collect($rows)->keyBy('hour');
@@ -467,8 +467,8 @@ class MetricsService
                     COALESCE(SUM(total), 0)::float AS revenue
                 FROM (
                     SELECT
-                        EXTRACT(DOW FROM ordered_at AT TIME ZONE ?)::int  AS day_of_week,
-                        EXTRACT(HOUR FROM ordered_at AT TIME ZONE ?)::int AS hour,
+                        EXTRACT(DOW FROM ordered_at)::int  AS day_of_week,
+                        EXTRACT(HOUR FROM ordered_at)::int AS hour,
                         total
                     FROM orders
                     WHERE company_nit = ?
@@ -479,8 +479,8 @@ class MetricsService
                 GROUP BY day_of_week, hour
                 ORDER BY day_of_week, hour",
                 $branchId !== null
-                    ? [$tz, $tz, $companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}', $branchId]
-                    : [$tz, $tz, $companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}']
+                    ? [$companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}', $branchId]
+                    : [$companyNit, $start, $end, '{'.implode(',', $revenueStatuses).'}']
             );
 
             $byDayHour = collect($rows)->keyBy(fn ($r) => "{$r->day_of_week}_{$r->hour}");

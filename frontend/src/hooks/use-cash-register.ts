@@ -550,7 +550,10 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
 
     useEffect(() => {
         void refresh();
-        const interval = setInterval(() => void refresh(), POLL_INTERVAL_MS);
+        const interval = setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void refresh();
+        }, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [refresh]);
 

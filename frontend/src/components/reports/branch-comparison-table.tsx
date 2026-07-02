@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { MapPin } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatters';
 
 export interface BranchBreakdownTotals {
     total_orders: number;
@@ -25,11 +26,6 @@ interface BranchComparisonTableProps {
     className?: string;
 }
 
-const currencyFormatter = new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-});
 
 /**
  * Tabla comparativa de aporte por sede en reportes consolidados (#192 Fase 3.5).
@@ -91,13 +87,13 @@ export function BranchComparisonTable({ rows, className }: BranchComparisonTable
                                 <td className="text-foreground px-4 py-2 text-right tabular-nums">{row.totals.total_orders}</td>
                                 <td className="text-foreground px-4 py-2 text-right tabular-nums">{row.totals.completed}</td>
                                 <td className="text-foreground px-4 py-2 text-right tabular-nums">
-                                    {currencyFormatter.format(row.totals.total_revenue)}
+                                    {formatCurrency(row.totals.total_revenue)}
                                 </td>
                                 <td className="text-muted-foreground px-4 py-2 text-right tabular-nums">
-                                    {currencyFormatter.format(row.totals.total_refunded)}
+                                    {formatCurrency(row.totals.total_refunded)}
                                 </td>
                                 <td className="text-foreground px-4 py-2 text-right font-semibold tabular-nums">
-                                    {currencyFormatter.format(row.totals.net_revenue)}
+                                    {formatCurrency(row.totals.net_revenue)}
                                 </td>
                             </tr>
                         ))}

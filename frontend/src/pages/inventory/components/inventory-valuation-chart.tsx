@@ -8,6 +8,7 @@ import type { Warehouse } from '@/types/inventory';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { formatCurrency } from '@/lib/formatters';
 
 interface SeriesPoint {
     date: string;
@@ -98,7 +99,7 @@ export function InventoryValuationChart({ warehouses, selectedWarehouseId }: Pro
 
     const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-    const formatCurrency = (v: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+    
 
     return (
         <Card>

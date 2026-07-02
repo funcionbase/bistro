@@ -43,6 +43,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $cancelled_at
  * @property Carbon|null $paid_at
  * @property int|null $paid_receipt_id
+ * @property Carbon|null $refunded_at
+ * @property string|null $refund_receipt_id
  */
 class OrderItem extends Model
 {
@@ -69,6 +71,8 @@ class OrderItem extends Model
         'cancelled_at',
         'paid_at',
         'paid_receipt_id',
+        'refunded_at',
+        'refund_receipt_id',
     ];
 
     protected function casts(): array
@@ -84,6 +88,7 @@ class OrderItem extends Model
             'served_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'paid_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 

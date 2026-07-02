@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Smartphone, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatDateTime } from '@/lib/datetime';
 
 interface SubscriptionRow {
     id: string;
@@ -131,7 +132,7 @@ export function PushSubscriptionsList({ onLocalRemoved }: Props) {
             {items.map((row) => {
                 const label = summarizeUserAgent(row.user_agent);
                 const lastSeen = row.last_seen_at
-                    ? new Date(row.last_seen_at).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+                    ? formatDateTime(row.last_seen_at, { dateStyle: 'medium', timeStyle: 'short' })
                     : 'Sin uso reciente';
                 return (
                     <li key={row.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">

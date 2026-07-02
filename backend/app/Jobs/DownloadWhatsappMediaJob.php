@@ -101,7 +101,11 @@ class DownloadWhatsappMediaJob implements ShouldQueue
         }
 
         $extension = $this->extensionFor($metadata['mime_type'] ?? $message->media_mime);
-        $relativePath = sprintf('chat-media/%d/%d.%s', $chat->id, $message->id, $extension);
+        // CIBER-04: %s con los UUID completos. Antes era %d, que casteaba el
+        // UUID a entero (solo el run de dígitos iniciales) → todas las media
+        // colapsaban a `chat-media/<dígito>/<dígito>.ext`: colisión que
+        // sobreescribía archivos entre clientes/empresas + keyspace enumerable.
+        $relativePath = sprintf('chat-media/%s/%s.%s', $chat->id, $message->id, $extension);
 
         Storage::disk(config('filesystems.default'))->put($relativePath, $bytes);
 

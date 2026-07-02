@@ -34,7 +34,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -93,12 +92,14 @@ class OrderController extends Controller
 
         $companyNit = $this->activeCompanyNit($request);
 
-        // "Del día" se corta contra America/Bogota (config/orders.timezone) para
-        // que el kanban no rote a las 19:00 local cuando el servidor está en UTC.
+        // "Del día" se corta contra America/Bogota (config/orders.timezone).
+        // ordered_at se persiste en wall-clock del APP_TIMEZONE (no UTC), así
+        // que los límites se convierten a ese tz — convertirlos a ->utc()
+        // corría la ventana +5h (el "hoy" iba de 5am a 5am).
         $tz = config('orders.timezone', 'America/Bogota');
         $todayInTz = Carbon::now($tz);
-        $startOfDay = $todayInTz->copy()->startOfDay()->utc();
-        $endOfDay = $todayInTz->copy()->endOfDay()->utc();
+        $startOfDay = $todayInTz->copy()->startOfDay()->setTimezone(config('app.timezone'));
+        $endOfDay = $todayInTz->copy()->endOfDay()->setTimezone(config('app.timezone'));
 
         $orders = Order::forCompany($companyNit)
             ->whereIn('status', config('orders.kanban'))
@@ -231,7 +232,6 @@ class OrderController extends Controller
             $order = Order::create([
                 'company_nit' => $companyNit,
                 'branch_id' => $branchId,
-                'session_id' => 'caja-'.Str::uuid()->toString(),
                 'table_session_id' => $tableSessionId,
                 'client_phone' => $validated['client_phone'] ?? null,
                 'order_type' => $validated['order_type'],
@@ -559,7 +559,7 @@ class OrderController extends Controller
         $orderItems = OrderItem::query()
             ->where('order_id', $order->id)
             ->orderBy('id')
-            ->get(['id', 'menu_item_id', 'name', 'quantity', 'unit_price', 'notes', 'status', 'cancellation_reason', 'guest_id']);
+            ->get(['id', 'menu_item_id', 'name', 'quantity', 'unit_price', 'notes', 'status', 'cancellation_reason', 'guest_id', 'refunded_at']);
 
         $lineItems = $orderItems->isNotEmpty()
             ? $orderItems->map(function (OrderItem $i) use ($guestsById): array {
@@ -573,6 +573,7 @@ class OrderController extends Controller
                     'status' => $i->status,
                     'cancellation_reason' => $i->cancellation_reason,
                     'guest_label' => $i->guest_id ? optional($guestsById->get($i->guest_id))->display_name : null,
+                    'refunded_at' => optional($i->refunded_at)?->toIso8601String(),
                 ];
             })->values()->all()
             : collect($order->items ?? [])->map(fn ($i) => [
@@ -839,10 +840,24 @@ class OrderController extends Controller
 
             $order->items = array_merge($order->items ?? [], $newLines);
             // Recalcular agregados desde items[] para garantizar invariantes.
+            // Si la orden nació con cupón, re-aplicar el descuento ABSOLUTO
+            // snapshoteado en la redención (discount_amount) sobre el nuevo
+            // bruto — sin esto, agregar ítems pisaba el total con el bruto y
+            // el descuento "desaparecía" dejando discount_amount inconsistente.
             $aggregate = $this->taxCalculator->aggregate($order->items);
-            $order->subtotal = $aggregate['subtotal'];
-            $order->tax_amount = $aggregate['tax_amount'];
-            $order->total = $aggregate['total'];
+            $discount = min((float) $order->discount_amount, (float) $aggregate['total']);
+            if ($discount > 0 && $aggregate['total'] > 0) {
+                $netTotal = round($aggregate['total'] - $discount, 2);
+                $ratio = $netTotal / $aggregate['total'];
+                $order->subtotal = round($aggregate['subtotal'] * $ratio, 2);
+                // Invariante: tax = total - subtotal (absorbe redondeo).
+                $order->tax_amount = round($netTotal - $order->subtotal, 2);
+                $order->total = $netTotal;
+            } else {
+                $order->subtotal = $aggregate['subtotal'];
+                $order->tax_amount = $aggregate['tax_amount'];
+                $order->total = $aggregate['total'];
+            }
             $order->cost = $this->computeOrderCost($order->items);
             $order->save();
 

@@ -22,7 +22,6 @@ import { PurchasesSkeleton } from '@/components/ui/purchases-skeleton';
 import { ReportsTableSkeleton } from '@/components/ui/reports-table-skeleton';
 import { RolesTableSkeleton } from '@/components/ui/roles-table-skeleton';
 import { SettingsFormSkeleton } from '@/components/ui/settings-form-skeleton';
-import { SuppliersListSkeleton } from '@/components/ui/suppliers-list-skeleton';
 import { TableSessionDetailSkeleton } from '@/components/ui/table-session-detail-skeleton';
 import { TablesGridSkeleton } from '@/components/ui/tables-grid-skeleton';
 import { UsersTableSkeleton } from '@/components/ui/users-table-skeleton';
@@ -120,7 +119,6 @@ const ROUTE_SKELETONS: SkeletonRoute[] = [
     // Inventario / compras / proveedores
     { match: (p) => p === '/inventory', render: () => <Padded><InventorySkeleton /></Padded> },
     { match: (p) => p === '/purchases', render: () => <Padded><PurchasesSkeleton /></Padded> },
-    { match: (p) => p === '/suppliers', render: () => <Padded><SuppliersListSkeleton /></Padded> },
 
     // Reportes / métricas / fidelización / domicilios
     { match: (p) => p === '/company/reports', render: () => <Padded><ReportsTableSkeleton /></Padded> },
