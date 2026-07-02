@@ -1,4 +1,5 @@
 import { AppContent } from '@/components/app-content';
+import { AppFooterMeta } from '@/components/app-footer-meta';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
@@ -89,6 +90,7 @@ export default function AppSidebarLayout({ children }: { children: React.ReactNo
                     <StorageQuotaWarning />
                     <CashRegisterAlertBanner />
                     {children}
+                    <AppFooterMeta />
                 </AppContent>
             </AppShell>
         </ToastProvider>
