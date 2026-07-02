@@ -27,6 +27,22 @@ $allowedOrigins = array_values(array_unique(array_filter(array_map(
     ]))))
 ))));
 
+/*
+| CIBER-09: los patrones de origen ahora son configurables por env
+| (`CORS_ALLOWED_ORIGINS_PATTERNS`, regexes separadas por `|||`). El default es
+| el wildcard de subdominios `*.flexyflow.co` (load-bearing: el carrito/menú se
+| sirven desde subdominios como `pedidos.` que hacen CORS credenciado). En pdn
+| se RECOMIENDA fijar `CORS_ALLOWED_ORIGINS` con la lista explícita y dejar este
+| valor vacío para eliminar la superficie de subdominios (subdomain takeover).
+*/
+$allowedOriginPatterns = array_values(array_filter(array_map(
+    'trim',
+    explode('|||', (string) env(
+        'CORS_ALLOWED_ORIGINS_PATTERNS',
+        '#^https://([a-z0-9-]+\.)*flexyflow\.co$#i'
+    ))
+)));
+
 return [
 
     /*
@@ -56,7 +72,7 @@ return [
 
     'allowed_origins' => $allowedOrigins,
 
-    'allowed_origins_patterns' => ['#^https://([a-z0-9-]+\.)*flexyflow\.co$#i'],
+    'allowed_origins_patterns' => $allowedOriginPatterns,
 
     'allowed_headers' => ['*'],
 

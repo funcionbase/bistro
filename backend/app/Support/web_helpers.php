@@ -20,7 +20,7 @@ if (! function_exists('resolveWebJwt')) {
      * Resuelve el JWT activo para una ruta web.
      *
      * El token se extrae siguiendo la prioridad de JwtService::extractTokenFromRequest()
-     * (cookie HttpOnly > Authorization > session flash > query param), se verifica y se
+     * (cookie HttpOnly > Authorization > session flash; sin query param, CIBER-07), se verifica y se
      * reemite si está por expirar (<300s) — en ese caso se renueva la cookie HttpOnly via
      * Cookie::queue(). Se retorna un marker opaco `'__authenticated__'` (no el JWT real)
      * como prop Inertia para que el JS del frontend nunca tenga acceso al token.

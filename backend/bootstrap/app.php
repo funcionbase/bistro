@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsureCompanyNotBlocked;
 use App\Http\Middleware\EnsureCompanyVerified;
 use App\Http\Middleware\EnsureFeaturePermission;
 use App\Http\Middleware\EnsureKdsDeviceToken;
+use App\Http\Middleware\EnsureTrustedOrigin;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\NormalizeStrings;
 use App\Http\Middleware\ResolveTableGuest;
@@ -65,8 +66,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Las rutas /api/* siempre negocian JSON: sin esto, los clientes que
         // olvidan el header Accept reciben 302 + HTML cuando el validador falla.
+        // CIBER-06: EnsureTrustedOrigin corre después para bloquear CSRF con
+        // cookie ambiente en métodos de estado desde orígenes no permitidos.
         $middleware->api(prepend: [
             ForceJsonResponse::class,
+            EnsureTrustedOrigin::class,
         ]);
 
         // La cookie HttpOnly del JWT (`flexyflow_jwt`) se excluye del cifrado de Laravel

@@ -1387,6 +1387,11 @@ Route::prefix('v1')->group(function () {
             Route::get('chats/{id}/client', [ChatController::class, 'clientDetail'])
                 ->middleware('permission:chats.read,read')
                 ->name('api.chats.client.show');
+            // CIBER-05: media de chat servida por endpoint autenticado (scope
+            // de empresa + chats.read), no por el proxy anónimo de assets.
+            Route::get('chats/{id}/messages/{messageId}/media', [ChatController::class, 'mediaUrl'])
+                ->middleware('permission:chats.read,read')
+                ->name('api.chats.messages.media');
             Route::post('chats/{id}/messages', [ChatController::class, 'storeMessage'])
                 ->middleware('permission:chats.update,update')
                 ->name('api.chats.messages.store');

@@ -72,7 +72,12 @@ class JwtService
      *   1. Cookie HttpOnly `flexyflow_jwt` (default para navegador — no accesible a JS)
      *   2. Header `Authorization: Bearer <token>` (clientes API externos / integraciones)
      *   3. Session flash key `jwt_token` (handoff entre redirects internos sin exponer en URL)
-     *   4. Query param `?token=` (legacy; transición pre-cookie y handoff externo post-OAuth)
+     *
+     * CIBER-07: se retiró la aceptación por query param `?token=`. Un JWT en la
+     * URL se filtra a access logs (nginx/ALB/CloudWatch), historial del navegador,
+     * header `Referer` y caches de proxy → secuestro de sesión. El front ya migró
+     * a cookie HttpOnly; los redirects que aún arrastran `?token=` son inocuos
+     * (el query se ignora para autenticar).
      */
     public function extractTokenFromRequest(Request $request): ?string
     {
@@ -91,11 +96,6 @@ class JwtService
             if (is_string($session) && $session !== '') {
                 return $session;
             }
-        }
-
-        $query = $request->query('token');
-        if (is_string($query) && $query !== '') {
-            return $query;
         }
 
         return null;

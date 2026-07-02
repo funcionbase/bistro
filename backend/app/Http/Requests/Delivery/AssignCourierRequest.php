@@ -6,6 +6,7 @@ use App\Http\Requests\Concerns\SanitizesInput;
 use App\Rules\SafePlainText;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Endpoint: POST /api/deliveries/{id}/assign (DeliveryController::assignCourier). Requiere deliveries.update.
@@ -30,7 +31,9 @@ class AssignCourierRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'uuid', 'exists:users,id'],
+            // CIBER-01: courier scopeado a la empresa activa (era exists global).
+            'user_id' => ['required', 'uuid', Rule::exists('company_users', 'user_id')
+                ->where('company_nit', $this->attributes->get('active_company_nit'))],
             'reason' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
         ];
     }

@@ -36,7 +36,11 @@ class StorageProxyController extends Controller
     private const ALLOWED_PREFIXES = [
         'companies/',
         'menus/',
-        'chat-media/',
+        // CIBER-05: `chat-media/` se retiró de este proxy anónimo. La media de
+        // chats es privada (conversaciones de clientes) y ahora se sirve por el
+        // endpoint autenticado `GET /api/v1/chats/{id}/messages/{messageId}/media`
+        // (scope de empresa + chats.read). Solo quedan assets genuinamente
+        // públicos (logos, QR, fotos de menú).
     ];
 
     /**

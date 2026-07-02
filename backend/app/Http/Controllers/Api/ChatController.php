@@ -22,10 +22,12 @@ use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
 use App\Services\Whatsapp\WhatsappOutboundMessageSender;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -184,6 +186,35 @@ class ChatController extends Controller
             'dispatched' => true,
             'meta_message_id' => $latestInbound->meta_message_id,
         ]);
+    }
+
+    /**
+     * CIBER-05: stream autenticado de la media de un mensaje de chat. Antes se
+     * servía por el proxy anónimo `/storage-proxy/chat-media/*` (sin auth ni
+     * scope de empresa). Ahora resuelve el mensaje scopeado a la empresa activa
+     * + `chats.read` y recién ahí firma la URL S3 (302, TTL corto). El `<img>`
+     * del SPA adjunta la cookie JWT (SameSite=None) → autentica.
+     */
+    public function mediaUrl(Request $request, string $id, string $messageId): RedirectResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'read');
+
+        $companyNit = $request->attributes->get('active_company_nit');
+
+        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+
+        /** @var ChatMessage $message */
+        $message = ChatMessage::query()
+            ->whereKey($messageId)
+            ->where('chat_id', $chat->id)
+            ->whereNotNull('media_path')
+            ->firstOrFail();
+
+        $disk = (string) config('filesystems.default');
+        $url = Storage::disk($disk)
+            ->temporaryUrl($message->media_path, now()->addMinutes(15));
+
+        return redirect()->away($url, 302);
     }
 
     /**

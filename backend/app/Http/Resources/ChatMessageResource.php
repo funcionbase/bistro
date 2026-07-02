@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Models\ChatMessage;
-use App\Support\SignedAssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,10 +21,13 @@ class ChatMessageResource extends JsonResource
             'status' => $this->status,
             'media_type' => $this->media_type,
             'media_mime' => $this->media_mime,
-            // Si ya bajamos el archivo (job termino), exponemos URL publica.
-            // Si no, queda null y el frontend muestra un placeholder hasta el
-            // siguiente poll que ya tendra la URL lista.
-            'media_url' => SignedAssetUrl::for($this->media_path),
+            // CIBER-05: la media se sirve por endpoint autenticado (scope de
+            // empresa + chats.read), no por el proxy anónimo. Si el job aún no
+            // bajó el archivo, queda null y el frontend muestra placeholder
+            // hasta el siguiente poll.
+            'media_url' => $this->media_path
+                ? route('api.chats.messages.media', ['id' => $this->chat_id, 'messageId' => $this->id])
+                : null,
             'sent_at' => $this->sent_at?->toIso8601String(),
         ];
     }

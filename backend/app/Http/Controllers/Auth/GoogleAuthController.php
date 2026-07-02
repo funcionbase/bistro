@@ -9,7 +9,9 @@ use App\Services\Enrollment\InvitationAcceptanceService;
 use App\Services\JwtService;
 use App\Support\PostLoginRedirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
 use Throwable;
@@ -44,13 +46,51 @@ class GoogleAuthController extends Controller
         private readonly InvitationAcceptanceService $invitationAcceptance,
     ) {}
 
+    /**
+     * Nombre de la cookie que transporta el `state` anti-CSRF del flujo OAuth.
+     */
+    private const OAUTH_STATE_COOKIE = 'oauth_state';
+
     public function redirect(): RedirectResponse
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        // CIBER-10: `stateless()` omite la validación de `state` (login CSRF).
+        // Generamos un `state` propio, lo guardamos en una cookie HttpOnly de
+        // vida corta (double-submit) y lo mandamos a Google. No depende de la
+        // sesión server-side → N-instance safe (CLAUDE.md §12).
+        $state = Str::random(40);
+
+        $secure = (bool) config('session.secure', ! app()->isLocal());
+
+        return Socialite::driver('google')
+            ->stateless()
+            ->with(['state' => $state])
+            ->redirect()
+            ->withCookie(cookie(
+                name: self::OAUTH_STATE_COOKIE,
+                value: $state,
+                minutes: 10,
+                path: '/',
+                domain: config('session.domain'),
+                secure: $secure,
+                httpOnly: true,
+                raw: false,
+                sameSite: 'lax',
+            ));
     }
 
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse
     {
+        // CIBER-10: valida el `state` echo de Google contra la cookie emitida en
+        // redirect(). hash_equals evita timing; mismatch/ausencia → rechazo.
+        $expectedState = (string) $request->cookie(self::OAUTH_STATE_COOKIE, '');
+        $returnedState = (string) $request->query('state', '');
+
+        if ($expectedState === '' || $returnedState === '' || ! hash_equals($expectedState, $returnedState)) {
+            return redirect()->route('home')
+                ->withErrors(['oauth' => 'La sesión OAuth expiró o el callback fue manipulado. Inténtalo de nuevo.'])
+                ->withoutCookie(self::OAUTH_STATE_COOKIE);
+        }
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (InvalidStateException $e) {
@@ -68,12 +108,44 @@ class GoogleAuthController extends Controller
             }
         }
 
+        // CIBER-08: el identificador primario es `google_id`. El match por email
+        // solo se usa para VINCULAR una cuenta preexistente (invitación) y exige
+        // que Google haya verificado el email, y que la cuenta no esté ya
+        // vinculada a OTRO `google_id` (evita adopción/takeover de cuenta ajena).
+        $emailVerified = filter_var(
+            $googleUser->getRaw()['email_verified'] ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
+
         $isNewUser = false;
-        $user = User::where('google_id', $googleUser->getId())
-            ->orWhere('email', $googleUser->getEmail())
-            ->first();
+        $user = User::where('google_id', $googleUser->getId())->first();
+
+        if ($user === null && $emailVerified) {
+            $byEmail = User::where('email', $googleUser->getEmail())->first();
+            if ($byEmail !== null) {
+                // Ya vinculada a otra identidad Google → conflicto, no adoptar.
+                if (! empty($byEmail->google_id) && $byEmail->google_id !== $googleUser->getId()) {
+                    Log::warning('auth.google.account_link_conflict', [
+                        'email' => $googleUser->getEmail(),
+                        'existing_user_id' => $byEmail->id,
+                    ]);
+
+                    return redirect()->route('home')->withErrors([
+                        'oauth' => 'Esta cuenta ya está vinculada a otro acceso de Google. Contacta soporte.',
+                    ]);
+                }
+
+                $user = $byEmail;
+            }
+        }
 
         if ($user === null) {
+            if (! $emailVerified) {
+                return redirect()->route('home')->withErrors([
+                    'oauth' => 'Tu correo de Google no está verificado. Verifícalo e inténtalo de nuevo.',
+                ]);
+            }
+
             [$firstName, $lastName] = $this->splitGoogleName($googleUser);
 
             $user = User::create([
@@ -87,7 +159,8 @@ class GoogleAuthController extends Controller
             $isNewUser = true;
 
             $this->auditService->log('user.created', $user, $user);
-        } else {
+        } elseif (empty($user->google_id)) {
+            // Primer login de una cuenta invitada: se vincula su google_id.
             $user->update(['google_id' => $googleUser->getId()]);
         }
 

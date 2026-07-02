@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
  * Endpoint: PUT /api/company (CompanyController::update). Gated por permiso RBAC company.update,update.
  *
  * Todos los campos son opcionales (sometimes). Los archivos qr_code y logo son multipart; máx 5MB.
- * El logo acepta además SVG y WebP. El NIT de la empresa no es editable.
+ * El logo acepta raster (jpg/png/webp); SVG se rechaza (CIBER-02, stored XSS). El NIT no es editable.
  */
 class UpdateCompanyRequest extends FormRequest
 {
@@ -50,12 +50,12 @@ class UpdateCompanyRequest extends FormRequest
             // Límite de 5 MB (5120 KB) para QR y logo. La rule `max:` de Laravel
             // recibe kilobytes; 5 MB = 5 * 1024 KB.
             'qr_code' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
-            // El logo acepta SVG además de raster. La rule `image` de Laravel
-            // sólo valida raster (jpeg/png/gif/bmp/webp/heic) y rechaza SVG —
-            // por eso usamos `file` + `mimes` en su lugar. La negociación del
-            // MIME real la hace `mimes:` resolviendo la extensión, así que el
-            // archivo no puede colarse renombrado.
-            'logo' => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,svg,webp', 'max:5120'],
+            // CIBER-02: se retira `svg`. Un SVG válido puede contener
+            // `<script>`/`onload` → stored XSS si se abre por URL directa o se
+            // embebe. Se alinea con `UploadDishImageRequest`, que rechaza SVG
+            // por la misma razón. Solo raster (la rule `image` valida raster;
+            // webp lo cubre `mimes`).
+            'logo' => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
 
             // Configuración tributaria (CO). Los presets vienen de config/taxes.php.
             'tax_regime' => ['sometimes', Rule::in(config('taxes.available_regimes'))],

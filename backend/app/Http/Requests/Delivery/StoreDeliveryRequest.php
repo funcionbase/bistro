@@ -6,6 +6,7 @@ use App\Http\Requests\Concerns\SanitizesInput;
 use App\Rules\SafePlainText;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Endpoint: POST /api/deliveries (DeliveryController::store). Requiere deliveries.create.
@@ -33,7 +34,11 @@ class StoreDeliveryRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'uuid', 'exists:orders,id'],
-            'user_id' => ['required', 'uuid', 'exists:users,id'],
+            // CIBER-01: `exists:users,id` era global (cross-tenant). El courier
+            // debe ser miembro de la empresa activa; si no, el user_id es
+            // inválido (no revela usuarios de otras empresas).
+            'user_id' => ['required', 'uuid', Rule::exists('company_users', 'user_id')
+                ->where('company_nit', $this->attributes->get('active_company_nit'))],
             'reason' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
         ];
     }
