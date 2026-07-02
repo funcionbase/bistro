@@ -61,6 +61,7 @@ class SyncController extends Controller
         'order.close' => ['orders', 'update'],
         'cash.open' => ['orders', 'create'],
         'cash.expense' => ['orders', 'update'],
+        'cash.income' => ['orders', 'update'],
         'cash.close' => ['orders', 'update'],
     ];
 
@@ -388,7 +389,7 @@ class SyncController extends Controller
                 $paymentData['change_returned'] = round((float) $payload['amount_received'] - $expectedTotal, 2);
             }
 
-            PaymentReceipt::create([
+            $receipt = PaymentReceipt::create([
                 'order_id' => $order->id,
                 'company_nit' => $companyNit,
                 'branch_id' => $order->branch_id,
@@ -412,6 +413,10 @@ class SyncController extends Controller
                 ->where('order_id', $order->id)
                 ->whereIn('status', (array) config('orders.item_statuses.operational'))
                 ->update(['status' => 'served', 'served_at' => now()]);
+
+            // El receipt cubre el total: stampear pago en los items para que el
+            // cobro de mesa no los siga viendo como pendientes (doble cobro).
+            $this->orderController->markOrderItemsPaid($order, $receipt->id, $paidAt);
 
             $this->auditService->log('order.closed_with_payment', $actingUser, $order, [
                 'order_id' => $order->id,

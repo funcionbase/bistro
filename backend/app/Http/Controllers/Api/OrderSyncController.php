@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesActiveContext;
 use App\Http\Controllers\Concerns\ResolvesJwtActor;
 use App\Http\Controllers\Controller;
+use App\Models\CashRegisterSession;
 use App\Models\Company;
 use App\Models\OfflineSyncEvent;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PaymentReceipt;
 use App\Models\RestaurantMenu;
 use App\Models\User;
@@ -130,18 +132,22 @@ class OrderSyncController extends Controller
                 if ($result['status'] === 'created' || $result['status'] === 'warning') {
                     $aggregateOrders['count']++;
                     $aggregateOrders['amount'] += (float) ($result['total'] ?? 0);
-                    if (! empty($result['receipt_created'])) {
-                        $aggregateReceipts['count']++;
-                        $aggregateReceipts['amount'] += (float) ($result['total'] ?? 0);
+                }
 
-                        // SMS al cliente (#275) FUERA de la txn de `syncSingle` (ya
-                        // commiteada): la orden offline con pago incluido llega
-                        // directo a `completed` y antes nunca notificaba.
-                        if (! empty($result['server_id'])) {
-                            $paidOrder = Order::withoutGlobalScopes()->find($result['server_id']);
-                            if ($paidOrder !== null) {
-                                $this->smsDispatcher->dispatch($paidOrder, 'completed', $actingUser);
-                            }
+                // Independiente del status: un reintento `duplicate` también puede
+                // aplicar un cobro que quedó pendiente (caja cerrada en el intento
+                // original).
+                if (! empty($result['receipt_created'])) {
+                    $aggregateReceipts['count']++;
+                    $aggregateReceipts['amount'] += (float) ($result['total'] ?? 0);
+
+                    // SMS al cliente (#275) FUERA de la txn de `syncSingle` (ya
+                    // commiteada): la orden offline con pago incluido llega
+                    // directo a `completed` y antes nunca notificaba.
+                    if (! empty($result['server_id'])) {
+                        $paidOrder = Order::withoutGlobalScopes()->find($result['server_id']);
+                        if ($paidOrder !== null) {
+                            $this->smsDispatcher->dispatch($paidOrder, 'completed', $actingUser);
                         }
                     }
                 }
@@ -193,11 +199,20 @@ class OrderSyncController extends Controller
                 ->first();
 
             if ($existing !== null) {
+                // Reintento de un batch cuyo pago pudo NO haberse aplicado en el
+                // intento original (p. ej. caja cerrada en ese momento). El
+                // helper es idempotente: si el receipt ya existe o la orden ya
+                // fue cobrada por otro camino, no hace nada.
+                $receiptCreated = ! empty($payloadOrder['payment'])
+                    ? $this->applyPaymentIfPending($existing, $payloadOrder['payment'], $session)
+                    : false;
+
                 return [
                     'client_uuid' => $payloadOrder['client_uuid'],
                     'status' => 'duplicate',
                     'server_id' => $existing->id,
                     'total' => (float) $existing->total,
+                    'receipt_created' => $receiptCreated,
                 ];
             }
 
@@ -270,57 +285,9 @@ class OrderSyncController extends Controller
             // sincronizada quedaba invisible para el KDS y el pago por item.
             $this->orderController->materializeOrderItems($order, $items);
 
-            $receiptCreated = false;
-            if (! empty($payloadOrder['payment']) && $session !== null) {
-                $payment = $payloadOrder['payment'];
-
-                // Idempotencia del receipt por su propio client_uuid.
-                $existingReceipt = PaymentReceipt::query()
-                    ->where('client_uuid', $payment['client_uuid'])
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($existingReceipt === null) {
-                    $tip = round((float) ($payment['tip_amount'] ?? 0), 2);
-                    $total = (float) $order->total;
-                    $expectedTotal = round($total + $tip, 2);
-
-                    $paymentData = [
-                        'method' => $payment['method'],
-                        'total' => $total,
-                        'tip_amount' => $tip,
-                        'expected_total' => $expectedTotal,
-                        'paid_at' => $payment['paid_at'],
-                        'reference' => $payment['reference'] ?? null,
-                        'synced_offline' => true,
-                    ];
-
-                    if ($payment['method'] === 'cash' && isset($payment['amount_received'])) {
-                        $paymentData['amount_received'] = (float) $payment['amount_received'];
-                        $paymentData['change_returned'] = round($paymentData['amount_received'] - $expectedTotal, 2);
-                    }
-
-                    PaymentReceipt::create([
-                        'order_id' => $order->id,
-                        'company_nit' => $companyNit,
-                        'branch_id' => $this->activeBranchId($request),
-                        'client_uuid' => $payment['client_uuid'],
-                        'file_path' => null,
-                        'payment_method' => $payment['method'],
-                        'amount' => $total,
-                        'reference' => $payment['reference'] ?? null,
-                        'paid_at' => Carbon::parse($payment['paid_at']),
-                        'cash_session_id' => $session->id,
-                        'payment_data' => $paymentData,
-                    ]);
-
-                    $order->tip_amount = $tip;
-                    $order->status = 'completed';
-                    $order->save();
-
-                    $receiptCreated = true;
-                }
-            }
+            $receiptCreated = ! empty($payloadOrder['payment'])
+                ? $this->applyPaymentIfPending($order, $payloadOrder['payment'], $session)
+                : false;
 
             $this->auditService->log('order.synced_offline', $actingUser, $order, [
                 'order_id' => $order->id,
@@ -339,6 +306,92 @@ class OrderSyncController extends Controller
                 'receipt_created' => $receiptCreated,
             ];
         });
+    }
+
+    /**
+     * Aplica el cobro offline de una orden si aún está pendiente. Idempotente:
+     *  - Receipt ya existe por `client_uuid` → no-op (reintento del batch).
+     *  - La orden ya fue cobrada por otro camino (receipt no-refund o estado
+     *    terminal de éxito) → no-op; nunca se crea un segundo asiento.
+     *  - Sin caja abierta → lanza: la txn del caller revierte, la orden queda
+     *    `failed` en el batch y el cliente reintenta con backoff cuando la caja
+     *    abra. Antes el cobro se saltaba en silencio y, como el reintento caía
+     *    en `duplicate` sin procesar pagos, el receipt se perdía para siempre.
+     *
+     * Debe correr dentro de la transacción del caller con la orden bloqueada.
+     *
+     * @param  array<string, mixed>  $payment
+     */
+    private function applyPaymentIfPending(Order $order, array $payment, ?CashRegisterSession $session): bool
+    {
+        $existingReceipt = PaymentReceipt::query()
+            ->where('client_uuid', $payment['client_uuid'])
+            ->lockForUpdate()
+            ->first();
+        if ($existingReceipt !== null) {
+            return false;
+        }
+
+        $alreadyPaid = $order->receipts()->where('payment_method', '!=', 'refund')->exists();
+        if ($alreadyPaid || in_array($order->status, (array) config('orders.terminal_success'), true)) {
+            return false;
+        }
+
+        if ($session === null) {
+            throw ValidationException::withMessages([
+                'payment' => 'No hay caja abierta en la sede para aplicar el cobro offline. Abre la caja y reintenta la sincronización.',
+            ]);
+        }
+
+        $tip = round((float) ($payment['tip_amount'] ?? 0), 2);
+        $total = (float) $order->total;
+        $expectedTotal = round($total + $tip, 2);
+        $paidAt = Carbon::parse($payment['paid_at']);
+
+        $paymentData = [
+            'method' => $payment['method'],
+            'total' => $total,
+            'tip_amount' => $tip,
+            'expected_total' => $expectedTotal,
+            'paid_at' => $payment['paid_at'],
+            'reference' => $payment['reference'] ?? null,
+            'synced_offline' => true,
+        ];
+
+        if ($payment['method'] === 'cash' && isset($payment['amount_received'])) {
+            $paymentData['amount_received'] = (float) $payment['amount_received'];
+            $paymentData['change_returned'] = round($paymentData['amount_received'] - $expectedTotal, 2);
+        }
+
+        $receipt = PaymentReceipt::create([
+            'order_id' => $order->id,
+            'company_nit' => $order->company_nit,
+            'branch_id' => $order->branch_id,
+            'client_uuid' => $payment['client_uuid'],
+            'file_path' => null,
+            'payment_method' => $payment['method'],
+            'amount' => $total,
+            'reference' => $payment['reference'] ?? null,
+            'paid_at' => $paidAt,
+            'cash_session_id' => $session->id,
+            'payment_data' => $paymentData,
+        ]);
+
+        $order->tip_amount = $tip;
+        $order->status = 'completed';
+        $order->save();
+
+        // KDS: items abiertos pasan a `served` (la orden ya quedó completed —
+        // antes quedaban en `approved` para siempre). Luego el stamping de pago
+        // para que el cobro de mesa no los vea como pendientes.
+        OrderItem::query()
+            ->where('order_id', $order->id)
+            ->whereIn('status', (array) config('orders.item_statuses.operational'))
+            ->update(['status' => 'served', 'served_at' => now()]);
+
+        $this->orderController->markOrderItemsPaid($order, $receipt->id, $paidAt);
+
+        return true;
     }
 
     /**

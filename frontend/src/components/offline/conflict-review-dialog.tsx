@@ -23,6 +23,7 @@ const OP_LABELS: Record<string, string> = {
     'order.refund': 'Devolución',
     'cash.open': 'Apertura de caja',
     'cash.expense': 'Egreso de caja',
+    'cash.income': 'Entrada de caja',
     'cash.close': 'Cierre de caja',
 };
 
@@ -39,6 +40,7 @@ const CONFLICT_MESSAGES: Record<string, string> = {
     invalid_payment_method: 'Método de pago inválido.',
     no_active_menu: 'No hay menú activo para crear la orden.',
     item_not_found: 'Un ítem ya no existe en el menú activo.',
+    unsupported_op_type: 'El servidor no reconoce esta operación. Reintenta tras actualizar la app.',
 };
 
 function describeConflict(op: OutboxOp): string {
