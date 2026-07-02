@@ -1,3 +1,5 @@
+// Entry point del SPA (React Router). Cambio no-op para probar el trigger
+// de build de Cloudflare Workers Builds en push a main.
 import '../css/app.css';
 import '../lib/zod-config';
 
