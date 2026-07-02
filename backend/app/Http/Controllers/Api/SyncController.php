@@ -271,6 +271,10 @@ class SyncController extends Controller
                 'sync_warnings' => $warnings ?: null,
             ]);
 
+            // Materializar filas `order_items` (#293): sin esto la orden
+            // sincronizada quedaba invisible para el KDS y el pago por item.
+            $this->orderController->materializeOrderItems($order, $items);
+
             $this->auditService->log('order.synced_offline', $actingUser, $order, [
                 'order_id' => $order->id,
                 'op_id' => $op['op_id'],

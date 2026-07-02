@@ -29,6 +29,7 @@ use App\Services\RecipeCostService;
 use App\Services\Sms\OrderStatusSmsDispatcher;
 use App\Services\TableSessionService;
 use App\Services\TaxCalculator;
+use App\Support\OrderTotalCalculator;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,6 +59,7 @@ class OrderController extends Controller
         private readonly LoyaltyService $loyaltyService,
         private readonly RecipeCostService $recipeCostService,
         private readonly OrderStatusSmsDispatcher $smsDispatcher,
+        private readonly OrderTotalCalculator $orderTotals,
     ) {}
 
     /**
@@ -273,32 +275,7 @@ class OrderController extends Controller
                 }
             }
 
-            // Materializar las líneas también en `order_items`. El flujo QR
-            // (TableOrderService) ya creaba filas por cada item del comensal,
-            // pero las órdenes desde caja sólo guardaban en `orders.items`
-            // JSON — y el KDS lee de `order_items`, así que la orden quedaba
-            // invisible para cocina. Como el cajero ya validó los items al
-            // crear la orden, nacen en `status='approved'` (no en
-            // `pending_approval` que es el estado del flujo de comensal).
-            $now = Carbon::now();
-            foreach ($items as $line) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'menu_item_id' => (string) $line['id'],
-                    'guest_id' => null,
-                    'name' => (string) $line['name'],
-                    'unit_price' => number_format((float) $line['price'], 2, '.', ''),
-                    'unit_cost' => isset($line['cost']) && $line['cost'] !== null
-                        ? number_format((float) $line['cost'], 2, '.', '')
-                        : null,
-                    'quantity' => (int) $line['quantity'],
-                    'category' => $line['category'] ?? null,
-                    'notes' => $line['notes'] ?? null,
-                    'status' => 'approved',
-                    'submitted_at' => $now,
-                    'approved_at' => $now,
-                ]);
-            }
+            $this->materializeOrderItems($order, $items);
 
             return $order;
         });
@@ -467,6 +444,41 @@ class OrderController extends Controller
         }
 
         return $lines;
+    }
+
+    /**
+     * Materializa líneas construidas por `buildOrderLines` como filas
+     * `order_items` (#293). `order_items` es la fuente de líneas (KDS, pago
+     * por item, recálculo de totales); toda creación/append de orden desde
+     * caja u offline DEBE llamarlo — sin esto la orden queda invisible para
+     * cocina. Nacen `approved` porque el cajero ya validó los items (no
+     * `pending_approval`, que es el estado del flujo de comensal QR).
+     * Debe correr dentro de la transacción que crea/muta la orden.
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    public function materializeOrderItems(Order $order, array $lines): void
+    {
+        $now = Carbon::now();
+        foreach ($lines as $line) {
+            OrderItem::create([
+                'order_id' => $order->id,
+                'menu_item_id' => (string) $line['id'],
+                'guest_id' => null,
+                'name' => (string) $line['name'],
+                'unit_price' => number_format((float) $line['price'], 2, '.', ''),
+                'unit_cost' => isset($line['cost']) && $line['cost'] !== null
+                    ? number_format((float) $line['cost'], 2, '.', '')
+                    : null,
+                'tax_rate' => $line['tax_rate'] ?? null,
+                'quantity' => (int) $line['quantity'],
+                'category' => $line['category'] ?? null,
+                'notes' => $line['notes'] ?? null,
+                'status' => 'approved',
+                'submitted_at' => $now,
+                'approved_at' => $now,
+            ]);
+        }
     }
 
     /**
@@ -838,28 +850,47 @@ class OrderController extends Controller
                 $addedTotal += $breakdown['total'];
             }
 
-            $order->items = array_merge($order->items ?? [], $newLines);
-            // Recalcular agregados desde items[] para garantizar invariantes.
-            // Si la orden nació con cupón, re-aplicar el descuento ABSOLUTO
-            // snapshoteado en la redención (discount_amount) sobre el nuevo
-            // bruto — sin esto, agregar ítems pisaba el total con el bruto y
-            // el descuento "desaparecía" dejando discount_amount inconsistente.
-            $aggregate = $this->taxCalculator->aggregate($order->items);
-            $discount = min((float) $order->discount_amount, (float) $aggregate['total']);
-            if ($discount > 0 && $aggregate['total'] > 0) {
-                $netTotal = round($aggregate['total'] - $discount, 2);
-                $ratio = $netTotal / $aggregate['total'];
-                $order->subtotal = round($aggregate['subtotal'] * $ratio, 2);
-                // Invariante: tax = total - subtotal (absorbe redondeo).
-                $order->tax_amount = round($netTotal - $order->subtotal, 2);
-                $order->total = $netTotal;
+            // ¿La orden ya está respaldada por filas `order_items`? Todo lo
+            // creado post-#293 lo está (caja, QR, sync offline); solo órdenes
+            // legacy abiertas antes del dual-write carecen de filas.
+            $hadRows = OrderItem::query()->where('order_id', $order->id)->exists();
+
+            // Materializar las líneas nuevas como filas `order_items` — sin
+            // esto los items agregados quedaban invisibles para el KDS y el
+            // pago por item (#293).
+            $this->materializeOrderItems($order, $newLines);
+
+            if ($hadRows) {
+                // Fuente única: filas. Recalcula subtotal/tax/total (con
+                // prorrateo de cupón) y proyecta `orders.items` JSON + cost.
+                // Cubre también órdenes QR a las que caja agrega items —
+                // antes el total se pisaba con solo las líneas nuevas porque
+                // el JSON de esas órdenes estaba vacío.
+                $this->orderTotals->recalculateAndSave($order);
             } else {
-                $order->subtotal = $aggregate['subtotal'];
-                $order->tax_amount = $aggregate['tax_amount'];
-                $order->total = $aggregate['total'];
+                $order->items = array_merge($order->items ?? [], $newLines);
+                // Recalcular agregados desde items[] para garantizar invariantes.
+                // Si la orden nació con cupón, re-aplicar el descuento ABSOLUTO
+                // snapshoteado en la redención (discount_amount) sobre el nuevo
+                // bruto — sin esto, agregar ítems pisaba el total con el bruto y
+                // el descuento "desaparecía" dejando discount_amount inconsistente.
+                $aggregate = $this->taxCalculator->aggregate($order->items);
+                $discount = min((float) $order->discount_amount, (float) $aggregate['total']);
+                if ($discount > 0 && $aggregate['total'] > 0) {
+                    $netTotal = round($aggregate['total'] - $discount, 2);
+                    $ratio = $netTotal / $aggregate['total'];
+                    $order->subtotal = round($aggregate['subtotal'] * $ratio, 2);
+                    // Invariante: tax = total - subtotal (absorbe redondeo).
+                    $order->tax_amount = round($netTotal - $order->subtotal, 2);
+                    $order->total = $netTotal;
+                } else {
+                    $order->subtotal = $aggregate['subtotal'];
+                    $order->tax_amount = $aggregate['tax_amount'];
+                    $order->total = $aggregate['total'];
+                }
+                $order->cost = $this->computeOrderCost($order->items);
+                $order->save();
             }
-            $order->cost = $this->computeOrderCost($order->items);
-            $order->save();
 
             // Si la orden ya pasó por cocina (inventario ya descontado),
             // descontar también el delta de las nuevas líneas — el resto no

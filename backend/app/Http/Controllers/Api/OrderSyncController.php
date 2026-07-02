@@ -266,6 +266,10 @@ class OrderSyncController extends Controller
                 'sync_warnings' => $warnings ?: null,
             ]);
 
+            // Materializar filas `order_items` (#293): sin esto la orden
+            // sincronizada quedaba invisible para el KDS y el pago por item.
+            $this->orderController->materializeOrderItems($order, $items);
+
             $receiptCreated = false;
             if (! empty($payloadOrder['payment']) && $session !== null) {
                 $payment = $payloadOrder['payment'];

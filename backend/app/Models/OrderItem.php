@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Ítem materializado de una orden (#191).
+ * Ítem materializado de una orden (#191, #293).
  *
- * Vive en paralelo a `orders.items` (JSON) durante la transición. Una orden
- * puede tener N items con estado independiente (KDS y pago dividido lo
- * requieren).
+ * FUENTE de líneas de la orden: todos los flujos de escritura (caja, QR,
+ * sync offline, append) crean filas acá; `orders.items` JSON es una
+ * proyección de lectura que `OrderTotalCalculator` reconstruye en cada
+ * recálculo. Una orden puede tener N items con estado independiente (KDS y
+ * pago dividido lo requieren).
  *
  * Reglas contables:
  *  - `unit_price` es snapshot del menú al momento de agregar — NUNCA leído
@@ -30,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $unit_price decimal:2
  * @property string|null $unit_cost decimal:2
+ * @property string|null $tax_rate decimal:2 — tasa efectiva snapshoteada al crear la línea; null = usar orders.snapshot_default_tax_rate
  * @property int $quantity
  * @property string|null $category
  * @property string|null $notes
@@ -58,6 +61,7 @@ class OrderItem extends Model
         'name',
         'unit_price',
         'unit_cost',
+        'tax_rate',
         'quantity',
         'category',
         'notes',
@@ -80,6 +84,7 @@ class OrderItem extends Model
         return [
             'unit_price' => 'decimal:2',
             'unit_cost' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
             'quantity' => 'integer',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
