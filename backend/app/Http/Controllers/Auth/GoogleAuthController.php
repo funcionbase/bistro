@@ -57,13 +57,16 @@ class GoogleAuthController extends Controller
         // Generamos un `state` propio, lo guardamos en una cookie HttpOnly de
         // vida corta (double-submit) y lo mandamos a Google. No depende de la
         // sesión server-side → N-instance safe (CLAUDE.md §12).
+        // `prompt=select_account` fuerza el selector de cuentas de Google:
+        // sin él, con una sola sesión activa Google hace auto-login silencioso
+        // y el usuario nunca puede elegir con qué Gmail entrar.
         $state = Str::random(40);
 
         $secure = (bool) config('session.secure', ! app()->isLocal());
 
         return Socialite::driver('google')
             ->stateless()
-            ->with(['state' => $state])
+            ->with(['state' => $state, 'prompt' => 'select_account'])
             ->redirect()
             ->withCookie(cookie(
                 name: self::OAUTH_STATE_COOKIE,

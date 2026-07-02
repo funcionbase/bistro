@@ -180,7 +180,7 @@ Adicionalmente, el actor **no puede modificarse a sí mismo** (rol, permisos, es
 1. **Click "Continuar con Google"** en `/` o `/login` (componente `resources/js/components/google-auth-button.tsx`).
 2. **Browser → `GET /auth/google`** (`GoogleAuthController::redirect`, `routes/web.php` con middleware `throttle:oauth`).
    - `throttle:oauth` = 10 intentos/min por IP (definido en `routes/api.php` y `routes/web.php` via `RateLimiter::for('oauth', ...)`).
-   - Construye URL OAuth de Google con `client_id`, `redirect_uri`, `scope=openid+profile+email`, `state` (CSRF) y `access_type=offline`.
+   - Construye URL OAuth de Google con `client_id`, `redirect_uri`, `scope=openid+profile+email`, `state` (CSRF) y `prompt=select_account` (fuerza el selector de cuentas de Google; sin él, con una sola sesión activa Google hace auto-login sin dejar elegir cuenta).
    - Retorna 302 a `https://accounts.google.com/o/oauth2/v2/auth?...`.
 3. **Usuario autoriza en Google** y Google redirige a `GET /auth/google/callback?code=...&state=...`.
 4. **`GoogleAuthController::callback`** ejecuta:
