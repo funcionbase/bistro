@@ -17,7 +17,11 @@
         <meta name="application-name" content="bistro" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <!-- black-translucent: la barra de estado iOS queda transparente y el
+             body (bg-background, sigue la clase .dark) pinta debajo — sin esto
+             iOS dibuja una franja blanca opaca en dark mode. Requiere
+             viewport-fit=cover + pwa-safe-top en barras superiores. -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="bistro" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png?v=3" />
 

@@ -4,10 +4,20 @@ export type Appearance = 'light' | 'dark' | 'system';
 
 const prefersDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+/** Mismos valores que los <meta name="theme-color"> de index.html. */
+const THEME_COLOR = { light: '#f6f5f3', dark: '#1E232E' } as const;
+
 const applyTheme = (appearance: Appearance) => {
     const isDark = appearance === 'dark' || (appearance === 'system' && prefersDark());
 
     document.documentElement.classList.toggle('dark', isDark);
+
+    // Los <meta theme-color> con media query solo siguen el tema del SO; si el
+    // usuario fuerza dark/light in-app quedan desincronizados y en PWA (iOS/
+    // Android) la barra de estado se pinta del color equivocado.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+        meta.setAttribute('content', isDark ? THEME_COLOR.dark : THEME_COLOR.light);
+    });
 };
 
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
