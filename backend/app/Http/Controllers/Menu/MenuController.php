@@ -886,6 +886,7 @@ class MenuController extends Controller
     {
         $validated = $request->validate([
             'table' => 'nullable|string|max:16',
+            'branch_id' => 'nullable|uuid',
             'session_id' => 'nullable|uuid',
             '_h' => 'nullable|string|max:64',
         ]);
@@ -916,18 +917,28 @@ class MenuController extends Controller
         $isBot = $this->botDetection->isBot($request, $company->nit);
         $ipHashHex = $this->botDetection->hashIp($request->ip());
 
-        // Multi-sede (#117): menu_scan_events.branch_id es NOT NULL. El menú
-        // público es por empresa (un único QR), así que asociamos el scan a la
+        // Multi-sede (#117): menu_scan_events.branch_id es NOT NULL. Si el
+        // frontend resolvió la sede del QR (token de sede o de mesa) la manda
+        // como branch_id y el scan se atribuye a ESA sede; si no, cae a la
         // sede default. Si no hay sedes (caso edge), retornamos 204 sin
         // registrar — el cliente no detecta diferencia.
-        $defaultBranch = Branch::query()
+        $branch = null;
+        if (! empty($validated['branch_id'])) {
+            $branch = Branch::query()
+                ->where('id', $validated['branch_id'])
+                ->where('company_nit', $company->nit)
+                ->whereNull('archived_at')
+                ->first();
+        }
+
+        $branch ??= Branch::query()
             ->where('company_nit', $company->nit)
             ->whereNull('archived_at')
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->first();
 
-        if (! $defaultBranch) {
+        if (! $branch) {
             return response()->json(null, 204);
         }
 
@@ -943,7 +954,7 @@ class MenuController extends Controller
                 VALUES (gen_random_uuid(), ?, ?::uuid, ?, now(), ?::uuid, ?, CASE WHEN ?::text IS NULL THEN NULL ELSE decode(?, 'hex') END, ?)
             SQL, [
                 $company->nit,
-                $defaultBranch->id,
+                $branch->id,
                 $validated['table'] ?? null,
                 $sessionId,
                 mb_substr((string) $request->userAgent(), 0, 255) ?: null,
@@ -955,7 +966,7 @@ class MenuController extends Controller
             // Telemetría no crítica; loggeamos y seguimos.
             Log::warning('menu_scan_events insert failed', [
                 'company_nit' => $company->nit,
-                'branch_id' => $defaultBranch->id,
+                'branch_id' => $branch->id,
             ]);
         }
 

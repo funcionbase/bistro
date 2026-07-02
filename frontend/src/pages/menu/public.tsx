@@ -224,6 +224,12 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
 
     useEffect(() => {
         if (typeof window === 'undefined' || !effectiveNit || scanSentRef.current) return;
+        // Con QR opaco (sede o mesa) esperamos la resolución del token para
+        // atribuir el scan a la sede/mesa reales — si no, el backend lo
+        // asociaba a la sede default y guardaba el token como "mesa".
+        const tableIsToken = !!table && !/^\d+$/.test(table);
+        if (branchToken && !effectiveBranchId) return;
+        if (tableIsToken && !tableStatus) return;
         scanSentRef.current = true;
 
         const key = SCAN_SESSION_KEY(effectiveNit);
@@ -235,7 +241,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
             sessionId = generateUuid();
         }
 
-        const body = JSON.stringify({ table, session_id: sessionId, _h: '' });
+        const body = JSON.stringify({ table: effectiveTableNumber, branch_id: effectiveBranchId, session_id: sessionId, _h: '' });
         void fetch(resolveBackendUrl(`/api/v1/public/menu/${encodeURIComponent(effectiveNit)}/scan`), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -245,7 +251,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
         }).catch(() => {
             // Telemetría es fire-and-forget.
         });
-    }, [effectiveNit, table]);
+    }, [effectiveNit, table, branchToken, effectiveBranchId, tableStatus, effectiveTableNumber]);
 
     // QR de menú de sede: ?branch={menu_qr_token}. Resuelve NIT + branch_id
     // desde el token opaco, sin exponer esos valores en la URL escaneada.

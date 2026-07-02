@@ -69,25 +69,36 @@ class BotDetectionService
     }
 
     /**
-     * El escáner abre /menus/{nit} primero; al hacer fetch de telemetría el navegador
-     * envía Referer apuntando a esa URL. Un curl directo al endpoint no.
+     * El escáner abre la carta pública primero; al hacer fetch de telemetría el
+     * navegador envía Referer apuntando a esa URL. Un curl directo al endpoint no.
+     *
+     * El SPA vive en `app.frontend_url` (deploy cross-origin #220: frontend
+     * bistro.flexyflow.co, API bistro-api.flexyflow.co) — comparar solo contra
+     * `app.url` marcaba como bot TODO scan real en pdn. Los QR opacos
+     * (`/menus?branch=`, `/menus?table=`) tienen path `/menus` sin NIT, así que
+     * el path esperado es `/menus` con o sin sufijo.
      */
     private function refererPointsToPublicMenu(Request $request, string $companyNit): bool
     {
+        unset($companyNit);
+
         $referer = (string) $request->header('Referer', '');
         if ($referer === '') {
             return false;
         }
 
-        $expectedHost = parse_url(config('app.url'), PHP_URL_HOST);
         $refererHost = parse_url($referer, PHP_URL_HOST);
+        $expectedHosts = array_filter([
+            parse_url((string) config('app.url'), PHP_URL_HOST),
+            parse_url((string) config('app.frontend_url'), PHP_URL_HOST),
+        ]);
 
-        if ($refererHost !== $expectedHost) {
+        if (! in_array($refererHost, $expectedHosts, true)) {
             return false;
         }
 
         $path = parse_url($referer, PHP_URL_PATH) ?: '';
 
-        return str_starts_with($path, '/menus/'.$companyNit);
+        return $path === '/menus' || str_starts_with($path, '/menus/');
     }
 }
