@@ -4,7 +4,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { RestaurantIdentity } from '@/components/restaurant-identity';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader } from '@/components/ui/sidebar';
 import { isFullyBlocked } from '@/lib/company-status';
 import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isCourierOnlyMode } from '@/lib/courier-mode';
@@ -41,6 +41,10 @@ import {
     UtensilsCrossed,
     Warehouse,
 } from 'lucide-react';
+
+// Inyectadas por Vite en build time (vite.config.ts `define`).
+declare const __FRONTEND_VERSION__: string;
+declare const __BACKEND_VERSION__: string;
 
 const footerNavItems: NavItem[] = [
     {
@@ -438,6 +442,15 @@ export function AppSidebar() {
 
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />
+                {/* Versiones desplegadas (antes en el footer de welcome.tsx).
+                    Mismo wrapper SidebarGroup + px-2 que los items de NavFooter
+                    para quedar alineado con "Manual de usuario". Oculto en modo
+                    icono porque el texto no cabe. */}
+                <SidebarGroup className="py-0 group-data-[collapsible=icon]:hidden">
+                    <span className="text-muted-foreground/60 px-2 text-[10px]">
+                        fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}
+                    </span>
+                </SidebarGroup>
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
