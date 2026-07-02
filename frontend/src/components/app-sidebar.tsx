@@ -1,20 +1,9 @@
 import { BlockedCompanySwitchBanner } from '@/components/blocked-company-switch-banner';
 import { BranchSwitcher } from '@/components/branch-switcher';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { RestaurantIdentity } from '@/components/restaurant-identity';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import { isFullyBlocked } from '@/lib/company-status';
 import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isCourierOnlyMode } from '@/lib/courier-mode';
@@ -24,7 +13,6 @@ import { type NavItem } from '@/types';
 import {
     BarChart2,
     Bike,
-    BookOpen,
     Building2,
     CalendarRange,
     ChefHat,
@@ -32,7 +20,6 @@ import {
     Clock,
     FileText,
     Contact as ContactIcon,
-    Info,
     KanbanSquare,
     LayoutGrid,
     LineChart,
@@ -52,18 +39,6 @@ import {
     UtensilsCrossed,
     Warehouse,
 } from 'lucide-react';
-
-// Inyectadas por Vite en build time (vite.config.ts `define`).
-declare const __FRONTEND_VERSION__: string;
-declare const __BACKEND_VERSION__: string;
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Manual de usuario',
-        url: '/manual/bistro',
-        icon: BookOpen,
-    },
-];
 
 /**
  * Sidebar organizado en 5 secciones, priorizando acciones de venta del
@@ -452,26 +427,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-                {/* Versiones desplegadas (antes en el footer de welcome.tsx).
-                    Mismo markup que un item de NavFooter (icono + text-sm en
-                    SidebarMenuButton) para alinear y dimensionar igual que
-                    "Manual de usuario" y los items del nav. No es clickeable.
-                    Oculto en modo icono porque el texto no cabe. */}
-                <SidebarGroup className="py-0 group-data-[collapsible=icon]:hidden">
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton size="sm" className="text-muted-foreground/70 pointer-events-none" aria-disabled="true">
-                                    <Info className="h-4 w-4" />
-                                    <span>
-                                        fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}
-                                    </span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                {/* Manual de usuario y versiones fv/bv viven al final de /me. */}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

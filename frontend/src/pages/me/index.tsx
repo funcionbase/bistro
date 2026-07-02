@@ -14,9 +14,13 @@ import { employeeStatusBadge, employeeStatusLabel, useEmployeeStatuses } from '@
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
-import { AlertCircle, Briefcase, CalendarDays, IdCard, Info, MapPin, Pencil, UserCircle, Wallet } from 'lucide-react';
+import { AlertCircle, BookOpen, Briefcase, CalendarDays, IdCard, Info, MapPin, Pencil, UserCircle, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { formatDateTime } from '@/lib/datetime';
+
+// Inyectadas por Vite en build time (vite.config.ts `define`).
+declare const __FRONTEND_VERSION__: string;
+declare const __BACKEND_VERSION__: string;
 
 
 type UserProfile = {
@@ -368,6 +372,17 @@ export default function MeIndex() {
                         onUpdated={handleUpdated}
                     />
                 )}
+
+                {/* Ayuda y versiones desplegadas (antes en el footer del sidebar). */}
+                <div className="border-border text-muted-foreground flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t pt-4 text-xs">
+                    <AppLink href="/manual/bistro" className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
+                        <BookOpen className="h-3.5 w-3.5" />
+                        Manual de usuario
+                    </AppLink>
+                    <span className="opacity-70">
+                        fv{__FRONTEND_VERSION__} bv{__BACKEND_VERSION__}
+                    </span>
+                </div>
             </div>
         </PageShell>
     );
