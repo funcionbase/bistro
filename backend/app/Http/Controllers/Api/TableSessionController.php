@@ -655,7 +655,14 @@ class TableSessionController extends Controller
             'reason' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ]);
 
-        $item = OrderItem::query()->whereKey($itemId)->firstOrFail();
+        // IDOR/BOLA: atar el item a la sesión ya scopeada (loadSession filtra
+        // por company+branch). Sin esto, la sesión era solo un "ticket de
+        // entrada" y el itemId podía ser de un OrderItem de otra empresa
+        // (order_items no tiene company_nit ni global scope).
+        $item = OrderItem::query()
+            ->whereKey($itemId)
+            ->whereHas('order', fn ($q) => $q->where('table_session_id', $session->id))
+            ->firstOrFail();
 
         try {
             $updated = $this->waiter->rejectItem($item, $session, $payload['reason'] ?? null, $user, $request);
@@ -681,7 +688,14 @@ class TableSessionController extends Controller
             'reason' => ['required', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ]);
 
-        $item = OrderItem::query()->whereKey($itemId)->firstOrFail();
+        // IDOR/BOLA: atar el item a la sesión ya scopeada (loadSession filtra
+        // por company+branch). Sin esto, la sesión era solo un "ticket de
+        // entrada" y el itemId podía ser de un OrderItem de otra empresa
+        // (order_items no tiene company_nit ni global scope).
+        $item = OrderItem::query()
+            ->whereKey($itemId)
+            ->whereHas('order', fn ($q) => $q->where('table_session_id', $session->id))
+            ->firstOrFail();
 
         try {
             $updated = $this->waiter->cancelItemInKitchen($item, $session, $payload['reason'], $user, $request);
@@ -707,7 +721,14 @@ class TableSessionController extends Controller
             'notes' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ]);
 
-        $item = OrderItem::query()->whereKey($itemId)->firstOrFail();
+        // IDOR/BOLA: atar el item a la sesión ya scopeada (loadSession filtra
+        // por company+branch). Sin esto, la sesión era solo un "ticket de
+        // entrada" y el itemId podía ser de un OrderItem de otra empresa
+        // (order_items no tiene company_nit ni global scope).
+        $item = OrderItem::query()
+            ->whereKey($itemId)
+            ->whereHas('order', fn ($q) => $q->where('table_session_id', $session->id))
+            ->firstOrFail();
         $updated = $this->waiter->editItemNotes($item, $session, $payload['notes'] ?? null, $user, $request);
 
         return response()->json([

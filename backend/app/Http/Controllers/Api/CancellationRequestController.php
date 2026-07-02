@@ -29,7 +29,19 @@ class CancellationRequestController extends Controller
             'reason' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ]);
 
-        $cr = CancellationRequest::query()->findOrFail($id);
+        // IDOR/BOLA: cancellation_requests no tiene company_nit/branch_id ni
+        // global scope. Sin scopear por la empresa+sede activa (vía
+        // item.order), un usuario con orders.update podía resolver la
+        // solicitud de OTRA empresa dado su UUID -> cancelaba un item ajeno y
+        // mutaba orders.total cross-tenant. 404 (no 403) para no filtrar
+        // existencia. Espejo del scope de la lista (pendingCancellations).
+        $companyNit = $request->attributes->get('active_company_nit');
+        $branchId = $request->attributes->get('active_branch_id');
+        $cr = CancellationRequest::query()
+            ->whereHas('item.order', function ($q) use ($companyNit, $branchId): void {
+                $q->where('company_nit', $companyNit)->where('branch_id', $branchId);
+            })
+            ->findOrFail($id);
 
         $sub = $request->attributes->get('jwt_payload')['sub'] ?? null;
         /** @var User $user */
