@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Ítem materializado de una orden (#191).
+ * Ítem materializado de una orden (#191, #293).
  *
- * Vive en paralelo a `orders.items` (JSON) durante la transición. Una orden
- * puede tener N items con estado independiente (KDS y pago dividido lo
- * requieren).
+ * FUENTE de líneas de la orden: todos los flujos de escritura (caja, QR,
+ * sync offline, append) crean filas acá; `orders.items` JSON es una
+ * proyección de lectura que `OrderTotalCalculator` reconstruye en cada
+ * recálculo. Una orden puede tener N items con estado independiente (KDS y
+ * pago dividido lo requieren).
  *
  * Reglas contables:
  *  - `unit_price` es snapshot del menú al momento de agregar — NUNCA leído

@@ -106,12 +106,12 @@ Fuente: `config/orders.php:142-199`.
 
 `orders.total = SUM(line_total) WHERE item.status ∉ excluded_from_total` — neto del descuento si hay cupón.
 
-El desglose por línea (`subtotal`/`tax_amount`/`total`) lo produce **`TaxCalculator::calculateLine`** en ambos flujos (#293):
+**`order_items` es la FUENTE de líneas; `orders.items` JSON es proyección de lectura** (#293). El desglose por línea (`subtotal`/`tax_amount`/`total`) lo produce **`TaxCalculator::calculateLine`** en todos los flujos:
 
-- **Caja** (`OrderController::buildOrderLines` / `appendItems`): calcula sobre las líneas del payload y persiste el desglose en `orders.items` JSON + agregados en la orden.
-- **Mesas QR** (`App\Support\OrderTotalCalculator::recalculateAndSave`): recalcula desde filas `order_items` en cada mutación (add/edit/cancel/approve) y persiste `subtotal`, `tax_amount`, `tax_rate` y `total`.
+- **Creación** (caja `store`, sync offline): `OrderController::buildOrderLines` calcula el desglose y `materializeOrderItems` persiste las filas `order_items` (con `tax_rate` por línea). El JSON nace como espejo de esas líneas.
+- **Mutación de líneas** (QR add/edit/cancel/approve, caja `appendItems`): `App\Support\OrderTotalCalculator::recalculateAndSave` recalcula `subtotal`, `tax_amount`, `tax_rate`, `total` y `cost` desde las filas y **reproyecta `orders.items` JSON**. (`appendItems` conserva un fallback JSON-only para órdenes legacy sin filas.)
 
-Ambos usan el **snapshot tributario de la orden** (`tax_included_in_price`, `snapshot_default_tax_rate`, y `order_items.tax_rate` por línea con fallback al default), nunca el estado vivo de la empresa.
+Todos usan el **snapshot tributario de la orden** (`tax_included_in_price`, `snapshot_default_tax_rate`, y `order_items.tax_rate` por línea con fallback al default), nunca el estado vivo de la empresa.
 
 ---
 

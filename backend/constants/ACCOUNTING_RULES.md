@@ -94,8 +94,9 @@ y `TaxCalculator` debe migrarse al helper.
 | Regla | Detalle |
 |---|---|
 | Cálculo | `SUM(line_total)` con items no excluidos (≠ `cancelled`), desglose por línea vía `TaxCalculator::calculateLine` (#293) |
-| Caja | `OrderController::buildOrderLines`/`appendItems` → líneas JSON con `subtotal/tax_amount/tax_rate/total` snapshoteados |
-| Mesas QR | `App\Support\OrderTotalCalculator::recalculateAndSave` → recalcula `subtotal/tax_amount/tax_rate/total` desde filas `order_items` en cada mutación |
+| Fuente de líneas | Filas `order_items` (creadas por `OrderController::materializeOrderItems` en caja/sync y por los servicios QR). `orders.items` JSON = **proyección de lectura**. |
+| Creación (caja/sync) | `OrderController::buildOrderLines` → desglose por línea + `materializeOrderItems` → filas con `tax_rate` snapshoteado |
+| Mutación de líneas | `App\Support\OrderTotalCalculator::recalculateAndSave` → recalcula `subtotal/tax_amount/tax_rate/total/cost` desde filas y reproyecta el JSON (QR + `appendItems`; fallback JSON-only para órdenes legacy sin filas) |
 | Snapshot tributario | Ambos flujos usan el snapshot de la orden (`tax_included_in_price`, `snapshot_default_tax_rate`, `order_items.tax_rate` por línea) — NUNCA el estado vivo de la empresa |
 | Descuento | `orders.total` viene **neto del descuento**. `discount_amount` es informativo. NUNCA restarlo en reportes (doble descuento). |
 | Origen del precio | Menú activo en BD, NUNCA del payload del cliente. |
