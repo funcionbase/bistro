@@ -79,6 +79,19 @@ export default function ManualPedidos() {
                 </p>
             </div>
 
+            <h2>Mensajes de texto al cliente</h2>
+            <p>
+                Si el pedido tiene un número de teléfono, el cliente recibe un <strong>mensaje de texto (SMS)</strong>{' '}
+                automático cuando su pedido cambia a un estado que le importa: entró en preparación, ya está
+                listo, va en camino o fue entregado. El mensaje incluye el nombre de tu negocio y el código del
+                pedido, por ejemplo: <em>"Flexy Burger: tu pedido #A3F9C1 va EN CAMINO"</em>.
+            </p>
+            <p>
+                No tienes que hacer nada para que salga — funciona sin importar desde dónde se movió el pedido
+                (el tablero, la pantalla de cocina o la caja). Si un mensaje no se pudo enviar, el panel te lo
+                avisa para que puedas contactar al cliente por otro medio.
+            </p>
+
             <h2>Inventario y recetas</h2>
             <p>
                 Si tienes recetas configuradas en los platos, bistro flexy descuenta el inventario cuando la
@@ -91,6 +104,19 @@ export default function ManualPedidos() {
                 El tablero de pedidos se actualiza solo en tiempo real. No tienes que darle F5 — cuando llega
                 un pedido nuevo, aparece en la columna "pendiente" y suena una notificación de audio (configurable
                 en el navegador). Si la pestaña está al fondo, la notificación push del navegador te avisa.
+            </p>
+            <p>
+                Al abrir el <strong>detalle de un pedido</strong>, la información también se refresca sola cada
+                pocos segundos mientras tengas la pantalla abierta — si la cocina marca un plato como listo, lo
+                ves sin cerrar y volver a entrar. Y si en algún momento quieres forzar la actualización, el botón
+                de <strong>refrescar</strong> (la flecha circular) está siempre a la mano.
+            </p>
+
+            <h3>El tablero en el celular</h3>
+            <p>
+                En pantallas de celular el tablero cambia de columnas a una <strong>lista compacta</strong>,
+                parecida a la pantalla de cocina: cada pedido es una fila con su estado, y cambias de estado con
+                un toque en lugar de arrastrar. Es la misma información, acomodada para operar con una sola mano.
             </p>
 
             <h2>Pantalla KDS (cocina)</h2>

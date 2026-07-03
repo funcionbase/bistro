@@ -23,6 +23,18 @@ const faqs = [
         a: 'No aplica — no hay contraseña. La autenticación es 100% OAuth con tu cuenta de Google. Si quieres más seguridad, activa la verificación en dos pasos en tu Google.',
     },
     {
+        q: '¿Por qué se me cerró la sesión sola?',
+        a: 'Por seguridad, la sesión se cierra después de 6 horas sin usar la app, y en todo caso a las 12 horas de haber entrado (aunque la estés usando). Es normal que al llegar en la mañana toque entrar de nuevo con Google — toma dos toques. Mientras estés trabajando activamente, la sesión se mantiene sola.',
+    },
+    {
+        q: 'Entré con la cuenta de Google equivocada, ¿qué hago?',
+        a: 'En la pantalla donde eliges el negocio hay un botón de "Cerrar sesión" — úsalo y vuelve a entrar. Al darle a "Continuar con Google", el sistema siempre te deja escoger con cuál cuenta entrar, así que selecciona la del correo con el que te invitaron.',
+    },
+    {
+        q: 'Me apareció un aviso de "nueva versión disponible", ¿qué hago?',
+        a: 'Dale al botón de actualizar del aviso. La app se recarga en segundos con la versión más reciente y sigues donde ibas. Si lo ignoras, la app sigue funcionando, pero conviene actualizar pronto para tener las últimas mejoras y correcciones.',
+    },
+    {
         q: '¿Qué pasa si el dueño del negocio se va?',
         a: 'El sistema exige que siempre haya al menos un Propietario activo. Para reemplazarlo, primero el dueño saliente le asigna el rol Propietario a otra persona, y luego puede salirse. No hay forma de quedar sin Propietario.',
     },

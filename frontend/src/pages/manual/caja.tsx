@@ -118,6 +118,18 @@ export default function ManualCaja() {
                 autorizó. Quedan en el historial del turno y afectan el balance de cierre.
             </p>
 
+            <h2>Entradas de efectivo</h2>
+            <p>
+                Lo contrario también existe: si entra plata al cajón que <strong>no viene de una venta</strong> —
+                un aporte del dueño, un préstamo para completar el cambio, un ajuste — se registra con el botón{' '}
+                <strong>"Entrada"</strong> del panel de caja. Cada entrada lleva monto, categoría y motivo.
+            </p>
+            <p>
+                Igual que los egresos, las entradas quedan en el historial del turno y se suman al efectivo
+                esperado en el cierre. Así el arqueo cuadra sin tener que "esconder" esa plata en una venta
+                falsa o dejarla por fuera del conteo.
+            </p>
+
             <h2>Cerrar el turno</h2>
             <p>
                 Al final del día (o del turno) el cajero va a <strong>caja → cerrar turno</strong>. El sistema
@@ -128,6 +140,20 @@ export default function ManualCaja() {
             <p>
                 El cierre es <strong>inmutable</strong> — una vez cerrado no se puede reabrir. Si hay que
                 corregir algo, se hace con un egreso o un cobro nuevo en el siguiente turno.
+            </p>
+
+            <div className="callout callout-info">
+                <p>
+                    <strong>Caja abierta más de 24 horas:</strong> si un turno lleva más de un día abierto, el
+                    panel te muestra un aviso para que hagas el arqueo y lo cierres. Cerrar la caja cada día hace
+                    que el cuadre sea por jornada y que los informes de cierre queden ordenados por fecha.
+                </p>
+            </div>
+
+            <p>
+                El detalle de cada cierre (ventas por método de pago, entradas, egresos y la diferencia del
+                conteo) queda disponible después en el <strong>informe de cierre por turno</strong>, dentro de la
+                pantalla de <em>ventas del día</em>. Ver <span className="font-medium">métricas</span>.
             </p>
 
             <h2>Impresoras térmicas</h2>

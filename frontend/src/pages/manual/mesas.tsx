@@ -52,6 +52,14 @@ export default function ManualMesas() {
                 </p>
             </div>
 
+            <h3>Pedir para llevar desde el QR de la sede</h3>
+            <p>
+                El QR fijo de la sede también sirve para clientes que <strong>no van a sentarse</strong>: al
+                escanearlo pueden pedir <strong>para llevar o a domicilio</strong> sin escoger mesa. El pedido
+                llega al tablero como cualquier otro, marcado con su tipo, y sigue el flujo normal de aprobación
+                y cobro. Es ideal para imprimirlo en la barra, la entrada o el empaque.
+            </p>
+
             <h2>Múltiples rondas de pedidos en la misma sesión</h2>
             <p>
                 En la misma sesión de mesa, el cliente puede hacer <strong>varias rondas de pedidos</strong> sin
@@ -62,6 +70,18 @@ export default function ManualMesas() {
             <p>
                 Desde la vista del mesero, cada ronda de pedidos aparece como un pedido separado dentro de la
                 misma sesión, para que sea fácil ver qué aprobó cuándo.
+            </p>
+            <p>
+                El cliente también lo ve así en su celular: su cuenta aparece <strong>agrupada por tandas</strong>,
+                cada una con lo que pidió y su subtotal, más el total acumulado de la mesa. Así nadie se pierde de
+                cuánto va la cuenta aunque hayan pedido en tres momentos distintos.
+            </p>
+
+            <h3>Agregar productos desde el panel</h3>
+            <p>
+                El mesero también puede <strong>agregar productos a una mesa activa</strong> directamente desde el
+                detalle del pedido en el panel — útil cuando el cliente pide algo de viva voz en vez de usar el
+                celular. Lo agregado entra a la misma cuenta de la mesa, como una tanda más.
             </p>
 
             <h3>Cancelar un ítem ya aprobado</h3>
@@ -112,6 +132,16 @@ export default function ManualMesas() {
                 en el mapa. El sistema registra el historial completo de la sesión: quién ordenó qué, cuándo, y
                 cómo se pagó.
             </p>
+
+            <div className="callout callout-info">
+                <p>
+                    <strong>La mesa no se libera sola con cuenta pendiente:</strong> aunque los comensales lleven
+                    un buen rato sin tocar el celular, mientras haya productos servidos sin pagar la mesa sigue
+                    ocupada y la cuenta sigue visible en el panel. La sesión solo se cierra cuando se cobra (o
+                    cuando el mesero la cierra a mano). Las mesas que se cierran solas por inactividad son
+                    únicamente las que no tienen nada pendiente de pago.
+                </p>
+            </div>
 
             <div className="callout callout-success">
                 <p>

@@ -88,6 +88,11 @@ export default function ManualMetricas() {
                     <strong>Abandono de carrito</strong> con tasa de conversión y dinero estimado perdido.
                 </li>
                 <li>
+                    <strong>Escaneos del menú QR:</strong> cuántas veces escanearon el QR de tu menú en el
+                    período, cuántos visitantes distintos fueron y cómo se reparte por día. Sirve para saber si
+                    el QR de las mesas y los empaques realmente se usa.
+                </li>
+                <li>
                     <strong>Costo de insumos (food cost) en tiempo real</strong> — qué porcentaje del precio de
                     venta se va en insumos.
                 </li>
@@ -127,10 +132,10 @@ export default function ManualMetricas() {
                 La vista consolidada requiere un permiso específico — típicamente la tiene el dueño o el contador.
             </p>
 
-            <h2>Reportes de pedidos</h2>
+            <h2>Ventas del día</h2>
             <p>
-                En <strong>informes</strong> tienes el listado de pedidos del período con filtros por estado,
-                paginación y exportación.
+                En <strong>ventas del día</strong> tienes el listado de pedidos del período con filtros por
+                estado, paginación y exportación.
             </p>
 
             <h3>Cierre de caja del día</h3>
@@ -138,6 +143,18 @@ export default function ManualMetricas() {
                 Un componente especial te muestra el <strong>cierre de caja por fecha</strong>: para una fecha
                 específica o un rango, ves un desglose por método de pago (efectivo, datáfono, transferencia)
                 con cobros, devoluciones, neto y propinas.
+            </p>
+
+            <h3>Informe de cierre por turno</h3>
+            <p>
+                Debajo del cierre del día está el <strong>historial de turnos de caja</strong>, agrupado por
+                fecha. Cada turno se despliega para ver su arqueo completo: con cuánto fondo abrió, cuánto se
+                vendió por cada método de pago, las entradas y salidas de efectivo, cuánto se esperaba en el
+                cajón y cuánto contó el cajero al cerrar — con la diferencia (sobrante o faltante) marcada.
+            </p>
+            <p>
+                Es la herramienta para responder "¿por qué no cuadró la caja del martes?" sin llamar al cajero:
+                todo el movimiento del turno está ahí, turno por turno, día por día.
             </p>
 
             <h2>Descargar reportes</h2>
