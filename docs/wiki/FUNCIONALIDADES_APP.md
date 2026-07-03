@@ -1484,6 +1484,11 @@ Página: `resources/js/pages/orders/tables/index.tsx`. Breadcrumb: `Dashboard �
 - El detalle de orden (`pages/orders/show.tsx`) tiene botón **"Agregar productos"** (frontend v1.39.7) para órdenes de mesa abiertas — tradicionales y operativas de sesión QR. Reutiliza `useAddItems` + `AddItemsSheet` contra el mismo `POST /api/v1/orders/{id}/items`; las filas nuevas nacen `status='approved'` y entran al pipeline de cocina. Permite que el mesero sume a la misma cuenta lo que el comensal pide en persona, sin pasar por el celular del cliente.
 - El botón se oculta en órdenes terminales, en el buffer `pending_approval` (esos ítems entran por el flujo de aprobación del comensal) y con sesión cerrada. Gateado por `orders.update`.
 
+### Versionamiento fv/bv (backend v1.30.2 / frontend v1.42.0)
+- `GET /api/v1/bootstrap` expone `versions.backend` (composer.json leído en runtime, memoizado por worker PHP) — el footer `bv` refleja el backend realmente desplegado, no el horneado en el build del frontend (`__BACKEND_VERSION__` queda solo como fallback para backends viejos).
+- `components/pwa-update-banner.tsx` (montado en `AppSidebarLayout`): escucha `pwa:update-available` y muestra barra fija "Nueva versión disponible — Actualizar" con reload. Cierra el gap de tabletas 24/7 que nunca rotaban de versión.
+- `.github/workflows/version-guard.yml`: en push a `main`, falla si cambió código desplegable sin bump de version, y autosincroniza los badges del README (commit `[skip-badge-sync]`).
+
 ### Restricciones backend
 - `appendItems` valida que la orden sea `order_type='table'` y no esté en estado terminal (`completed|successful|cancelled|abandoned`).
 - Si el menú activo cambió, los ítems descontinuados no pueden agregarse (validación `available`).

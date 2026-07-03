@@ -21,6 +21,14 @@ use Illuminate\Http\Request;
  */
 class BootstrapController extends Controller
 {
+    /**
+     * Versión del backend memoizada por worker PHP. Se lee de composer.json
+     * en runtime (no en build del frontend) para que el footer `bv` refleje
+     * SIEMPRE el código realmente desplegado, sin cache compartido que pueda
+     * sobrevivir a un deploy.
+     */
+    private static ?string $backendVersion = null;
+
     public function __construct(
         private readonly BootstrapService $bootstrap,
     ) {}
@@ -45,7 +53,20 @@ class BootstrapController extends Controller
             'activeBranch' => $context['activeBranch'],
             'role' => $context['role'],
             'permissions' => $context['permissions'],
+            'versions' => [
+                'backend' => self::backendVersion(),
+            ],
             ...$catalogs,
         ]);
+    }
+
+    private static function backendVersion(): string
+    {
+        if (self::$backendVersion === null) {
+            $manifest = json_decode((string) file_get_contents(base_path('composer.json')), true);
+            self::$backendVersion = is_array($manifest) ? (string) ($manifest['version'] ?? '0.0.0') : '0.0.0';
+        }
+
+        return self::$backendVersion;
     }
 }

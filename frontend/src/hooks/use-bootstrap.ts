@@ -41,6 +41,8 @@ export interface BootstrapResponse {
     printingConfig: PrintingConfig;
     availableBanks: Bank[];
     legalUrls: LegalUrls;
+    /** Versión real del backend que respondió (composer.json en runtime). Opcional: backends previos a 1.30.2 no la envían. */
+    versions?: { backend: string };
 }
 
 export interface LegalUrls {

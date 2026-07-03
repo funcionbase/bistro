@@ -8,6 +8,7 @@ import OfflineBanner from '@/components/offline/offline-banner';
 import StorageQuotaWarning from '@/components/offline/storage-quota-warning';
 import SyncToast from '@/components/offline/sync-toast';
 import OrderSmsFailureWatcher from '@/components/orders/order-sms-failure-watcher';
+import { PwaUpdateBanner } from '@/components/pwa-update-banner';
 import { ToastProvider } from '@/components/ui/toast';
 import { putCachedBootstrap, requestPersistentStorage } from '@/lib/offline/db';
 import { setActiveCompanyForSync, startSyncEngine } from '@/lib/offline/sync-engine';
@@ -91,6 +92,7 @@ export default function AppSidebarLayout({ children }: { children: React.ReactNo
                     <CashRegisterAlertBanner />
                     {children}
                     <AppFooterMeta />
+                    <PwaUpdateBanner />
                 </AppContent>
             </AppShell>
         </ToastProvider>

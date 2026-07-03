@@ -293,6 +293,8 @@ export interface SharedData {
     printingConfig?: PrintingConfig;
     /** #220 — bancos disponibles, antes prop server-side de company/settings. */
     availableBanks?: Bank[];
+    /** Versión del backend que respondió el bootstrap (runtime, no build). */
+    versions?: { backend: string };
     [key: string]: unknown;
 }
 

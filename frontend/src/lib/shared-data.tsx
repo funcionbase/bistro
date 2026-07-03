@@ -60,6 +60,7 @@ export function SpaSharedDataBridge({ bootstrap, children }: { bootstrap: Bootst
             gaMeasurementId: bootstrap.gaMeasurementId,
             printingConfig: bootstrap.printingConfig,
             availableBanks: bootstrap.availableBanks,
+            versions: bootstrap.versions,
         }),
         [bootstrap],
     );
