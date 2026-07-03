@@ -19,7 +19,7 @@
 
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 
@@ -44,7 +44,11 @@ cleanupOutdatedCaches();
 registerRoute(
     new NavigationRoute(
         async ({ request }) => {
-            const precached = await caches.match('/index.html');
+            // matchPrecache resuelve la clave revisionada del precache
+            // (`index.html?__WB_REVISION__=...`). Un caches.match('/index.html')
+            // directo NUNCA matcheaba esa clave → toda navegación iba a red y
+            // la recarga offline del SPA fallaba (el propósito de esta ruta).
+            const precached = await matchPrecache('/index.html');
             if (precached) return precached;
             return fetch(request.url);
         },
