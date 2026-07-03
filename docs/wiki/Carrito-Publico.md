@@ -311,6 +311,7 @@ es el `guest` (no un `user_id`).
 | Caso | Respuesta |
 |---|---|
 | `qr_token` inexistente o archivado | 404 |
+| Mesa de una **sede archivada** (archivar sede no archiva sus mesas) | 404 — guard en `TableSessionService::resolveTable` + `TableResolveController::showByToken` (v1.30.3) |
 | Empresa en `mora`/`delinquent`/`suspended` | 422 `company.not_operational` |
 | Sin cookie `tdt_*` en endpoints protegidos | 401 con mensaje "No estás en la mesa. Volvé a escanear el QR." |
 | Cookie de otra mesa (qr_token distinto) | 401 (cookie nombre incluye `hash(qr_token)`) |

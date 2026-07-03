@@ -160,6 +160,12 @@ Servicios: `TableWaiterService`, `TableCashierService`, `TableSessionService`,
    audit `table.item.rejected_by_waiter`) o solicitar cancelación del
    comensal se aprueba/deniega (audit `table.cancellation.{approved,denied}`).
 
+**Guard de item pagado (backend v1.30.3)**: rechazar/cancelar/aprobar-cancelación
+sobre un item con `paid_at` seteado responde 422 — cancelarlo disparaba
+`recalculateAndSave` y reducía `orders.total` retroactivamente con el
+`PaymentReceipt` ya emitido (mutación contable prohibida). El camino para un
+item ya cobrado es **Devolver** (`refund-item`, receipt negativo, venta intacta).
+
 ### Pago dividido (cajero, #191 Fase 6)
 
 `TableCashierService` ejecuta los cobros bajo `DB::transaction` con
@@ -191,6 +197,16 @@ Schedule programado (`routes/console.php`,
 `->onOneServer()` por la regla N-instance) marca como `expired` sesiones
 sin actividad ≥ N minutos (config). No cobra, no genera receipts; queda
 para auditoría.
+
+**Guard de consumo pendiente (backend v1.30.3)**: el comando NO expira
+sesiones con items consumibles sin pagar (`order_items.paid_at IS NULL` en
+órdenes no-terminales). `expires_at` solo se renueva con acciones del
+comensal en su celular, así que una mesa comiendo sin tocar el QR superaba
+el umbral: la sesión expiraba a mitad de comida, la mesa quedaba
+`available` (otro cliente podía abrir sesión encima), el poll de la SPA
+expulsaba a los comensales al menú público y la cuenta desaparecía del
+panel "mesas por cobrar" (solo lista `open|locked`). Esas sesiones las
+cierra caja al cobrar (`closeSession`) o el mesero manualmente.
 
 ### Admin de mesas físicas
 
