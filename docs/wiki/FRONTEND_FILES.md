@@ -386,6 +386,8 @@ Sin lógica de auth ni permisos. Todas presentacionales, accesibles (Radix donde
 | `install-pwa-prompt.tsx` | Captura `beforeinstallprompt`, muestra prompt diferido al alcanzar 2da visita. Dismiss persistente en `localStorage['pwa.install.dismissed_at']` |
 | `ios-install-hint.tsx` | Hint específico para Safari iOS (sin `beforeinstallprompt`). Tutorial inline "Compartir → Agregar a inicio" |
 | `update-available-toast.tsx` | Toast con CTA "Actualizar" cuando el SW detecta una nueva versión. Llama `skipWaiting()` + `window.location.reload()` |
+| `pwa-update-banner.tsx` | Barra fija inferior al detectar deploy nuevo con pestaña visible (`pwa:update-available`). No recarga sola — el staff decide con el botón "Actualizar" (evita perder un cobro a medio llenar). Montada en `app-sidebar-layout` |
+| `app-footer-meta.tsx` | Footer con link al manual y versiones `fv`/`bv`. `fv` viene horneada en build (Vite `define`); `bv` la reporta el backend en runtime vía `/api/v1/bootstrap` → `versions.backend` (fallback al valor de build para backends < 1.30.2) |
 
 #### `components/offline/` (~3, issue #140)
 
