@@ -77,7 +77,8 @@ El JWT está compuesto por header (HS256), body (AES-256-CBC encriptado) y signa
 
 ### TTL y refresh
 
-- **TTL por defecto:** 3600 s (configurable vía `JWT_TTL`).
+- **TTL por defecto:** 21600 s = 6 h (configurable vía `JWT_TTL`) — ventana de inactividad deslizante.
+- **Tope absoluto:** 43200 s = 12 h (`JWT_MAX_LIFETIME`). El auto-refresh nunca extiende `exp` más allá de `auth_time + JWT_MAX_LIFETIME`; pasado el tope se fuerza re-login.
 - **Auto-refresh:** si `exp - now() < 300s`, `ValidateJwt` reemite el token y lo devuelve en el header `X-Refresh-Token`. `apiFetch` del frontend lo captura y persiste vía `setToken()`.
 - **Cuando se reemite explícitamente:** `select-company`, `switch-company`, actualización de `commercial_name` en `/api/v1/company`, asignación de rol a usuario, ajuste de membresía.
 

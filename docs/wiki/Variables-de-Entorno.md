@@ -67,7 +67,8 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 |----------|-------------|---------|-------------|
 | `JWT_SECRET` | Sí | — | Clave HMAC-SHA256 para firmar tokens |
 | `JWT_PAYLOAD_ENCRYPTION_KEY` | Sí | — | Clave base para derivar AES-256 que cifra el payload |
-| `JWT_TTL` | No | `3600` | TTL en segundos |
+| `JWT_TTL` | No | `21600` | TTL / ventana de inactividad en segundos (6 h) |
+| `JWT_MAX_LIFETIME` | No | `43200` | Tope absoluto de sesión en segundos (12 h) |
 | `JWT_BLACKLIST_ENABLED` | No | `false` | Activa la lista negra en cache |
 
 ---

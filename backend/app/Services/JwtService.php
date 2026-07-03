@@ -33,8 +33,8 @@ use Symfony\Component\HttpFoundation\Cookie;
  *
  * @env JWT_SECRET — clave HMAC-SHA256 para firma
  * @env JWT_PAYLOAD_ENCRYPTION_KEY — clave base para derivar la clave AES-256 (SHA-256 del secreto)
- * @env JWT_TTL — tiempo de vida del token / ventana de refresh deslizante en segundos (default: 3600)
- * @env JWT_MAX_LIFETIME — tope de vida absoluto de la sesión en segundos (default: 28800 = 8h)
+ * @env JWT_TTL — tiempo de vida del token / ventana de refresh deslizante en segundos (default: 21600 = 6h)
+ * @env JWT_MAX_LIFETIME — tope de vida absoluto de la sesión en segundos (default: 43200 = 12h)
  */
 class JwtService
 {
@@ -59,7 +59,7 @@ class JwtService
     {
         $this->signingKey = (string) config('auth.jwt_secret');
         $this->encryptionKey = (string) config('auth.jwt_payload_encryption_key');
-        $this->ttlSeconds = (int) config('auth.jwt_ttl', 3600);
+        $this->ttlSeconds = (int) config('auth.jwt_ttl', 21600);
         $this->maxLifetimeSeconds = (int) config('auth.jwt_max_lifetime', 43200);
 
         if (empty($this->signingKey) || empty($this->encryptionKey)) {

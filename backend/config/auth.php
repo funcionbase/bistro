@@ -118,14 +118,16 @@ return [
 
     'jwt_payload_encryption_key' => env('JWT_PAYLOAD_ENCRYPTION_KEY'),
 
-    'jwt_ttl' => (int) env('JWT_TTL', 3600),
+    // Ventana de inactividad (deslizante). 6h para que el personal no tenga
+    // que re-loguearse durante el turno aunque haya lapsos sin actividad.
+    'jwt_ttl' => (int) env('JWT_TTL', 21600),
 
     // Tope de vida ABSOLUTO de una sesión de usuario (segundos), independiente
     // del auto-refresh deslizante. El refresh extiende exp en cada request, pero
     // nunca más allá de auth_time + jwt_max_lifetime. Pasado ese tope el token se
     // rechaza y obliga re-login. Evita sesiones eternas por polling del SPA
     // (browser abierto toda la noche). NO aplica a KDS (auth por device-token).
-    'jwt_max_lifetime' => (int) env('JWT_MAX_LIFETIME', 28800), // 8h
+    'jwt_max_lifetime' => (int) env('JWT_MAX_LIFETIME', 43200), // 12h
 
     'default_company_status' => env('DEFAULT_COMPANY_STATUS', 'pending_activation'),
 

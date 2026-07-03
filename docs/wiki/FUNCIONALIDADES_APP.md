@@ -344,7 +344,8 @@ Antes de acciones sensibles (cambiar email, eliminar cuenta) Laravel pide reconf
 
 - Firma: HS256 con `JWT_SECRET`.
 - Payload cifrado AES-256-CBC con `JWT_PAYLOAD_ENCRYPTION_KEY` (el JWT externo es opaco, no decodificable sin la clave).
-- TTL: `JWT_TTL` segundos (default 3 600 s = 1 hora).
+- TTL: `JWT_TTL` segundos (default 21 600 s = 6 horas — ventana de inactividad para cubrir un turno de trabajo).
+- Tope absoluto: `JWT_MAX_LIFETIME` segundos (default 43 200 s = 12 h); el auto-refresh nunca extiende la sesión más allá de `auth_time + JWT_MAX_LIFETIME`.
 - Auto-refresh: cuando middleware `ValidateJwt` ve `exp - now < 300s`, llama `JwtService::reissue($payload)` y rota la cookie sin que el cliente lo note.
 - Blacklist: `Cache::put("jwt_blacklist:{$signature}", true, $remainingTtl)` cuando se revoca; `verify()` lo consulta en cada request si `JWT_BLACKLIST_ENABLED=true`.
 
@@ -6431,7 +6432,7 @@ El QR impreso por mesa/sede apunta a `/menus/{nit}` y nunca cambia — el menú 
 | Variable | Propósito |
 |----------|-----------|
 | `JWT_SECRET` / `JWT_PAYLOAD_ENCRYPTION_KEY` | Cifrado JWT |
-| `JWT_TTL` (3600) | Vida del token |
+| `JWT_TTL` (21600) | Vida del token (6 h) |
 | `BOT_JWT_SECRET` | JWT bots externos |
 | `CART_JWT_SECRET` | JWT carrito anónimo |
 | `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI` | OAuth Google |

@@ -145,7 +145,8 @@ Regla obligatoria en `CLAUDE.md` §7: antes de tocar un permiso, rol, estado de 
 |----------|---------|-------------|
 | `JWT_SECRET` | (requerido) | Clave HS256 para firmar |
 | `JWT_PAYLOAD_ENCRYPTION_KEY` | (requerido) | Clave AES-256-CBC para cifrar el payload |
-| `JWT_TTL` | 3600 | Vida del token (segundos) |
+| `JWT_TTL` | 21600 | Vida del token / ventana de inactividad deslizante (segundos, 6 h) |
+| `JWT_MAX_LIFETIME` | 43200 | Tope absoluto de sesión (segundos, 12 h); el refresh no lo supera |
 | `JWT_REFRESH_TTL` | 20160 | TTL de refresh (minutos, ~14 días) |
 | `JWT_BLACKLIST_ENABLED` | true | Si `true`, los tokens revocados van a caché y `verify()` los rechaza |
 | `JWT_COOKIE_NAME` | `flexyflow_jwt` | Nombre de la cookie HttpOnly |
@@ -1520,7 +1521,8 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 |----------|---------|-------------|
 | `JWT_SECRET` | — | Clave HS256 |
 | `JWT_PAYLOAD_ENCRYPTION_KEY` | — | Clave AES-256-CBC |
-| `JWT_TTL` | 3600 | Vida del token (s) |
+| `JWT_TTL` | 21600 | Vida del token (s, 6 h) |
+| `JWT_MAX_LIFETIME` | 43200 | Tope absoluto de sesión (s, 12 h) |
 | `JWT_REFRESH_TTL` | 20160 | TTL refresh (min) |
 | `JWT_BLACKLIST_ENABLED` | true | Habilitar revocación |
 | `JWT_COOKIE_NAME` | flexyflow_jwt | Nombre cookie HttpOnly |
