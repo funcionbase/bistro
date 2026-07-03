@@ -242,7 +242,7 @@ crea la `Order` final (no implementado en este repo).
 | Archivo | Propósito |
 |---|---|
 | `pages/table/join.tsx` | Pantalla de unión: nombre + celular. Hidrata desde `GET /public/table/{qr}`. |
-| `pages/table/menu.tsx` | Menú + carrito + estado de la sesión (poll 5s). Layout sin sidebar. |
+| `pages/table/menu.tsx` | Menú + carrito + estado de la sesión (poll 5s). Layout sin sidebar. Lista de comensales fuera del header sticky (v1.43.1): solo empresa/sede/mesa quedan fijos al scrollear en móvil. |
 | `lib/api-fetch.ts` | Cliente fetch que envía la cookie `tdt_*` automáticamente. |
 | `pages/cart.tsx` | Carrito legacy del bot WhatsApp (solo lectura). |
 | `components/ui/table-skeleton.tsx` | Loading states. |
