@@ -72,7 +72,13 @@ class TableResolveController extends Controller
             return response()->json(['table_exists' => false], 404);
         }
 
-        $branch = Branch::find($table->branch_id);
+        // Sede archivada = QR muerto (paridad con show/showBranchByToken y
+        // TableSessionService::resolveTable — archivar una sede no archiva
+        // sus mesas, así que hay que chequearlo acá).
+        $branch = Branch::query()
+            ->whereKey($table->branch_id)
+            ->whereNull('archived_at')
+            ->first();
         if ($branch === null) {
             return response()->json(['table_exists' => false], 404);
         }

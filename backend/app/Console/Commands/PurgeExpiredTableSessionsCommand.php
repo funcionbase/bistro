@@ -41,10 +41,31 @@ class PurgeExpiredTableSessionsCommand extends Command
 
         $now = Carbon::now();
 
+        // NO expirar sesiones con consumo pendiente de pago: `expires_at` solo
+        // se renueva con acciones del comensal en su celular (addItem/submit),
+        // así que una mesa comiendo tranquila supera el umbral sin estar
+        // abandonada. Expirarla liberaba la mesa (otro cliente podía abrir
+        // sesión encima), expulsaba a los comensales del menú QR y sacaba la
+        // cuenta del panel "mesas por cobrar" de caja (que solo lista sesiones
+        // open/locked) dejando órdenes sin pagar que bloqueaban el cierre.
+        // Esas sesiones las cierra caja al cobrar (closeSession) o el mesero.
+        $terminalFailure = (array) config('orders.terminal_failure');
+        $consumableStatuses = (array) config('orders.item_statuses.consumable');
+
         $candidates = TableSession::query()
             ->whereIn('status', ['open', 'locked'])
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', $now)
+            ->whereNotExists(function ($query) use ($terminalFailure, $consumableStatuses) {
+                $query->selectRaw('1')
+                    ->from('orders')
+                    ->join('order_items', 'order_items.order_id', '=', 'orders.id')
+                    ->whereColumn('orders.table_session_id', 'table_sessions.id')
+                    ->where('orders.status', '!=', 'pending_approval')
+                    ->whereNotIn('orders.status', $terminalFailure)
+                    ->whereIn('order_items.status', $consumableStatuses)
+                    ->whereNull('order_items.paid_at');
+            })
             ->limit($batch)
             ->get();
 

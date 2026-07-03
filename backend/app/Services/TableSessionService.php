@@ -50,13 +50,28 @@ class TableSessionService
     public function resolveTable(string $qrToken): Table
     {
         try {
-            return Table::withoutBranchScope()
+            $table = Table::withoutBranchScope()
                 ->whereNull('archived_at')
                 ->where('qr_token', $qrToken)
                 ->firstOrFail();
         } catch (ModelNotFoundException) {
             throw new NotFoundHttpException('Mesa no encontrada.');
         }
+
+        // Sede archivada = QR muerto. Archivar una sede NO archiva sus mesas,
+        // así que sin este guard el QR impreso de una sede retirada seguía
+        // permitiendo unirse y pedir contra ella (join/menu/state/items pasan
+        // todos por acá). 404 indistinguible de mesa inexistente.
+        $branchArchived = Branch::query()
+            ->whereKey($table->branch_id)
+            ->whereNotNull('archived_at')
+            ->exists();
+
+        if ($branchArchived) {
+            throw new NotFoundHttpException('Mesa no encontrada.');
+        }
+
+        return $table;
     }
 
     /**

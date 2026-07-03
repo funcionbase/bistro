@@ -589,8 +589,12 @@ class TableOrderService
             throw new InvalidArgumentException('La empresa no tiene un menú activo en este momento.');
         }
 
+        // `available !== true` también rechaza: el comensal puede tener el
+        // catálogo cargado de antes de que el plato se marcara agotado (el
+        // polling solo refresca su carrito, no el menú). Paridad con
+        // buildOrderLines (caja), appendItems y BranchOrderController.
         $item = $menu->findMenuItem($menuItemId);
-        if ($item === null) {
+        if ($item === null || ($item['available'] ?? true) !== true) {
             throw new InvalidArgumentException('El plato seleccionado no está disponible.');
         }
 
