@@ -712,10 +712,19 @@ class MenuController extends Controller
 
         // Sede efectiva: la del QR/mesa (?branch_id=) o la sede por defecto.
         // Se resuelve aquí (antes del payload) para incluir branding de sede.
+        // El branch_id del query se valida contra la EMPRESA de la URL: sin
+        // esto, un branch_id ajeno filtraba branding/imagenes/delivery_fee de
+        // la sede de otra empresa vía buildRestaurantPayload (endpoint público
+        // sin BranchScope). Un id inválido/ajeno/archivado cae a la default.
         $requestedBranchId = (string) $request->query('branch_id', '');
-        $branchId = $requestedBranchId !== ''
-            ? $requestedBranchId
-            : (Branch::resolveDefault($company->nit)?->id ?? '');
+        $requestedBranch = $requestedBranchId !== ''
+            ? Branch::query()
+                ->whereKey($requestedBranchId)
+                ->where('company_nit', $company->nit)
+                ->whereNull('archived_at')
+                ->first()
+            : null;
+        $branchId = $requestedBranch?->id ?? (Branch::resolveDefault($company->nit)?->id ?? '');
         $branchScope = $branchId !== '' ? $branchId : null;
 
         $restaurant = $this->buildRestaurantPayload($company, $branchScope);

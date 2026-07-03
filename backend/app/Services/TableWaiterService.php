@@ -235,6 +235,8 @@ class TableWaiterService
                 );
             }
 
+            $this->guardItemNotPaid($locked);
+
             $locked->status = 'cancelled';
             $locked->cancellation_reason = 'waiter';
             $locked->cancelled_at = Carbon::now();
@@ -284,6 +286,8 @@ class TableWaiterService
             if ($locked->status === 'cancelled') {
                 return $locked;
             }
+
+            $this->guardItemNotPaid($locked);
 
             $wasInKitchen = in_array($locked->status, ['in_kitchen', 'ready', 'served'], true);
 
@@ -390,6 +394,7 @@ class TableWaiterService
                 $item = OrderItem::query()->whereKey($locked->order_item_id)->lockForUpdate()->firstOrFail();
 
                 if ($item->status !== 'cancelled') {
+                    $this->guardItemNotPaid($item);
                     $item->status = 'cancelled';
                     $item->cancellation_reason = 'waiter_approved';
                     $item->cancelled_at = Carbon::now();
@@ -529,6 +534,24 @@ class TableWaiterService
 
             return $note;
         });
+    }
+
+    /**
+     * Un item ya cobrado (paid_at) NO puede cancelarse: cancelar dispara
+     * `recalculateAndSave` y reduce `orders.total` retroactivamente con el
+     * PaymentReceipt ya emitido — mutación contable prohibida (CLAUDE.md §13).
+     * El camino correcto es la devolución (receipt negativo), que deja la
+     * venta intacta.
+     *
+     * @throws InvalidArgumentException
+     */
+    private function guardItemNotPaid(OrderItem $item): void
+    {
+        if ($item->paid_at !== null) {
+            throw new InvalidArgumentException(
+                'Este item ya fue cobrado. Para devolverlo usá "Devolver" en caja — la cancelación alteraría la cuenta ya pagada.'
+            );
+        }
     }
 
     /**

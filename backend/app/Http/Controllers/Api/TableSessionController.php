@@ -166,8 +166,10 @@ class TableSessionController extends Controller
                     'status' => $i->status,
                     'cancellation_reason' => $i->cancellation_reason,
                     'guest_id' => $i->guest_id,
+                    // guest_id es uuid — el cast (int) truncaba el uuid a basura
+                    // y el lookup fallaba siempre (guest_label salía null).
                     'guest_label' => $i->guest_id
-                        ? optional($guestsById->get((int) $i->guest_id))->display_name
+                        ? optional($guestsById->get($i->guest_id))->display_name
                         : null,
                     'approved_at' => optional($i->approved_at)?->toIso8601String(),
                     'in_kitchen_at' => optional($i->in_kitchen_at)?->toIso8601String(),
@@ -1013,7 +1015,8 @@ class TableSessionController extends Controller
                 if (! isset($batchMap[$bucket])) {
                     $guest = $guestsById->get($item->guest_id);
                     $batchMap[$bucket] = [
-                        'guest_id' => (int) $item->guest_id,
+                        // uuid → string (el (int) lo truncaba; el frontend tipa string).
+                        'guest_id' => (string) $item->guest_id,
                         'guest_name' => $guest?->display_name ?? 'Comensal',
                         'submitted_at' => optional($item->submitted_at)?->toIso8601String(),
                         'items' => [],
