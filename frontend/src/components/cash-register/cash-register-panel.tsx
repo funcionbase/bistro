@@ -392,6 +392,10 @@ function CloseSessionDialog({
     const cash = session.live.by_method.cash;
     const expenses = session.live.expenses;
     const cashExpensesTotal = expenses?.by_method?.cash ?? 0;
+    // Entradas cash: sin esta línea el desglose no sumaba el "Esperado en
+    // caja" (computeExpectedCash SÍ las incluye) y el cajero veía un resumen
+    // que no cuadraba con el total mostrado.
+    const cashIncomesTotal = session.live.incomes?.by_method?.cash ?? 0;
 
     if (result?.provisional) {
         return (
@@ -523,6 +527,12 @@ function CloseSessionDialog({
                             <span className="text-muted-foreground">+ Propinas en efectivo</span>
                             <span className="tabular-nums">{formatCurrency(cash.tips)}</span>
                         </div>
+                        {cashIncomesTotal > 0 && (
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">+ Entradas en efectivo</span>
+                                <span className="tabular-nums">{formatCurrency(cashIncomesTotal)}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">− Devoluciones en efectivo</span>
                             <span className="tabular-nums">{formatCurrency(cash.refunds)}</span>
