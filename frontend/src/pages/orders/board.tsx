@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { KanbanBoardSkeleton } from '@/components/ui/kanban-board-skeleton';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCourierAssignment } from '@/hooks/use-courier-assignment';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
@@ -152,6 +151,23 @@ function rankOf(status: string): number {
     return ESTADOS.find((e) => e.key === status)?.rank ?? 0;
 }
 
+/**
+ * Siguiente estado alcanzable con un tap (patrón KDS): forward-only, salta
+ * `in_transit` para órdenes que no son domicilio y nunca ofrece `completed`
+ * (el cobro solo ocurre desde Caja — mismo gate del drag en desktop).
+ */
+function nextAdvance(order: KanbanOrder): (typeof ESTADOS)[number] | null {
+    const current = rankOf(order.status);
+    return (
+        ESTADOS.find(
+            (e) =>
+                e.rank > current &&
+                e.key !== 'completed' &&
+                (e.key !== 'in_transit' || inferOrderType(order) === 'delivery'),
+        ) ?? null
+    );
+}
+
 function timeAgo(isoDate: string | null): string {
     if (!isoDate) return '';
     const diffMs = Date.now() - new Date(isoDate).getTime();
@@ -168,6 +184,9 @@ interface OrderCardProps {
     formatCurrency: (v: number) => string;
     onSelect?: () => void;
     onAssign?: (e: React.MouseEvent) => void;
+    /** Avance directo al siguiente estado (mobile, patrón KDS): label + handler. */
+    advanceLabel?: string;
+    onAdvance?: (e: React.MouseEvent) => void;
     justDropped?: boolean;
 }
 
@@ -178,7 +197,7 @@ function inferOrderType(order: KanbanOrder): OrderType | null {
     return null;
 }
 
-function OrderCard({ order, formatCurrency, onSelect, onAssign, justDropped }: OrderCardProps) {
+function OrderCard({ order, formatCurrency, onSelect, onAssign, advanceLabel, onAdvance, justDropped }: OrderCardProps) {
     const inferredType = inferOrderType(order);
 
     return (
@@ -212,6 +231,11 @@ function OrderCard({ order, formatCurrency, onSelect, onAssign, justDropped }: O
                     <Button size="sm" variant="outline" className="mt-1 h-8 w-full px-2 text-xs" onClick={onAssign}>
                         <Truck className="mr-1 h-3 w-3" />
                         Asignar repartidor
+                    </Button>
+                )}
+                {onAdvance && advanceLabel && (
+                    <Button size="sm" className="mt-1 h-9 w-full px-2 text-xs" onClick={onAdvance}>
+                        → {advanceLabel}
                     </Button>
                 )}
             </CardContent>
@@ -544,21 +568,30 @@ export default function KanbanBoard() {
                         </div>
                     )}
 
-                    {/* Mobile layout */}
+                    {/* Mobile layout — patrón KDS: chips de estado siempre visibles
+                        (un tap para cambiar, contador por columna) y botón de
+                        avance directo en cada card sin abrir el detalle. */}
                     {isMobile ? (
-                        <div className="space-y-4 p-4">
-                            <Select value={mobileColumn} onValueChange={setMobileColumn}>
-                                <SelectTrigger className="min-h-[44px] w-full">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {ESTADOS.map((e) => (
-                                        <SelectItem key={e.key} value={e.key}>
-                                            {e.label} ({grouped[e.key]?.length ?? 0})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-3 p-4">
+                            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+                                {ESTADOS.map((e) => (
+                                    <button
+                                        key={e.key}
+                                        type="button"
+                                        onClick={() => setMobileColumn(e.key)}
+                                        className={`flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition ${
+                                            mobileColumn === e.key
+                                                ? `${e.color} border-transparent`
+                                                : 'border-border bg-card text-muted-foreground'
+                                        }`}
+                                    >
+                                        {e.label}
+                                        <Badge variant="outline" className="bg-background/80 border-transparent text-xs tabular-nums">
+                                            {grouped[e.key]?.length ?? 0}
+                                        </Badge>
+                                    </button>
+                                ))}
+                            </div>
 
                             <div>
                                 <div
@@ -574,15 +607,27 @@ export default function KanbanBoard() {
                                     {loading ? (
                                         <ColumnSkeleton />
                                     ) : grouped[mobileColumn]?.length ? (
-                                        grouped[mobileColumn].map((order) => (
-                                            <OrderCard
-                                                key={order.id}
-                                                order={order}
-                                                formatCurrency={formatCurrency}
-                                                onSelect={() => setSelectedOrder(order)}
-                                                onAssign={canAssignCourier ? (e) => handleOpenAssign(e, order.id) : undefined}
-                                            />
-                                        ))
+                                        grouped[mobileColumn].map((order) => {
+                                            const advance = nextAdvance(order);
+                                            return (
+                                                <OrderCard
+                                                    key={order.id}
+                                                    order={order}
+                                                    formatCurrency={formatCurrency}
+                                                    onSelect={() => setSelectedOrder(order)}
+                                                    onAssign={canAssignCourier ? (e) => handleOpenAssign(e, order.id) : undefined}
+                                                    advanceLabel={advance?.label}
+                                                    onAdvance={
+                                                        advance
+                                                            ? (e) => {
+                                                                  e.stopPropagation();
+                                                                  handleAdvanceStatusFromDetail(order.id, advance.key);
+                                                              }
+                                                            : undefined
+                                                    }
+                                                />
+                                            );
+                                        })
                                     ) : (
                                         <p className="text-muted-foreground py-8 text-center text-sm">Sin órdenes en esta columna.</p>
                                     )}

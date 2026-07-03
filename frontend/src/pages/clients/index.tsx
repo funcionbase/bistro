@@ -15,7 +15,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useToken } from '@/hooks/use-token';
 import { formatCurrency } from '@/lib/coupon-helpers';
 
-import { AlertCircle, Building2, ChevronLeft, ChevronRight, RefreshCw, User, UserPlus, Users } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { AlertCircle, Building2, ChevronLeft, ChevronRight, User, UserPlus, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -87,10 +88,7 @@ export default function ClientsIndex() {
                             description="Catálogo de contactos (personas y empresas) de la sede. Identidad canónica por número de documento; el teléfono puede compartirse entre familiares."
                             actions={
                                 <>
-                                    <Button variant="outline" onClick={() => void refresh()} disabled={loading}>
-                                        <RefreshCw className={`mr-1 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                                        Refrescar
-                                    </Button>
+                                    <RefreshButton size="default" onRefresh={refresh} refreshing={loading} disabled={loading} />
                                     {canCreate && (
                                         <Button onClick={() => setNewClientOpen(true)}>
                                             <UserPlus className="mr-1 h-4 w-4" />

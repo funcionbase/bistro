@@ -12,7 +12,8 @@ import { useLivePolling } from '@/hooks/use-live-polling';
 import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
 
-import { AlertCircle, ChefHat, RefreshCw } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { AlertCircle, ChefHat } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface KdsTicket {
@@ -166,16 +167,13 @@ export default function KdsPage() {
                                         autoOffMs={polling.autoOffMs}
                                         intervalMs={polling.intervalMs}
                                     />
-                                    <Button
-                                        type="button"
+                                    <RefreshButton
                                         variant="secondary"
-                                        size="sm"
-                                        onClick={() => void fetchTickets()}
+                                        onRefresh={fetchTickets}
+                                        refreshing={loading}
                                         disabled={loading}
                                         className="w-full sm:w-auto"
-                                    >
-                                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refrescar
-                                    </Button>
+                                    />
                                 </div>
                             }
                         />

@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { InventorySkeleton } from '@/components/ui/inventory-skeleton';
 import { PageHeader } from '@/components/ui/page-header';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { StatTile } from '@/components/ui/stat-tile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
@@ -30,7 +31,6 @@ import {
     Package,
     Pencil,
     Plus,
-    RefreshCw,
     Sliders,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -238,9 +238,7 @@ export default function InventoryIndex() {
                     description="Insumos, existencias y costo promedio. Movimientos append-only: los ajustes se registran como nuevos asientos."
                     actions={
                         <>
-                            <Button variant="outline" size="sm" onClick={() => inv.fetchIngredients()}>
-                                <RefreshCw className="mr-1 h-4 w-4" /> Refrescar
-                            </Button>
+                            <RefreshButton onRefresh={() => inv.fetchIngredients()} />
                             {hasMultipleWarehouses && (
                                 <Button
                                     variant="outline"

@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ListCardSkeleton } from '@/components/ui/list-card-skeleton';
 import { PageHeader } from '@/components/ui/page-header';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TablesGridSkeleton } from '@/components/ui/tables-grid-skeleton';
 import { useActiveBranch } from '@/hooks/use-active-branch';
@@ -264,9 +265,7 @@ export default function TablesPage() {
                 </Badge>
             )}
             <LiveIndicator timestamp={lastUpdated} isLive={!loading && !error} />
-            <Button variant="outline" size="sm" onClick={() => void refresh()}>
-                <RefreshCw className="mr-1 h-4 w-4" /> Refrescar
-            </Button>
+            <RefreshButton onRefresh={refresh} />
         </div>
     );
 
@@ -323,18 +322,14 @@ export default function TablesPage() {
                                     >
                                         <QrCode className="mr-1.5 h-3.5 w-3.5" /> QR del menú
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
+                                    <RefreshButton
+                                        onRefresh={() => {
                                             adminFetchedRef.current = true;
-                                            void fetchAdminTables();
+                                            return fetchAdminTables();
                                         }}
+                                        refreshing={adminLoading}
                                         disabled={adminLoading || busy}
-                                    >
-                                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refrescar
-                                    </Button>
+                                    />
                                     <Button
                                         type="button"
                                         onClick={() => setEditing({ id: null, number: '', capacity: 4 })}

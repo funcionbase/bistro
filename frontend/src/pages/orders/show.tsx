@@ -35,7 +35,8 @@ import { formatOrderTypeLabel } from '@/lib/order-type';
 import { shortOrderCode } from '@/lib/order-code';
 import { useSharedData } from '@/lib/shared-data';
 import type { PaymentMethod } from '@/types';
-import { AlertCircle, CheckCircle2, ChefHat, Clock, Plus, RefreshCw, X } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { AlertCircle, CheckCircle2, ChefHat, Clock, Plus, X } from 'lucide-react';
 import { AssignCourierModal } from '@/components/deliveries/assign-courier-modal';
 import { RefundOrderModal } from '@/components/deliveries/refund-order-modal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -770,16 +771,11 @@ export default function OrderShow() {
                                     )}
                                     {isQrSession && (
                                         <>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => void fetchAll()}
+                                            <RefreshButton
+                                                onRefresh={fetchAll}
                                                 disabled={loading || busy}
                                                 className="w-full sm:w-auto"
-                                            >
-                                                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refrescar
-                                            </Button>
+                                            />
                                             <GatedButton
                                                 type="button"
                                                 variant="outline"

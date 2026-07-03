@@ -2,12 +2,12 @@ import { KdsStationTicketCard, type KdsSlaState, type KdsStationTicketGroup } fr
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import KdsStandaloneLayout from '@/layouts/kds-standalone-layout';
 import { apiFetch } from '@/lib/api';
-import { AlertCircle, ChefHat, RefreshCw } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { AlertCircle, ChefHat } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface StationProp {
@@ -175,9 +175,7 @@ export default function KdsStationPage() {
                         <Badge variant="outline" className="bg-safe/15 text-safe border-safe/40">
                             {counts.green}
                         </Badge>
-                        <Button type="button" variant="secondary" size="sm" onClick={() => void fetchTickets()} disabled={loading}>
-                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refrescar
-                        </Button>
+                        <RefreshButton variant="secondary" onRefresh={fetchTickets} refreshing={loading} disabled={loading} />
                     </div>
                 </div>
             </header>

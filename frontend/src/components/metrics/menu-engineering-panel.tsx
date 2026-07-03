@@ -1,9 +1,8 @@
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMenuEngineering } from '@/hooks/use-menu-engineering';
 import type { MenuEngineeringDish, MenuEngineeringMatrix, MenuEngineeringQuadrant, MetricPeriod } from '@/types';
-import { RefreshCw } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useCallback, useEffect, useState } from 'react';
 import { CartesianGrid, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts';
 
@@ -81,10 +80,7 @@ export default function MenuEngineeringPanel({ period, dateFrom, dateTo, formatC
                             impulsar, qué retirar y dónde subir precio. Los umbrales son la mediana de tus propios platos en el período.
                         </p>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
-                        <RefreshCw className={`mr-1 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                        Refrescar
-                    </Button>
+                    <RefreshButton onRefresh={load} refreshing={loading} disabled={loading} className="shrink-0" />
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">

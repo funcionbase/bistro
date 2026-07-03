@@ -1,10 +1,10 @@
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFoodCost } from '@/hooks/use-food-cost';
 import type { FoodCostHistory, FoodCostItem, FoodCostSummary, MetricPeriod } from '@/types';
-import { LineChart as LineChartIcon, RefreshCw, TrendingDown } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { LineChart as LineChartIcon, TrendingDown } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import {
     CartesianGrid,
@@ -126,10 +126,7 @@ export default function FoodCostPanel({ period, dateFrom, dateTo, formatCurrency
                             umbral de alerta lo configuras en <span className="font-medium">Mi Empresa › Preferencias</span>.
                         </p>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
-                        <RefreshCw className={`mr-1 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                        Refrescar
-                    </Button>
+                    <RefreshButton onRefresh={load} refreshing={loading} disabled={loading} className="shrink-0" />
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">

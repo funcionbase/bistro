@@ -19,7 +19,8 @@ import { useToken } from '@/hooks/use-token';
 import type { PurchaseOrderCreatePayload, PurchaseOrderDetail, PurchaseOrderSummary, PurchaseStatus } from '@/types/purchases';
 import { STATUS_LABELS } from '@/types/purchases';
 
-import { AlertCircle, AlertTriangle, Plus, RefreshCw, ShoppingBag } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { AlertCircle, AlertTriangle, Plus, ShoppingBag } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PurchaseOrderDetailDrawer } from './components/purchase-order-detail-drawer';
@@ -180,10 +181,7 @@ export default function PurchasesIndex() {
                     description="Órdenes de compra (borrador → confirmada → recibida → pagada) y catálogo de proveedores en un solo lugar."
                     actions={
                         <>
-                            <Button variant="outline" onClick={() => void refreshAll()} disabled={refreshing || purchases.loading}>
-                                <RefreshCw className={`mr-1 h-4 w-4 ${refreshing || purchases.loading ? 'animate-spin' : ''}`} />
-                                Refrescar
-                            </Button>
+                            <RefreshButton size="default" onRefresh={refreshAll} refreshing={refreshing || purchases.loading} disabled={refreshing || purchases.loading} />
                             {tab === 'ordenes' && canOrders && (
                                 <Button
                                     onClick={() => {
