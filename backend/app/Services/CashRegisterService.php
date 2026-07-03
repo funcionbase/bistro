@@ -288,12 +288,16 @@ class CashRegisterService
         float $closingAmount,
         ?string $notes = null,
         ?Carbon $closedAtClient = null,
+        ?string $cashSessionId = null,
     ): array {
-        return DB::transaction(function () use ($companyNit, $branchId, $closedBy, $closingAmount, $notes, $closedAtClient) {
+        return DB::transaction(function () use ($companyNit, $branchId, $closedBy, $closingAmount, $notes, $closedAtClient, $cashSessionId) {
+            // Multi-caja (#117): si el caller resolvió la sesión operada, se
+            // cierra ESA; sin id (cliente legacy mono-caja) la única abierta.
             $session = CashRegisterSession::query()
                 ->where('company_nit', $companyNit)
                 ->where('branch_id', $branchId)
                 ->where('status', 'open')
+                ->when($cashSessionId !== null, fn ($q) => $q->where('id', $cashSessionId))
                 ->lockForUpdate()
                 ->first();
 

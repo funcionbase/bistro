@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesActiveContext;
 use App\Http\Controllers\Concerns\ResolvesJwtActor;
 use App\Http\Controllers\Controller;
+use App\Models\CashRegisterSession;
 use App\Models\Company;
 use App\Models\OfflineSyncEvent;
 use App\Models\Order;
@@ -25,6 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -331,8 +333,10 @@ class SyncController extends Controller
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'invalid_payment_method'];
         }
 
-        // Resuelta en vivo por sede: pudo abrirse por un cash.open del mismo lote.
-        $session = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        // Resuelta en vivo (pudo abrirse por un cash.open del mismo lote).
+        // Multi-caja (#117): el cobro se imputa a LA caja que envió el cliente
+        // (`payload.cash_session_id`), no a la primera abierta de la sede.
+        $session = $this->resolveSyncCashSession($companyNit, $branchId, $payload['cash_session_id'] ?? null);
         if ($session === null) {
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_open_cash_session'];
         }
@@ -465,22 +469,40 @@ class SyncController extends Controller
             return ['op_id' => $op['op_id'], 'status' => 'duplicate', 'server_id' => $existing->id];
         }
 
-        // Otra sesión abierta en la sede → reconciliar, no abrir otra.
-        $open = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        // Multi-caja (#117): el cliente indica QUÉ caja abre. El conflicto
+        // "ya hay sesión abierta" se evalúa por CAJA cuando viene el id —
+        // evaluarlo por sede impedía abrir la caja 2 offline con la caja 1
+        // abierta. Sin id (cliente legacy / mono-caja) se conserva el chequeo
+        // por sede.
+        $cashRegisterId = isset($payload['cash_register_id']) && is_string($payload['cash_register_id']) && $payload['cash_register_id'] !== ''
+            ? $payload['cash_register_id']
+            : null;
+
+        $open = $cashRegisterId !== null
+            ? CashRegisterSession::query()->where('cash_register_id', $cashRegisterId)->where('status', 'open')->first()
+            : $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
         if ($open !== null) {
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'session_already_open', 'server_id' => $open->id];
         }
 
         $openedAtClient = isset($op['created_at_client']) ? Carbon::parse($op['created_at_client']) : null;
-        $session = $this->cashRegister->openSession(
-            $companyNit,
-            $branchId,
-            $actingUser,
-            (float) ($payload['opening_amount'] ?? 0),
-            $payload['notes'] ?? null,
-            $clientUuid,
-            $openedAtClient,
-        );
+
+        try {
+            $session = $this->cashRegister->openSession(
+                $companyNit,
+                $branchId,
+                $actingUser,
+                (float) ($payload['opening_amount'] ?? 0),
+                $payload['notes'] ?? null,
+                $clientUuid,
+                $openedAtClient,
+                $cashRegisterId,
+            );
+        } catch (ValidationException) {
+            // Caja inexistente/archivada en esta sede, o carrera con otra
+            // apertura concurrente de la misma caja.
+            return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'invalid_cash_register'];
+        }
 
         return ['op_id' => $op['op_id'], 'status' => 'created', 'server_id' => $session->id];
     }
@@ -503,7 +525,7 @@ class SyncController extends Controller
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'missing_client_uuid'];
         }
 
-        $session = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        $session = $this->resolveSyncCashSession($companyNit, $branchId, $payload['cash_session_id'] ?? null);
         if ($session === null) {
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_open_cash_session'];
         }
@@ -541,7 +563,7 @@ class SyncController extends Controller
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'missing_client_uuid'];
         }
 
-        $session = $this->cashRegister->activeSessionForBranch($companyNit, $branchId);
+        $session = $this->resolveSyncCashSession($companyNit, $branchId, $payload['cash_session_id'] ?? null);
         if ($session === null) {
             return ['op_id' => $op['op_id'], 'status' => 'conflict', 'code' => 'no_open_cash_session'];
         }
@@ -577,6 +599,32 @@ class SyncController extends Controller
         $payload = $op['payload'];
         $closedAtClient = isset($payload['closed_at_client']) ? Carbon::parse($payload['closed_at_client']) : null;
 
+        // Multi-caja (#117): cerrar LA caja que el cajero operaba, no la
+        // primera abierta de la sede — con 2+ cajas abiertas el cierre offline
+        // caía en la sesión equivocada con el conteo físico de otra,
+        // descuadrando ambas. Si el id apunta a una sesión ya cerrada
+        // (re-sync), es duplicate directo.
+        $requestedSessionId = isset($payload['cash_session_id']) && is_string($payload['cash_session_id']) && $payload['cash_session_id'] !== ''
+            ? $payload['cash_session_id']
+            : null;
+
+        $targetSessionId = null;
+        if ($requestedSessionId !== null) {
+            $target = CashRegisterSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->where('id', $requestedSessionId)
+                ->first()
+                ?? $this->cashRegister->sessionByClientUuid($companyNit, $branchId, $requestedSessionId);
+
+            if ($target !== null && $target->status !== 'open') {
+                return ['op_id' => $op['op_id'], 'status' => 'duplicate', 'server_id' => $target->id];
+            }
+            // Si no se pudo mapear (id provisional de una apertura que terminó
+            // en conflicto), cae al comportamiento legacy (única abierta).
+            $targetSessionId = $target?->id;
+        }
+
         $outcome = $this->cashRegister->closeSessionFromSync(
             $companyNit,
             $branchId,
@@ -584,6 +632,7 @@ class SyncController extends Controller
             (float) ($payload['closing_amount'] ?? 0),
             $payload['notes'] ?? null,
             $closedAtClient,
+            $targetSessionId,
         );
 
         $session = $outcome['session'];
@@ -612,6 +661,39 @@ class SyncController extends Controller
         }
 
         return ['op_id' => $op['op_id'], 'status' => 'duplicate', 'server_id' => $session->id];
+    }
+
+    /**
+     * Resuelve la sesión de caja destino de un egreso/ingreso offline.
+     *
+     * El cliente envía `cash_session_id`, que puede ser el id real de la
+     * sesión O el client_uuid provisional de una apertura offline aún sin
+     * mapear. Sin id (cliente legacy) o si no mapea, cae a la única sesión
+     * abierta de la sede; con varias abiertas y sin poder resolver, null →
+     * conflict (imputarlo a "la primera" descuadraba la caja equivocada).
+     */
+    private function resolveSyncCashSession(string $companyNit, string $branchId, mixed $cashSessionId): ?CashRegisterSession
+    {
+        if (is_string($cashSessionId) && $cashSessionId !== '') {
+            $byId = CashRegisterSession::query()
+                ->where('company_nit', $companyNit)
+                ->where('branch_id', $branchId)
+                ->where('id', $cashSessionId)
+                ->where('status', 'open')
+                ->first();
+            if ($byId !== null) {
+                return $byId;
+            }
+
+            $byClient = $this->cashRegister->sessionByClientUuid($companyNit, $branchId, $cashSessionId);
+            if ($byClient !== null && $byClient->status === 'open') {
+                return $byClient;
+            }
+        }
+
+        $open = $this->cashRegister->openSessionsForBranch($companyNit, $branchId);
+
+        return $open->count() === 1 ? $open->first() : null;
     }
 
     /**
