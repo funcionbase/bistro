@@ -237,7 +237,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
             headers: { Accept: 'application/json' },
             credentials: 'omit',
         })
-            .then((res) => (res.ok ? res.json() : Promise.reject(new Error('no-table'))))
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(res.status === 404 ? 'qr-not-found' : 'no-table'))))
             .then(
                 (json: {
                     table_exists: boolean;
@@ -270,11 +270,21 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                     }
                 },
             )
-            .catch(() => {});
+            .catch((err: unknown) => {
+                // QR inválido o de mesa/sede archivada (404): sin `nit` en la
+                // URL no hay contexto legítimo — antes se caía en silencio al
+                // menú de la ÚLTIMA empresa visitada (localStorage), mostrando
+                // otro restaurante sin aviso. Errores de red conservan el
+                // fallback best-effort.
+                if (!cancelled && !nit && err instanceof Error && err.message === 'qr-not-found') {
+                    setEffectiveNit(null);
+                    setState({ kind: 'no-restaurant' });
+                }
+            });
         return () => {
             cancelled = true;
         };
-    }, [table]);
+    }, [table, nit]);
 
     useEffect(() => {
         if (typeof window === 'undefined' || !effectiveNit || !table || !/^\d+$/.test(table)) return;
@@ -362,7 +372,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
             headers: { Accept: 'application/json' },
             credentials: 'omit',
         })
-            .then((res) => (res.ok ? res.json() : Promise.reject(new Error('no-branch'))))
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(res.status === 404 ? 'qr-not-found' : 'no-branch'))))
             .then((json: { branch_exists: boolean; company_nit: string; branch_id: string }) => {
                 if (cancelled || !json.branch_exists) return;
                 setEffectiveNit(json.company_nit);
@@ -373,11 +383,18 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                     // localStorage bloqueado en modo privado — ignorar.
                 }
             })
-            .catch(() => {});
+            .catch((err: unknown) => {
+                // QR de sede inválido/archivado (404): mismo criterio que el
+                // resolve de mesa — no mostrar el menú stale de otra empresa.
+                if (!cancelled && !nit && err instanceof Error && err.message === 'qr-not-found') {
+                    setEffectiveNit(null);
+                    setState({ kind: 'no-restaurant' });
+                }
+            });
         return () => {
             cancelled = true;
         };
-    }, [branchToken]);
+    }, [branchToken, nit]);
 
     useEffect(() => {
         if (!effectiveNit) {

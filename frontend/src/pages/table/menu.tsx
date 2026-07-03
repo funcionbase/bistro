@@ -299,9 +299,13 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
         if (liveSessionStatus === 'closed') {
             navigate(`/t/${encodeURIComponent(qrToken)}`, { replace: true });
         } else if (liveSessionStatus === 'expired') {
-            navigate(`/menus/${encodeURIComponent(nit)}?table=${encodeURIComponent(table.number)}`, { replace: true });
+            // Formato de token opaco: `/menus/{nit}?table={número}` (legacy)
+            // resuelve la mesa contra la sede DEFAULT — en empresas multi-sede
+            // mandaba al comensal al menú/mesa de otra sede. El token resuelve
+            // sede + mesa exactas y reactiva el CTA de unirse.
+            navigate(`/menus?table=${encodeURIComponent(qrToken)}`, { replace: true });
         }
-    }, [isTerminal, liveSessionStatus, navigate, nit, table.number, qrToken]);
+    }, [isTerminal, liveSessionStatus, navigate, qrToken]);
 
     // Cargar el catálogo público del menú.
     useEffect(() => {
