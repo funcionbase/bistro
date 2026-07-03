@@ -1463,6 +1463,16 @@ class OrderController extends Controller
                 return [$order, $previous, false, []];
             }
 
+            // `in_transit` es exclusivo de domicilios. El gate vivía solo en el
+            // frontend (drag del tablero); el modal de detalle y cualquier
+            // cliente API podían dejar una mesa/pickup en tránsito, sacándola
+            // de la vista de mesas ocupadas. order_type null (legacy) pasa.
+            if ($target === 'in_transit' && in_array($order->order_type, ['table', 'pickup'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Solo las órdenes de domicilio pueden pasar a "En tránsito".',
+                ]);
+            }
+
             // `completed` = entrega operativa consumada (plato en mesa, domicilio
             // entregado). El cobro es un evento separado que llega vía
             // closeWithPayment() y crea el PaymentReceipt; no se exige aquí para

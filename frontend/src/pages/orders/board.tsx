@@ -154,7 +154,9 @@ function rankOf(status: string): number {
 /**
  * Siguiente estado alcanzable con un tap (patrón KDS): forward-only, salta
  * `in_transit` para órdenes que no son domicilio y nunca ofrece `completed`
- * (el cobro solo ocurre desde Caja — mismo gate del drag en desktop).
+ * (el camino normal es cobrar desde Caja). El drag desktop SÍ permite soltar
+ * en "Completado" sin cobro — decisión deliberada (abc270d3/b39f3320):
+ * completed = entrega operativa, el cobro es independiente.
  */
 function nextAdvance(order: KanbanOrder): (typeof ESTADOS)[number] | null {
     const current = rankOf(order.status);
@@ -698,7 +700,10 @@ export default function KanbanBoard() {
                 advanceOptions={
                     selectedOrder
                         ? ESTADOS.filter(
-                              (e) => e.rank > rankOf(selectedOrder.status) && e.key !== 'completed',
+                              (e) =>
+                                  e.rank > rankOf(selectedOrder.status) &&
+                                  e.key !== 'completed' &&
+                                  (e.key !== 'in_transit' || inferOrderType(selectedOrder) === 'delivery'),
                           ).map((e) => ({ key: e.key, label: e.label }))
                         : []
                 }
