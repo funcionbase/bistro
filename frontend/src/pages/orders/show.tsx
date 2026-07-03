@@ -22,7 +22,6 @@ import { OrderItemCard, type OrderItemStatus } from '@/components/ui/order-item-
 import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SplitPaymentSheet } from '@/components/ui/split-payment-sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAddItems } from '@/hooks/use-add-items';
 import { useCashRegister } from '@/hooks/use-cash-register';
 import type { KanbanOrder } from '@/hooks/use-orders';
@@ -90,11 +89,26 @@ interface GroupNote {
     body: string;
 }
 
+/** Item de una tanda aprobada — el backend ya resuelve `guest_label`. */
+interface TandaItem extends ItemForBatch {
+    guest_label: string | null;
+}
+
+/** Tanda = orden aprobada de la sesión (una por cada approve del mesero). */
+interface TandaOrder {
+    id: string;
+    status: string;
+    total: string;
+    ordered_at: string | null;
+    items: TandaItem[];
+}
+
 interface SessionDetail {
     id: string;
     status: 'open' | 'locked' | 'closed' | 'expired';
     guests: Guest[];
     pending_batches: PendingBatch[];
+    approved_orders: TandaOrder[];
     items_by_status: Record<OrderItemStatus, ItemForBatch[]>;
     group_notes: GroupNote[];
     cancellation_requests: CancellationRequestItem[];
@@ -167,15 +181,6 @@ const ADVANCE_STATUSES = [
 ] as const;
 
 const TERMINAL_STATUSES = new Set(['completed', 'cancelled', 'refunded']);
-
-const ITEM_STATUS_TABS = [
-    { key: 'pending_approval' as OrderItemStatus, label: 'Por aprobar' },
-    { key: 'approved' as OrderItemStatus, label: 'Aprobados' },
-    { key: 'in_kitchen' as OrderItemStatus, label: 'Cocina' },
-    { key: 'ready' as OrderItemStatus, label: 'Listos' },
-    { key: 'served' as OrderItemStatus, label: 'Servidos' },
-    { key: 'cancelled' as OrderItemStatus, label: 'Cancelados' },
-];
 
 function rankOf(status: string): number {
     return ADVANCE_STATUSES.find((e) => e.key === status)?.rank ?? 0;
@@ -360,6 +365,15 @@ export default function OrderShow() {
     const isTerminal = TERMINAL_STATUSES.has(order?.status ?? '');
     const isQrSession = Boolean(order?.table_session_id);
     const sessionClosed = cashierState?.session.status === 'closed';
+
+    // Tandas = órdenes aprobadas de la sesión, en orden de llegada. El total
+    // de la mesa es la suma de todas (independiente de la orden que se esté
+    // viendo — el URL apunta a una sola tanda).
+    const tandas = useMemo(() => {
+        const list = sessionDetail?.approved_orders ?? [];
+        return [...list].sort((a, b) => (a.ordered_at ?? '').localeCompare(b.ordered_at ?? ''));
+    }, [sessionDetail]);
+    const mesaTotal = useMemo(() => tandas.reduce((acc, t) => acc + Number.parseFloat(t.total), 0), [tandas]);
 
     // Build a TableOrder-compatible object so useTablePayment can work with KanbanOrder.
     const orderAsTableOrder: TableOrder | null = order
@@ -1050,36 +1064,46 @@ export default function OrderShow() {
                                         </section>
                                     )}
 
-                                    {/* Items by status tabs (QR) */}
+                                    {/* Pedidos por tanda (QR): cada orden aprobada de la sesión con
+                                        su estado, items (con estado individual), total por tanda y
+                                        total acumulado de la mesa. */}
                                     {isQrSession && sessionDetail && (
                                         <section className="space-y-3">
-                                            <h2 className="text-foreground text-sm font-semibold">Items de la mesa</h2>
-                                            <Tabs defaultValue="approved" className="w-full">
-                                                <TabsList className="flex w-full flex-wrap">
-                                                    {ITEM_STATUS_TABS.map((tab) => (
-                                                        <TabsTrigger key={tab.key} value={tab.key}>
-                                                            {tab.label}
-                                                            {sessionDetail.items_by_status[tab.key]?.length ? (
-                                                                <Badge variant="secondary" className="ml-1.5">
-                                                                    {sessionDetail.items_by_status[tab.key].length}
-                                                                </Badge>
-                                                            ) : null}
-                                                        </TabsTrigger>
-                                                    ))}
-                                                </TabsList>
-                                                {ITEM_STATUS_TABS.map((tab) => (
-                                                    <TabsContent
-                                                        key={tab.key}
-                                                        value={tab.key}
-                                                        className="space-y-2 pt-3"
-                                                    >
-                                                        {(sessionDetail.items_by_status[tab.key] ?? []).length === 0 ? (
-                                                            <p className="text-muted-foreground text-center text-sm">
-                                                                Sin items.
-                                                            </p>
-                                                        ) : (
-                                                            <ul className="space-y-2">
-                                                                {sessionDetail.items_by_status[tab.key].map((item) => (
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <h2 className="text-foreground text-sm font-semibold">
+                                                    Pedidos de la mesa
+                                                    {tandas.length > 0 && (
+                                                        <span className="text-muted-foreground ml-1.5 font-normal">
+                                                            ({tandas.length} {tandas.length === 1 ? 'tanda' : 'tandas'})
+                                                        </span>
+                                                    )}
+                                                </h2>
+                                                {tandas.length > 0 && (
+                                                    <span className="text-foreground text-sm font-semibold tabular-nums">
+                                                        Total mesa: {formatCurrency(mesaTotal)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {tandas.length === 0 ? (
+                                                <p className="text-muted-foreground text-sm">
+                                                    Aún no hay tandas aprobadas. Los pedidos por aprobar aparecen arriba.
+                                                </p>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {tandas.map((tanda, idx) => (
+                                                        <article key={tanda.id} className="border-border bg-card rounded-2xl border">
+                                                            <div className="border-border flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <span className="text-foreground text-sm font-semibold">Tanda {idx + 1}</span>
+                                                                    <span className="text-muted-foreground font-mono text-xs">#{shortOrderCode(tanda.id)}</span>
+                                                                    <OrderStatusBadge status={tanda.status} size="sm" />
+                                                                </div>
+                                                                <span className="text-muted-foreground text-xs tabular-nums">
+                                                                    {tanda.ordered_at ? formatDateTimeShort(tanda.ordered_at) : ''}
+                                                                </span>
+                                                            </div>
+                                                            <ul className="space-y-2 px-3 py-3">
+                                                                {tanda.items.map((item) => (
                                                                     <li key={item.id} className="space-y-1">
                                                                         <OrderItemCard
                                                                             id={item.id}
@@ -1114,18 +1138,24 @@ export default function OrderShow() {
                                                                                 disabled={busy}
                                                                             />
                                                                         )}
-                                                                        {item.guest_id && guestById[item.guest_id] && (
+                                                                        {item.guest_label && (
                                                                             <p className="text-muted-foreground pl-3 text-[11px]">
-                                                                                {guestById[item.guest_id].display_name}
+                                                                                {item.guest_label}
                                                                             </p>
                                                                         )}
                                                                     </li>
                                                                 ))}
                                                             </ul>
-                                                        )}
-                                                    </TabsContent>
-                                                ))}
-                                            </Tabs>
+                                                            <div className="border-border flex items-center justify-between border-t px-4 py-2.5 text-sm">
+                                                                <span className="text-muted-foreground">Total tanda</span>
+                                                                <span className="text-foreground font-semibold tabular-nums">
+                                                                    {formatCurrency(Number.parseFloat(tanda.total))}
+                                                                </span>
+                                                            </div>
+                                                        </article>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </section>
                                     )}
 
@@ -1305,10 +1335,14 @@ export default function OrderShow() {
                                                     </span>
                                                 </div>
                                             )}
+                                            {/* En sesión QR el URL apunta a UNA tanda; el total relevante
+                                                para el cajero es el acumulado de toda la mesa. */}
                                             <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Total</span>
+                                                <span className="text-muted-foreground">
+                                                    {isQrSession && tandas.length > 0 ? 'Total mesa' : 'Total'}
+                                                </span>
                                                 <span className="text-foreground font-semibold tabular-nums">
-                                                    {formatCurrency(order.total)}
+                                                    {formatCurrency(isQrSession && tandas.length > 0 ? mesaTotal : order.total)}
                                                 </span>
                                             </div>
                                             {isQrSession && cashierState && (
