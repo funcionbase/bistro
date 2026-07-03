@@ -152,20 +152,18 @@ function rankOf(status: string): number {
 }
 
 /**
- * Siguiente estado alcanzable con un tap (patrón KDS): forward-only, salta
- * `in_transit` para órdenes que no son domicilio y nunca ofrece `completed`
- * (el camino normal es cobrar desde Caja). El drag desktop SÍ permite soltar
- * en "Completado" sin cobro — decisión deliberada (abc270d3/b39f3320):
- * completed = entrega operativa, el cobro es independiente.
+ * Siguiente estado alcanzable con un tap (patrón KDS): forward-only y salta
+ * `in_transit` para órdenes que no son domicilio. `completed` SÍ se ofrece —
+ * misma regla que el drag desktop (abc270d3/b39f3320: completed = entrega
+ * operativa, el cobro es independiente vía closeWithPayment). Excluirlo era
+ * un remanente del gate BUG-020 ya revertido y dejaba a las órdenes `ready`
+ * sin ningún camino a Completado en mobile (sin drag).
  */
 function nextAdvance(order: KanbanOrder): (typeof ESTADOS)[number] | null {
     const current = rankOf(order.status);
     return (
         ESTADOS.find(
-            (e) =>
-                e.rank > current &&
-                e.key !== 'completed' &&
-                (e.key !== 'in_transit' || inferOrderType(order) === 'delivery'),
+            (e) => e.rank > current && (e.key !== 'in_transit' || inferOrderType(order) === 'delivery'),
         ) ?? null
     );
 }
@@ -702,7 +700,6 @@ export default function KanbanBoard() {
                         ? ESTADOS.filter(
                               (e) =>
                                   e.rank > rankOf(selectedOrder.status) &&
-                                  e.key !== 'completed' &&
                                   (e.key !== 'in_transit' || inferOrderType(selectedOrder) === 'delivery'),
                           ).map((e) => ({ key: e.key, label: e.label }))
                         : []
