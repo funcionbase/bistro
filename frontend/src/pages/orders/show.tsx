@@ -1,6 +1,7 @@
 import { DianOrderActions } from '@/components/dian/dian-order-actions';
 import OrderNotesSection from '@/components/orders/order-notes-section';
 import { OrderStatusBadge } from '@/components/orders/order-status-badge';
+import { AddItemsSheet } from '@/components/order-tables/add-items-sheet';
 import { TablePaymentSheet } from '@/components/order-tables/table-payment-sheet';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,6 +23,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SplitPaymentSheet } from '@/components/ui/split-payment-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAddItems } from '@/hooks/use-add-items';
 import { useCashRegister } from '@/hooks/use-cash-register';
 import type { KanbanOrder } from '@/hooks/use-orders';
 import { useTablePayment } from '@/hooks/use-table-payment';
@@ -33,7 +35,7 @@ import { formatOrderTypeLabel } from '@/lib/order-type';
 import { shortOrderCode } from '@/lib/order-code';
 import { useSharedData } from '@/lib/shared-data';
 import type { PaymentMethod } from '@/types';
-import { AlertCircle, CheckCircle2, ChefHat, Clock, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChefHat, Clock, Plus, RefreshCw, X } from 'lucide-react';
 import { AssignCourierModal } from '@/components/deliveries/assign-courier-modal';
 import { RefundOrderModal } from '@/components/deliveries/refund-order-modal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -359,10 +361,39 @@ export default function OrderShow() {
               items: [],
               item_count: 0,
               total: order.total,
+              tax_rate: order.tax_rate,
+              tax_included_in_price: order.tax_included_in_price,
               client_phone: order.client_phone ?? null,
               ordered_at: order.ordered_at ?? null,
           }
         : null;
+
+    // ── Agregar productos (staff) ─────────────────────────────────────────────
+    // Reutiliza el mismo flujo de la grilla de mesas (useAddItems + AddItemsSheet)
+    // contra POST /orders/{id}/items. Cubre órdenes de mesa tradicionales y
+    // órdenes operativas de sesiones QR — el mesero suma lo que el cliente pide
+    // en persona a la misma cuenta.
+    const appendItemsDirect = useCallback(
+        async (targetOrderId: string, items: { id: string; quantity: number; notes?: string }[]): Promise<void> => {
+            const resp = await apiFetch(`/api/v1/orders/${targetOrderId}/items`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items }),
+            });
+            if (!resp.ok) {
+                const data = (await resp.json().catch(() => ({}))) as { message?: string };
+                throw new Error(data.message ?? 'Error al agregar ítems.');
+            }
+            await fetchAll();
+        },
+        [fetchAll],
+    );
+    const addItems = useAddItems({ token, appendItems: appendItemsDirect });
+
+    // Abierta = admite ítems nuevos. El buffer pending_approval de sesiones QR
+    // queda fuera: sus ítems entran por el flujo de aprobación del comensal.
+    const canAddItems =
+        order?.order_type === 'table' && !isTerminal && order.status !== 'pending_approval' && !sessionClosed;
 
     const {
         paymentState,
@@ -712,6 +743,18 @@ export default function OrderShow() {
                             description={buildPageDescription(order, cashierState, cashierName)}
                             actions={
                                 <div className="flex flex-wrap items-center gap-2">
+                                    {canAddItems && (
+                                        <GatedButton
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => orderAsTableOrder && addItems.openAddItems(orderAsTableOrder)}
+                                            disabled={busy}
+                                            className="w-full sm:w-auto"
+                                            allowed={canUpdateOrders}
+                                        >
+                                            <Plus className="mr-1.5 h-3.5 w-3.5" /> Agregar productos
+                                        </GatedButton>
+                                    )}
                                     {isQrSession && !sessionClosed && cashierState && Number.parseFloat(cashierState.unpaid_total) > 0 && (
                                         <GatedButton type="button" size="sm" onClick={openPayAll} disabled={busy} className="w-full sm:w-auto" allowed={canUpdateOrders}>
                                             Cobrar toda la mesa
@@ -1588,6 +1631,24 @@ export default function OrderShow() {
                     )}
                 </>
             )}
+
+            {/* Agregar productos (staff) — mesas tradicionales y sesiones QR */}
+            <AddItemsSheet
+                isOpen={addItems.addState.open}
+                order={addItems.addState.order}
+                cart={addItems.addState.cart}
+                activeMenu={addItems.activeMenu}
+                menuLoading={addItems.menuLoading}
+                submitting={addItems.submitting}
+                submitError={addItems.submitError}
+                addBreakdown={addItems.addBreakdown}
+                addCartTotal={addItems.addCartTotal}
+                formatCurrency={formatCurrency}
+                onClose={addItems.closeAddItems}
+                onIncrement={addItems.incrementCart}
+                onDecrement={addItems.decrementCart}
+                onSubmit={() => void addItems.submitAppendItems()}
+            />
 
             {/* Non-QR payment sheet */}
             {!isQrSession && orderAsTableOrder && (

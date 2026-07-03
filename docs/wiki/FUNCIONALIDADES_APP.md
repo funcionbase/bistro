@@ -1478,6 +1478,11 @@ Página: `resources/js/pages/orders/tables/index.tsx`. Breadcrumb: `Dashboard �
 - Botón **"Agregar productos"** abre selector del menú activo y dispara `POST /api/v1/orders/{id}/items` (gate `orders.update`). El backend recalcula `total` desde precios del menú en DB; nunca confía en lo enviado por el cliente.
 - Botón **"Cerrar y cobrar"** marca la orden como `completed` vía `PATCH /api/v1/orders/{id}/status`. Tras cerrar, la mesa vuelve a Disponible automáticamente.
 
+### Mesas con sesión QR (grupal)
+- **Mesa En sesión** (azul): click navega a `/orders/{order_id}` (detalle de orden/sesión) en vez del modal.
+- El detalle de orden (`pages/orders/show.tsx`) tiene botón **"Agregar productos"** (frontend v1.39.7) para órdenes de mesa abiertas — tradicionales y operativas de sesión QR. Reutiliza `useAddItems` + `AddItemsSheet` contra el mismo `POST /api/v1/orders/{id}/items`; las filas nuevas nacen `status='approved'` y entran al pipeline de cocina. Permite que el mesero sume a la misma cuenta lo que el comensal pide en persona, sin pasar por el celular del cliente.
+- El botón se oculta en órdenes terminales, en el buffer `pending_approval` (esos ítems entran por el flujo de aprobación del comensal) y con sesión cerrada. Gateado por `orders.update`.
+
 ### Restricciones backend
 - `appendItems` valida que la orden sea `order_type='table'` y no esté en estado terminal (`completed|successful|cancelled|abandoned`).
 - Si el menú activo cambió, los ítems descontinuados no pueden agregarse (validación `available`).
