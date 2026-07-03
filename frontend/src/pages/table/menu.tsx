@@ -488,12 +488,14 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
                             <span className="text-muted-foreground">Mesa en curso</span>
                         </div>
                     )}
-
-                    {state === null && !sessionClosed ? <GuestListSkeleton /> : <GuestList guests={state?.guests ?? []} />}
                 </div>
             </header>
 
             <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6">
+                {/* Comensales fuera del header sticky: con 3-4 personas la lista
+                    fijada arriba consumía media pantalla del celular al scrollear. */}
+                {state === null && !sessionClosed ? <GuestListSkeleton /> : <GuestList guests={state?.guests ?? []} />}
+
                 {sessionClosed && (
                     <Alert variant="destructive">
                         <AlertDescription>
@@ -769,7 +771,7 @@ interface GuestListProps {
 /**
  * Listado de comensales activos en la mesa. Se refresca con el polling de
  * `/state`, así que al unirse un nuevo guest aparece en la siguiente tanda
- * (5s). El comensal actual se destaca con borde lima y eyebrow "Vos".
+ * (5s). El comensal actual se destaca con borde lima y eyebrow "Tú".
  *
  * Todos ven el mismo nivel de detalle (nombre + teléfono) — la idea es que
  * la mesa se reconozca entre sí y no queden teléfonos enmascarados solo
@@ -850,7 +852,7 @@ function GuestRow({ guest }: { guest: SessionGuest }) {
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
                     <p className="text-foreground truncate text-sm font-semibold">{guest.display_name}</p>
-                    {guest.is_self && <span className="text-foreground/70 text-[10px] font-semibold tracking-[0.18em] uppercase">Vos</span>}
+                    {guest.is_self && <span className="text-foreground/70 text-[10px] font-semibold tracking-[0.18em] uppercase">Tú</span>}
                 </div>
                 <p className="text-muted-foreground truncate text-xs tabular-nums">{formatPhone(guest.phone)}</p>
             </div>

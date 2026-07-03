@@ -34,7 +34,7 @@ export function ConsentBanner() {
                 <div className="space-y-1">
                     <h2 className="text-foreground text-base font-semibold">Cookies</h2>
                     <p className="text-muted-foreground text-sm">
-                        Usamos cookies esenciales para que el panel funcione, y opcionales para medición. Vos decidís cuáles.
+                        Usamos cookies esenciales para que el panel funcione, y opcionales para medición. Tú decides cuáles.
                     </p>
                 </div>
 

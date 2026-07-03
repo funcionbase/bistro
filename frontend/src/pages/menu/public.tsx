@@ -473,6 +473,11 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
     const commercialName = restaurant?.commercial_name ?? '';
     const displayName = restaurant?.branch_name ?? commercialName;
     const joinUrl = tableStatus ? `/t/${encodeURIComponent(tableStatus.qr_token)}` : null;
+    // CTAs de pedir/unirse solo con menú visible: con restaurante cerrado
+    // (fuera de horario / caja cerrada) o sin menú, empujar al comensal a
+    // pedir contradice el aviso que tiene en pantalla.
+    const showJoinCta = !!joinUrl && !tableStatus?.waiter_order_active && state.kind === 'menu';
+    const showCartBar = canOrder && cartCount > 0;
     const guestsCount = tableStatus?.active_session?.guests_count ?? 0;
     // Una sesión con 0 guests es un edge case (cookie perdida / sesión huérfana
     // tras error). La tratamos como "abierta esperando comensales" en lugar de
@@ -503,7 +508,9 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
 
     return (
         <>
-            <div className="bg-background pwa-safe-top pwa-safe-bottom min-h-svh">
+            {/* pb-28 reserva espacio para la StickyActionBar fija: sin él, los
+                últimos platos y el footer quedan tapados por el CTA en móvil. */}
+            <div className={`bg-background pwa-safe-top pwa-safe-bottom min-h-svh${showJoinCta || showCartBar ? ' pb-28' : ''}`}>
                 {/* HERO */}
                 {restaurant?.header_image_url ? (
                     <div className="relative flex min-h-[320px] w-full flex-col overflow-hidden md:min-h-[500px]">
@@ -588,7 +595,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                             <div className="min-w-0 flex-1">
                                 <p className="text-foreground text-sm font-semibold">Esta mesa ya está siendo atendida</p>
                                 <p className="text-muted-foreground text-xs">
-                                    El mesero ya tomó la orden de la mesa {effectiveTableNumber}. Para pedir más o pagar, hablá con el mesero directamente.
+                                    El mesero ya tomó la orden de la mesa {effectiveTableNumber}. Para pedir más o pagar, habla con el mesero directamente.
                                 </p>
                             </div>
                         </div>
@@ -596,7 +603,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                 )}
 
                 {/* Banner de sesión grupal — solo si el mesero NO tomó la orden. */}
-                {joinUrl && !tableStatus?.waiter_order_active && (
+                {showJoinCta && (
                     <div className="mx-auto w-full max-w-3xl px-4 pt-4 md:px-8">
                         <div className="border-border bg-card flex items-center gap-3 rounded-2xl border p-3">
                             <div
@@ -613,7 +620,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                                 </p>
                                 <p className="text-muted-foreground text-xs">
                                     {sessionHasGuests
-                                        ? 'Unite a la sesión y al final pagás solo lo tuyo.'
+                                        ? 'Únete a la sesión y al final pagas solo lo tuyo.'
                                         : 'Tu pedido va directo a la cocina y queda en una cuenta separada.'}
                                 </p>
                             </div>
@@ -669,8 +676,8 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                 {(restaurant?.show_branding ?? true) && <PublicFooter appName={appName} />}
             </div>
 
-            {/* CTA sticky permanente — visible siempre que hay URL de sesión y el mesero no tomó la orden. */}
-            {joinUrl && !tableStatus?.waiter_order_active && (
+            {/* CTA sticky permanente — visible con menú cargado, URL de sesión y mesero sin tomar la orden. */}
+            {showJoinCta && (
                 <StickyActionBar>
                     <Button className="flex w-full items-center justify-center gap-2 shadow-lg" asChild size="lg">
                         <a href={joinUrl}>
@@ -682,7 +689,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
             )}
 
             {/* Carrito del pedido sin mesa (QR de sede): aparece al agregar el primer plato. */}
-            {canOrder && cartCount > 0 && (
+            {showCartBar && (
                 <StickyActionBar>
                     <Button className="flex w-full items-center justify-center gap-2 shadow-lg" size="lg" onClick={() => setCheckoutOpen(true)}>
                         <ShoppingBag className="h-4 w-4" />
@@ -754,6 +761,9 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                                 value={custPhone}
                                 onChange={(e) => setCustPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                             />
+                            {custPhone !== '' && !phoneValid && (
+                                <p className="text-destructive text-xs">Ingresa un celular de 10 dígitos que empiece por 3.</p>
+                            )}
                         </div>
 
                         {orderType === 'delivery' && (
@@ -836,14 +846,14 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={askJoin !== null} onOpenChange={(o) => !o && setAskJoin(null)}>
+            <Dialog open={askJoin !== null && state.kind === 'menu'} onOpenChange={(o) => !o && setAskJoin(null)}>
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>{sessionHasGuests ? `Tu mesa ya está pidiendo` : `¿Pedís desde la Mesa ${effectiveTableNumber}?`}</DialogTitle>
+                        <DialogTitle>{sessionHasGuests ? `Tu mesa ya está pidiendo` : `¿Pides desde la Mesa ${effectiveTableNumber}?`}</DialogTitle>
                         <DialogDescription>
                             {sessionHasGuests
-                                ? `${guestsLabel === '1 persona' ? 'Hay 1 persona' : `Hay ${guestsCount} personas`} pidiendo desde la Mesa ${effectiveTableNumber}. Si te unís, tu pedido entra a la misma cuenta y al final cada uno paga lo que consumió.`
-                                : 'Abrí tu pedido desde el celular sin esperar al mesero. Si llegan más personas a tu mesa, pueden sumarse al mismo pedido escaneando el mismo QR.'}
+                                ? `${guestsLabel === '1 persona' ? 'Hay 1 persona' : `Hay ${guestsCount} personas`} pidiendo desde la Mesa ${effectiveTableNumber}. Si te unes, tu pedido entra a la misma cuenta y al final cada uno paga lo que consumió.`
+                                : 'Abre tu pedido desde el celular sin esperar al mesero. Si llegan más personas a tu mesa, pueden sumarse al mismo pedido escaneando el mismo QR.'}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2 sm:gap-2">
@@ -896,6 +906,9 @@ function MenuContent({
                     ) : (
                         <ul className="space-y-2">
                             {category.items.map((item) => {
+                                // Item agotado: no ofrecer "+" — el backend rechaza
+                                // items con available !== true al enviar el pedido.
+                                const unavailable = (item as MenuItem & { available?: boolean }).available === false;
                                 const openDetail = () =>
                                     setDetail({
                                         name: item.name,
@@ -912,7 +925,7 @@ function MenuContent({
                                             variant={cardStyle}
                                             onImageClick={openDetail}
                                             action={
-                                                onAdd ? (
+                                                onAdd && !unavailable ? (
                                                     <Button
                                                         size="icon"
                                                         className="h-8 w-8 shrink-0"
