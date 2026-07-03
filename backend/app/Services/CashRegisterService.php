@@ -344,14 +344,15 @@ class CashRegisterService
 
         $cashRefunds = $this->computeCashRefundsForSession($session->id);
 
-        // Propinas en efectivo: sum de orders.tip_amount cuyo receipt principal
-        // (no-refund) sea cash y esté vinculado a la sesión.
-        $cashTips = (float) DB::table('payment_receipts as pr')
-            ->join('orders as o', 'o.id', '=', 'pr.order_id')
-            ->where('pr.cash_session_id', $session->id)
-            ->where('pr.payment_method', 'cash')
-            ->where('o.tip_amount', '>', 0)
-            ->sum('o.tip_amount');
+        // Propinas en efectivo: por receipt (`payment_data.tip_amount`, que todo
+        // creador de receipts persiste). Sumar `orders.tip_amount` vía JOIN
+        // multiplicaba la propina por cada receipt cash de la misma orden
+        // (pagos parciales por comensal) y la contaba entera en cada método/
+        // sesión cuando el cobro se dividía — inflando expected_cash y
+        // generando faltantes fantasma en el arqueo.
+        $cashTips = (float) PaymentReceipt::where('cash_session_id', $session->id)
+            ->where('payment_method', 'cash')
+            ->sum(DB::raw("COALESCE((payment_data->>'tip_amount')::numeric, 0)"));
 
         $cashExpenses = (float) CashRegisterExpense::forSession($session->id)
             ->where('payment_method', 'cash')
@@ -747,14 +748,14 @@ class CashRegisterService
         // Corregimos con el mismo JOIN que usa computeExpectedCash.
         $byMethod['cash']['refunds'] = $this->computeCashRefundsForSession($session->id);
 
-        $tipRows = DB::table('payment_receipts as pr')
-            ->join('orders as o', 'o.id', '=', 'pr.order_id')
-            ->where('pr.cash_session_id', $session->id)
-            ->whereNotNull('pr.payment_method')
-            ->where('pr.payment_method', '!=', 'refund')
-            ->where('o.tip_amount', '>', 0)
-            ->selectRaw('pr.payment_method, SUM(o.tip_amount) AS tips_total')
-            ->groupBy('pr.payment_method')
+        // Propina por receipt (`payment_data.tip_amount`), no por JOIN con
+        // orders: el JOIN contaba la propina completa de la orden una vez por
+        // cada receipt y en cada método cuando el cobro era dividido.
+        $tipRows = PaymentReceipt::where('cash_session_id', $session->id)
+            ->whereNotNull('payment_method')
+            ->where('payment_method', '!=', 'refund')
+            ->selectRaw("payment_method, SUM(COALESCE((payment_data->>'tip_amount')::numeric, 0)) AS tips_total")
+            ->groupBy('payment_method')
             ->get();
 
         foreach ($tipRows as $tipRow) {

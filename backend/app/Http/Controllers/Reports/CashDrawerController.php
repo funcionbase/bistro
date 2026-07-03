@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * America/Bogota — es la fecha en que el dinero efectivamente entró/salió.
  *
  * Cash neto del día (efectivo en caja) =
- *      SUM(receipts.amount cash) + SUM(orders.tip_amount cash) - SUM(refunds cash)
+ *      SUM(receipts.amount cash) + SUM(propinas de receipts cash) - SUM(refunds cash)
  */
 class CashDrawerController extends Controller
 {
@@ -124,19 +124,17 @@ class CashDrawerController extends Controller
             ];
         }
 
-        // Propinas por método: el receipt original (no-refund) lleva la propina
-        // en orders.tip_amount; agregamos por payment_method del receipt no-refund
-        // de la misma orden cuyo paid_at cae en el rango.
-        $tipRows = DB::table('payment_receipts as pr')
-            ->join('orders as o', 'o.id', '=', 'pr.order_id')
-            ->where('pr.company_nit', $companyNit)
-            ->when($branchId !== null, fn ($q) => $q->where('pr.branch_id', $branchId))
-            ->whereBetween('pr.paid_at', [$fromDb, $toDb])
-            ->whereNotNull('pr.payment_method')
-            ->where('pr.payment_method', '!=', 'refund')
-            ->where('o.tip_amount', '>', 0)
-            ->selectRaw('pr.payment_method, SUM(o.tip_amount) AS tips_total')
-            ->groupBy('pr.payment_method')
+        // Propinas por método: por receipt (`payment_data.tip_amount`). El JOIN
+        // anterior con orders.tip_amount contaba la propina completa de la
+        // orden una vez por cada receipt (pagos divididos por comensal la
+        // multiplicaban) y la duplicaba en cada método del cobro dividido.
+        // Branch-scoped vía BranchScope (mismo patrón que $rows).
+        $tipRows = PaymentReceipt::where('company_nit', $companyNit)
+            ->whereBetween('paid_at', [$fromDb, $toDb])
+            ->whereNotNull('payment_method')
+            ->where('payment_method', '!=', 'refund')
+            ->selectRaw("payment_method, SUM(COALESCE((payment_data->>'tip_amount')::numeric, 0)) AS tips_total")
+            ->groupBy('payment_method')
             ->get();
 
         foreach ($tipRows as $tipRow) {
@@ -181,13 +179,29 @@ class CashDrawerController extends Controller
             ->mapWithKeys(fn ($r) => [$r->category => round((float) $r->total, 2)])
             ->all();
 
+        // Refunds que salieron del cajón: receipts `refund` cuyo cobro original
+        // fue en efectivo. Los refunds se registran con payment_method='refund',
+        // así que `byMethod['cash']['refunds']` siempre era 0 y el drawer
+        // esperado quedaba inflado cuando había devoluciones en efectivo
+        // (mismo fix que computeCashRefundsForSession en CashRegisterService).
+        $cashRefunds = (float) PaymentReceipt::where('company_nit', $companyNit)
+            ->whereBetween('paid_at', [$fromDb, $toDb])
+            ->where('payment_method', 'refund')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('payment_receipts as orig')
+                    ->whereColumn('orig.order_id', 'payment_receipts.order_id')
+                    ->where('orig.payment_method', 'cash');
+            })
+            ->sum(DB::raw('-amount'));
+
         // Cash drawer físico: saldo inicial + efectivo cobrado + propinas en efectivo
         //                     + entradas en efectivo - refunds en efectivo - egresos en efectivo.
         $cashDrawer = $openingTotal
             + $byMethod['cash']['gross']
             + $byMethod['cash']['tips']
             + $cashIncomesTotal
-            - $byMethod['cash']['refunds']
+            - $cashRefunds
             - $cashExpensesTotal;
 
         // Conteo de órdenes operadas en el período (por paid_at).
