@@ -139,14 +139,14 @@ class TableSessionController extends Controller
 
         $guestsById = $session->guests->keyBy('id');
 
-        // Items en la buffer alimentan los `pending_batches` (lo que espera
-        // aprobación). Items en órdenes aprobadas se exponen agrupados por
-        // `order_id` en `approved_orders` para que la UI muestre cada tanda
-        // como una sección separada con su número de orden.
-        $bufferItems = $bufferOrder
-            ? $items->where('order_id', $bufferOrder->id)
-            : collect();
-        $batches = $this->groupItemsByBatch($bufferItems, $guestsById);
+        // `items_by_status` agrupa TODOS los items de la sesión (buffer +
+        // órdenes aprobadas): los tabs del detalle reflejan las transiciones
+        // del KDS (in_kitchen/ready/served). Antes solo entraban los items
+        // del buffer y al aprobarse desaparecían de los tabs — los cambios
+        // de cocina nunca se veían. `pending_batches` sigue saliendo solo de
+        // items `pending_approval` con `submitted_at` (construcción interna
+        // de groupItemsByBatch), así que no cambia el flujo de aprobación.
+        $batches = $this->groupItemsByBatch($items, $guestsById);
 
         $approvedOrdersPayload = $approvedOrders->map(function (Order $o) use ($items, $guestsById) {
             $orderItems = $items->where('order_id', $o->id)->values();
