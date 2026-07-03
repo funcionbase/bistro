@@ -328,15 +328,23 @@ export default function OrderShow() {
         void fetchAll();
     }, [fetchAll]);
 
-    // Polling para sesiones QR abiertas (solo sesión, no orden)
+    // Auto-refresh cada 10s con la pestaña visible (orden + sesión QR si aplica).
+    // Reemplaza el polling de 3s solo-sesión: un solo poller refresca todo el
+    // detalle. Se detiene cuando la orden es terminal y la sesión ya cerró.
+    // El botón "Refrescar" sigue disponible para forzar un fetch inmediato.
+    const orderStatus = order?.status;
+    const orderSessionId = order?.table_session_id;
+    const sessionStatus = sessionDetail?.status;
     useEffect(() => {
-        const sid = order?.table_session_id;
-        if (!sid) return;
-        const sesStatus = sessionDetail?.status;
-        if (sesStatus === 'closed' || sesStatus === 'expired') return;
-        const interval = window.setInterval(() => void fetchSessionData(sid), 3000);
+        if (!orderStatus) return;
+        const sessionDone = !orderSessionId || sessionStatus === 'closed' || sessionStatus === 'expired';
+        if (TERMINAL_STATUSES.has(orderStatus) && sessionDone) return;
+        const interval = window.setInterval(() => {
+            if (document.hidden) return; // pestaña oculta: no gastar backend
+            void fetchAll();
+        }, 10_000);
         return () => window.clearInterval(interval);
-    }, [order?.table_session_id, sessionDetail?.status, fetchSessionData]);
+    }, [orderStatus, orderSessionId, sessionStatus, fetchAll]);
 
     // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -766,10 +774,7 @@ export default function OrderShow() {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => {
-                                                    const sid = order?.table_session_id;
-                                                    if (sid) void fetchSessionData(sid);
-                                                }}
+                                                onClick={() => void fetchAll()}
                                                 disabled={loading || busy}
                                                 className="w-full sm:w-auto"
                                             >
