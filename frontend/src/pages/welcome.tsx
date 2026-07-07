@@ -42,7 +42,7 @@ export default function Welcome() {
                                             <br />a la mano.
                                         </>
                                     }
-                                    description="Tu operación en un solo panel. Inicia sesión con tu cuenta de Gmail para continuar."
+                                    description="Tu operación en un solo panel. Entra con tu cuenta de Google o con tu correo y contraseña."
                                 />
 
                                 <div className="max-w-sm space-y-3">
@@ -54,9 +54,23 @@ export default function Welcome() {
                                             Ir al panel
                                         </a>
                                     ) : (
-                                        <GoogleAuthButton />
+                                        <>
+                                            <GoogleAuthButton />
+                                            <Link
+                                                to="/login"
+                                                className="border-border text-foreground hover:bg-muted flex w-full items-center justify-center rounded-md border px-4 py-3 text-sm font-semibold transition-colors"
+                                            >
+                                                Entrar con correo y contraseña
+                                            </Link>
+                                        </>
                                     )}
-                                    <p className="text-muted-foreground text-xs">Solo se permite acceso con cuentas de Google.</p>
+                                    <p className="text-muted-foreground text-xs">
+                                        ¿Sin cuenta?{' '}
+                                        <Link to="/register" className="text-foreground underline-offset-4 hover:underline">
+                                            Regístrate con tu correo
+                                        </Link>{' '}
+                                        o con Google — ambos llevan a la misma cuenta.
+                                    </p>
 
                                     {/* Link al manual */}
                                     <Link

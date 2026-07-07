@@ -21,7 +21,7 @@ import { reloadContext } from '@/lib/navigate-compat';
 import { route } from '@/lib/route-compat';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { AlertCircle, CheckCircle2, Clock, LoaderCircle, ShieldCheck } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const PROOF_MAX_BYTES = 10 * 1024 * 1024;
@@ -81,6 +81,28 @@ export default function EnrollmentCompany() {
 
     // #154 — Evidencia de propiedad obligatoria.
     const [proofFile, setProofFile] = useState<File | null>(null);
+
+    // Acceso dual: el registro por correo exige verificar el correo ANTES de
+    // registrar empresa (gate server-side en CompanyEnrollmentRequest). Este
+    // chequeo al montar evita que el usuario llene 3 pasos para descubrirlo
+    // en el submit. Best-effort: si el endpoint falla, el gate del submit
+    // sigue cubriendo.
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await apiFetch('/api/v1/auth/verification/status');
+                if (!res.ok || cancelled) return;
+                const json = (await res.json()) as { verified: boolean };
+                if (!json.verified) window.location.href = '/verify-email';
+            } catch {
+                // silencioso — el submit valida igual
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleSubmitStep1 = (e: React.FormEvent) => {
         e.preventDefault();
@@ -154,6 +176,13 @@ export default function EnrollmentCompany() {
             });
             const data = await response.json();
             if (!response.ok) {
+                // Registro por correo sin verificar: el gate server-side exige
+                // verificar antes de registrar empresa — llevar a la pantalla
+                // de verificación en lugar de dejar el error plano.
+                if (response.status === 403 && data.code === 'email_not_verified') {
+                    window.location.href = '/verify-email';
+                    return;
+                }
                 setErrors(data.errors ?? { general: data.message ?? 'No se pudo registrar la empresa.' });
                 return;
             }
