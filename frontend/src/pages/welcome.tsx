@@ -45,7 +45,7 @@ export default function Welcome() {
                                     description="Tu operación en un solo panel. Entra con tu cuenta de Google o con tu correo y contraseña."
                                 />
 
-                                <div className="max-w-sm space-y-3">
+                                <div className="max-w-sm space-y-4">
                                     {token ? (
                                         <a
                                             href="/dashboard"
@@ -55,22 +55,31 @@ export default function Welcome() {
                                         </a>
                                     ) : (
                                         <>
-                                            <GoogleAuthButton />
+                                            {/* CTA principal: acceso con correo y contraseña. */}
                                             <Link
                                                 to="/login"
-                                                className="border-border text-foreground hover:bg-muted flex w-full items-center justify-center rounded-md border px-4 py-3 text-sm font-semibold transition-colors"
+                                                className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-semibold transition-colors"
                                             >
                                                 Entrar con correo y contraseña
                                             </Link>
+
+                                            {/* Divisor + método alternativo (Google). */}
+                                            <div className="flex items-center gap-3" aria-hidden>
+                                                <div className="border-border flex-1 border-t" />
+                                                <span className="text-muted-foreground text-xs">o continúa con</span>
+                                                <div className="border-border flex-1 border-t" />
+                                            </div>
+                                            <GoogleAuthButton />
+
+                                            <p className="text-muted-foreground text-sm">
+                                                ¿Sin cuenta?{' '}
+                                                <Link to="/register" className="text-foreground font-medium underline-offset-4 hover:underline">
+                                                    Regístrate
+                                                </Link>{' '}
+                                                con tu correo o con Google — ambos llevan a la misma cuenta.
+                                            </p>
                                         </>
                                     )}
-                                    <p className="text-muted-foreground text-xs">
-                                        ¿Sin cuenta?{' '}
-                                        <Link to="/register" className="text-foreground underline-offset-4 hover:underline">
-                                            Regístrate con tu correo
-                                        </Link>{' '}
-                                        o con Google — ambos llevan a la misma cuenta.
-                                    </p>
 
                                     {/* Link al manual */}
                                     <Link
