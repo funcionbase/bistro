@@ -171,9 +171,13 @@ Adicionalmente, el actor **no puede modificarse a sí mismo** (rol, permisos, es
 
 ## 1. Autenticación y acceso
 
+### 1.0 Acceso dual: Google OAuth + correo/contraseña
+
+Una cuenta = un correo: `google_id` y `password` son dos credenciales de la misma fila `users`. El registro por correo (`POST /api/v1/auth/register`) crea la cuenta `pending_enrollment` **sin verificar**, envía un enlace firmado de verificación (60 min, SES) y **bloquea el registro de empresa** hasta verificar (`CompanyEnrollmentRequest::authorize()` → 403 `email_not_verified`). Tras tocar el enlace, el flujo continúa solo hacia el enrollment (misma pestaña vía poll de `/verify-email`, u otra pestaña → `/login?verified=1`); si el usuario sale y vuelve a entrar, `PostLoginService` lo retoma donde quedó. Una cuenta Google fija contraseña vía "olvidé mi contraseña" o Ajustes › Contraseña; una cuenta de correo que entra con Google queda vinculada por email verificado (callback). Anti-abuso nativo: lockout 5 intentos/60s por email+IP + techo 20/min por IP (login), 5/15min por IP (registro y forgot), honeypot en registro, `Password::min(8)->uncompromised()` (HIBP), reenvío de verificación 3/10min. Login y forgot responden genérico (anti-enumeración).
+
 ### 1.1 Inicio de sesión por Google OAuth
 
-**Único proveedor habilitado.** Implementación con `laravel/socialite` v5. Las rutas `POST /login` y `POST /register` redirigen a `/` (deshabilitadas en `bootstrap/app.php`/`routes/auth.php`); conservan `throttle:5,1` por defensa en profundidad.
+Implementación con `laravel/socialite` v5, complementaria al acceso por correo/contraseña (§1.0). El callback persiste `email_verified_at` (Google ya verificó; backfill para cuentas legacy).
 
 #### Flujo step-by-step
 

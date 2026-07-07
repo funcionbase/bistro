@@ -99,14 +99,17 @@ Regla obligatoria en `CLAUDE.md` §7: antes de tocar un permiso, rol, estado de 
 
 ---
 
-## Autenticación: JWT + Google OAuth
+## Autenticación: JWT + acceso dual (Google OAuth / correo+contraseña)
 
-### Flujo end-to-end
+**Acceso dual**: una cuenta = un correo; `google_id` y `password` son dos credenciales de la MISMA fila `users`. Registrado por email que luego entra con Google → el callback vincula por email verificado. Creado con Google → fija contraseña vía forgot-password o en Ajustes › Contraseña (sin contraseña actual si `password` es null). Endpoints JSON: `POST /api/v1/auth/{login,register,forgot-password,reset-password}` (guest, limiters `auth-login` 20/min IP + lockout 5/60s por email+IP en `EmailAuthController`, `auth-register` y `auth-forgot` 5/15min IP) y `GET|POST /api/v1/auth/verification/{status,resend}` (JWT, resend 3/10min por user). Registro: honeypot `website` (éxito falso), `Password::defaults()` = min 8 + `uncompromised()` (HIBP), crea `pending_enrollment` sin verificar + `VerifyEmailAddressNotification` (URL firmada 60 min → `verification.verify`, pública `signed`, marca `email_verified_at` y redirige al SPA según cookie JWT: mismo user → `/enrollment/user` o `/enrollment/company`; sin cookie → `/login?verified=1`). **Gate**: `CompanyEnrollmentRequest::authorize()` → 403 `email_not_verified` si el correo no está verificado (corre ANTES de las reglas). Cuentas Google legacy: `User::ensureGoogleEmailVerified()` backfillea `email_verified_at` en callback/status/gate. Post-login por email: `PostLoginService` espeja las reglas del callback Google devolviendo rutas SPA (sin verificar → `/verify-email`; pending → `/enrollment/user`; activo sin empresas → `/enrollment/company`; 1 activa → dashboard/my-deliveries; resto → company-selector). Reset de contraseña marca el correo verificado (probó posesión). Anti-enumeración: login y forgot responden genérico siempre.
+
+### Flujo end-to-end (Google)
 
 ```
 1. Usuario → /auth/google                    [GoogleAuthController@redirect]
 2. Google → /auth/google/callback?code=...   [GoogleAuthController@callback]
    - Si email no existe → User::create(status='pending_enrollment')
+   - Persiste email_verified_at (Google ya verificó; backfill legacy)
    - JwtService::issue(user) → cookie HttpOnly
    - Si tiene 1 empresa → /dashboard
    - Si tiene varias → /auth/company-selector

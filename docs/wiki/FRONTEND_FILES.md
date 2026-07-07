@@ -120,13 +120,13 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 
 | Archivo | URL | Layout | APIs | Notas |
 |---------|-----|--------|------|-------|
-| `welcome.tsx` | `/` | sin layout | — | Landing pública. Si autenticado, link a `/dashboard`; si no, `<GoogleAuthButton>` |
-| `login.tsx` | `/login` | `AuthSimpleLayout` | `POST route('login')` | Email + password (Breeze). Visible solo si `canResetPassword=true` |
-| `register.tsx` | `/register` | `AuthSimpleLayout` | `POST route('register')` | Registro tradicional. Flujo principal es Google OAuth |
-| `forgot-password.tsx` | `/forgot-password` | `AuthSimpleLayout` | `POST route('password.email')` | Email para enviar enlace de reseteo |
-| `reset-password.tsx` | `/reset-password` | `AuthSimpleLayout` | `POST route('password.store')` | Requiere `token` y `email` de la URL |
-| `verify-email.tsx` | `/verify-email` | `AppLayout` | `POST route('verification.send')` | Reenvío de verificación + logout |
-| `confirm-password.tsx` | `/confirm-password` | `AppLayout` | `POST route('password.confirm')` | Confirmación antes de acción sensible |
+| `welcome.tsx` | `/` | sin layout | — | Landing pública. Si autenticado, link a `/dashboard`; si no, `<GoogleAuthButton>` + botón "Entrar con correo y contraseña" (`/login`) y link a `/register` (acceso dual) |
+| `login.tsx` | `/login` | `AuthHeroLayout` | `POST /api/v1/auth/login` | Acceso dual: form email+password + divisor "o" + `GoogleAuthButton`. La respuesta `{redirect}` (cookie JWT ya seteada) decide destino: `/verify-email`, `/enrollment/*`, dashboard o company-selector. Lee `?verified=1`, `?reset=1`, `?verify_error=1` |
+| `register.tsx` | `/register` | `AuthHeroLayout` | `POST /api/v1/auth/register` | Nombres/apellidos (sanitizados §5), email, password ×2 + honeypot `website` oculto + alternativa Google. Al crear → `/verify-email` (JWT en cookie). Correo duplicado → 422 con mensaje "entra con Google o recupera tu contraseña" |
+| `forgot-password.tsx` | `/forgot-password` | `AuthHeroLayout` | `POST /api/v1/auth/forgot-password` | Respuesta siempre genérica (anti-enumeración). También es cómo una cuenta Google FIJA contraseña (acceso dual) |
+| `reset-password.tsx` | `/reset-password/:token` | `AuthHeroLayout` | `POST /api/v1/auth/reset-password` | `?email=` precargado del enlace. El reset marca el correo verificado (probó posesión) → `/login?reset=1` |
+| `verify-email.tsx` | `/verify-email` | `AuthHeroLayout` | `GET /api/v1/auth/verification/status` (poll 5s + focus), `POST .../resend` | Pantalla "revisa tu correo" del registro por email. Cuando el poll ve verified → avanza sola a `/enrollment/user` (continuidad). Sin JWT → `/login`. Reenvío limitado 3/10min server-side |
+| `confirm-password.tsx` | `/confirm-password` | `GoogleOnlyAuthGate` | — | Único uso restante del gate HU #231 (re-auth sensible, fuera del alcance del acceso dual) |
 | `company-selector.tsx` | `/auth/company-selector` | sin layout | `POST /api/v1/auth/select-company` | Multi-empresa: lista companies del JWT, llama `setToken()` con nuevo JWT; botón "Cerrar sesión" (`useLogout`) junto a "Registrar otra empresa" |
 | `branch-selector.tsx` | `/auth/branch-selector` | sin layout | `POST /api/v1/auth/switch-branch` | Multi-sede (#117): tarjetas de sedes accesibles. Persiste última en `localStorage['flexyflow.last_branch_id:<nit>']` y auto-selecciona si sigue accesible. Redirige a `/dashboard` |
 
