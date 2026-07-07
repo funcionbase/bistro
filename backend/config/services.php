@@ -89,4 +89,13 @@ return [
         'measurement_id' => env('GA4_MEASUREMENT_ID'),
     ],
 
+    'turnstile' => [
+        // Cloudflare Turnstile (captcha anti-spam en login/registro/forgot).
+        // `site_key` es publico (va al bundle del frontend via VITE_); `secret`
+        // es sensible y solo vive en el .env del backend. Si `secret` esta
+        // vacio (local/qa sin configurar), el middleware `turnstile` deja pasar
+        // (fail-open) — no rompe el desarrollo ni bloquea si Cloudflare cae.
+        'secret' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
 ];

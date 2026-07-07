@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Turnstile, turnstileEnabled } from '@/components/turnstile';
 import AuthHeroLayout from '@/layouts/auth/auth-hero-layout';
 import { ApiError, apiClient } from '@/lib/api-client';
 import { useDocumentTitle } from '@/lib/use-document-title';
@@ -26,6 +27,7 @@ export default function Login() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [captcha, setCaptcha] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,11 @@ export default function Login() {
         setSubmitting(true);
         setError(null);
         try {
-            const res = await apiClient.post<{ redirect: string }>('/api/v1/auth/login', { email: email.trim(), password });
+            const res = await apiClient.post<{ redirect: string }>('/api/v1/auth/login', {
+                email: email.trim(),
+                password,
+                'cf-turnstile-response': captcha,
+            });
             window.location.href = res.redirect || '/dashboard';
         } catch (e) {
             setError(e instanceof ApiError && e.message ? e.message : 'No pudimos iniciar sesión. Intenta de nuevo.');
@@ -100,13 +106,19 @@ export default function Login() {
                         />
                     </div>
 
+                    <Turnstile onVerify={setCaptcha} />
+
                     {error && (
                         <Alert variant="destructive">
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
 
-                    <Button type="submit" className="w-full" disabled={submitting || email.trim() === '' || password === ''}>
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={submitting || email.trim() === '' || password === '' || (turnstileEnabled && captcha === '')}
+                    >
                         {submitting ? 'Entrando…' : 'Iniciar sesión'}
                     </Button>
                 </form>

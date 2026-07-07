@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Turnstile, turnstileEnabled } from '@/components/turnstile';
 import AuthHeroLayout from '@/layouts/auth/auth-hero-layout';
 import { ApiError, apiClient } from '@/lib/api-client';
 import { sanitizePlainText } from '@/lib/input-sanitize';
@@ -38,6 +39,7 @@ export default function Register() {
         password_confirmation: '',
         website: '',
     });
+    const [captcha, setCaptcha] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<RegisterErrors>({});
     const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,8 @@ export default function Register() {
         form.last_name.trim().length >= 2 &&
         form.email.trim() !== '' &&
         form.password.length >= 8 &&
-        form.password_confirmation === form.password;
+        form.password_confirmation === form.password &&
+        (!turnstileEnabled || captcha !== '');
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -66,6 +69,7 @@ export default function Register() {
             const res = await apiClient.post<{ redirect: string; email?: string }>('/api/v1/auth/register', {
                 ...form,
                 email,
+                'cf-turnstile-response': captcha,
             });
             // El registro ya NO auto-loguea (anti-enumeración: sin cookie, la
             // respuesta es idéntica exista o no el correo). Pasamos el email a
@@ -191,6 +195,8 @@ export default function Register() {
                             onChange={set('website')}
                         />
                     </div>
+
+                    <Turnstile onVerify={setCaptcha} />
 
                     {error && (
                         <Alert variant="destructive">

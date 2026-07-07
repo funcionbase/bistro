@@ -10,6 +10,7 @@ use App\Http\Middleware\EnsureCompanyVerified;
 use App\Http\Middleware\EnsureFeaturePermission;
 use App\Http\Middleware\EnsureKdsDeviceToken;
 use App\Http\Middleware\EnsureTrustedOrigin;
+use App\Http\Middleware\EnsureTurnstileToken;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\NormalizeStrings;
 use App\Http\Middleware\ResolveTableGuest;
@@ -114,6 +115,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'cache.get' => CacheControlGet::class,
             'table.guest' => ResolveTableGuest::class,
             'kds.device' => EnsureKdsDeviceToken::class,
+            'turnstile' => EnsureTurnstileToken::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

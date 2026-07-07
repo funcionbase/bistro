@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Turnstile, turnstileEnabled } from '@/components/turnstile';
 import AuthHeroLayout from '@/layouts/auth/auth-hero-layout';
 import { ApiError, apiClient } from '@/lib/api-client';
 import { useDocumentTitle } from '@/lib/use-document-title';
@@ -18,6 +19,7 @@ export default function ForgotPassword() {
     useDocumentTitle('Recuperar contraseña');
 
     const [email, setEmail] = useState('');
+    const [captcha, setCaptcha] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [sent, setSent] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,10 @@ export default function ForgotPassword() {
         setSubmitting(true);
         setError(null);
         try {
-            const res = await apiClient.post<{ message?: string }>('/api/v1/auth/forgot-password', { email: email.trim() });
+            const res = await apiClient.post<{ message?: string }>('/api/v1/auth/forgot-password', {
+                email: email.trim(),
+                'cf-turnstile-response': captcha,
+            });
             setSent(res.message ?? 'Si el correo existe, te enviamos instrucciones para restablecer la contraseña.');
         } catch (e) {
             setError(e instanceof ApiError && e.message ? e.message : 'No pudimos procesar la solicitud. Intenta de nuevo.');
@@ -71,13 +76,19 @@ export default function ForgotPassword() {
                             />
                         </div>
 
+                        <Turnstile onVerify={setCaptcha} />
+
                         {error && (
                             <Alert variant="destructive">
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
 
-                        <Button type="submit" className="w-full" disabled={submitting || email.trim() === ''}>
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={submitting || email.trim() === '' || (turnstileEnabled && captcha === '')}
+                        >
                             {submitting ? 'Enviando…' : 'Enviarme el enlace'}
                         </Button>
                     </form>

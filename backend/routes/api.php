@@ -196,14 +196,18 @@ Route::prefix('v1')->group(function () {
     // + lockout por email+IP dentro del controller (patrón Fortify). El JWT se
     // emite como cookie HttpOnly en la respuesta, igual que el callback Google.
     Route::prefix('auth')->group(function () {
+        // `turnstile` (captcha Cloudflare) va ANTES del throttle: valida el token
+        // primero y, si no está configurado o Cloudflare cae, deja pasar
+        // (fail-open). Solo en login/register/forgot (los que crean cuenta o
+        // emiten correo). reset/verify ya van detrás de un token propio.
         Route::post('login', [EmailAuthController::class, 'login'])
-            ->middleware('throttle:auth-login')
+            ->middleware(['turnstile', 'throttle:auth-login'])
             ->name('api.auth.login');
         Route::post('register', [EmailAuthController::class, 'register'])
-            ->middleware('throttle:auth-register')
+            ->middleware(['turnstile', 'throttle:auth-register'])
             ->name('api.auth.register');
         Route::post('forgot-password', [PasswordResetController::class, 'forgot'])
-            ->middleware('throttle:auth-forgot')
+            ->middleware(['turnstile', 'throttle:auth-forgot'])
             ->name('api.auth.forgot-password');
         Route::post('reset-password', [PasswordResetController::class, 'reset'])
             ->middleware('throttle:auth-forgot')
