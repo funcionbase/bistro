@@ -52,9 +52,20 @@ class AccountController extends Controller
         $user = $this->user($request);
 
         $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
+            // La regla `current_password` valida contra el guard de sesión,
+            // que no existe con JWT — se chequea manual abajo. Nullable para
+            // cuentas Google que FIJAN contraseña por primera vez (password
+            // null): ya están autenticadas y no tienen contraseña actual.
+            'current_password' => [$user->password !== null ? 'required' : 'nullable', 'string'],
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
+
+        if ($user->password !== null && ! Hash::check((string) ($validated['current_password'] ?? ''), $user->password)) {
+            return response()->json([
+                'message' => 'La contraseña actual no coincide.',
+                'errors' => ['current_password' => ['La contraseña actual no coincide.']],
+            ], 422);
+        }
 
         $user->update(['password' => Hash::make($validated['password'])]);
 

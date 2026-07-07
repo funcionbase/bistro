@@ -167,6 +167,14 @@ class GoogleAuthController extends Controller
             $user->update(['google_id' => $googleUser->getId()]);
         }
 
+        // Google ya verificó el correo (guard $emailVerified arriba) — se
+        // PERSISTE para el gate de verificación del enrollment de empresa
+        // (acceso dual). Cubre también el backfill de cuentas Google previas
+        // que nunca guardaron email_verified_at.
+        if ($emailVerified && $user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+
         $this->auditService->log('auth.login', $user, $user);
 
         if ($isNewUser || $user->isPendingEnrollment()) {

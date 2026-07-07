@@ -78,6 +78,8 @@ use App\Http\Controllers\Api\WhatsappAccountController;
 use App\Http\Controllers\Api\WhatsappVerificationController;
 use App\Http\Controllers\Api\WhatsappWebhookController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\EmailAuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Company\BranchController;
 use App\Http\Controllers\Company\CompanyController;
 use App\Http\Controllers\Company\PrinterController;
@@ -188,6 +190,32 @@ Route::prefix('v1')->group(function () {
 
         return response()->noContent();
     })->middleware('throttle:60,1')->name('api.csp-report');
+
+    // Acceso con correo/contraseña — complementario a Google OAuth. Rutas
+    // guest (sin JWT): límites por IP vía limiters dedicados (AppServiceProvider)
+    // + lockout por email+IP dentro del controller (patrón Fortify). El JWT se
+    // emite como cookie HttpOnly en la respuesta, igual que el callback Google.
+    Route::prefix('auth')->group(function () {
+        Route::post('login', [EmailAuthController::class, 'login'])
+            ->middleware('throttle:auth-login')
+            ->name('api.auth.login');
+        Route::post('register', [EmailAuthController::class, 'register'])
+            ->middleware('throttle:auth-register')
+            ->name('api.auth.register');
+        Route::post('forgot-password', [PasswordResetController::class, 'forgot'])
+            ->middleware('throttle:auth-forgot')
+            ->name('api.auth.forgot-password');
+        Route::post('reset-password', [PasswordResetController::class, 'reset'])
+            ->middleware('throttle:auth-forgot')
+            ->name('api.auth.reset-password');
+        // Reenvío de verificación sin sesión (post-registro, que ya no
+        // auto-loguea). Genérico + throttled — mismo perfil anti-abuso que
+        // forgot-password.
+        Route::post('verification/resend-public', [EmailAuthController::class, 'resendVerificationPublic'])
+            ->middleware('throttle:auth-forgot')
+            ->name('api.auth.verification.resend-public');
+    });
+
     // throttle:api (#174 P1-1) — limiter por jwt.sub o IP (240/min). Cubre
     // dashboard polling y uso humano sin estorbar; flujos batch deben usar
     // endpoints especificos fuera de este grupo si superan ese techo.
@@ -213,21 +241,13 @@ Route::prefix('v1')->group(function () {
             ->name('api.business-types.index');
 
         // Gestión de cuenta (#220) — consumido por settings/profile y
-        // settings/password del shell SPA. `updatePassword` queda
-        // deshabilitado por HU #231 (acceso únicamente vía Google OAuth).
+        // settings/password del shell SPA. `updatePassword` re-habilitado con
+        // el acceso dual: cambia la contraseña (pide la actual) o la FIJA por
+        // primera vez en cuentas Google (password null, sin contraseña actual).
         Route::patch('account/profile', [AccountController::class, 'updateProfile'])->name('api.account.profile');
-        Route::put('account/password', function (Request $request) {
-            Log::info('auth.legacy_endpoint_hit', [
-                'path' => $request->path(),
-                'method' => 'PUT',
-                'user_id' => optional($request->user())->id,
-            ]);
-
-            return response()->json([
-                'message' => 'El cambio de contraseña está deshabilitado. Tu cuenta usa Google para iniciar sesión.',
-                'code' => 'email_auth_disabled',
-            ], 410);
-        })->name('api.account.password');
+        Route::put('account/password', [AccountController::class, 'updatePassword'])
+            ->middleware('throttle:6,1')
+            ->name('api.account.password');
         Route::post('account/delete', [AccountController::class, 'destroy'])->name('api.account.delete');
 
         Route::post('enrollment/user', [UserEnrollmentController::class, 'store'])
@@ -240,6 +260,14 @@ Route::prefix('v1')->group(function () {
             ->name('api.enrollment.invited');
 
         Route::prefix('auth')->group(function () {
+            // Verificación de correo (registro por email): estado para el
+            // poll de /verify-email y reenvío del enlace (limitado en el
+            // controller a 3 / 10 min por usuario — anti mail-bombing).
+            Route::get('verification/status', [EmailAuthController::class, 'verificationStatus'])
+                ->name('api.auth.verification.status');
+            Route::post('verification/resend', [EmailAuthController::class, 'resendVerification'])
+                ->name('api.auth.verification.resend');
+
             Route::post('select-company', [AuthController::class, 'selectCompany'])
                 ->name('api.auth.select-company');
 

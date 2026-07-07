@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\ImageManager;
 
@@ -79,6 +80,33 @@ class AppServiceProvider extends ServiceProvider
             $limit = (int) config('auth.oauth_rate_limit', 10);
 
             return Limit::perMinute($limit)->by($request->ip());
+        });
+
+        // Acceso con correo/contraseña (complementario a Google). Techo global
+        // por IP contra credential stuffing multi-correo; el lockout fino por
+        // email+IP (5 intentos / 60s, patrón Fortify) vive en EmailAuthController.
+        RateLimiter::for('auth-login', function (Request $request) {
+            return Limit::perMinute(20)->by('auth-login-ip:'.$request->ip());
+        });
+
+        // Registro: escritura + envío de correo → límite apretado por IP.
+        // 5 cada 15 min frena bots de creación masiva sin estorbar a un
+        // humano legítimo (1 registro por visita).
+        RateLimiter::for('auth-register', function (Request $request) {
+            return Limit::perMinutes(15, 5)->by('auth-register-ip:'.$request->ip());
+        });
+
+        // Forgot/reset: cada request puede disparar un correo (SES) — 5 cada
+        // 15 min por IP + límite fino por email+IP en el controller.
+        RateLimiter::for('auth-forgot', function (Request $request) {
+            return Limit::perMinutes(15, 5)->by('auth-forgot-ip:'.$request->ip());
+        });
+
+        // Contraseñas: mínimo 8 + rechazo de contraseñas filtradas (HIBP via
+        // k-anonymity — nunca se envía la contraseña). Aplica a registro,
+        // reset y cambio en ajustes vía Password::defaults().
+        Password::defaults(function () {
+            return Password::min(8)->uncompromised();
         });
 
         // Rate limit general para rutas API autenticadas. Llave preferida es

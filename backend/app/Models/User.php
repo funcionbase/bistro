@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordLinkNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -78,6 +79,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * El correo de reset apunta al SPA (`/reset-password/{token}`), no a la
+     * ruta web de Breeze. También lo usan cuentas creadas con Google para
+     * FIJAR contraseña por primera vez (acceso dual).
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordLinkNotification($token));
+    }
+
+    /**
+     * Backfill idempotente para cuentas Google previas al acceso dual: el
+     * callback siempre exigió `email_verified` del provider pero no persistía
+     * `email_verified_at`. Sin esto, el gate de verificación (registro de
+     * empresa) bloquearía a usuarios Google legacy con sesión JWT viva.
+     */
+    public function ensureGoogleEmailVerified(): void
+    {
+        if ($this->google_id !== null && $this->email_verified_at === null) {
+            $this->forceFill(['email_verified_at' => now()])->save();
+        }
     }
 
     public function isPendingEnrollment(): bool

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Enrollment;
 
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 /**
@@ -19,9 +21,33 @@ use Illuminate\Validation\Rule;
  */
 class CompanyEnrollmentRequest extends FormRequest
 {
+    /**
+     * Acceso dual: el registro por correo/contraseña exige verificar el correo
+     * ANTES de registrar empresa. Vive en authorize() (corre antes de las
+     * reglas) para que el no-verificado reciba el 403 con `code`, no errores
+     * de campos. `ensureGoogleEmailVerified` backfillea cuentas Google legacy
+     * que nunca persistieron email_verified_at (Google ya lo verificó).
+     */
     public function authorize(): bool
     {
-        return true;
+        $sub = $this->attributes->get('jwt_payload')['sub'] ?? null;
+        $user = $sub !== null ? User::query()->find($sub) : null;
+
+        if ($user === null) {
+            return false;
+        }
+
+        $user->ensureGoogleEmailVerified();
+
+        return $user->email_verified_at !== null;
+    }
+
+    protected function failedAuthorization(): never
+    {
+        throw new HttpResponseException(response()->json([
+            'message' => 'Verifica tu correo antes de registrar tu empresa. Revisa el enlace que te enviamos.',
+            'code' => 'email_not_verified',
+        ], 403));
     }
 
     /**

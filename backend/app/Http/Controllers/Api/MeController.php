@@ -38,6 +38,11 @@ class MeController extends Controller
                 'email' => $user->email,
                 'cedula' => $user->cedula,
                 'status' => $user->status,
+                // Acceso dual: el frontend usa esto para decidir si la pantalla
+                // de contraseña pide la actual (cambio) o no (fijarla por
+                // primera vez en una cuenta creada con Google). No expone el
+                // hash — solo si existe.
+                'has_password' => $user->password !== null,
             ],
             'role' => $payload['role'] ?? null,
             'active_company_name' => $payload['active_company_name'] ?? null,

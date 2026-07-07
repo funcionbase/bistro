@@ -64,6 +64,10 @@ class CompanyEnrollmentController extends Controller
         $payload = $request->attributes->get('jwt_payload');
         $user = User::findOrFail($payload['sub']);
 
+        // El gate de correo verificado (acceso dual) vive en
+        // CompanyEnrollmentRequest::authorize() — corre ANTES de la validación
+        // para que el 403 llegue limpio con code=email_not_verified.
+
         if (! $user->isActive()) {
             return response()->json(['message' => 'Debes completar tu enrollamiento personal primero.'], 422);
         }
