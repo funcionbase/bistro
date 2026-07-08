@@ -53,7 +53,10 @@ registerRoute(
             return fetch(request.url);
         },
         {
-            denylist: [/^\/api\//, /^\/auth\//, /^\/storage-proxy\//, /^\/storage\//],
+            // `\.[a-z0-9]+$` — navegaciones a archivos reales (sitemap.xml,
+            // robots.txt, llms.txt…) van a red; sin esto el SW respondía con
+            // el shell del SPA y el router mostraba el 404 (#sitemap).
+            denylist: [/^\/api\//, /^\/auth\//, /^\/storage-proxy\//, /^\/storage\//, /\.[a-z0-9]+$/i],
         },
     ),
 );
