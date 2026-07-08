@@ -75,6 +75,9 @@ export default function WarehousesIndex() {
     const [form, setForm] = useState<FormState>(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    // Errores 422 por campo → inline bajo cada input. `formError` queda para
+    // errores no atribuibles a un campo (genérico/red).
+    const [formFieldErrors, setFormFieldErrors] = useState<Record<string, string>>({});
     // Mientras el slug no se edite a mano, se autosugiere desde el nombre.
     const [slugTouched, setSlugTouched] = useState(false);
 
@@ -153,6 +156,7 @@ export default function WarehousesIndex() {
     function openCreate(branchId?: string) {
         setForm({ ...EMPTY_FORM, branch_id: branchId ?? branches[0]?.id ?? '' });
         setFormError(null);
+        setFormFieldErrors({});
         setSlugTouched(false);
         setModalOpen(true);
     }
@@ -167,6 +171,7 @@ export default function WarehousesIndex() {
             is_default: w.is_default,
         });
         setFormError(null);
+        setFormFieldErrors({});
         // En edición ya hay slug propio: no lo pisamos al tocar el nombre.
         setSlugTouched(true);
         setModalOpen(true);
@@ -177,6 +182,7 @@ export default function WarehousesIndex() {
         if (!token) return;
         setSaving(true);
         setFormError(null);
+        setFormFieldErrors({});
 
         try {
             const isEdit = !!form.id;
@@ -210,8 +216,15 @@ export default function WarehousesIndex() {
             await load();
         } catch (err) {
             const apiErr = err as { errors?: Record<string, string[]>; message?: string };
-            const first = apiErr.errors ? Object.values(apiErr.errors)[0]?.[0] : apiErr.message;
-            setFormError(first ?? 'No se pudo guardar la bodega.');
+            if (apiErr.errors) {
+                const mapped: Record<string, string> = {};
+                for (const [field, messages] of Object.entries(apiErr.errors)) {
+                    mapped[field] = messages[0] ?? '';
+                }
+                setFormFieldErrors(mapped);
+            } else {
+                setFormError(apiErr.message ?? 'No se pudo guardar la bodega.');
+            }
         } finally {
             setSaving(false);
         }
@@ -562,7 +575,9 @@ export default function WarehousesIndex() {
                                 }}
                                 placeholder="Cocina caliente"
                                 maxLength={WAREHOUSE_NAME_MAX}
+                                aria-invalid={!!formFieldErrors.name}
                             />
+                            {formFieldErrors.name && <p className="text-destructive text-xs">{formFieldErrors.name}</p>}
                         </div>
 
                         <div className="space-y-1.5">
@@ -577,10 +592,15 @@ export default function WarehousesIndex() {
                                 placeholder="cocina-caliente"
                                 pattern="^[a-z0-9-]+$"
                                 maxLength={WAREHOUSE_SLUG_MAX}
+                                aria-invalid={!!formFieldErrors.slug}
                             />
-                            <p className="text-muted-foreground text-xs">
-                                Solo minúsculas, números y guiones. Se genera automáticamente si lo dejas vacío.
-                            </p>
+                            {formFieldErrors.slug ? (
+                                <p className="text-destructive text-xs">{formFieldErrors.slug}</p>
+                            ) : (
+                                <p className="text-muted-foreground text-xs">
+                                    Solo minúsculas, números y guiones. Se genera automáticamente si lo dejas vacío.
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-1.5">

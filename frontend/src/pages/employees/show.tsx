@@ -119,6 +119,7 @@ export default function EmployeesShow() {
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
     const [salary, setSalary] = useState<{ pay_rate: number; base_salary: number | null } | null>(null);
     const [stateDialogOpen, setStateDialogOpen] = useState(false);
@@ -153,6 +154,7 @@ export default function EmployeesShow() {
     const submit = async (values: EmployeeFormValues) => {
         setSubmitting(true);
         setError(null);
+        setFieldErrors({});
         const res = await apiFetch(`/api/v1/employees/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -161,6 +163,16 @@ export default function EmployeesShow() {
         setSubmitting(false);
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
+            // 422: errores por campo → inline bajo cada input. El Alert superior
+            // queda solo para errores no atribuibles a un campo.
+            if (res.status === 422 && data.errors) {
+                const mapped: Record<string, string> = {};
+                for (const [field, messages] of Object.entries(data.errors as Record<string, string[]>)) {
+                    mapped[field] = messages[0] ?? '';
+                }
+                setFieldErrors(mapped);
+                return;
+            }
             setError(data.message ?? 'No se pudo guardar.');
             return;
         }
@@ -418,7 +430,7 @@ export default function EmployeesShow() {
                     </Alert>
                 )}
 
-                <EmployeeForm initial={initial} onSubmit={submit} submitting={submitting} submitLabel="Guardar cambios" readOnly={!isEditing} />
+                <EmployeeForm initial={initial} onSubmit={submit} submitting={submitting} submitLabel="Guardar cambios" readOnly={!isEditing} errors={fieldErrors} />
             </div>
 
             <Dialog open={stateDialogOpen} onOpenChange={(o) => !stateSubmitting && setStateDialogOpen(o)}>

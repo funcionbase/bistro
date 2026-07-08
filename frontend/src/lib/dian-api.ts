@@ -49,6 +49,8 @@ export class DianApiError extends Error {
         message: string,
         public readonly code: string | null,
         public readonly status: number,
+        /** Errores 422 por campo (`{ campo: [mensajes] }`), para render inline. */
+        public readonly errors: Record<string, string[]> | null = null,
     ) {
         super(message);
         this.name = 'DianApiError';
@@ -60,15 +62,17 @@ async function handle<T>(res: Response): Promise<T> {
         const raw = await res.text();
         let code: string | null = null;
         let message = '';
+        let errors: Record<string, string[]> | null = null;
         try {
-            const parsed = JSON.parse(raw) as { error?: string; code?: string; message?: string };
+            const parsed = JSON.parse(raw) as { error?: string; code?: string; message?: string; errors?: Record<string, string[]> };
             code = parsed.error ?? parsed.code ?? null;
             message = parsed.message ?? '';
+            errors = parsed.errors ?? null;
         } catch {
             // Respuesta no-JSON (HTML de error, texto plano): usar el cuerpo tal cual.
             message = raw;
         }
-        throw new DianApiError(message || `HTTP ${res.status}`, code, res.status);
+        throw new DianApiError(message || `HTTP ${res.status}`, code, res.status, errors);
     }
     return res.json() as Promise<T>;
 }

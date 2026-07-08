@@ -1,5 +1,7 @@
-﻿import { PageShell } from '@/components/page-shell';
+﻿import InputError from '@/components/input-error';
+import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FieldHint } from '@/components/ui/field-hint';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,6 +81,9 @@ export default function CompanyKdsPage() {
     const [stationForm, setStationForm] = useState<StationFormState>(EMPTY_STATION_FORM);
     const [savingStation, setSavingStation] = useState(false);
     const [stationFormError, setStationFormError] = useState<string | null>(null);
+    // Errores 422 por campo → inline bajo cada input. `stationFormError` queda
+    // para errores no atribuibles a un campo.
+    const [stationFieldErrors, setStationFieldErrors] = useState<Record<string, string>>({});
     const [confirmArchive, setConfirmArchive] = useState<Station | null>(null);
 
     const [tokensModalStation, setTokensModalStation] = useState<Station | null>(null);
@@ -115,6 +120,7 @@ export default function CompanyKdsPage() {
     function openCreateStation() {
         setStationForm(EMPTY_STATION_FORM);
         setStationFormError(null);
+        setStationFieldErrors({});
         setStationModalOpen(true);
     }
 
@@ -129,12 +135,14 @@ export default function CompanyKdsPage() {
             is_default: station.is_default,
         });
         setStationFormError(null);
+        setStationFieldErrors({});
         setStationModalOpen(true);
     }
 
     async function submitStation(e: React.FormEvent) {
         e.preventDefault();
         setStationFormError(null);
+        setStationFieldErrors({});
         setSavingStation(true);
         try {
             const isEditing = stationForm.id !== undefined;
@@ -153,13 +161,16 @@ export default function CompanyKdsPage() {
             });
             const body = await res.json();
             if (!res.ok) {
-                const message =
-                    body.message ??
-                    Object.values(body.errors ?? {})
-                        .flat()
-                        .join(' · ') ??
-                    'No se pudo guardar.';
-                throw new Error(message);
+                // 422: errores por campo → inline bajo cada input.
+                if (res.status === 422 && body.errors) {
+                    const mapped: Record<string, string> = {};
+                    for (const [field, messages] of Object.entries(body.errors as Record<string, string[]>)) {
+                        mapped[field] = messages[0] ?? '';
+                    }
+                    setStationFieldErrors(mapped);
+                    return;
+                }
+                throw new Error(body.message ?? 'No se pudo guardar.');
             }
             await loadStations();
             setStationModalOpen(false);
@@ -371,7 +382,9 @@ export default function CompanyKdsPage() {
                                 onChange={(e) => setStationForm({ ...stationForm, name: e.target.value })}
                                 placeholder="Caliente"
                                 required
+                                aria-invalid={!!stationFieldErrors.name}
                             />
+                            <InputError message={stationFieldErrors.name} className="text-xs" />
                         </div>
                         {!stationForm.id && (
                             <div className="space-y-1.5">
@@ -384,15 +397,23 @@ export default function CompanyKdsPage() {
                                     placeholder="caliente"
                                     pattern="[a-z0-9][a-z0-9_-]*"
                                     required
+                                    aria-invalid={!!stationFieldErrors.slug}
                                 />
-                                <p className="text-muted-foreground text-xs">
-                                    Sólo minúsculas, números, guion y guion bajo. No cambia después de creado.
-                                </p>
+                                {stationFieldErrors.slug ? (
+                                    <InputError message={stationFieldErrors.slug} className="text-xs" />
+                                ) : (
+                                    <p className="text-muted-foreground text-xs">
+                                        Sólo minúsculas, números, guion y guion bajo. No cambia después de creado.
+                                    </p>
+                                )}
                             </div>
                         )}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="kds-warn">SLA aviso (min)</Label>
+                                <Label htmlFor="kds-warn" className="flex items-center gap-1.5">
+                                    SLA aviso (min)
+                                    <FieldHint text="Minutos que puede estar un ticket en la estación antes de marcarse en ámbar (va con retraso)." />
+                                </Label>
                                 <Input
                                     id="kds-warn"
                                     type="number"
@@ -401,10 +422,15 @@ export default function CompanyKdsPage() {
                                     value={stationForm.sla_warn_minutes}
                                     onChange={(e) => setStationForm({ ...stationForm, sla_warn_minutes: parseInt(e.target.value, 10) || 0 })}
                                     required
+                                    aria-invalid={!!stationFieldErrors.sla_warn_minutes}
                                 />
+                                <InputError message={stationFieldErrors.sla_warn_minutes} className="text-xs" />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor="kds-alert">SLA alerta (min)</Label>
+                                <Label htmlFor="kds-alert" className="flex items-center gap-1.5">
+                                    SLA alerta (min)
+                                    <FieldHint text="Minutos tras los cuales el ticket pasa a rojo (crítico). Debe ser mayor que el SLA de aviso." />
+                                </Label>
                                 <Input
                                     id="kds-alert"
                                     type="number"
@@ -413,7 +439,9 @@ export default function CompanyKdsPage() {
                                     value={stationForm.sla_alert_minutes}
                                     onChange={(e) => setStationForm({ ...stationForm, sla_alert_minutes: parseInt(e.target.value, 10) || 0 })}
                                     required
+                                    aria-invalid={!!stationFieldErrors.sla_alert_minutes}
                                 />
+                                <InputError message={stationFieldErrors.sla_alert_minutes} className="text-xs" />
                             </div>
                         </div>
                         <div className="space-y-1.5">

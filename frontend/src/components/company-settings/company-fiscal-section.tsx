@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import InputError from '@/components/input-error';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { SanitizedInput } from '@/components/ui/sanitized-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getFiscalProfile, updateFiscalProfile } from '@/lib/dian-api';
+import { DianApiError, getFiscalProfile, updateFiscalProfile } from '@/lib/dian-api';
 import type { DianDocTypeCode, DianFiscalProfile, DianFiscalProfileResponse } from '@/types/dian';
 
 /**
@@ -36,6 +37,9 @@ export function CompanyFiscalSection() {
     const [form, setForm] = useState<Partial<DianFiscalProfile>>({});
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Errores 422 por campo → inline bajo cada input. `error` queda para el
+    // fallo no atribuible a un campo.
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [okMsg, setOkMsg] = useState<string | null>(null);
     const [loadFailed, setLoadFailed] = useState(false);
 
@@ -78,6 +82,7 @@ export function CompanyFiscalSection() {
     const handleSave = async () => {
         setSaving(true);
         setError(null);
+        setFieldErrors({});
         setOkMsg(null);
         try {
             const res = await updateFiscalProfile(form);
@@ -85,7 +90,16 @@ export function CompanyFiscalSection() {
             setForm(res.data);
             setOkMsg('Datos fiscales guardados.');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error al guardar');
+            // 422 con errores por campo → inline bajo cada input; si no, mensaje general.
+            if (e instanceof DianApiError && e.errors) {
+                const mapped: Record<string, string> = {};
+                for (const [field, messages] of Object.entries(e.errors)) {
+                    mapped[field] = messages[0] ?? '';
+                }
+                setFieldErrors(mapped);
+            } else {
+                setError(e instanceof Error ? e.message : 'Error al guardar');
+            }
         } finally {
             setSaving(false);
         }
@@ -113,7 +127,9 @@ export function CompanyFiscalSection() {
                         onChange={(e) => setForm({ ...form, dv: e.target.value.replace(/\D/g, '').slice(0, 1) })}
                         maxLength={1}
                         disabled={!canEdit}
+                        aria-invalid={!!fieldErrors.dv}
                     />
+                    <InputError message={fieldErrors.dv} className="text-xs" />
                 </div>
                 <div>
                     <Label htmlFor="repName">Representante legal</Label>
@@ -125,6 +141,7 @@ export function CompanyFiscalSection() {
                         allowWhitespace
                         disabled={!canEdit}
                     />
+                    <InputError message={fieldErrors.legal_representative_name} className="text-xs" />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                     <div>
@@ -156,6 +173,7 @@ export function CompanyFiscalSection() {
                             maxLength={30}
                             disabled={!canEdit}
                         />
+                        <InputError message={fieldErrors.legal_representative_doc_number} className="text-xs" />
                     </div>
                 </div>
                 <div>
@@ -169,7 +187,9 @@ export function CompanyFiscalSection() {
                         maxLength={4}
                         placeholder="5611"
                         disabled={!canEdit}
+                        aria-invalid={!!fieldErrors.economic_activity_code}
                     />
+                    <InputError message={fieldErrors.economic_activity_code} className="text-xs" />
                 </div>
                 <div>
                     <Label htmlFor="dane">Municipio DANE (5 dígitos)</Label>
@@ -182,7 +202,9 @@ export function CompanyFiscalSection() {
                         maxLength={5}
                         placeholder="66001"
                         disabled={!canEdit}
+                        aria-invalid={!!fieldErrors.municipality_dane_code}
                     />
+                    <InputError message={fieldErrors.municipality_dane_code} className="text-xs" />
                 </div>
                 <div>
                     <Label htmlFor="billingEmail">Correo facturación</Label>
@@ -192,7 +214,9 @@ export function CompanyFiscalSection() {
                         value={form.billing_email ?? ''}
                         onChange={(e) => setForm({ ...form, billing_email: e.target.value })}
                         disabled={!canEdit}
+                        aria-invalid={!!fieldErrors.billing_email}
                     />
+                    <InputError message={fieldErrors.billing_email} className="text-xs" />
                 </div>
                 <div>
                     <Label htmlFor="billingPhone">Teléfono facturación</Label>
@@ -201,7 +225,9 @@ export function CompanyFiscalSection() {
                         value={form.billing_phone ?? ''}
                         onChange={(e) => setForm({ ...form, billing_phone: e.target.value })}
                         disabled={!canEdit}
+                        aria-invalid={!!fieldErrors.billing_phone}
                     />
+                    <InputError message={fieldErrors.billing_phone} className="text-xs" />
                 </div>
                 <div className="md:col-span-2">
                     <Label htmlFor="addr">Dirección física</Label>
@@ -213,6 +239,7 @@ export function CompanyFiscalSection() {
                         allowWhitespace
                         disabled={!canEdit}
                     />
+                    <InputError message={fieldErrors.physical_address} className="text-xs" />
                 </div>
             </div>
 

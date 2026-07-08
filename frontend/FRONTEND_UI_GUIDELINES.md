@@ -591,6 +591,7 @@ Lista de los componentes que ya viven en `resources/js/components/ui/`. **Antes 
 | `Badge` | `badge.tsx` | Estado de fila/objeto. Falta semáforo — ver §9. |
 | `Avatar` | `avatar.tsx` | Foto/inicial de user/employee. |
 | `Tooltip` | `tooltip.tsx` | Explicación corta de iconos, atajos. |
+| `FieldHint` | `field-hint.tsx` | Ícono (i) + tooltip junto al `<Label>` de un campo ambiguo. Autocontenido y accesible. No reimplementar con `Tooltip`+`Info` a mano. Ver §11. |
 | `DropdownMenu` | `dropdown-menu.tsx` | Acciones secundarias (kebab menu en filas de tabla). |
 | `Skeleton` | `skeleton.tsx` | Loading state con shape específico. |
 | `Separator` | `separator.tsx` | Divisor 1px. Equivale a `<hr>` con tokens. |
@@ -1004,9 +1005,10 @@ Form largos se dividen en **fieldsets** con título uppercase. `EmployeeForm` es
 ### Reglas
 
 - **Label arriba del input**, nunca placeholder como label.
+- **Tooltip de ayuda en campos ambiguos**: `FieldHint` (`components/ui/field-hint.tsx`) — ícono (i) junto al `<Label>` con la explicación. No inventar el patrón inline (`Tooltip` + `Info` a mano); usar el primitive. Reservarlo para campos cuyo nombre no basta (ej. SLA de KDS, tarifa por tipo de pago, tipo de negocio de la sede).
 - **Helper text** debajo del input en `text-xs text-muted-foreground`.
-- **Errores inline** con `InputError` (rojo, `text-xs`). Aparecen al `onBlur` o al submit, nunca al primer keystroke.
-- **Validación de servidor**: Inertia `errors` flash. Mostrar arriba del fieldset si afecta múltiples campos, o inline si es un solo campo.
+- **Errores inline** con `InputError` (rojo, `text-xs`) **debajo del campo que los causa** + `aria-invalid` en el control. Aparecen al `onBlur` o al submit, nunca al primer keystroke.
+- **Validación de servidor (422)**: mapear el `errors` de la respuesta a estado por-campo (`{ campo: mensaje }`) y renderizarlo inline en cada campo. **Nunca** aplanar los errores de campo a un solo mensaje al pie del form (`Object.values(errors)[0]`, join, etc.). El Alert/mensaje al pie queda solo para errores NO atribuibles a un campo (red, 403, o el genérico cuando el 422 no trae `errors`). Ver §13 → Error.
 - **Required**: marcar con asterisco `*` en el label, no en el placeholder. Texto consistente: `Nombres *`.
 - **Campos monetarios**: usar `Input type="text" inputMode="decimal"` con máscara de miles. Nunca `type="number"` (rompe formato local).
 - **Selects grandes** (`> 7 opciones`): usar `Combobox` (buscador integrado). Para <= 7 usar el `<select>` nativo / `Select`, `RadioGroup` o `ToggleGroup`.
@@ -1108,7 +1110,8 @@ Primitive `components/ui/combobox.tsx`. Úsalo en cualquier selección sobre cat
 ### Error
 
 - **Errores de servidor (5xx)**: banner `Alert variant="destructive"` arriba de la página con CTA "Reintentar".
-- **Errores de form (4xx con `errors`)**: inline en los campos afectados.
+- **Errores de form (4xx con `errors`)**: inline en el campo afectado, con `<InputError message={errors.campo} />` (o `<p className="text-destructive text-xs">`) debajo del input y `aria-invalid` en el control. **Nunca** aplanar los errores de campo a un solo mensaje al pie del formulario (`Object.values(errors)[0]`, join, etc.): el usuario debe ver el error donde está el campo que lo causa.
+- **El Alert/mensaje al pie del form queda solo para errores NO atribuibles a un campo**: red, 403, o el genérico cuando el 422 no trae `errors`. Mapear siempre `errors` (422) a estado por-campo antes de caer al genérico.
 - **Errores de red / offline**: usar el sistema de `offline/` components, no un Alert genérico.
 - **Toast para errores efímeros** que no requieren acción (ej. "No se pudo copiar al portapapeles").
 

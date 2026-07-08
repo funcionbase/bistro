@@ -1,6 +1,8 @@
 ﻿import { BusinessTypeSelector } from '@/components/business-type-selector';
+import InputError from '@/components/input-error';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FieldHint } from '@/components/ui/field-hint';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,7 +17,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBusinessTypes } from '@/hooks/use-business-types';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
@@ -23,7 +24,7 @@ import { sanitizeSlug, slugify } from '@/lib/input-sanitize';
 import { reloadContext } from '@/lib/navigate-compat';
 import { useSharedData } from '@/lib/shared-data';
 import { BranchMenuBranding } from '@/components/company/branch-menu-branding';
-import { Archive, Copy, Info, Landmark, LoaderCircle, MapPin, Palette, Pencil, Plus, Star, Users } from 'lucide-react';
+import { Archive, Copy, Landmark, LoaderCircle, MapPin, Palette, Pencil, Plus, Star, Users } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
 interface Branch {
@@ -95,6 +96,9 @@ export default function BranchesIndex() {
     const [form, setForm] = useState<FormState>(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    // Errores 422 por campo → inline bajo cada input. `formError` queda para
+    // errores no atribuibles a un campo.
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     // Mientras el slug no se edite a mano, se autosugiere desde el nombre.
     const [slugTouched, setSlugTouched] = useState(false);
 
@@ -151,6 +155,7 @@ export default function BranchesIndex() {
     function openCreate() {
         setForm(EMPTY_FORM);
         setFormError(null);
+        setFieldErrors({});
         setSlugTouched(false);
         setModalOpen(true);
     }
@@ -167,6 +172,7 @@ export default function BranchesIndex() {
             is_default: b.is_default,
         });
         setFormError(null);
+        setFieldErrors({});
         // En edición ya hay slug propio: no lo pisamos al tocar el nombre.
         setSlugTouched(true);
         setModalOpen(true);
@@ -176,6 +182,7 @@ export default function BranchesIndex() {
         e.preventDefault();
         setSaving(true);
         setFormError(null);
+        setFieldErrors({});
         try {
             const isEdit = !!form.id;
             const url = isEdit ? `/api/v1/company/branches/${form.id}` : `/api/v1/company/branches`;
@@ -197,7 +204,18 @@ export default function BranchesIndex() {
                 body: JSON.stringify(baseBody),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message ?? 'No se pudo guardar la sede.');
+            if (!res.ok) {
+                // 422: errores por campo → inline bajo cada input.
+                if (res.status === 422 && data.errors) {
+                    const mapped: Record<string, string> = {};
+                    for (const [field, messages] of Object.entries(data.errors as Record<string, string[]>)) {
+                        mapped[field] = messages[0] ?? '';
+                    }
+                    setFieldErrors(mapped);
+                    return;
+                }
+                throw new Error(data.message ?? 'No se pudo guardar la sede.');
+            }
 
             // #237 — si el vertical cambió en edit, dispara el endpoint dedicado.
             if (isEdit && form.initial_business_type_id !== form.business_type_id) {
@@ -534,7 +552,9 @@ export default function BranchesIndex() {
                                     // usuario lo edite a mano.
                                     setForm((f) => ({ ...f, name, slug: slugTouched ? f.slug : slugify(name, SLUG_MAX) }));
                                 }}
+                                aria-invalid={!!fieldErrors.name}
                             />
+                            <InputError message={fieldErrors.name} className="text-xs" />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="slug">Slug (identificador URL)</Label>
@@ -549,43 +569,51 @@ export default function BranchesIndex() {
                                     setForm((f) => ({ ...f, slug: sanitizeSlug(e.target.value, SLUG_MAX) }));
                                     setSlugTouched(true);
                                 }}
+                                aria-invalid={!!fieldErrors.slug}
                             />
-                            <p className="text-muted-foreground text-xs">Solo minúsculas, números y guiones. Único por empresa.</p>
+                            {fieldErrors.slug ? (
+                                <InputError message={fieldErrors.slug} className="text-xs" />
+                            ) : (
+                                <p className="text-muted-foreground text-xs">Solo minúsculas, números y guiones. Único por empresa.</p>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="grid gap-2">
                                 <Label htmlFor="address">Dirección</Label>
-                                <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                                <Input
+                                    id="address"
+                                    value={form.address}
+                                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                                    aria-invalid={!!fieldErrors.address}
+                                />
+                                <InputError message={fieldErrors.address} className="text-xs" />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="city">Ciudad</Label>
-                                <Input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                                <Input
+                                    id="city"
+                                    value={form.city}
+                                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                                    aria-invalid={!!fieldErrors.city}
+                                />
+                                <InputError message={fieldErrors.city} className="text-xs" />
                             </div>
                         </div>
                         <div className="grid gap-2">
                             <div className="flex items-center gap-2">
                                 <Label>Tipo de negocio</Label>
-                                <TooltipProvider delayDuration={200}>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span tabIndex={0} className="text-muted-foreground hover:text-foreground focus:outline-none">
-                                                <Info className="h-3.5 w-3.5" />
-                                            </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top" align="start" className="max-w-xs space-y-1">
-                                            <p className="text-xs leading-snug">
-                                                Define qué módulos quedan habilitados para esta sede (mesas, KDS, domicilios, recetas, etc.) y siembra
-                                                sus áreas de preparación por defecto.
-                                            </p>
-                                            {form.id && (
-                                                <p className="text-xs leading-snug opacity-80">
-                                                    Cambiarlo <strong>no afecta</strong> órdenes históricas, menús ni receipts — sólo qué módulos
-                                                    aparecen y agrega áreas de preparación faltantes.
-                                                </p>
-                                            )}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <FieldHint>
+                                    <p className="leading-snug">
+                                        Define qué módulos quedan habilitados para esta sede (mesas, KDS, domicilios, recetas, etc.) y siembra sus
+                                        áreas de preparación por defecto.
+                                    </p>
+                                    {form.id && (
+                                        <p className="leading-snug opacity-80">
+                                            Cambiarlo <strong>no afecta</strong> órdenes históricas, menús ni receipts — sólo qué módulos aparecen y
+                                            agrega áreas de preparación faltantes.
+                                        </p>
+                                    )}
+                                </FieldHint>
                             </div>
                             <BusinessTypeSelector
                                 value={form.business_type_id}

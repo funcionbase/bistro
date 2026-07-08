@@ -1,30 +1,15 @@
-﻿import { Button } from '@/components/ui/button';
+﻿import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
+import { FieldHint } from '@/components/ui/field-hint';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/lib/api';
 import { sanitizePlainText } from '@/lib/input-sanitize';
 import { useSharedData } from '@/lib/shared-data';
-import { Banknote, Briefcase, Clock, HeartPulse, IdCard, Info, LoaderCircle, Phone } from 'lucide-react';
+import { Banknote, Briefcase, Clock, HeartPulse, IdCard, LoaderCircle, Phone } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-
-/** Ícono de ayuda con tooltip — aclara campos ambiguos sin saturar la UI. */
-function FieldHint({ text }: { text: string }) {
-    return (
-        <TooltipProvider delayDuration={150}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button type="button" className="text-muted-foreground hover:text-foreground inline-flex" aria-label="Más información">
-                        <Info className="h-3.5 w-3.5" />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">{text}</TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    );
-}
 
 export type EmployeeFormValues = {
     primary_branch_id: string;
@@ -63,6 +48,12 @@ type Props = {
     submitting?: boolean;
     submitLabel?: string;
     readOnly?: boolean;
+    /**
+     * Errores de validación por campo (422 del backend), aplanados a
+     * `{ campo: mensaje }`. Se muestran inline bajo cada input, no en un
+     * mensaje al pie del formulario.
+     */
+    errors?: Record<string, string>;
 };
 
 type Branch = { id: string; name: string };
@@ -104,7 +95,7 @@ const defaultValues: EmployeeFormValues = {
  * agrupados en DashboardPanel por sección. Valida sólo en backend (no
  * duplicar reglas).
  */
-export default function EmployeeForm({ initial, onSubmit, submitting, submitLabel = 'Guardar', readOnly = false }: Props) {
+export default function EmployeeForm({ initial, onSubmit, submitting, submitLabel = 'Guardar', readOnly = false, errors = {} }: Props) {
     const { availableBanks = [] } = useSharedData();
     const [values, setValues] = useState<EmployeeFormValues>({ ...defaultValues, ...initial });
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -172,6 +163,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             maxLength={32}
                             required
                         />
+                        <InputError message={errors.doc_number} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-birth-date">Fecha nacimiento</Label>
@@ -181,6 +173,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             value={values.birth_date}
                             onChange={(e) => update('birth_date', e.target.value)}
                         />
+                        <InputError message={errors.birth_date} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-first-name">
@@ -193,6 +186,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             maxLength={120}
                             required
                         />
+                        <InputError message={errors.first_name} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-last-name">
@@ -205,6 +199,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             maxLength={120}
                             required
                         />
+                        <InputError message={errors.last_name} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-blood-type">Tipo de sangre</Label>
@@ -239,10 +234,12 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             maxLength={180}
                             required
                         />
+                        <InputError message={errors.email} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-phone">Teléfono</Label>
                         <Input id="employee-phone" value={values.phone} onChange={(e) => update('phone', e.target.value)} maxLength={30} />
+                        <InputError message={errors.phone} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-city">Ciudad</Label>
@@ -252,6 +249,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('city', sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
                         />
+                        <InputError message={errors.city} />
                     </div>
                     <div className="space-y-1.5 md:col-span-2">
                         <Label htmlFor="employee-address">Dirección</Label>
@@ -261,6 +259,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('address', sanitizePlainText(e.target.value, 255, false, false))}
                             maxLength={255}
                         />
+                        <InputError message={errors.address} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-uniform-size">Talla de uniforme</Label>
@@ -270,6 +269,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('uniform_size', sanitizePlainText(e.target.value, 20, false, false))}
                             maxLength={20}
                         />
+                        <InputError message={errors.uniform_size} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-emergency-name">Contacto emergencia</Label>
@@ -279,6 +279,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('emergency_contact_name', sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
                         />
+                        <InputError message={errors.emergency_contact_name} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-emergency-phone">Teléfono emergencia</Label>
@@ -288,6 +289,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('emergency_contact_phone', e.target.value)}
                             maxLength={30}
                         />
+                        <InputError message={errors.emergency_contact_phone} />
                     </div>
                 </div>
             </DashboardPanel>
@@ -310,6 +312,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                                 ))}
                             </SelectContent>
                         </Select>
+                        <InputError message={errors.primary_branch_id} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-position">Cargo</Label>
@@ -340,6 +343,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('eps', sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
                         />
+                        <InputError message={errors.eps} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-arl">ARL</Label>
@@ -349,6 +353,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('arl', sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
                         />
+                        <InputError message={errors.arl} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-pension">Fondo de pensiones</Label>
@@ -358,6 +363,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('pension_fund', sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
                         />
+                        <InputError message={errors.pension_fund} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-severance">Cesantías</Label>
@@ -367,6 +373,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('severance_fund', sanitizePlainText(e.target.value, 120, false, false))}
                             maxLength={120}
                         />
+                        <InputError message={errors.severance_fund} />
                     </div>
                 </div>
             </DashboardPanel>
@@ -419,6 +426,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('pay_rate', e.target.value)}
                             required
                         />
+                        <InputError message={errors.pay_rate} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-bank">Banco</Label>
@@ -457,10 +465,12 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('account_number', e.target.value)}
                             maxLength={32}
                         />
+                        <InputError message={errors.account_number} />
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="employee-hire-date">Fecha de ingreso</Label>
                         <Input id="employee-hire-date" type="date" value={values.hire_date} onChange={(e) => update('hire_date', e.target.value)} />
+                        <InputError message={errors.hire_date} />
                     </div>
                 </div>
             </DashboardPanel>
@@ -478,6 +488,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
                             onChange={(e) => update('min_days_off_override', e.target.value)}
                             placeholder="usa el de empresa si vacío"
                         />
+                        <InputError message={errors.min_days_off_override} />
                     </div>
                 </div>
             </DashboardPanel>

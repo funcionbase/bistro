@@ -1,4 +1,5 @@
-﻿import { Alert, AlertDescription } from '@/components/ui/alert';
+﻿import InputError from '@/components/input-error';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -36,7 +37,10 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
     const [quantity, setQuantity] = useState<string>('');
     const [reference, setReference] = useState<string>('');
     const [submitting, setSubmitting] = useState(false);
+    // `error` = cross-field / servidor no atribuible a un campo (origen=destino).
+    // `fieldErrors` = error de un input puntual → se muestra debajo de ese input.
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const selectedIngredient = useMemo(() => ingredients.find((i) => i.id === ingredientId), [ingredients, ingredientId]);
 
@@ -50,22 +54,25 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
     const submit: FormEventHandler<HTMLFormElement> = async (e) => {
         e.preventDefault();
         setError(null);
+        setFieldErrors({});
 
+        // Validaciones cliente: las de campo van bajo su input; origen=destino
+        // es cross-field → mensaje de form.
+        const fe: Record<string, string> = {};
         if (!ingredientId) {
-            setError('Selecciona el insumo a transferir.');
-            return;
-        }
-        if (fromWarehouseId === toWarehouseId) {
-            setError('La bodega de origen y destino no pueden ser la misma.');
-            return;
+            fe.ingredient_id = 'Selecciona el insumo a transferir.';
         }
         const qty = Number(quantity);
         if (!qty || qty <= 0) {
-            setError('La cantidad debe ser positiva.');
-            return;
+            fe.quantity = 'La cantidad debe ser positiva.';
+        } else if (qty > availableQty) {
+            fe.quantity = `Solo hay ${availableQty} ${selectedIngredient?.unit ?? ''} disponibles en origen.`;
         }
-        if (qty > availableQty) {
-            setError(`Solo hay ${availableQty} ${selectedIngredient?.unit ?? ''} disponibles en origen.`);
+        if (fromWarehouseId === toWarehouseId) {
+            setError('La bodega de origen y destino no pueden ser la misma.');
+        }
+        if (Object.keys(fe).length > 0 || fromWarehouseId === toWarehouseId) {
+            setFieldErrors(fe);
             return;
         }
 
@@ -81,8 +88,16 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
             onClose();
         } catch (err) {
             const apiErr = err as { errors?: Record<string, string[]>; message?: string };
-            const first = apiErr.errors ? Object.values(apiErr.errors)[0]?.[0] : apiErr.message;
-            setError(first ?? 'No se pudo completar la transferencia.');
+            // 422 con errores por campo → inline; si no, mensaje de form.
+            if (apiErr.errors) {
+                const mapped: Record<string, string> = {};
+                for (const [field, messages] of Object.entries(apiErr.errors)) {
+                    mapped[field] = messages[0] ?? '';
+                }
+                setFieldErrors(mapped);
+            } else {
+                setError(apiErr.message ?? 'No se pudo completar la transferencia.');
+            }
         } finally {
             setSubmitting(false);
         }
@@ -153,6 +168,7 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
                                     </option>
                                 ))}
                         </select>
+                        <InputError message={fieldErrors.ingredient_id} className="text-xs" />
                         {selectedIngredient && (
                             <p className="text-muted-foreground text-xs">
                                 Disponible en {stockInOrigin?.name ?? 'origen'}:{' '}
@@ -174,7 +190,9 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}
                             placeholder={selectedIngredient ? `0 ${selectedIngredient.unit}` : '0'}
+                            aria-invalid={!!fieldErrors.quantity}
                         />
+                        <InputError message={fieldErrors.quantity} className="text-xs" />
                     </div>
 
                     <div className="space-y-1.5">

@@ -333,6 +333,7 @@ Sin lógica de auth ni permisos. Todas presentacionales, accesibles (Radix donde
 | `toggle.tsx` | Radix Toggle | — |
 | `toggle-group.tsx` | Radix ToggleGroup | — |
 | `tooltip.tsx` | Radix Tooltip | Delay 3s con portal |
+| `field-hint.tsx` | custom (Tooltip + Info) | Ícono (i) + tooltip junto al `<Label>` de un campo ambiguo. Autocontenido y accesible; reemplaza el patrón `Tooltip`+`Info` inline |
 
 ### Componentes por dominio (~97)
 

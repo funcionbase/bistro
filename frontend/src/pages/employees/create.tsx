@@ -16,11 +16,13 @@ export default function EmployeesCreate() {
     useToken();
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async (values: EmployeeFormValues) => {
         setSubmitting(true);
         setError(null);
+        setFieldErrors({});
         try {
             const res = await apiFetch('/api/v1/employees', {
                 method: 'POST',
@@ -29,6 +31,16 @@ export default function EmployeesCreate() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
+                // 422: errores por campo → van inline bajo cada input. El Alert
+                // superior queda solo para errores no atribuibles a un campo.
+                if (res.status === 422 && data.errors) {
+                    const mapped: Record<string, string> = {};
+                    for (const [field, messages] of Object.entries(data.errors as Record<string, string[]>)) {
+                        mapped[field] = messages[0] ?? '';
+                    }
+                    setFieldErrors(mapped);
+                    return;
+                }
                 setError(data.message ?? 'No se pudo crear el colaborador.');
                 return;
             }
@@ -66,7 +78,7 @@ export default function EmployeesCreate() {
                     </Alert>
                 )}
 
-                <EmployeeForm onSubmit={submit} submitting={submitting} submitLabel="Crear colaborador" />
+                <EmployeeForm onSubmit={submit} submitting={submitting} submitLabel="Crear colaborador" errors={fieldErrors} />
             </div>
         </PageShell>
     );

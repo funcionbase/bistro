@@ -1,4 +1,5 @@
-﻿import { PageShell } from '@/components/page-shell';
+﻿import InputError from '@/components/input-error';
+import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,6 +72,9 @@ export default function CompanyPrinters() {
     const [form, setForm] = useState<FormState>(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    // Errores 422 por campo → inline bajo cada input. `formError` queda para
+    // errores no atribuibles a un campo.
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [confirmDelete, setConfirmDelete] = useState<Printer | null>(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -100,6 +104,7 @@ export default function CompanyPrinters() {
     function openCreate() {
         setForm(EMPTY_FORM);
         setFormError(null);
+        setFieldErrors({});
         setModalOpen(true);
     }
 
@@ -115,6 +120,7 @@ export default function CompanyPrinters() {
             is_active: p.is_active,
         });
         setFormError(null);
+        setFieldErrors({});
         setModalOpen(true);
     }
 
@@ -122,6 +128,7 @@ export default function CompanyPrinters() {
         e.preventDefault();
         setSaving(true);
         setFormError(null);
+        setFieldErrors({});
         const payload = {
             name: form.name,
             type: form.type,
@@ -144,6 +151,15 @@ export default function CompanyPrinters() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
+                // 422: errores por campo → inline bajo cada input.
+                if (res.status === 422 && data.errors) {
+                    const mapped: Record<string, string> = {};
+                    for (const [field, messages] of Object.entries(data.errors as Record<string, string[]>)) {
+                        mapped[field] = messages[0] ?? '';
+                    }
+                    setFieldErrors(mapped);
+                    return;
+                }
                 throw new Error(data.message ?? 'No se pudo guardar la impresora');
             }
             setModalOpen(false);
@@ -313,7 +329,9 @@ export default function CompanyPrinters() {
                                 required
                                 maxLength={120}
                                 placeholder="Ej: Cocina caliente, Barra, Caja"
+                                aria-invalid={!!fieldErrors.name}
                             />
+                            <InputError message={fieldErrors.name} className="text-xs" />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -358,7 +376,9 @@ export default function CompanyPrinters() {
                                 placeholder="http://10.0.0.50:9100/print"
                                 required
                                 className="font-mono text-xs"
+                                aria-invalid={!!fieldErrors.address}
                             />
+                            <InputError message={fieldErrors.address} className="text-xs" />
                         </div>
 
                         <div className="space-y-1.5">
@@ -384,7 +404,9 @@ export default function CompanyPrinters() {
                                 value={form.categories}
                                 onChange={(e) => setForm({ ...form, categories: e.target.value })}
                                 placeholder="Salchipapas, Hamburguesas, Picadas"
+                                aria-invalid={!!fieldErrors.categories}
                             />
+                            <InputError message={fieldErrors.categories} className="text-xs" />
                             <p className="text-muted-foreground text-xs">
                                 Sólo aplica para impresoras de cocina/barra. La comanda se imprime aquí cuando un ítem pertenece a una de estas
                                 categorías.

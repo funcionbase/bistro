@@ -1,6 +1,7 @@
 import { Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import InputError from '@/components/input-error';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { createResolution, deactivateResolution, getProviderConfig, listResolutions, updateProviderConfig } from '@/lib/dian-api';
+import { DianApiError, createResolution, deactivateResolution, getProviderConfig, listResolutions, updateProviderConfig } from '@/lib/dian-api';
 import type { DianDocumentType, DianProviderConfig, DianResolution } from '@/types/dian';
 
 /**
@@ -310,6 +311,8 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
         environment: 'habilitacion' as 'habilitacion' | 'produccion',
     });
     const [error, setError] = useState<string | null>(null);
+    // Errores 422 por campo del alta de resolución → inline bajo cada input.
+    const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
 
     const fetchAll = () => {
         listResolutions()
@@ -322,6 +325,7 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
 
     const handleCreate = async () => {
         setError(null);
+        setCreateErrors({});
         try {
             await createResolution({
                 ...form,
@@ -330,7 +334,16 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
             setCreating(false);
             fetchAll();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error al crear');
+            // 422 con errores por campo → inline bajo cada input; si no, mensaje general.
+            if (e instanceof DianApiError && e.errors) {
+                const mapped: Record<string, string> = {};
+                for (const [field, messages] of Object.entries(e.errors)) {
+                    mapped[field] = messages[0] ?? '';
+                }
+                setCreateErrors(mapped);
+            } else {
+                setError(e instanceof Error ? e.message : 'Error al crear');
+            }
         }
     };
 
@@ -442,7 +455,13 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                         </div>
                         <div>
                             <Label>Prefijo</Label>
-                            <Input value={form.prefix} onChange={(e) => setForm({ ...form, prefix: e.target.value })} maxLength={10} />
+                            <Input
+                                value={form.prefix}
+                                onChange={(e) => setForm({ ...form, prefix: e.target.value })}
+                                maxLength={10}
+                                aria-invalid={!!createErrors.prefix}
+                            />
+                            <InputError message={createErrors.prefix} className="text-xs" />
                         </div>
                         <div>
                             <Label>Rango desde</Label>
@@ -450,7 +469,9 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                                 type="number"
                                 value={form.range_from}
                                 onChange={(e) => setForm({ ...form, range_from: parseInt(e.target.value || '1', 10) })}
+                                aria-invalid={!!createErrors.range_from}
                             />
+                            <InputError message={createErrors.range_from} className="text-xs" />
                         </div>
                         <div>
                             <Label>Rango hasta</Label>
@@ -458,11 +479,18 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                                 type="number"
                                 value={form.range_to}
                                 onChange={(e) => setForm({ ...form, range_to: parseInt(e.target.value || '5000', 10) })}
+                                aria-invalid={!!createErrors.range_to}
                             />
+                            <InputError message={createErrors.range_to} className="text-xs" />
                         </div>
                         <div>
                             <Label>Número de resolución</Label>
-                            <Input value={form.resolution_number} onChange={(e) => setForm({ ...form, resolution_number: e.target.value })} />
+                            <Input
+                                value={form.resolution_number}
+                                onChange={(e) => setForm({ ...form, resolution_number: e.target.value })}
+                                aria-invalid={!!createErrors.resolution_number}
+                            />
+                            <InputError message={createErrors.resolution_number} className="text-xs" />
                         </div>
                         <div>
                             <Label>Ambiente</Label>
@@ -481,11 +509,23 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                         </div>
                         <div>
                             <Label>Vigente desde</Label>
-                            <Input type="date" value={form.valid_from} onChange={(e) => setForm({ ...form, valid_from: e.target.value })} />
+                            <Input
+                                type="date"
+                                value={form.valid_from}
+                                onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
+                                aria-invalid={!!createErrors.valid_from}
+                            />
+                            <InputError message={createErrors.valid_from} className="text-xs" />
                         </div>
                         <div>
                             <Label>Vigente hasta</Label>
-                            <Input type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} />
+                            <Input
+                                type="date"
+                                value={form.valid_until}
+                                onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
+                                aria-invalid={!!createErrors.valid_until}
+                            />
+                            <InputError message={createErrors.valid_until} className="text-xs" />
                         </div>
                         <div className="md:col-span-2">
                             <Label>Clave técnica DIAN</Label>
@@ -493,7 +533,9 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                                 value={form.technical_key}
                                 onChange={(e) => setForm({ ...form, technical_key: e.target.value })}
                                 placeholder="40 caracteres entregados por DIAN"
+                                aria-invalid={!!createErrors.technical_key}
                             />
+                            <InputError message={createErrors.technical_key} className="text-xs" />
                         </div>
                     </div>
                     <div className="flex justify-end gap-2">
