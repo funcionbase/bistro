@@ -9,7 +9,7 @@ import { SelectableTile } from '@/components/ui/selectable-tile';
 import { useBootstrap } from '@/hooks/use-bootstrap';
 import { ApiError, apiClient } from '@/lib/api-client';
 import { companyStatusBadgeVariant, companyStatusLabel, isSelectable } from '@/lib/company-status';
-import { reloadContext } from '@/lib/navigate-compat';
+import { markLoginIntro } from '@/lib/intro';
 import { route } from '@/lib/route-compat';
 import { useLogout } from '@/lib/use-logout';
 import { type Company } from '@/types';
@@ -147,13 +147,13 @@ export default function CompanySelectorRoute() {
         try {
             const data = await apiClient.post<SelectCompanyResponse>('/api/v1/auth/select-company', { nit });
             const target = data.default_route && data.default_route !== '' ? data.default_route : 'dashboard';
-            // El select reemplaza la cookie JWT con la empresa elegida.
-            // Hay que invalidar el query del bootstrap ANTES de navegar para
-            // que la nueva ruta monte con activeCompany/permissions frescos;
-            // si no, el sidebar y los gates RBAC siguen mostrando los de
-            // la empresa anterior hasta que el usuario haga F5.
-            reloadContext();
-            navigate(route(target));
+            // El select reemplaza la cookie JWT con la empresa elegida. Se
+            // navega con carga completa: el intro verde del shell (index.html)
+            // cubre el arranque mientras bootstrap/context llegan frescos para
+            // la nueva empresa (una recarga invalida todo el cache de queries,
+            // que era lo que hacía reloadContext antes de navegar por SPA).
+            markLoginIntro();
+            window.location.href = route(target);
         } catch (e) {
             if (e instanceof ApiError && e.status === 403 && e.code === 'USER_INACTIVE_IN_COMPANY') {
                 setError('Tu acceso a esta empresa ha sido revocado. Contacta al administrador.');

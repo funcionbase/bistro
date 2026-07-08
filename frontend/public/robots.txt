@@ -1,7 +1,38 @@
+# bistro.flexyflow.co — contenido público (landing, manual, cartas QR) abierto
+# a todos los crawlers, incluidos bots de LLMs (GPTBot, ClaudeBot, PerplexityBot,
+# etc. caen bajo *). Solo se excluyen las rutas privadas del panel, que de todas
+# formas requieren autenticación.
 User-agent: *
-Allow: /manual/
-Allow: /menus/
-Allow: /menus$
-Disallow: /
+Disallow: /dashboard
+Disallow: /orders
+Disallow: /cashier
+Disallow: /company/
+Disallow: /settings
+Disallow: /identities
+Disallow: /inventory
+Disallow: /purchases
+Disallow: /clients
+Disallow: /coupons
+Disallow: /menu/
+Disallow: /kds
+Disallow: /chats
+Disallow: /billing
+Disallow: /planner
+Disallow: /employees
+Disallow: /me
+Disallow: /hours
+Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /confirm-password
+Disallow: /verify-email
+Disallow: /enrollment
+Disallow: /t/
+Disallow: /loyalty
+Disallow: /deliveries
+Disallow: /my-deliveries
+Disallow: /dian
 
 Sitemap: https://bistro.flexyflow.co/sitemap.xml

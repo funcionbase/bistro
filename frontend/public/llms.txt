@@ -1,0 +1,24 @@
+# bistro
+
+> Software de gestión para restaurantes pequeños y medianos del Eje Cafetero
+> colombiano (Pereira, Manizales, Armenia). Menú digital con código QR,
+> pedidos, caja POS, inventario, domicilios, fidelización y facturación
+> electrónica DIAN. Web app (PWA), sin instalaciones ni licencias por terminal.
+> Tarifa: $300.000 COP/mes por empresa, sedes ilimitadas. Producto de flexyflow
+> (https://flexyflow.co).
+
+## Contenido público
+
+- [Landing](https://bistro.flexyflow.co/): qué es bistro y cómo probarlo.
+- [Manual de usuario](https://bistro.flexyflow.co/manual/bistro): documentación
+  completa por módulo — primeros pasos, menús, pedidos, caja y cobros, mesas
+  con QR, entregas/domicilios, horarios, chat, inventario, clientes, cupones,
+  fidelización, métricas, alertas, facturación, usuarios y roles, sedes y
+  bodegas, compras, planificador de turnos, configuración y WhatsApp.
+- [Preguntas frecuentes](https://bistro.flexyflow.co/manual/bistro/faq)
+- [Contrato de servicio](https://bistro.flexyflow.co/manual/bistro/legal/contrato)
+
+## Contacto
+
+- Demo y ventas: https://flexyflow.co/#footer-with-contact
+- Registro: https://bistro.flexyflow.co/register

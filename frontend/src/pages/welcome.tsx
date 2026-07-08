@@ -3,7 +3,9 @@ import { ConsentBanner } from '@/components/consent-banner';
 import { Button } from '@/components/ui/button';
 import { HeroHeadline } from '@/components/ui/hero-headline';
 import { useToken } from '@/hooks/use-token';
+import { notifyIntroReady } from '@/lib/intro';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const DEMO_URL = 'https://flexyflow.co/#footer-with-contact';
@@ -46,8 +48,14 @@ const wordmarkStyles = [
  * la sesión lo resuelve el destino (dashboard → useBootstrap).
  */
 export default function Welcome() {
-    useDocumentTitle('Bienvenido');
+    useDocumentTitle('Software para restaurantes del Eje Cafetero');
     const token = useToken();
+
+    // Avisa al intro del shell (index.html) que la app ya montó — la cortina
+    // inicia su salida (respetando su tiempo mínimo de exhibición).
+    useEffect(() => {
+        notifyIntroReady();
+    }, []);
 
     return (
         <>
@@ -105,15 +113,15 @@ export default function Welcome() {
                 <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col items-center gap-6 px-6 pt-4 lg:grid lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-10 lg:pt-0">
                     <HeroHeadline
                         className="flex max-w-xl flex-col items-center text-center lg:items-start lg:text-left"
-                        eyebrow="Hecho para restaurantes"
+                        eyebrow="Software para restaurantes"
                         title={
                             <>
-                                Herramientas simples
+                                El sistema simple{' '}
                                 <br />
-                                para restaurantes modernos.
+                                para tu restaurante.
                             </>
                         }
-                        description="Toma pedidos, cobra en caja, controla tu inventario y mira tus números en tiempo real. Todo en un solo panel — sin instalaciones, sin licencias por terminal."
+                        description="Menú digital con QR, pedidos, caja POS, inventario y facturación electrónica DIAN. Hecho para restaurantes pequeños y medianos de Pereira, Manizales y Armenia — sin instalaciones, sin licencias por terminal."
                         actions={
                             <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                                 <Button asChild size="lg" className="rounded-full font-semibold">
@@ -142,7 +150,7 @@ export default function Welcome() {
                     keyframes logo-marquee (-50% = un ciclo). */}
                 <section aria-label="Restaurantes que confían en bistro" className="space-y-5 pb-8">
                     <p className="text-muted-foreground px-6 text-center text-xs font-semibold uppercase tracking-[0.18em]">
-                        Con la confianza de restaurantes
+                        Con la confianza de restaurantes del Eje Cafetero
                     </p>
                     <div className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
                         <div className="flex w-max animate-[logo-marquee_32s_linear_infinite] items-center opacity-80 grayscale motion-reduce:animate-none" aria-hidden>

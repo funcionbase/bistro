@@ -1,4 +1,5 @@
 import ManualLayout from '@/layouts/manual-layout';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const faqs = [
@@ -133,6 +134,25 @@ const faqs = [
 ];
 
 export default function ManualFaq() {
+    // JSON-LD FAQPage — candidatea rich results de preguntas en Google.
+    useEffect(() => {
+        const jsonLd = document.createElement('script');
+        jsonLd.type = 'application/ld+json';
+        jsonLd.id = 'faq-jsonld';
+        jsonLd.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            inLanguage: 'es-CO',
+            mainEntity: faqs.map((f) => ({
+                '@type': 'Question',
+                name: f.q,
+                acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+        });
+        document.head.appendChild(jsonLd);
+        return () => jsonLd.remove();
+    }, []);
+
     return (
         <ManualLayout
             currentSlug="faq"

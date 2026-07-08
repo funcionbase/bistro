@@ -103,10 +103,38 @@ export default function ManualLayout({
         }
         canonical.href = `https://bistro.flexyflow.co${location.pathname}`;
 
+        // JSON-LD (breadcrumbs + artículo) para posicionamiento del manual —
+        // Google lo lee del DOM renderizado.
+        const jsonLd = document.createElement('script');
+        jsonLd.type = 'application/ld+json';
+        jsonLd.id = 'manual-jsonld';
+        jsonLd.textContent = JSON.stringify([
+            {
+                '@context': 'https://schema.org',
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    { '@type': 'ListItem', position: 1, name: 'bistro', item: 'https://bistro.flexyflow.co/' },
+                    { '@type': 'ListItem', position: 2, name: 'Manual de usuario', item: `https://bistro.flexyflow.co${MANUAL_BASE}` },
+                    { '@type': 'ListItem', position: 3, name: pageTitle, item: `https://bistro.flexyflow.co${location.pathname}` },
+                ],
+            },
+            {
+                '@context': 'https://schema.org',
+                '@type': 'TechArticle',
+                headline: pageTitle,
+                description: metaDescription,
+                inLanguage: 'es-CO',
+                author: { '@type': 'Organization', name: 'flexyflow', url: 'https://flexyflow.co' },
+                about: 'Software de gestión para restaurantes: menú digital QR, POS, inventario y facturación DIAN',
+            },
+        ]);
+        document.head.appendChild(jsonLd);
+
         return () => {
             canonical?.remove();
+            jsonLd.remove();
         };
-    }, [metaTitle, metaDescription, location.pathname]);
+    }, [metaTitle, metaDescription, pageTitle, location.pathname]);
 
     // Cierra sidebar al navegar
     useEffect(() => {

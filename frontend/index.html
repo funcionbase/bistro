@@ -1,11 +1,56 @@
 ﻿<!DOCTYPE html>
-<html lang="es">
+<html lang="es-CO">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-
-        <title>bistro</title>
+        <!-- SEO: metadatos estáticos del shell — los crawlers los leen con el
+             primer byte; las rutas SPA (manual, panel) los sobreescriben por JS. -->
+        <title>bistro — Software para restaurantes en Pereira, Manizales y Armenia | Menú QR, POS e inventario</title>
+        <meta
+            name="description"
+            content="Sistema de gestión para restaurantes pequeños y medianos del Eje Cafetero: menú digital con código QR, pedidos, caja POS, inventario, domicilios y facturación electrónica DIAN. Sin instalaciones ni licencias por terminal."
+        />
+        <link rel="canonical" href="https://bistro.flexyflow.co/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="bistro" />
+        <meta property="og:locale" content="es_CO" />
+        <meta property="og:title" content="bistro — Software para restaurantes | Menú QR, POS e inventario" />
+        <meta
+            property="og:description"
+            content="El sistema simple para administrar tu restaurante: menú digital con QR, pedidos, caja, inventario y facturación DIAN. Hecho para restaurantes de Pereira, Manizales y Armenia."
+        />
+        <meta property="og:url" content="https://bistro.flexyflow.co/" />
+        <meta property="og:image" content="https://bistro.flexyflow.co/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="bistro — Software para restaurantes | Menú QR, POS e inventario" />
+        <meta name="twitter:image" content="https://bistro.flexyflow.co/og-image.png" />
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                "name": "bistro",
+                "url": "https://bistro.flexyflow.co/",
+                "applicationCategory": "BusinessApplication",
+                "operatingSystem": "Web",
+                "inLanguage": "es-CO",
+                "description": "Software de gestión para restaurantes pequeños y medianos: menú digital con código QR, pedidos, caja POS, inventario, domicilios y facturación electrónica DIAN.",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "300000",
+                    "priceCurrency": "COP",
+                    "description": "Tarifa mensual por empresa, sedes ilimitadas"
+                },
+                "areaServed": [
+                    { "@type": "City", "name": "Pereira" },
+                    { "@type": "City", "name": "Manizales" },
+                    { "@type": "City", "name": "Armenia" }
+                ],
+                "publisher": { "@type": "Organization", "name": "flexyflow", "url": "https://flexyflow.co" }
+            }
+        </script>
 
         <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
         <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
@@ -32,7 +77,144 @@
         <link rel="preload" href="/fonts/FlexyFont.woff2" as="font" type="font/woff2" crossorigin />
     </head>
     <body class="font-sans antialiased">
-<div id="spa-root"></div>
+        <!-- Intro de carga de la landing (estilo heyfriends.studio): vive en el
+             shell para pintar con el PRIMER byte — el tiempo de la animación
+             cubre la descarga/hidratación del bundle. Solo en `/`, se salta con
+             prefers-reduced-motion, exit cuando la app avisa (window.__introReady)
+             con mínimo de exhibición y fallback duro a 4s. -->
+        <style>
+            #intro-shell {
+                position: fixed;
+                inset: 0;
+                z-index: 60;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #0052ff;
+            }
+            #intro-shell .intro-inner {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+                animation: intro-logo-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+            }
+            #intro-shell svg {
+                height: 48px;
+                width: auto;
+            }
+            #intro-shell .intro-bar {
+                height: 10px;
+                width: 64px;
+                border-radius: 999px;
+                background: #c0fd79;
+                animation: intro-plate-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+            }
+            #intro-shell.intro-exit {
+                animation: intro-exit 0.55s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+            }
+            /* Variante post-login: verde branding con tinta oscura. */
+            #intro-shell.intro-green {
+                background: #c0fd79;
+            }
+            #intro-shell.intro-green svg g {
+                fill: #1e232e;
+            }
+            #intro-shell.intro-green .intro-bar {
+                background: #0052ff;
+            }
+            @keyframes intro-logo-pop {
+                0% {
+                    opacity: 0;
+                    transform: scale(0.82) translateY(14px);
+                }
+                55% {
+                    opacity: 1;
+                    transform: scale(1.04) translateY(0);
+                }
+                100% {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            @keyframes intro-plate-pop {
+                0% {
+                    transform: scale(0);
+                }
+                70% {
+                    transform: scale(1.12);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+            @keyframes intro-exit {
+                from {
+                    clip-path: inset(0 0 0 0 round 0 0 0 0);
+                }
+                to {
+                    clip-path: inset(0 0 100% 0 round 0 0 999px 999px);
+                }
+            }
+            @media (min-width: 768px) {
+                #intro-shell svg {
+                    height: 56px;
+                }
+            }
+        </style>
+        <div id="intro-shell" aria-hidden="true">
+            <div class="intro-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2680 940" fill="none" role="img" aria-label="bistro">
+                    <g transform="translate(14.07,800.00) scale(1,-1)" fill="#f6f5f3">
+                        <path d="M27 260C27 200 7 -53 140 -53C200 -53 200 7 240 33C407 27 587 120 587 313C587 400 540 540 433 540C287 540 260 347 187 300V367C187 447 193 527 193 607C193 660 193 727 120 727C60 727 53 647 47 600C47 573 33 460 33 440C33 427 27 313 27 273ZM413 380C440 380 440 333 440 313C440 240 360 167 293 167C293 200 373 380 413 380Z M623 147C623 94 663 40 716 40C756 40 796 67 789 107C789 114 776 154 776 160V394C776 434 743 460 709 460C603 460 623 294 623 234ZM676 660C676 620 696 587 743 587C796 587 809 634 809 680C809 720 789 760 749 760C689 760 676 707 676 660Z M831 47C831 -40 984 -60 1044 -60C1144 -60 1264 -20 1264 100C1264 127 1264 147 1244 174L1157 260C1151 267 1091 314 1084 320C1077 327 1057 347 1057 354C1064 374 1097 387 1117 387C1144 387 1164 367 1197 367C1224 367 1257 394 1257 427C1257 494 1164 520 1111 520C1024 520 917 454 917 360C917 247 1131 120 1124 100C1117 67 1051 74 1031 74C977 74 944 107 897 107C857 107 831 87 831 47Z M1386 273C1386 246 1392 140 1392 113C1399 53 1406 -100 1499 -100C1539 -100 1566 -60 1566 -27C1566 53 1539 146 1539 233V300C1579 333 1659 313 1659 386C1659 434 1625 448 1587 448C1578 448 1568 447 1559 446L1552 453V473C1552 513 1559 553 1559 600C1559 640 1546 686 1492 686C1459 686 1439 666 1426 633C1426 613 1406 513 1406 493C1406 486 1406 420 1386 413C1339 420 1286 400 1286 346C1286 273 1379 293 1386 273Z M1683 414C1683 347 1683 -6 1809 -6C1923 -6 1929 267 2016 340C2028 339 2041 338 2054 338C2096 338 2136 349 2136 400C2136 460 2063 494 2016 494C1929 494 1876 400 1836 340H1829C1823 394 1816 480 1749 480C1703 480 1683 454 1683 414Z M2160 193C2160 67 2240 -67 2380 -67C2546 -67 2626 113 2626 260C2626 360 2573 393 2486 447C2446 467 2440 493 2393 493C2253 493 2160 313 2160 193ZM2306 193C2306 253 2346 307 2393 347H2400C2406 347 2473 300 2480 287V247C2480 187 2460 80 2380 80C2333 80 2306 147 2306 193Z" />
+                    </g>
+                </svg>
+                <span class="intro-bar"></span>
+            </div>
+        </div>
+        <script>
+            (function () {
+                var el = document.getElementById('intro-shell');
+                if (!el) return;
+                // Flag de un solo uso: la carga inmediatamente posterior a un
+                // login exitoso muestra la variante verde en cualquier ruta.
+                var postLogin = false;
+                try {
+                    postLogin = sessionStorage.getItem('ff.intro') === 'green';
+                    if (postLogin) sessionStorage.removeItem('ff.intro');
+                } catch (e) {
+                    /* sin storage */
+                }
+                // Solo la landing (o post-login) y solo si el usuario acepta movimiento.
+                if ((window.location.pathname !== '/' && !postLogin) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    el.remove();
+                    return;
+                }
+                if (postLogin) el.classList.add('intro-green');
+                var t0 = Date.now();
+                var MIN_SHOW = 1100; // que la animación respire aunque la app cargue al instante
+                var exited = false;
+                function exit() {
+                    if (exited) return;
+                    exited = true;
+                    el.classList.add('intro-exit');
+                    el.addEventListener('animationend', function (e) {
+                        if (e.animationName === 'intro-exit') el.remove();
+                    });
+                    // por si animationend no dispara (tab oculta, etc.)
+                    setTimeout(function () {
+                        el.remove();
+                    }, 900);
+                }
+                window.__introReady = function () {
+                    var elapsed = Date.now() - t0;
+                    setTimeout(exit, Math.max(0, MIN_SHOW - elapsed));
+                };
+                // Fallback duro: nunca dejar la cortina pegada.
+                setTimeout(exit, 4000);
+            })();
+        </script>
+        <div id="spa-root"></div>
         <script type="module" src="/src/spa/main.tsx"></script>
     </body>
 </html>

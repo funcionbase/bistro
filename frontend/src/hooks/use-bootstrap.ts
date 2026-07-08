@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { notifyIntroReady } from '@/lib/intro';
 import { AUTH_MARKER, setToken } from '@/lib/token';
 import {
     type Bank,
@@ -80,6 +81,9 @@ export function useBootstrap(): UseQueryResult<BootstrapResponse> {
             if (data.auth.user) {
                 setToken(AUTH_MARKER);
             }
+            // Datos globales listos → si el intro del shell sigue en pantalla
+            // (carga post-login), puede iniciar su salida.
+            notifyIntroReady();
             return data;
         },
         staleTime: 60_000,
