@@ -120,7 +120,7 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 
 | Archivo | URL | Layout | APIs | Notas |
 |---------|-----|--------|------|-------|
-| `welcome.tsx` | `/` | sin layout | — | Landing pública. Si autenticado, link a `/dashboard`; si no, `<GoogleAuthButton>` + botón "Entrar con correo y contraseña" (`/login`) y link a `/register` (acceso dual) |
+| `welcome.tsx` | `/` | sin layout | — | Landing pública estilo homerun.co en una pantalla sin scroll (fv1.46.0): nav con funcionalidades clave (→ manual) + "Iniciar sesión"/"Agendar demo"/"Prueba gratis" (`Button asChild`), hero 2 columnas con collage SVG (`public/images/landing/hero-collage.svg`) y marquesina infinita de restaurantes locales (keyframes `logo-marquee`, wordmarks + logos reales en `public/images/landing/`). Si autenticado, CTA "Ir al panel" |
 | `login.tsx` | `/login` | `AuthHeroLayout` | `POST /api/v1/auth/login` | Acceso dual: form email+password + divisor "o" + `GoogleAuthButton`. La respuesta `{redirect}` (cookie JWT ya seteada) decide destino: `/verify-email`, `/enrollment/*`, dashboard o company-selector. Lee `?verified=1`, `?reset=1`, `?verify_error=1` |
 | `register.tsx` | `/register` | `AuthHeroLayout` | `POST /api/v1/auth/register` | Nombres/apellidos (sanitizados §5), email, password ×2 + honeypot `website` oculto + alternativa Google. Al crear → `/verify-email` (JWT en cookie). Correo duplicado → 422 con mensaje "entra con Google o recupera tu contraseña" |
 | `forgot-password.tsx` | `/forgot-password` | `AuthHeroLayout` | `POST /api/v1/auth/forgot-password` | Respuesta siempre genérica (anti-enumeración). También es cómo una cuenta Google FIJA contraseña (acceso dual) |
@@ -129,6 +129,10 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 | `confirm-password.tsx` | `/confirm-password` | `GoogleOnlyAuthGate` | — | Único uso restante del gate HU #231 (re-auth sensible, fuera del alcance del acceso dual) |
 | `company-selector.tsx` | `/auth/company-selector` | sin layout | `POST /api/v1/auth/select-company` | Multi-empresa: lista companies del JWT, llama `setToken()` con nuevo JWT; botón "Cerrar sesión" (`useLogout`) junto a "Registrar otra empresa" |
 | `branch-selector.tsx` | `/auth/branch-selector` | sin layout | `POST /api/v1/auth/switch-branch` | Multi-sede (#117): tarjetas de sedes accesibles. Persiste última en `localStorage['flexyflow.last_branch_id:<nit>']` y auto-selecciona si sigue accesible. Redirige a `/dashboard` |
+
+### Manual de usuario (`pages/manual/` + `data/manual/`, fv1.46.0)
+
+Contenido en **markdown**: `src/data/manual/<slug>.md` (frontmatter: `title`, `description`, `metaTitle`, `metaDescription`, `section`, `readingTime`, `lastUpdated`) servido por la página genérica `pages/manual/page.tsx` (ruta `/manual/bistro/:slug`, `import.meta.glob ?raw`, slug inexistente → redirect al índice). Renderiza con `components/ui/markdown.tsx` (remark-gfm + rehype-raw + rehype-sanitize con schema extendido: `div.callout-*`, `kbd`, `figure`/`img`; links internos → `<Link>` SPA, `![alt](src "caption")` → figure con caption). Cada página abre con una ilustración SVG del panel (`public/images/manual/<slug>.svg`, abstractas para no desactualizarse con la UI). Quedan como JSX: `index.tsx` (grids), `faq.tsx` (acordeón `details`) y `legal-contrato.tsx` (ya era md). `manual-layout.tsx`: diseño editorial estilo homerun — H1 display `font-brand`, rail derecho xl con meta + TOC autogenerado desde los `h2`, TOC mobile en `<details>`, CTA "Entrar al panel" también en el sidebar móvil, prev/next (`PagerLink`).
 
 ### Enrollment (`pages/enrollment/`, 2 páginas)
 
