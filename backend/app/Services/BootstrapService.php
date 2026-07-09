@@ -153,11 +153,16 @@ class BootstrapService
                     // bancarios (BREB, banco, cuenta) + identificación fiscal
                     // (NIT/DV/razón social) para que el cliente sepa a quién
                     // paga y pueda diligenciar la transferencia sin error.
+                    // NIT/DV vacío o ausente → null: el frontend oculta el campo
+                    // (el placeholder 900000001 no debe mostrarse como NIT real).
+                    $flexyNit = trim((string) config('billing.flexyflow.nit'));
+                    $flexyDv = trim((string) config('billing.flexyflow.dv'));
+
                     $activeCompany['flexyflow_payment'] = array_merge(
                         config('billing.flexyflow_payment'),
                         [
-                            'nit' => config('billing.flexyflow.nit'),
-                            'dv' => config('billing.flexyflow.dv'),
+                            'nit' => $flexyNit !== '' ? $flexyNit : null,
+                            'dv' => $flexyDv !== '' ? $flexyDv : null,
                             'legal_name' => config('billing.flexyflow.legal_name'),
                             'commercial_name' => config('billing.flexyflow.commercial_name'),
                             'billing_email' => config('billing.flexyflow.billing_email'),

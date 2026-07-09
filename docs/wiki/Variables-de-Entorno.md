@@ -201,8 +201,8 @@ Visibles al cliente en `/company/settings → Facturación` y en `SuspendedBlock
 | `FLEXYFLOW_PAYMENT_ACCOUNT_NUMBER` | `***REMOVED-ACCOUNT-NUMBER***` | Número de cuenta |
 | `FLEXYFLOW_PAYMENT_ACCOUNT_TYPE` | `ahorros` | Tipo de cuenta |
 | `FLEXYFLOW_PAYMENT_ACCOUNT_HOLDER` | `CRISTIAN MARIN` | Titular |
-| `FLEXYFLOW_NIT` | `900000001` | NIT de flexyflow (diligenciamiento de transferencia) |
-| `FLEXYFLOW_DV` | `1` | Dígito de verificación |
+| `FLEXYFLOW_NIT` | *(vacío)* | NIT de flexyflow. Vacío = se oculta en "Datos para transferir", FlexyFlowProviderSeeder skipea y la emisión DIAN SaaS falla explícito. Setear cuando exista NIT real |
+| `FLEXYFLOW_DV` | *(vacío)* | Dígito de verificación |
 | `FLEXYFLOW_COMMERCIAL_NAME` | `flexyflow SAS` | Nombre comercial |
 | `FLEXYFLOW_LEGAL_NAME` | `flexyflow SAS` | Razón social |
 | `FLEXYFLOW_ADDRESS` | `Cartago, Valle del Cauca` | Dirección fiscal |
