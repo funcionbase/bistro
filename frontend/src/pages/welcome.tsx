@@ -121,7 +121,7 @@ export default function Welcome() {
                                 Todo en orden.
                             </>
                         }
-                        description="Menú digital con QR, pedidos, caja POS, inventario y facturación electrónica DIAN. Hecho para restaurantes pequeños y medianos de Pereira, Manizales y Armenia — sin instalaciones, sin licencias por terminal."
+                        description="Menú digital con QR, pedidos, caja POS, inventario y facturación electrónica. Hecho para restaurantes pequeños y medianos de Pereira, Manizales y Armenia — sin instalaciones, sin licencias por terminal."
                         actions={
                             <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                                 <Button asChild size="lg" className="rounded-full font-semibold">
