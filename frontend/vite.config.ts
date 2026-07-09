@@ -141,6 +141,54 @@ export default defineConfig(({ mode }) => {
                           toplevel: true,
                       },
                   },
+                  modulePreload: {
+                      // Perf (Lighthouse): `route-preload.ts` hace `import()` de
+                      // ~40 rutas para prefetch-on-hover — como esos import()
+                      // viven en código que termina en el chunk de entrada,
+                      // Rolldown marca sus deps compartidas (recharts, dnd-kit,
+                      // qrcode, react-markdown) como "alcanzables desde el
+                      // entry" y Vite las agrega al <link modulepreload> del
+                      // HTML, aunque la landing pública no las use. Se filtran
+                      // solo del preload del HTML (hostType 'html'); la
+                      // navegación real adentro del panel sigue precargándolas
+                      // en paralelo con el chunk de la página (hostType 'js').
+                      resolveDependencies: (_filename, deps, { hostType }) =>
+                          hostType === 'html' ? deps.filter((dep) => !/vendor-(charts|markdown|dnd|qrcode|idb)/.test(dep)) : deps,
+                  },
+                  rolldownOptions: {
+                      output: {
+                          // Perf (Lighthouse): sin esto, Rolldown agrupa TODO
+                          // node_modules en un único `vendor-modules` que se
+                          // precarga en cualquier ruta — la landing pública
+                          // pagaba el JS de recharts/dnd-kit/qrcode/markdown
+                          // aunque solo el panel autenticado los usa. Sacar
+                          // esas libs a chunks propios: `includeDependenciesRecursively`
+                          // (default) arrastra sus subdependencias transitivas
+                          // (d3-*, micromark, mdast/hast-util-*, etc.) al mismo
+                          // chunk sin tener que listarlas. El resto de
+                          // node_modules sigue con el chunking automático de Rolldown.
+                          codeSplitting: {
+                              // `groups` reemplaza el heurístico default de Rolldown por
+                              // completo (no hace merge) — sin un catch-all explícito acá,
+                              // el resto de node_modules (react, react-router-dom, radix,
+                              // axios, zod...) queda inlineado dentro de cada chunk que lo
+                              // usa en vez de compartirse, e infla `index-*.js` (probado:
+                              // sin este catch-all el entry pasó de 111KB a 1.18MB).
+                              groups: [
+                                  { name: 'vendor-charts', test: /node_modules[\\/]recharts/, priority: 2 },
+                                  { name: 'vendor-dnd', test: /node_modules[\\/]@dnd-kit/, priority: 2 },
+                                  {
+                                      name: 'vendor-markdown',
+                                      test: /node_modules[\\/](react-markdown|remark-gfm|rehype-raw|rehype-sanitize|rehype-external-links)[\\/]/,
+                                      priority: 2,
+                                  },
+                                  { name: 'vendor-qrcode', test: /node_modules[\\/]qrcode[\\/]/, priority: 2 },
+                                  { name: 'vendor-idb', test: /node_modules[\\/]idb[\\/]/, priority: 2 },
+                                  { name: 'vendor-modules', test: /node_modules/, priority: 1 },
+                              ],
+                          },
+                      },
+                  },
               }
             : {},
     };
