@@ -10,7 +10,7 @@
 
 flexyflow factura mensualmente (post-pago) la suscripción de cada empresa al plan vigente. El módulo soporta:
 
-- Suscripción única por empresa. Desde 2026-07 hay dos planes: **Plan Básico** (slug `default`, $0 COP/mes, is_default — plataforma completa sin costo) y **Plan Plus** (slug `plus`, $300.000 COP/mes IVA 19% incluido + $10 COP por factura electrónica generada, incluye módulo DIAN; el cobro por factura se implementará junto con el módulo). El cambio de plan se opera con `billing:change-plan` (workflow `bistro-ops-company-plan.yml`). Los tiers legacy `starter`/`basic`/`pro`/`enterprise` quedan inactivos para preservar FKs (#246). Con precio $0 no se generan invoices (guard en `generateMonthlyInvoices`); invoices de $0 por descuento 100% se auto-pagan al vencimiento.
+- Suscripción única por empresa. Desde 2026-07 hay dos planes: **Plan Básico** (slug `default`, $0 COP/mes, is_default — plataforma completa sin costo) y **Plan Plus** (slug `plus`, $300.000 COP/mes IVA 19% incluido + `BILLING_DIAN_UNIT_PRICE` (default $10) COP por documento electrónico DIAN emitido en el período, incluye módulo DIAN). El cargo por uso se calcula sobre `electronic_documents.issued_at` del mes facturado (todos los `document_type`/`status`, cuenta lo que consumió consecutivo) y se agrega como líneas adicionales del invoice (una por resolución) — no recibe descuento de promo code, solo la mensualidad lo recibe (`BillingService::computeInvoiceBreakdown`). El cambio de plan se opera con `billing:change-plan` (workflow `bistro-ops-company-plan.yml`). Los tiers legacy `starter`/`basic`/`pro`/`enterprise` quedan inactivos para preservar FKs (#246). Con precio $0 no se generan invoices (guard en `generateMonthlyInvoices`); invoices de $0 por descuento 100% se auto-pagan al vencimiento.
 - Generación automática de facturas mensuales por cron (día 1 a las 03:00 América/Bogotá).
 - Marcado de mora con `due_day` + gracia configurable en meses (`BILLING_PAST_DUE_GRACE_MONTHS`).
 - Descuentos por promo code (`subscription_discounts` + `company_promo_codes`).
@@ -30,6 +30,8 @@ flexyflow factura mensualmente (post-pago) la suscripción de cada empresa al pl
 | `invoice_payments` | `id` UUID, `invoice_id`, `company_nit`, `amount`, `currency`, `payment_reference` (obligatoria), `payment_date`, `payment_method`, `registered_by`, `notes` |
 
 Todos los montos son `decimal(12,2)` con cast `decimal:2` en el modelo (§13 CLAUDE.md). El modelo `Invoice` bloquea mutaciones a campos financieros tras la creación (lanza `LogicException` en `updating`).
+
+`base_amount` es el bruto TOTAL pre-descuento — plan + cargo por uso DIAN cuando aplica — de forma que `base_amount − discount_amount = amount` siempre reconcilie (PDF/CSV/frontend muestran esa resta). El descuento de promo code solo pega sobre el plan; el cargo por uso nunca se descuenta.
 
 ---
 
@@ -62,7 +64,7 @@ Todos requieren JWT de usuario + `permission:billing.read,read`.
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/api/v1/billing/plans` | Catálogo de planes activos |
-| `GET` | `/api/v1/billing/subscription` | Suscripción activa + `overdue_total` + `earliest_overdue_date` |
+| `GET` | `/api/v1/billing/subscription` | Suscripción activa + `overdue_total` + `earliest_overdue_date` + `dian_usage` (solo planes con módulo DIAN) |
 | `GET` | `/api/v1/billing/invoices` | Lista paginada de facturas (filtros por status/período) |
 | `GET` | `/api/v1/billing/invoices/export.csv` | Export CSV |
 | `GET` | `/api/v1/billing/invoices/{id}` | Detalle con `lines` + `payments` |
@@ -119,9 +121,23 @@ HTTP/1.1 200 OK
     "discount": null
   },
   "overdue_total": 0,
-  "earliest_overdue_date": null
+  "earliest_overdue_date": null,
+  "dian_usage": {
+    "period_from": "2026-07-01",
+    "period_to": "2026-07-31",
+    "unit_price": 10,
+    "total_documents": 128,
+    "usage_amount": 1280,
+    "plan_amount": 300000,
+    "estimated_total": 301280,
+    "resolutions": [
+      { "resolution_id": "uuid", "prefix": "NCFE", "resolution_number": "18760000003", "document_type": "invoice", "count": 128 }
+    ]
+  }
 }
 ```
+
+`dian_usage` es `null` cuando el plan de la empresa no incluye `'dian'` en `features` (Plan Básico). Muestra el período EN CURSO (mes calendario actual), no el ya facturado — `estimated_total` no aplica descuento de promo code (informativo; el descuento real solo se ve en el invoice generado el día 1).
 
 ### Lista paginada de facturas
 
@@ -137,7 +153,7 @@ HTTP/1.1 200 OK
       "id": "uuid",
       "period_from": "2026-05-01",
       "period_to": "2026-05-31",
-      "base_amount": "84033.61",
+      "base_amount": "100000.00",
       "tax_amount": "15966.39",
       "tax_rate": "19.00",
       "tax_regime": "iva_19",
@@ -171,7 +187,7 @@ Definidos en `routes/console.php`. Todos N-instance safe con `->onOneServer()` +
 
 Defensa contable adicional: `BillingService::generateMonthlyInvoices` envuelve cada invoice en `DB::transaction` con `lockForUpdate`, y el UNIQUE parcial `(subscription_id, period_from, period_to) WHERE status!='voided'` rechaza carreras entre workers.
 
-Las fechas son configurables en `.env` (`BILLING_GENERATE_DAY=1`, `BILLING_GENERATE_HOUR=3`, `BILLING_DUE_DAY=15`, `BILLING_OVERDUE_DAY=16` — ver [Variables de Entorno](Variables-de-Entorno.md)).
+Las fechas son configurables en `.env` (`BILLING_GENERATE_DAY=1`, `BILLING_GENERATE_HOUR=3`, `BILLING_DUE_DAY=10`, `BILLING_OVERDUE_DAY=16` — ver [Variables de Entorno](Variables-de-Entorno.md)). El ciclo cierra el día 1 de cada mes (mes calendario completo) y el pago vence el día 10.
 
 ---
 

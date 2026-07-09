@@ -471,7 +471,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 
 **Paso 1 — Datos personales:** captura `first_name`, `last_name`, `cedula`.
 
-**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el wiki externo en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
+**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el sitio institucional (`flexyflow.co`) en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
 ```json
 {
   "type": "tos",
@@ -482,7 +482,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 ```
 El frontend guarda `tos_version` y `privacy_version` para enviarlos en el siguiente paso.
 
-> **Fuente de verdad:** desde mayo 2026 los documentos legales viven en el wiki externo (`https://flexyflow.co/wiki/restaurante/legal/terminos/`, `/privacidad/`, `/contrato/`; en local `http://localhost:4321/...`). La URL base por ambiente se configura con `LEGAL_WIKI_BASE_URL` y se expone al frontend vía `useBootstrap().data.legalUrls`. El enrollment los abre en pestaña nueva. Para publicar cambios: editar el wiki externo (versionado en su propio git, no en este repo).
+> **Fuente de verdad:** TOS (`https://flexyflow.co/terms-conditions/`) y privacidad (`https://flexyflow.co/privacy-policy/`) viven en el sitio institucional, fuera de este repo. El contrato de servicio vive en el repo (`bistro/frontend/src/data/legal/contrato.md`) y se sirve en el propio SPA en `/legal/contract`. `useBootstrap().data.legalUrls` expone las 3 URLs; el enrollment las abre en pestaña nueva.
 
 **Paso 3 — Vinculación:** dos opciones:
 - **Crear nueva empresa** → al hacer "Continuar" envía a `/enrollment/company`.
@@ -516,9 +516,9 @@ Body:
 1. Valida que el usuario está en `status=pending_enrollment` (si no, 422 con `enrollment.already_completed`).
 2. En transacción:
    - Update `users` con `first_name`, `last_name`, `cedula`, `status='active'`.
-   - Insert en `user_acceptances` por cada documento (`terms` y `privacy`): `(user_id, document_type, accepted_at=now(), ip, user_agent)`. Sin snapshot — el contenido vive en el wiki externo versionado.
+   - Insert en `user_acceptances` por cada documento (`terms` y `privacy`): `(user_id, document_type, accepted_at=now(), ip, user_agent)`. Sin snapshot — TOS/privacidad versionadas en el sitio institucional, fuera de este repo.
 3. Reissue JWT con el nuevo `enrollment_step`.
-4. Audit log: `user.enrolled` con `{accepted_documents: ['terms','privacy'], documents_source: 'external_wiki'}`.
+4. Audit log: `user.enrolled` con `{accepted_documents: ['terms','privacy']}`.
 
 **Respuesta (200)**:
 ```json
@@ -541,7 +541,7 @@ Página: `resources/js/pages/enrollment/company.tsx`. Gate: `users.status == 'pe
 #### Wizard de 2 pasos
 
 **Paso 1 — Contrato de servicio:**
-- El contrato vive en el wiki externo (`bootstrap.legalUrls.contract` → `<LEGAL_WIKI_BASE_URL>/wiki/restaurante/legal/contrato/`). El link del checkbox abre el documento en una pestaña nueva.
+- El contrato vive en el repo (`contrato.md`) y se sirve en `/legal/contract` (`bootstrap.legalUrls.contract`, resuelto contra `app.frontend_url` del ambiente). El link del checkbox abre el documento en una pestaña nueva.
 - Checkbox obligatorio "He leído y acepto el contrato de servicio".
 
 **Paso 2 — Datos de empresa:**
@@ -5513,6 +5513,8 @@ Permission: `billing.read,read`.
 
 `current_period` se calcula desde `starts_at` + offset al mes corriente. Si `starts_at` fue el 15, los períodos son siempre del 15 al 14 del mes siguiente; si fue el 1, son del 1 al fin de mes.
 
+**Uso DIAN del período en curso (`dian_usage`, #facturación-dian):** la respuesta real (`BillingController::subscription`) agrega un campo `dian_usage` — `null` salvo que el plan activo incluya `'dian'` en `features` (Plan Plus). Cuando aplica, trae `period_from`/`period_to` (mes calendario en curso), `unit_price` (`BILLING_DIAN_UNIT_PRICE`, default $10 COP IVA incluido), `total_documents`, `usage_amount`, `plan_amount`, `estimated_total` y `resolutions` (array con conteo por `dian_resolution_id`/`prefix`/`resolution_number`/`document_type`). Se muestra en `company/settings` → tab Facturación vía `DianUsageCard`, debajo de `SubscriptionCard`. `estimated_total` es informativo — no aplica descuento de promo, que solo se ve reflejado en el invoice real generado el día 1 (`BillingService::generateMonthlyInvoices` agrega una `InvoiceLine` por resolución con documentos > 0, sumando el cargo bruto sin descuento).
+
 ### 17.2 Banner de mora
 
 Visible cuando `Company.status IN ('mora', 'delinquent')`. Calculado por el comando `billing:mark-overdue-invoices`.
@@ -5961,7 +5963,8 @@ Las notifs van a `users.email` del owner. Si la empresa tiene varios owners (rar
 ```env
 BILLING_CURRENCY=COP                    # único soportado
 BILLING_GRACE_MONTHS=2                  # meses de gracia antes de delinquent automático
-BILLING_DUE_DAY=15                      # día default de vencimiento
+BILLING_DUE_DAY=10                      # día default de vencimiento
+BILLING_DIAN_UNIT_PRICE=10              # COP (IVA incl.) por documento DIAN emitido en el período — Plan Plus
 BILLING_GENERATE_DAY=20                 # día de generación mensual
 BILLING_GENERATE_HOUR=3                 # hora UTC
 BILLING_OVERDUE_DAY=16                  # día de marcado overdue
@@ -6443,7 +6446,8 @@ El QR impreso por mesa/sede apunta a `/menus/{nit}` y nunca cambia — el menú 
 | `META_*` | WhatsApp Cloud API (ver sección 14) |
 | `BILLING_CURRENCY` (COP) | Moneda |
 | `BILLING_GRACE_MONTHS` (2) | Meses gracia |
-| `BILLING_DUE_DAY` (15) | Día vencimiento |
+| `BILLING_DUE_DAY` (10) | Día vencimiento |
+| `BILLING_DIAN_UNIT_PRICE` (10) | COP por documento DIAN emitido en el período (Plan Plus) |
 | `BILLING_GENERATE_DAY` (20) | Día generación |
 | `DELIVERY_MAX_ACTIVE_PER_COURIER` (3) | Concurrentes por repartidor |
 | `DELIVERY_NOTIFY_ON_*` | Notificaciones WhatsApp |

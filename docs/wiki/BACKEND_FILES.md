@@ -1350,7 +1350,7 @@ Reglas comunes:
 
 | Servicio | Propósito | Comandos relacionados |
 |----------|-----------|------------------------|
-| `BillingService` | Generar facturas mensuales, marcar vencidas, expirar descuentos, actualizar estado de empresa (`activa/mora/delinquent`) | `GenerateMonthlyInvoicesCommand`, `MarkOverdueInvoicesCommand`, `ExpireDiscountsCommand` |
+| `BillingService` | Generar facturas mensuales (incluye cargo por uso DIAN — `BILLING_DIAN_UNIT_PRICE`/documento emitido, sin descuento de promo), marcar vencidas, expirar descuentos, actualizar estado de empresa (`activa/mora/delinquent`), resumen de uso DIAN del período en curso (`getCurrentPeriodDianUsage`, consumido por `Api/BillingController::subscription`) | `GenerateMonthlyInvoicesCommand`, `MarkOverdueInvoicesCommand`, `ExpireDiscountsCommand` |
 
 ### WhatsApp (sub-servicio en `app/Services/Whatsapp/`)
 
@@ -1391,6 +1391,8 @@ Registrados automáticamente por Laravel 12 (no requieren `Kernel.php`).
 | `billing:backfill-default-plan` (#246) | manual (SSM) | — | Asigna plan default + snapshot a empresas/subscriptions sin él. Idempotente, --dry-run + --force. Una sola ejecución post-deploy. |
 | `billing:change-plan` (2026-07) | manual via GH Action `bistro-ops-company-plan.yml` | — | Cambia el plan de una empresa por NIT entre `default` (Plan Básico, $0) y `plus` (Plan Plus, $300.000/mes + $10/factura electrónica). Cancela la subscription activa y crea una nueva con snapshot completo. Idempotente (no-op si ya está en el destino), --dry-run, audit `subscription.plan_changed`. |
 | `promo:create / promo:toggle / promo:apply / promo:cancel` (#246) | manual via GH Action `promo-codes-ops.yml` | — | Backoffice de promo codes: catálogo + aplicación/cancelación por NIT. Snapshot inmutable + audit. |
+| `dian:dispatch-pending` | `everyFiveMinutes()` | cada 5min | Reintenta documentos DIAN `error` (backoff) y recupera `pending`/`sent` atascados > `DIAN_STUCK_RECOVERY_MINUTES` (reusa consecutivo vía `DianDispatchService::retry`, idempotente por CUFE/CUDE). No-op si `DIAN_EMISSION_ENABLED=false`. onOneServer + withoutOverlapping(10). |
+| `dian:check-pending-acceptance` | `everyFifteenMinutes()` | cada 15min | Proceso de validación: audita en `audit_logs` (`dian.document.validation_stuck`, `dian.document.validation_retries_exhausted`) documentos que `dian:dispatch-pending` no pudo resolver o cuyos reintentos se agotaron (`retry_count>=6`, excluidos para siempre de la recuperación automática). No-op si `DIAN_EMISSION_ENABLED=false`. onOneServer + withoutOverlapping(20). |
 | `chats:purge-old` | `dailyAt('03:00')` | 3 AM diaria | Borra `chats` inactivos > 60 días, preservando `contacts` y `orders` |
 | `menus:sync-schedule` | `0 * * * *` | cada hora | Activa el menú correspondiente al día de la semana |
 | `whatsapp:replay-events` | manual | — | Reprocesa `webhook_events` no procesados (idempotente) |
@@ -1456,7 +1458,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `2026_05_11_200000_create_loyalty_tables` | Fidelización (#122) | `loyalty_accounts`, `loyalty_movements`, `loyalty_redemptions` |
 | `2026_05_11_210000_add_loyalty_columns_to_coupons` | Fidelización | `coupons.locked_to_phone`, `coupons.source` ENUM (`manual`, `loyalty_redeem`, ...) para canjes desde puntos |
 | `2026_05_14_084116_cleanup_stale_legal_document_v1_placeholders` | Legales (#170) | Migración one-shot: borra filas `legal_documents` v1.0 cuyo contenido coincide byte-a-byte con el texto placeholder del seeder anterior. Habilita la transición a la fuente .md sin abortar el deploy por drift. `user_acceptances` no afectados (snapshot propio). |
-| `2026_05_23_000000_drop_legal_documents_and_relax_user_acceptances` | Legales | Drop de `legal_documents` (los documentos pasaron al wiki externo `https://flexyflow.co/wiki/restaurante/legal/...`) y `document_version` / `document_content` de `user_acceptances` quedan nullable. Los registros históricos se conservan para Habeas Data CO. |
+| `2026_05_23_000000_drop_legal_documents_and_relax_user_acceptances` | Legales | Drop de `legal_documents` (TOS/privacidad pasaron al sitio institucional `flexyflow.co`, contrato a `contrato.md` en el repo) y `document_version` / `document_content` de `user_acceptances` quedan nullable. Los registros históricos se conservan para Habeas Data CO. |
 
 ### Índices de rendimiento (migración `2026_05_01_210000_dashboard_performance`)
 
@@ -1488,7 +1490,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `delivery.php` | Límites, notificaciones | `DELIVERY_MAX_ACTIVE_PER_COURIER`, `DELIVERY_NOTIFY_*` |
 | `dompdf.php` | Tamaño papel, orientación, fuentes (FlexyFont) | `PDF_DRIVER` |
 | `filesystems.php` | Discos (local, public, s3) | `FILESYSTEM_DISK`, `AWS_*` |
-| `legal.php` | URL base del wiki externo (`wiki_base_url`) + paths por tipo (`terms` / `privacy` / `contract`). El frontend lee `useBootstrap().data.legalUrls`. | `LEGAL_WIKI_BASE_URL` (default `https://flexyflow.co`, en local `http://localhost:4321`) |
+| `legal.php` | URLs fijas de TOS/privacidad (`flexyflow.co`) + `contract_path` (`/legal/contract`, resuelto contra `app.frontend_url` por ambiente). El frontend lee `useBootstrap().data.legalUrls`. | — |
 | `logging.php` | Canales (single, daily, slack) | `LOG_CHANNEL` |
 | `loyalty.php` (#122) | Tiers, ratio earn, expiración, rewards | `LOYALTY_ENABLED`, `LOYALTY_EARN_RATIO`, `LOYALTY_EXPIRY_DAYS`, `LOYALTY_MAX_MANUAL_ADJUST`, `LOYALTY_REWARDS` |
 | `mail.php` | Driver, from, reply_to global; SES via IAM en qa/pdn ([`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md)) | `MAIL_MAILER`, `MAIL_FROM_*`, `MAIL_REPLY_TO_ADDRESS`, `SES_CONFIGURATION_SET`, `SES_WEBHOOK_SECRET` |

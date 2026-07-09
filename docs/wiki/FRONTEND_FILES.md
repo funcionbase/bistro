@@ -138,8 +138,8 @@ Contenido en **markdown**: `src/data/manual/<slug>.md` (frontmatter: `title`, `d
 
 | Archivo | URL | APIs | Notas |
 |---------|-----|------|-------|
-| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a wiki externo en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
-| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (link al wiki externo en pestaña nueva, URL desde `bootstrap.legalUrls.contract`) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
+| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a `flexyflow.co` en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
+| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (link a `/legal/contract` en pestaña nueva, URL desde `bootstrap.legalUrls.contract`) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
 
 ### Dashboard, Métricas, Reportes
 
@@ -447,9 +447,9 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 
 `coupon-form.tsx` (#125: bloque de programación con `WEEKDAYS`, `toggleDay()`, time pickers, `auto_apply` toggle), `coupon-input.tsx` (acepta `initialCode` para inyectar canjes de loyalty), `coupon-status-badge.tsx`, `coupon-type-badge.tsx`, `coupon-applied-badge.tsx`, `discount-calculator.tsx`, `redemption-history-table.tsx`, `loyalty-card.tsx` (tarjeta dorada en cart público para canjear puntos, #122).
 
-#### `components/billing/` (~11)
+#### `components/billing/` (~13)
 
-`InvoiceDetailModal`, `InvoiceList` (tabla paginada con filtros), `InvoiceStatusBadge`, `InvoiceTypeChip`, `SubscriptionCard`, `UploadPaymentProof`, **`ActivePromoCodeCard`, `PromoCodeEnrollForm` (#246)**.
+`InvoiceDetailModal`, `InvoiceList` (tabla paginada con filtros), `InvoiceStatusBadge`, `InvoiceTypeChip`, `SubscriptionCard`, `UploadPaymentProof`, **`ActivePromoCodeCard`, `PromoCodeEnrollForm` (#246)**, **`DianUsageCard`** (detalle de uso DIAN por resolución del período en curso + total estimado — Plan Plus, `dian_usage` de `GET /billing/subscription`), `StatBlock` (compartido por `SubscriptionCard`/`DianUsageCard`).
 
 - `ActivePromoCodeCard` (#246) — DashboardPanel con código, % descuento, meses, vigencia, invoices afectadas (últimas 5). Botón "Cancelar código" (ConfirmDialog destructivo) si owner/admin. `applied_via` se muestra como label legible.
 - `PromoCodeEnrollForm` (#246) — Input + "Validar código" → preview (starts_at primer día próximo mes, ahorro mensual) → "Confirmar inscripción". Sanitización CLAUDE.md §5 con `sanitizePlainText` maxBytes=50. Errores 422 mapeados a `<Alert>` con copy localizado.

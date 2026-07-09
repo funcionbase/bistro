@@ -159,11 +159,9 @@ Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) para configuración completa de D
 
 ---
 
-## Documentos legales (wiki externo)
+## Documentos legales
 
-| Variable | Obligatoria | Default | Descripción |
-|----------|-------------|---------|-------------|
-| `LEGAL_WIKI_BASE_URL` | No | `https://flexyflow.co` | URL base del wiki externo donde viven TOS / privacidad / contrato. En local: `http://localhost:4321`. La consume `config/legal.php` y la expone `BootstrapService::buildCatalogs()` al SPA. |
+Sin variable de entorno propia. `config/legal.php` fija TOS/privacidad al sitio institucional (`flexyflow.co`) y resuelve el contrato contra `app.frontend_url` (`FRONTEND_URL`, ver arriba) + `/legal/contract`. `BootstrapService::buildCatalogs()` expone las 3 URLs al SPA vía `legalUrls`.
 
 ---
 
@@ -173,7 +171,8 @@ Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) para configuración completa de D
 |----------|-------------|---------|-------------|
 | `BILLING_CURRENCY` | No | `COP` | Moneda (ISO 4217) |
 | `BILLING_GRACE_MONTHS` | No | `2` | Meses de gracia antes de suspender |
-| `BILLING_DUE_DAY` | No | `15` | Día del mes de vencimiento |
+| `BILLING_DUE_DAY` | No | `10` | Día del mes de vencimiento |
+| `BILLING_DIAN_UNIT_PRICE` | No | `10` | Precio unitario COP (IVA incluido) por documento electrónico DIAN emitido en el período — cargo por uso Plan Plus |
 | `BILLING_GENERATE_DAY` | No | `20` | Día del mes en que se generan facturas |
 | `BILLING_GENERATE_HOUR` | No | `3` | Hora UTC del cron de generación |
 | `BILLING_OVERDUE_DAY` | No | `16` | Día en que se marcan facturas vencidas |
@@ -189,6 +188,18 @@ Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) para configuración completa de D
 | `BILLING_DELINQUENT_EXPORT_DISK` | No | `s3_documents` | Disco para el CSV diario de morosos (uso interno) (#175) |
 | `BILLING_DELINQUENT_EXPORT_PREFIX` | No | `flexyflow-internal/delinquent-companies` | Prefijo del CSV de morosos en el bucket |
 | `BILLING_OPS_EMAIL` | No | `ops@flexyflow.co` | Email operativo para notificación de comprobantes subidos (#175) |
+
+## Facturación electrónica DIAN (documentos de orden)
+
+Documentos que el restaurante le emite a su cliente (FEV/DEE POS/notas). NO confundir con `BILLING_EMIT_DIAN_FOR_INVOICES` de la sección anterior, que es la emisión de las invoices SaaS de flexyflow hacia la empresa.
+
+| Variable | Obligatoria | Default | Descripción |
+|----------|-------------|---------|-------------|
+| `DIAN_EMISSION_ENABLED` | No | `false` | Kill-switch global. En `false`, `DianDispatchService::emit()`/`retry()` rechazan (`DianEmissionDisabledException`) — no hay emisión manual, ni `EmitDianDocumentJob`, ni los crons `dian:dispatch-pending`/`dian:check-pending-acceptance` actúan. Solo existe `MockDianProvider` (sin provider real contratado); mantener en `false` hasta contratar uno. |
+| `DIAN_STORAGE_DISK` | No | `s3` | Disco para XML/PDF de documentos DIAN |
+| `DIAN_DEFAULT_ENVIRONMENT` | No | `habilitacion` | Ambiente DIAN (`habilitacion`/`produccion`) |
+| `DIAN_STUCK_RECOVERY_MINUTES` | No | `15` | Minutos tras los cuales un documento `pending`/`sent` se considera atascado y es elegible para recuperación (`dian:dispatch-pending`) |
+| `DIAN_RESOLUTION_ALERT_DAYS` | No | `30` | Días antes del vencimiento de una resolución para alertar |
 
 ### Datos para transferir a flexyflow (#246)
 
