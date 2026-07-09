@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Dian\EmitDocumentRequest;
 use App\Http\Resources\Dian\ElectronicDocumentResource;
 use App\Jobs\PrintDianReceiptJob;
+use App\Models\Branch;
 use App\Models\ElectronicDocument;
 use App\Models\Order;
 use App\Models\Printer;
@@ -43,6 +44,9 @@ class ElectronicDocumentController extends Controller
         private readonly AuditService $audit,
     ) {}
 
+    /** Columnas ordenables desde el listado — whitelist contra inyección en orderBy. */
+    private const SORTABLE_COLUMNS = ['issued_at', 'full_number', 'consecutive', 'status', 'document_type', 'created_at'];
+
     public function index(Request $request): JsonResponse
     {
         $nit = (string) $request->attributes->get('active_company_nit');
@@ -50,7 +54,17 @@ class ElectronicDocumentController extends Controller
 
         $query = ElectronicDocument::query()->forCompany($nit);
 
-        if ($branchId && $request->input('branch') !== 'all') {
+        // Selección de sede (consulta desde /company/dian):
+        //  - `branch=all` → toda la empresa (escape preexistente).
+        //  - `branch=<uuid>` → esa sede, validando que pertenezca a la empresa
+        //    activa (si no pertenece, el filtro no matchea nada — no filtra
+        //    por la sede activa para no filtrar datos de otra empresa).
+        //  - ausente → sede activa del JWT (comportamiento histórico).
+        $branchParam = $request->string('branch')->trim()->toString();
+        if ($branchParam !== '' && $branchParam !== 'all') {
+            $query->where('branch_id', $branchParam)
+                ->whereIn('branch_id', Branch::query()->where('company_nit', $nit)->select('id'));
+        } elseif ($branchId && $branchParam !== 'all') {
             $query->where('branch_id', $branchId);
         }
 
@@ -59,6 +73,9 @@ class ElectronicDocumentController extends Controller
         }
         if ($type = $request->string('document_type')->trim()->toString()) {
             $query->where('document_type', $type);
+        }
+        if ($resolutionId = $request->string('resolution_id')->trim()->toString()) {
+            $query->where('dian_resolution_id', $resolutionId);
         }
         if ($from = $request->date('from')) {
             $query->where('issued_at', '>=', $from);
@@ -70,7 +87,25 @@ class ElectronicDocumentController extends Controller
             $query->where('order_id', $orderId);
         }
 
-        $page = $query->orderByDesc('issued_at')->paginate(min(100, max(10, $request->integer('per_page', 25))));
+        // Búsqueda server-side: número completo, CUFE/CUDE o track ID del provider.
+        if ($q = $request->string('q')->trim()->toString()) {
+            $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
+            $query->where(function ($sub) use ($like): void {
+                $sub->where('full_number', 'ilike', $like)
+                    ->orWhere('unique_code', 'ilike', $like)
+                    ->orWhere('provider_track_id', 'ilike', $like);
+            });
+        }
+
+        $sort = $request->string('sort')->trim()->toString();
+        if (! in_array($sort, self::SORTABLE_COLUMNS, true)) {
+            $sort = 'issued_at';
+        }
+        $dir = strtolower($request->string('dir')->trim()->toString()) === 'asc' ? 'asc' : 'desc';
+
+        $page = $query->orderBy($sort, $dir)
+            ->orderByDesc('consecutive')
+            ->paginate(min(100, max(10, $request->integer('per_page', 25))));
 
         return ElectronicDocumentResource::collection($page)->response();
     }

@@ -23,6 +23,7 @@ class ElectronicDocumentResource extends JsonResource
             'company_nit' => $this->company_nit,
             'branch_id' => $this->branch_id,
             'order_id' => $this->order_id,
+            'dian_resolution_id' => $this->dian_resolution_id,
             'document_type' => $this->document_type,
             'prefix' => $this->prefix,
             'consecutive' => $this->consecutive,
