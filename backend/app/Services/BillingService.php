@@ -678,6 +678,21 @@ class BillingService
     }
 
     /**
+     * ¿El plan ACTIVO (no el snapshot histórico) de la empresa incluye la
+     * feature dada? Lee `billing_plans.features` en vivo — un upgrade de
+     * plan habilita la feature de inmediato, sin esperar al próximo ciclo de
+     * facturación. Usado para gatear el módulo DIAN (feature `'dian'`,
+     * exclusivo del Plan Plus) en `EnsurePlanFeature`, `DianDispatchService`
+     * y `BootstrapService`.
+     */
+    public function companyHasFeature(string $companyNit, string $feature): bool
+    {
+        $plan = $this->getActiveSubscription($companyNit)?->plan;
+
+        return $plan !== null && in_array($feature, $plan->features ?? [], true);
+    }
+
+    /**
      * @param  array{status?: string, year?: int}  $filters
      */
     public function getInvoiceHistory(string $companyNit, int $page = 1, array $filters = []): LengthAwarePaginator

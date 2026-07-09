@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\Order;
+use App\Services\BillingService;
 use App\Services\Dian\DianDispatchService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -60,7 +61,7 @@ class EmitDianDocumentJob implements ShouldBeUnique, ShouldQueue
         return [60, 180, 300, 900, 1800, 3600];
     }
 
-    public function handle(DianDispatchService $dispatch): void
+    public function handle(DianDispatchService $dispatch, BillingService $billing): void
     {
         // Kill-switch global (DIAN_EMISSION_ENABLED=false, default): no-op en
         // vez de dejar que DianDispatchService::emit() lance y el job queme
@@ -71,6 +72,13 @@ class EmitDianDocumentJob implements ShouldBeUnique, ShouldQueue
 
         $order = Order::query()->find($this->orderId);
         if ($order === null) {
+            return;
+        }
+
+        // Módulo DIAN exclusivo del Plan Plus. No-op (no burn de reintentos)
+        // si la empresa bajó de plan entre el cierre de la orden y que este
+        // job corriera.
+        if (! $billing->companyHasFeature($order->company_nit, 'dian')) {
             return;
         }
 

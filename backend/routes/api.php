@@ -559,74 +559,80 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:company.fiscal_profile,update')
                     ->name('api.dian.fiscal-profile.update');
 
-                Route::get('resolutions', [DianResolutionController::class, 'index'])
-                    ->middleware('permission:dian.config.read,read')
-                    ->name('api.dian.resolutions.index');
-                Route::post('resolutions', [DianResolutionController::class, 'store'])
-                    ->middleware('permission:dian.config.write,update')
-                    ->name('api.dian.resolutions.store');
-                Route::put('resolutions/{resolution}', [DianResolutionController::class, 'update'])
-                    ->middleware('permission:dian.config.write,update')
-                    ->name('api.dian.resolutions.update');
-                Route::delete('resolutions/{resolution}', [DianResolutionController::class, 'destroy'])
-                    ->middleware('permission:dian.config.write,update')
-                    ->name('api.dian.resolutions.destroy');
+                // Todo lo operativo/config DIAN (resoluciones, provider,
+                // adquirentes, documentos) requiere Plan Plus. fiscal-profile
+                // queda AFUERA a propósito (dato general de empresa, editable
+                // desde company/settings sin importar el plan).
+                Route::middleware('plan.feature:dian')->group(function () {
+                    Route::get('resolutions', [DianResolutionController::class, 'index'])
+                        ->middleware('permission:dian.config.read,read')
+                        ->name('api.dian.resolutions.index');
+                    Route::post('resolutions', [DianResolutionController::class, 'store'])
+                        ->middleware('permission:dian.config.write,update')
+                        ->name('api.dian.resolutions.store');
+                    Route::put('resolutions/{resolution}', [DianResolutionController::class, 'update'])
+                        ->middleware('permission:dian.config.write,update')
+                        ->name('api.dian.resolutions.update');
+                    Route::delete('resolutions/{resolution}', [DianResolutionController::class, 'destroy'])
+                        ->middleware('permission:dian.config.write,update')
+                        ->name('api.dian.resolutions.destroy');
 
-                Route::get('provider-config', [DianProviderConfigController::class, 'show'])
-                    ->middleware('permission:dian.config.read,read')
-                    ->name('api.dian.providerConfig.show');
-                Route::put('provider-config', [DianProviderConfigController::class, 'update'])
-                    ->middleware('permission:dian.config.write,update')
-                    ->name('api.dian.providerConfig.update');
+                    Route::get('provider-config', [DianProviderConfigController::class, 'show'])
+                        ->middleware('permission:dian.config.read,read')
+                        ->name('api.dian.providerConfig.show');
+                    Route::put('provider-config', [DianProviderConfigController::class, 'update'])
+                        ->middleware('permission:dian.config.write,update')
+                        ->name('api.dian.providerConfig.update');
 
-                Route::get('default-recipient', [DianDefaultRecipientController::class, 'show'])
-                    ->middleware('permission:dian.config.read,read')
-                    ->name('api.dian.defaultRecipient.show');
-                Route::put('default-recipient', [DianDefaultRecipientController::class, 'update'])
-                    ->middleware('permission:dian.default_recipient.write,update')
-                    ->name('api.dian.defaultRecipient.update');
-                Route::delete('default-recipient', [DianDefaultRecipientController::class, 'destroy'])
-                    ->middleware('permission:dian.default_recipient.write,update')
-                    ->name('api.dian.defaultRecipient.destroy');
+                    Route::get('default-recipient', [DianDefaultRecipientController::class, 'show'])
+                        ->middleware('permission:dian.config.read,read')
+                        ->name('api.dian.defaultRecipient.show');
+                    Route::put('default-recipient', [DianDefaultRecipientController::class, 'update'])
+                        ->middleware('permission:dian.default_recipient.write,update')
+                        ->name('api.dian.defaultRecipient.update');
+                    Route::delete('default-recipient', [DianDefaultRecipientController::class, 'destroy'])
+                        ->middleware('permission:dian.default_recipient.write,update')
+                        ->name('api.dian.defaultRecipient.destroy');
 
-                // Lookup y completado del perfil DIAN del adquirente.
-                Route::get('recipients/lookup', [DianRecipientsController::class, 'lookup'])
-                    ->middleware(['branch.access', 'permission:dian.recipients.read,read'])
-                    ->name('api.dian.recipients.lookup');
-                Route::put('recipients/{contact}/dian-profile', [DianRecipientsController::class, 'update'])
-                    ->middleware(['branch.access', 'permission:dian.recipients.write,update'])
-                    ->name('api.dian.recipients.update');
+                    // Lookup y completado del perfil DIAN del adquirente.
+                    Route::get('recipients/lookup', [DianRecipientsController::class, 'lookup'])
+                        ->middleware(['branch.access', 'permission:dian.recipients.read,read'])
+                        ->name('api.dian.recipients.lookup');
+                    Route::put('recipients/{contact}/dian-profile', [DianRecipientsController::class, 'update'])
+                        ->middleware(['branch.access', 'permission:dian.recipients.write,update'])
+                        ->name('api.dian.recipients.update');
 
-                // Documentos electrónicos — operativos, scope branch.
-                Route::middleware(['branch.access', 'branch.consolidate'])->group(function () {
-                    Route::get('documents', [ElectronicDocumentController::class, 'index'])
-                        ->middleware('permission:dian.documents.read,read')
-                        ->name('api.dian.documents.index');
-                    Route::get('documents/{document}', [ElectronicDocumentController::class, 'show'])
-                        ->middleware('permission:dian.documents.read,read')
-                        ->name('api.dian.documents.show');
-                    Route::get('documents/{document}/xml', [ElectronicDocumentController::class, 'xml'])
-                        ->middleware('permission:dian.documents.read,read')
-                        ->name('api.dian.documents.xml');
-                    Route::get('documents/{document}/pdf', [ElectronicDocumentController::class, 'pdf'])
-                        ->middleware('permission:dian.documents.read,read')
-                        ->name('api.dian.documents.pdf');
+                    // Documentos electrónicos — operativos, scope branch.
+                    Route::middleware(['branch.access', 'branch.consolidate'])->group(function () {
+                        Route::get('documents', [ElectronicDocumentController::class, 'index'])
+                            ->middleware('permission:dian.documents.read,read')
+                            ->name('api.dian.documents.index');
+                        Route::get('documents/{document}', [ElectronicDocumentController::class, 'show'])
+                            ->middleware('permission:dian.documents.read,read')
+                            ->name('api.dian.documents.show');
+                        Route::get('documents/{document}/xml', [ElectronicDocumentController::class, 'xml'])
+                            ->middleware('permission:dian.documents.read,read')
+                            ->name('api.dian.documents.xml');
+                        Route::get('documents/{document}/pdf', [ElectronicDocumentController::class, 'pdf'])
+                            ->middleware('permission:dian.documents.read,read')
+                            ->name('api.dian.documents.pdf');
 
-                    Route::post('documents', [ElectronicDocumentController::class, 'store'])
-                        ->middleware('permission:dian.documents.emit,create')
-                        ->name('api.dian.documents.store');
-                    Route::post('documents/{document}/retry', [ElectronicDocumentController::class, 'retry'])
-                        ->middleware('permission:dian.documents.retry,update')
-                        ->name('api.dian.documents.retry');
-                    Route::post('documents/{document}/credit-note', [ElectronicDocumentController::class, 'creditNote'])
-                        ->middleware('permission:dian.documents.credit_note,create')
-                        ->name('api.dian.documents.creditNote');
-                    Route::post('documents/{document}/convert-to-fev', [ElectronicDocumentController::class, 'convertToFev'])
-                        ->middleware('permission:dian.documents.emit,create')
-                        ->name('api.dian.documents.convertToFev');
-                    Route::post('documents/{document}/print', [ElectronicDocumentController::class, 'print'])
-                        ->middleware('permission:dian.print,update')
-                        ->name('api.dian.documents.print');
+                        Route::post('documents', [ElectronicDocumentController::class, 'store'])
+                            ->middleware('permission:dian.documents.emit,create')
+                            ->name('api.dian.documents.store');
+                        Route::post('documents/{document}/retry', [ElectronicDocumentController::class, 'retry'])
+                            ->middleware('permission:dian.documents.retry,update')
+                            ->name('api.dian.documents.retry');
+                        Route::post('documents/{document}/credit-note', [ElectronicDocumentController::class, 'creditNote'])
+                            ->middleware('permission:dian.documents.credit_note,create')
+                            ->name('api.dian.documents.creditNote');
+                        Route::post('documents/{document}/convert-to-fev', [ElectronicDocumentController::class, 'convertToFev'])
+                            ->middleware('permission:dian.documents.emit,create')
+                            ->name('api.dian.documents.convertToFev');
+                        Route::post('documents/{document}/print', [ElectronicDocumentController::class, 'print'])
+                            ->middleware('permission:dian.print,update')
+                            ->name('api.dian.documents.print');
+                    });
                 });
             });
 

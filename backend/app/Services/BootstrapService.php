@@ -25,6 +25,7 @@ class BootstrapService
         private readonly CompanySettingsService $settingsService,
         private readonly JwtService $jwtService,
         private readonly FeaturePermissionService $featurePermissions,
+        private readonly BillingService $billing,
     ) {}
 
     /**
@@ -175,6 +176,11 @@ class BootstrapService
                         $activeCompany['expected_block_at'] = $fresh->expected_block_at?->toDateString();
                         $activeCompany['payment_blocked_at'] = $fresh->payment_blocked_at?->toIso8601String();
                     }
+
+                    // Features del plan ACTIVO (no snapshot) — gatea el sidebar
+                    // y la página /company/dian sin un fetch extra a
+                    // /billing/subscription. `[]` si no hay subscription activa.
+                    $activeCompany['plan_features'] = $this->billing->getActiveSubscription($activeCompanyNit)?->plan?->features ?? [];
                 }
 
                 $activeCompany['brand_color'] = $this->settingsService->get(

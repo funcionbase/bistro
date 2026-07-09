@@ -9,8 +9,10 @@ use App\Models\DianProviderConfig;
 use App\Models\ElectronicDocument;
 use App\Models\Order;
 use App\Services\AuditService;
+use App\Services\BillingService;
 use App\Services\Dian\Exceptions\DianEmissionDisabledException;
 use App\Services\Dian\Exceptions\NeedsRecipientDataException;
+use App\Services\Dian\Exceptions\PlanFeatureNotIncludedException;
 use App\Services\Dian\Providers\MockDianProvider;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +52,7 @@ class DianDispatchService
         private readonly DianRepresentationPdfBuilder $pdfBuilder,
         private readonly DianProviderFactory $providerFactory,
         private readonly AuditService $audit,
+        private readonly BillingService $billing,
     ) {}
 
     /**
@@ -63,6 +66,13 @@ class DianDispatchService
     {
         if (! config('dian.emission_enabled', false)) {
             throw new DianEmissionDisabledException;
+        }
+
+        // Módulo DIAN exclusivo del Plan Plus. El middleware `plan.feature:dian`
+        // ya bloquea la ruta HTTP; este check cubre además EmitDianDocumentJob
+        // (no pasa por middleware) y sirve de defensa en profundidad.
+        if (! $this->billing->companyHasFeature($order->company_nit, 'dian')) {
+            throw new PlanFeatureNotIncludedException('dian');
         }
 
         $documentType = (string) $payload['document_type'];
@@ -233,6 +243,10 @@ class DianDispatchService
     {
         if (! config('dian.emission_enabled', false)) {
             throw new DianEmissionDisabledException;
+        }
+
+        if (! $this->billing->companyHasFeature($document->company_nit, 'dian')) {
+            throw new PlanFeatureNotIncludedException('dian');
         }
 
         return DB::transaction(function () use ($document) {

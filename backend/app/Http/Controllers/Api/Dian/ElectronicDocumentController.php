@@ -15,6 +15,7 @@ use App\Models\Printer;
 use App\Services\AuditService;
 use App\Services\Dian\DianDispatchService;
 use App\Services\Dian\Exceptions\DianEmissionDisabledException;
+use App\Services\Dian\Exceptions\PlanFeatureNotIncludedException;
 use App\Services\Dian\Exceptions\ResolutionExhaustedException;
 use App\Services\Dian\Exceptions\ResolutionNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -230,6 +231,11 @@ class ElectronicDocumentController extends Controller
                 'error' => 'dian.emission_disabled',
                 'message' => $exception->getMessage(),
             ], 503);
+        } catch (PlanFeatureNotIncludedException $exception) {
+            return response()->json([
+                'error' => 'plan.feature_not_included',
+                'message' => $exception->getMessage(),
+            ], 403);
         }
 
         if (! empty($payload['force_print'])) {
@@ -250,6 +256,8 @@ class ElectronicDocumentController extends Controller
             $document = $this->dispatch->retry($document);
         } catch (DianEmissionDisabledException $e) {
             return response()->json(['error' => 'dian.emission_disabled', 'message' => $e->getMessage()], 503);
+        } catch (PlanFeatureNotIncludedException $e) {
+            return response()->json(['error' => 'plan.feature_not_included', 'message' => $e->getMessage()], 403);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'dian.retry_failed', 'message' => $e->getMessage()], 422);
         }
@@ -289,10 +297,16 @@ class ElectronicDocumentController extends Controller
 
         $creditType = $document->document_type === 'invoice' ? 'credit_note' : 'pos_equivalent_credit_note';
 
-        $newDoc = $this->dispatch->emit($document->order, [
-            'document_type' => $creditType,
-            'references_document_id' => $document->id,
-        ]);
+        try {
+            $newDoc = $this->dispatch->emit($document->order, [
+                'document_type' => $creditType,
+                'references_document_id' => $document->id,
+            ]);
+        } catch (DianEmissionDisabledException $e) {
+            return response()->json(['error' => 'dian.emission_disabled', 'message' => $e->getMessage()], 503);
+        } catch (PlanFeatureNotIncludedException $e) {
+            return response()->json(['error' => 'plan.feature_not_included', 'message' => $e->getMessage()], 403);
+        }
 
         $this->audit->log('dian.document.credit_note_emitted', null, $newDoc, [
             'original_id' => $document->id,
@@ -307,10 +321,16 @@ class ElectronicDocumentController extends Controller
         $this->ensureSameCompany($request, $document);
         abort_unless($document->document_type === 'pos_equivalent' && $document->isAccepted(), 422);
 
-        $fev = $this->dispatch->emit($document->order, [
-            'document_type' => 'invoice',
-            'references_document_id' => $document->id,
-        ]);
+        try {
+            $fev = $this->dispatch->emit($document->order, [
+                'document_type' => 'invoice',
+                'references_document_id' => $document->id,
+            ]);
+        } catch (DianEmissionDisabledException $e) {
+            return response()->json(['error' => 'dian.emission_disabled', 'message' => $e->getMessage()], 503);
+        } catch (PlanFeatureNotIncludedException $e) {
+            return response()->json(['error' => 'plan.feature_not_included', 'message' => $e->getMessage()], 403);
+        }
 
         $this->audit->log('dian.document.converted_to_fev', null, $fev, [
             'original_id' => $document->id,

@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsureCompanyNotBlocked;
 use App\Http\Middleware\EnsureCompanyVerified;
 use App\Http\Middleware\EnsureFeaturePermission;
 use App\Http\Middleware\EnsureKdsDeviceToken;
+use App\Http\Middleware\EnsurePlanFeature;
 use App\Http\Middleware\EnsureTrustedOrigin;
 use App\Http\Middleware\EnsureTurnstileToken;
 use App\Http\Middleware\ForceJsonResponse;
@@ -110,6 +111,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'branch.access' => EnsureBranchAccess::class,
             'branch.consolidate' => AllowConsolidatedBranches::class,
             'business.capability' => EnsureBusinessCapability::class,
+            'plan.feature' => EnsurePlanFeature::class,
             'bot.jwt' => ValidateBotJwt::class,
             'permission' => EnsureFeaturePermission::class,
             'cache.get' => CacheControlGet::class,
