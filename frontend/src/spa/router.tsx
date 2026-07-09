@@ -1,10 +1,5 @@
 import { useGa4 } from '@/hooks/use-ga4';
-import { SpaAppLayout } from '@/layouts/spa-app-layout';
-import BranchSelectorRoute from '@/pages/auth/branch-selector';
-import CompanySelectorRoute from '@/pages/auth/company-selector';
-import { EnrollmentCompanyGuard } from '@/pages/enrollment/company-guard';
 import ErrorBoundary from '@/pages/error-boundary';
-import HoursRoute from '@/pages/hours';
 import NotFound from '@/pages/not-found';
 import { lazy } from 'react';
 import { createBrowserRouter, Outlet, useParams, useSearchParams } from 'react-router-dom';
@@ -24,6 +19,17 @@ import { createBrowserRouter, Outlet, useParams, useSearchParams } from 'react-r
  * Las páginas se importan lazy desde `@/pages/**`; el code splitting da un
  * chunk por ruta.
  */
+
+// Shell autenticado + rutas exclusivas del panel (#lighthouse-perf): antes se
+// importaban eager, así que la landing/QR/manual pública cargaban de arranque
+// todo el sidebar + sync engine offline aunque el visitante no tuviera sesión.
+// Lazy igual que el resto de páginas — sin Suspense explícito porque ninguna
+// otra ruta top-level lo usa (ver convención abajo).
+const SpaAppLayout = lazy(() => import('@/layouts/spa-app-layout').then((m) => ({ default: m.SpaAppLayout })));
+const HoursRoute = lazy(() => import('@/pages/hours'));
+const CompanySelectorRoute = lazy(() => import('@/pages/auth/company-selector'));
+const BranchSelectorRoute = lazy(() => import('@/pages/auth/branch-selector'));
+const EnrollmentCompanyGuard = lazy(() => import('@/pages/enrollment/company-guard').then((m) => ({ default: m.EnrollmentCompanyGuard })));
 
 // Páginas autenticadas (bajo SpaAppLayout).
 const Dashboard = lazy(() => import('@/pages/dashboard'));

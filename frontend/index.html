@@ -80,8 +80,18 @@
         <meta name="apple-mobile-web-app-title" content="bistro" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png?v=3" />
 
+        <!-- Async: `preload` + swap a stylesheet en `onload` evita que el CSS
+             remoto bloquee el render mientras descarga (era render-blocking
+             puro con `rel=stylesheet` directo). `display=swap` evita el
+             periodo de texto invisible mientras carga la fuente. -->
         <link rel="preconnect" href="https://fonts.bunny.net" crossorigin />
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <link
+            rel="preload"
+            as="style"
+            href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap"
+            onload="this.onload=null;this.rel='stylesheet'"
+        />
+        <noscript><link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" /></noscript>
 
         <!-- Brand font (logo wordmark, titulares de auth). -->
         <link rel="preload" href="/fonts/FlexyFont.woff2" as="font" type="font/woff2" crossorigin />
@@ -121,7 +131,12 @@
                 animation: intro-plate-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
             }
             #intro-shell.intro-exit {
+                /* transform + opacity (compositables) en vez de clip-path:
+                   Lighthouse marca clip-path como "non-composited animation"
+                   (fuerza main thread). Cambia el efecto de cortina redondeada
+                   a slide-up + fade, visualmente distinto pero igual de limpio. */
                 animation: intro-exit 0.55s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+                will-change: transform, opacity;
             }
             /* Variante post-login: verde branding con tinta oscura. */
             #intro-shell.intro-green {
@@ -160,10 +175,12 @@
             }
             @keyframes intro-exit {
                 from {
-                    clip-path: inset(0 0 0 0 round 0 0 0 0);
+                    transform: translateY(0);
+                    opacity: 1;
                 }
                 to {
-                    clip-path: inset(0 0 100% 0 round 0 0 999px 999px);
+                    transform: translateY(-100%);
+                    opacity: 0;
                 }
             }
             @media (min-width: 768px) {

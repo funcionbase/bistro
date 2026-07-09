@@ -13,8 +13,8 @@ interface BrandLogoProps {
 export function BrandLogo({ className, alt = 'bistro' }: BrandLogoProps) {
     return (
         <>
-            <img src="/images/logo-black-font.svg" alt={alt} className={cn('block w-auto dark:hidden', className)} />
-            <img src="/images/logo-white-font.svg" alt="" aria-hidden className={cn('hidden w-auto dark:block', className)} />
+            <img src="/images/logo-black-font.svg" alt={alt} width={2680} height={940} className={cn('block w-auto dark:hidden', className)} />
+            <img src="/images/logo-white-font.svg" alt="" aria-hidden width={2680} height={940} className={cn('hidden w-auto dark:block', className)} />
         </>
     );
 }

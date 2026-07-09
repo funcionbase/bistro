@@ -129,6 +129,8 @@ export default function Welcome() {
                         <img
                             src="/images/landing/hero-collage.svg"
                             alt="Panel de bistro: comandas en cocina, cuenta de mesa, ventas del día, pedidos por QR y alertas de inventario"
+                            width={1030}
+                            height={720}
                             className="h-full max-h-[38vh] w-auto rounded-3xl object-contain lg:max-h-[72vh] lg:max-w-none"
                         />
                     </div>
@@ -151,6 +153,8 @@ export default function Welcome() {
                                             <img
                                                 src={logo.src}
                                                 alt={logo.name}
+                                                width={logo.wide ? 275 : 96}
+                                                height={logo.wide ? 66 : 96}
                                                 className={logo.wide ? 'h-6 w-auto' : 'h-8 w-8 rounded-full object-cover'}
                                             />
                                             {!logo.wide && <span className="font-brand text-foreground text-lg font-medium tracking-tight">{logo.name}</span>}
