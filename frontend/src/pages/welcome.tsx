@@ -98,9 +98,6 @@ export default function Welcome() {
                                     >
                                         Agendar demo
                                     </a>
-                                    <Button asChild className="rounded-full">
-                                        <Link to="/register">Prueba gratis</Link>
-                                    </Button>
                                 </>
                             )}
                         </div>
