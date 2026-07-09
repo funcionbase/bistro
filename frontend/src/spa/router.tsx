@@ -1,3 +1,4 @@
+import { useGa4 } from '@/hooks/use-ga4';
 import { SpaAppLayout } from '@/layouts/spa-app-layout';
 import BranchSelectorRoute from '@/pages/auth/branch-selector';
 import CompanySelectorRoute from '@/pages/auth/company-selector';
@@ -123,11 +124,23 @@ function PublicMenuRoute() {
     return <PublicMenu nit={nit ?? null} table={searchParams.get('table')} branchToken={searchParams.get('branch')} />;
 }
 
+/**
+ * Route raíz: además del `errorElement`, engancha GA4 para TODO el árbol —
+ * incluidas las rutas públicas (landing, manual, menú QR, login) que quedaban
+ * fuera cuando el hook vivía en `SpaSharedDataBridge` (solo panel autenticado)
+ * y son justo las del posicionamiento SEO. El Measurement ID sale del fallback
+ * build-time `VITE_GA4_ID` (mismo valor que el runtime de bootstrap en pdn).
+ */
+function RootRoute() {
+    useGa4(null);
+    return <Outlet />;
+}
+
 export const router = createBrowserRouter([
     {
         // Route raíz pathless: agrupa todas las rutas bajo un único
         // `errorElement` que captura los errores de runtime de cualquier hija.
-        element: <Outlet />,
+        element: <RootRoute />,
         errorElement: <ErrorBoundary />,
         children: [
             { path: '/', element: <Welcome /> },

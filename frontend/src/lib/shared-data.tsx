@@ -1,5 +1,4 @@
 import { type BootstrapResponse } from '@/hooks/use-bootstrap';
-import { useGa4 } from '@/hooks/use-ga4';
 import { type SharedData } from '@/types';
 import { type ReactNode, createContext, useContext, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -35,10 +34,8 @@ export function useCurrentUrl(): string {
 export function SpaSharedDataBridge({ bootstrap, children }: { bootstrap: BootstrapResponse; children: ReactNode }) {
     const location = useLocation();
 
-    // GA4: carga diferida + page_view por navegación. No-op si gaMeasurementId
-    // es null (local/qa). Vive acá porque el bridge ya está dentro del router
-    // (useLocation disponible) y cubre todo el árbol autenticado.
-    useGa4(bootstrap.gaMeasurementId);
+    // GA4 ya NO se engancha acá: vive en la route raíz del router (RootRoute)
+    // para cubrir también las páginas públicas (landing, manual, menú QR).
 
     const value = useMemo<SharedData>(
         () => ({

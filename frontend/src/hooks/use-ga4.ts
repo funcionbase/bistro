@@ -124,12 +124,13 @@ export function resolveGa4Id(bootstrapId: string | null | undefined): string | n
 
 /**
  * Engancha GA4 al ciclo de vida de la SPA. Montar UNA vez en el árbol (lo
- * hace `SpaSharedDataBridge`).
+ * hace `RootRoute` en `spa/router.tsx`, cubriendo públicas + panel).
  *
- * @param measurementId Measurement ID `G-XXXXXXXXXX` desde el bootstrap
- *   (runtime, fuente primaria). Si viene `null`/vacío, cae al fallback
- *   build-time `VITE_GA4_ID` horneado en el bundle. Si ambos están vacíos
- *   (local/qa) ⇒ no-op total: no se inyecta gtag.js ni se envía nada a Google.
+ * @param measurementId Measurement ID `G-XXXXXXXXXX` runtime (tiene
+ *   precedencia si se pasa). Con `null`/vacío cae al fallback build-time
+ *   `VITE_GA4_ID` horneado en el bundle — el caso actual: la route raíz no
+ *   tiene bootstrap. Si ambos están vacíos (local/qa) ⇒ no-op total: no se
+ *   inyecta gtag.js ni se envía nada a Google.
  */
 export function useGa4(measurementId: string | null | undefined): void {
     const location = useLocation();
