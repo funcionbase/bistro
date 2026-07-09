@@ -34,7 +34,7 @@ El **panel de control** es la primera pantalla cuando entras a la app. Te muestr
 En **métricas** tienes la vista detallada con filtros de período:
 
 - **Resumen del período:** ingresos, ticket promedio, conteos por estado.
-- **Mapa de calor por hora del día** (24 buckets).
+- **Mapa de calor por hora del día** — hora por hora, las 24 horas.
 - **Mapa de calor semanal** — los 7 días por las 24 horas. Te dice "los viernes a las 8 PM es nuestra hora pico".
 - **Ranking de platos:**
     - Por *ingresos* (cuáles te dejan más plata).
@@ -50,7 +50,7 @@ En **métricas** tienes la vista detallada con filtros de período:
     - **Acertijos** — baja popularidad, alto margen. Hay que promocionarlos.
     - **Perros** — baja popularidad, bajo margen. Candidatos a sacarlos de la carta.
 
-### Modo en vivo y caché
+### Modo en vivo
 
 En la página de métricas tienes un interruptor *"En vivo"*. Cuando lo activas, el panel se refresca solo cada minuto. Se apaga solo a los 5 minutos para no consumir de más.
 

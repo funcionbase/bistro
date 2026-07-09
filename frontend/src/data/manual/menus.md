@@ -37,7 +37,7 @@ Adentro del menú organizas **categorías** y dentro de cada categoría van los 
 
 Cada plato acepta hasta 5 fotos (JPG, PNG, WEBP, máximo 5 MB cada una). La primera foto es la portada. Arrastrar para reordenar.
 
-Las fotos se sirven optimizadas desde el CDN — no tienes que preocuparte por el tamaño que sube el cliente en su celular.
+Las fotos se optimizan automáticamente — no tienes que preocuparte por el tamaño del archivo que subas desde el celular.
 
 ## Límites
 
@@ -63,7 +63,7 @@ Las estaciones se configuran en *configuración → KDS*. Al crear el negocio se
 
 En *menús → QR* generas el código QR que apunta al menú público de tu negocio. Puedes descargarlo en PNG o SVG para imprimirlo en mesas, carteleras o empaques.
 
-El QR nunca cambia aunque actualices el menú — apunta al negocio, no a un snapshot del menú.
+El QR nunca cambia aunque actualices el menú — apunta al negocio, no a una versión fija de la carta.
 
 ## Quién puede hacer qué
 

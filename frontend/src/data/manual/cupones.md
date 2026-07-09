@@ -86,9 +86,9 @@ El descuento **reduce la base gravable** de la orden, no se trata como un pago. 
 
 <div class="callout callout-warn">
 <p>
-<strong>Atención:</strong> el cálculo del descuento siempre se hace en el servidor con los
-precios oficiales del menú. Si un cliente "modifica" el precio desde el navegador, la app lo
-ignora. No se pierde dinero por manipulación.
+<strong>Atención:</strong> los descuentos siempre se calculan con los precios oficiales de tu
+menú. Nadie puede alterar precios ni descuentos desde su celular — no se pierde dinero por
+manipulación.
 </p>
 </div>
 

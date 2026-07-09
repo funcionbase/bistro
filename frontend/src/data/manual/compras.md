@@ -111,7 +111,7 @@ para no perder el respaldo.
 </p>
 </div>
 
-## KPIs del encabezado
+## Indicadores del encabezado
 
 Al tope de la página de compras ves tres indicadores en tiempo real:
 

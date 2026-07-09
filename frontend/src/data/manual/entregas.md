@@ -20,22 +20,22 @@ Los estados de una entrega van de: *pendiente de asignación → en camino → e
 
 El operador selecciona un pedido y le asigna un domiciliario de la lista de disponibles. En ese momento, si tienes WhatsApp conectado y la notificación activada, el cliente recibe un aviso automático con el nombre del domiciliario.
 
-## Modo auto-asignación (courier self-assign)
+## Modo auto-asignación
 
-Con el modo courier activado, los domiciliarios pueden ver los pedidos pendientes de asignación en su propia vista y **tomarse ellos mismos** los pedidos que van a repartir. Útil para operaciones con muchos repartidores independientes donde no hay un operador asignando uno por uno.
+Con la auto-asignación activada, los domiciliarios pueden ver los pedidos pendientes de asignación en su propia vista y **tomarse ellos mismos** los pedidos que van a repartir. Útil para operaciones con muchos repartidores independientes donde no hay un operador asignando uno por uno.
 
-Para activar el modo courier para un domiciliario, el administrador le asigna el permiso de auto-asignación desde el panel de usuarios.
+Para activársela a un domiciliario, el administrador le asigna el permiso de auto-asignación desde el panel de usuarios.
 
 <div class="callout callout-info">
 <p>
 <strong>Vista del domiciliario:</strong> el domiciliario entra a la app con su cuenta y ve solo
-sus pedidos activos y los pendientes de asignación (en modo courier). No ve nada más del panel.
+sus pedidos activos y los pendientes de asignación (si tiene auto-asignación). No ve nada más del panel.
 </p>
 </div>
 
 ## Reasignación
 
-Si un domiciliario se cayó, se le ponchó la moto o hay que redistribuir por volumen, puedes reasignar un pedido a otro domiciliario. El sistema registra el cambio con timestamp y quién lo hizo.
+Si un domiciliario se cayó, se le ponchó la moto o hay que redistribuir por volumen, puedes reasignar un pedido a otro domiciliario. El sistema registra el cambio con fecha, hora y quién lo hizo.
 
 ## Finalizar, rechazar y revertir
 

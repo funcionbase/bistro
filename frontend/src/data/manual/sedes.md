@@ -86,7 +86,7 @@ Una **operación de tres sedes** en Medellín, todas bajo el mismo NIT:
 - **Sede El Poblado** — vertical dark kitchen. Solo domicilios desde una cocina ciega. Una bodega: cocina.
 - **Sede Envigado** — vertical bar. Atiende mesa, sin domicilio. Dos bodegas: cocina y barra.
 
-Don Hernán abre el reporte consolidado del mes: Laureles $42M, El Poblado $28M, Envigado $15M. ** Total empresa: $85.000.000.**
+Don Hernán abre el reporte consolidado del mes: Laureles $42M, El Poblado $28M, Envigado $15M. **Total empresa: $85.000.000.**
 
 ## Quién puede hacer qué
 

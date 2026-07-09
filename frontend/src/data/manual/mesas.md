@@ -58,7 +58,7 @@ Si el cliente o el mesero necesita cancelar un ítem que ya fue aprobado (pero q
 
 ### Asignar mesa a un pedido QR sin mesa
 
-Cuando un pedido llega por QR sin mesa asignada (por ejemplo, de alguien que pidió por el bot de WhatsApp y quiere atenerse en salón), el mesero puede asignarle una mesa física directamente desde la sesión. La mesa queda vinculada al pedido y ya aparece en el mapa.
+Cuando un pedido llega por QR sin mesa asignada (por ejemplo, de alguien que pidió por el bot de WhatsApp y quiere sentarse en el salón), el mesero puede asignarle una mesa física directamente desde la sesión. La mesa queda vinculada al pedido y ya aparece en el mapa.
 
 ## La cuenta en vivo
 

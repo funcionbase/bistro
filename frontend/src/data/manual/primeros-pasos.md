@@ -12,13 +12,12 @@ lastUpdated: "8 de julio de 2026"
 
 ## 1. Entra con tu cuenta de Google
 
-En [bistro.flexyflow.co](https://bistro.flexyflow.co) le das a <kbd>Continuar con Google</kbd>. El sistema usa OAuth, así que no hay contraseña que recordar: la seguridad de tu cuenta depende de la seguridad de tu Gmail.
+En [bistro.flexyflow.co](https://bistro.flexyflow.co) le das a <kbd>Continuar con Google</kbd>. Entras con tu cuenta de Google de siempre — no tienes que crear ni recordar una contraseña nueva.
 
 <div class="callout callout-info">
 <p>
-<strong>Si te aparece "intentos excedidos":</strong> el sistema limita 5 intentos de inicio de
-sesión por minuto por dirección IP. Espera 60 segundos antes de volver a intentar. Si el problema
-persiste, escríbenos por el chat de soporte.
+<strong>Si te aparece "intentos excedidos":</strong> espera un minuto y vuelve a intentar. Si el
+problema persiste, escríbenos por el chat de soporte.
 </p>
 </div>
 

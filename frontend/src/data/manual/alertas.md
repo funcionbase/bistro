@@ -31,7 +31,7 @@ El mínimo se define **por bodega**. Si tienes cocina, barra y bodega seca por s
 
 Cuando un insumo te empezó a costar más caro que antes. Por ejemplo: *"El queso mozzarella subió 15% en los últimos 7 días"*. Útil para sentarte a negociar con el proveedor o ajustar el precio del plato antes de perder margen en silencio.
 
-El sistema usa el costo promedio ponderado (WAC) de tus compras reales — no precios de lista.
+El sistema usa el costo promedio de tus compras reales — no precios de lista.
 
 ### Margen bajo (plato que dejó de ser rentable)
 
@@ -75,9 +75,9 @@ En el **panel de inicio** aparece un bloque "Alertas" con todas las activas, ord
 
 ## Cómo se generan
 
-Un proceso automático corre cada noche a las 5 AM y evalúa las cuatro reglas operativas (stock bajo, subida de costo, margen bajo, plato sin ventas) sobre los datos del día. Si hay alertas nuevas, las suma al panel. Si una alerta del día anterior sigue activa, se actualiza (no se duplica).
+Cada madrugada, un proceso automático evalúa las cuatro reglas operativas (stock bajo, subida de costo, margen bajo, plato sin ventas) sobre los datos del día. Si hay alertas nuevas, las suma al panel. Si una alerta del día anterior sigue activa, se actualiza (no se duplica).
 
-Las alertas de mora con flexyflow y de emisión DIAN no esperan al cron: se prenden en tiempo casi-real cuando ocurre el evento.
+Las alertas de mora con flexyflow y de emisión DIAN no esperan a la madrugada: se prenden apenas ocurre el evento.
 
 <div class="callout callout-info">
 <p>

@@ -26,7 +26,7 @@ Cada punto que entra o sale queda anotado como un **movimiento auditado**: cuán
 
 ## Cómo se ganan los puntos
 
-Cuando cierras un pedido cobrado (no aplica con cancelados ni devueltos), el sistema le asigna puntos al cliente con esta fórmula. El cálculo es **idempotente**: si por alguna razón el pedido se procesa dos veces (un reintento de cobro, por ejemplo), los puntos se otorgan una sola vez. Nunca se duplican.
+Cuando cierras un pedido cobrado (no aplica con cancelados ni devueltos), el sistema le asigna puntos al cliente con esta fórmula. Si por alguna razón el pedido se procesa dos veces (un reintento de cobro, por ejemplo), los puntos se otorgan una sola vez — nunca se duplican.
 
 `puntos = pedido_total × tasa_de_puntos × multiplicador_de_nivel`
 

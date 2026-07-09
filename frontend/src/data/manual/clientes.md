@@ -1,8 +1,8 @@
 ---
 title: "Clientes"
-description: "El CRM integrado: lista con filtros, segmentación automática en 6 tipos, ficha del cliente con historial de pedidos, chats, notas privadas, etiquetas y fidelización."
+description: "El registro de clientes integrado: lista con filtros, segmentación automática en 6 tipos, ficha del cliente con historial de pedidos, chats, notas privadas, etiquetas y fidelización."
 metaTitle: "Clientes — Manual bistro.flexyflow.co"
-metaDescription: "El CRM de bistro.flexyflow.co: segmentación automática de clientes, ficha con historial, notas privadas, etiquetas y fidelización consolidada entre sedes."
+metaDescription: "El registro de clientes de bistro.flexyflow.co: segmentación automática, ficha con historial, notas privadas, etiquetas y fidelización consolidada entre sedes."
 section: "clientes y mercadeo"
 readingTime: "8 min"
 lastUpdated: "8 de julio de 2026"
@@ -10,7 +10,7 @@ lastUpdated: "8 de julio de 2026"
 
 ![Listado de clientes en bistro](/images/manual/clientes.svg "Tus clientes con su historial de compras.")
 
-## El CRM integrado
+## El registro de clientes
 
 bistro flexy lleva un registro de cada cliente que te ha comprado o que te ha escrito por WhatsApp. No tienes que importar nada ni crear fichas a mano — se construyen solas con la actividad de la operación.
 
@@ -80,7 +80,7 @@ Al entrar a un cliente ves su ficha completa:
 
 ## Notas privadas
 
-Las notas son append-only: no se editan, solo se agregan nuevas. Quedan con timestamp y quién la escribió. Así el equipo puede hacer seguimiento de situaciones a lo largo del tiempo sin perder el contexto.
+Las notas no se editan ni se borran: solo se agregan nuevas. Cada una queda con fecha, hora y quién la escribió. Así el equipo puede hacer seguimiento de situaciones a lo largo del tiempo sin perder el contexto.
 
 ## Etiquetas
 

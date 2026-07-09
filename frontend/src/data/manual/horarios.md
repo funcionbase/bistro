@@ -41,9 +41,8 @@ El sistema calcula en tiempo real si el negocio está abierto o cerrado con base
 
 <div class="callout callout-info">
 <p>
-<strong>Zona horaria:</strong> bistro flexy usa la zona horaria de Colombia
-(America/Bogotá, UTC-5) para todos los cálculos de horario. Si tu negocio está en otra zona
-horaria (Leticia, San Andrés), el horario se mostrará en hora Bogotá.
+<strong>Zona horaria:</strong> bistro flexy usa la hora oficial de Colombia (hora de Bogotá)
+para todos los cálculos de horario.
 </p>
 </div>
 

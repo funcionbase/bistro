@@ -108,9 +108,19 @@ Aquí ya no estamos hablando de lo que pagas tú: estamos hablando de los docume
 
 ### Resoluciones DIAN
 
-Para emitir cualquiera de los anteriores, tu negocio necesita al menos **dos resoluciones activas** autorizadas por la DIAN: una para POS y otra para factura electrónica. Cada resolución viene con un prefijo, un rango de numeración y una clave técnica.
+Para emitir cualquiera de los anteriores, tu negocio necesita al menos **dos resoluciones activas** autorizadas por la DIAN: una para POS y otra para factura electrónica. Cada resolución viene con un prefijo y un rango de numeración autorizado.
 
-Si una resolución se está agotando o por vencerse, te llega una [alerta](/manual/alertas) para que pidas la siguiente con anticipación.
+En la pestaña **Resoluciones** de la pantalla DIAN ves cada resolución con su rango, cuánto lleva consumido y su vigencia. Si una se está agotando o por vencerse, te llega una [alerta](/manual/alertas) para que pidas la siguiente con anticipación.
+
+### Consultar los documentos emitidos
+
+En la pestaña **Facturas** de la pantalla DIAN consultas todo lo que tu negocio ha emitido:
+
+1. Eliges la **resolución** que quieres revisar (desde Resoluciones también puedes saltar directo con el botón *"Consultar facturas"*).
+2. Eliges el alcance: **toda la empresa** o una sola **sede**.
+3. Ves la tabla de documentos. Puedes buscar por número o por el código único del documento, y ordenar por número, tipo, estado o fecha.
+
+Al abrir un documento ves el detalle completo: su estado (y el motivo, si la DIAN lo rechazó), la sede, las fechas, la resolución que consumió y los botones para **descargar el PDF** o ir directo al **pedido** que lo originó.
 
 ### Dónde quedan guardados
 

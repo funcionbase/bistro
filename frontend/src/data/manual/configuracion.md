@@ -30,11 +30,11 @@ lastUpdated: "8 de julio de 2026"
 </tr>
 <tr>
 <td>Facturación electrónica DIAN</td>
-<td>Perfil fiscal, resoluciones, proveedor tecnológico, adquirente por defecto.</td>
+<td>Consulta de facturas emitidas, resoluciones y contacto por defecto.</td>
 </tr>
 <tr>
 <td>WhatsApp</td>
-<td>Conectar y administrar el número de WhatsApp Cloud API.</td>
+<td>Conectar y administrar el número de WhatsApp del negocio.</td>
 </tr>
 <tr>
 <td>Impresoras</td>
@@ -91,14 +91,17 @@ nombre del negocio se actualiza sin que tengas que cerrar sesión ni refrescar.
 
 ### Branding del menú público
 
-- **Color principal** en hexadecimal (ej. `#0052FF`). Se usa para pintar los botones y headers del menú público con tu color de marca.
+- **Color principal:** eliges el color de tu marca y se usa para pintar los botones y encabezados del menú público.
 
 ## Facturación electrónica DIAN
 
-- **Perfil fiscal:** razón social fiscal, dirección, régimen tributario, responsabilidades fiscales, CIIU, representante legal, municipio.
-- **Resoluciones de facturación:** el rango de consecutivos que la DIAN te autorizó. Puedes tener varias resoluciones activas a la vez.
-- **Proveedor tecnológico:** el operador autorizado (Facturalo, Factus, etc.). Las credenciales quedan cifradas — nadie las puede ver en texto plano.
-- **Adquirente por defecto:** el "cliente genérico" (consumidor final DIAN, NIT 222222222222) para tickets POS sin datos del cliente.
+La pantalla de facturación electrónica tiene tres pestañas:
+
+- **Facturas:** consulta de todos los documentos que tu negocio ha emitido — por resolución, por sede, con búsqueda y descarga. El paso a paso está en [facturación](/manual/facturacion).
+- **Resoluciones:** los rangos de numeración que la DIAN le autorizó a tu negocio. Puedes tener varias activas a la vez y ver cuánto le queda a cada una.
+- **Contacto por defecto:** el "consumidor final" genérico que se usa en los tickets de caja cuando el cliente no da sus datos.
+
+El **perfil fiscal** (razón social, dirección, régimen tributario, representante legal, municipio) se completa en *configuración → información del negocio*. La conexión técnica con la DIAN la opera directamente el equipo de flexyflow — no tienes que contratar ni configurar nada por tu cuenta. La facturación electrónica hace parte del *Plan Plus* y se activa con tu asesor.
 
 <div class="callout callout-warn">
 <p>
@@ -107,7 +110,7 @@ sin tener el perfil DIAN y la resolución vigente configurados, bistro flexy te 
 </p>
 </div>
 
-## WhatsApp Cloud API
+## WhatsApp del negocio
 
 En **configuración → WhatsApp** conectas el número de WhatsApp del negocio. Ver la guía completa en [WhatsApp del negocio](/manual/whatsapp).
 

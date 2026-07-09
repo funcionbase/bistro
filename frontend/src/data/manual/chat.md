@@ -24,9 +24,9 @@ Un administrador con permiso especial puede reasignar un chat de una sede a otra
 
 Las conversaciones se ordenan por último mensaje. Hay un buscador para encontrar por nombre del cliente o por número de teléfono. Cada conversación muestra:
 
-- Nombre del cliente (si lo tiene registrado en el CRM) o el teléfono.
+- Nombre del cliente (si está en tu lista de [clientes](/manual/clientes)) o el teléfono.
 - Último mensaje y cuándo fue.
-- Si hay mensajes no leídos (badge rojo).
+- Si hay mensajes no leídos (un punto rojo).
 - Si el bot está activo o pausado en esa conversación.
 
 ## Responder un mensaje

@@ -95,10 +95,10 @@ El detalle de cada cierre (ventas por método de pago, entradas, egresos y la di
 
 ## Impresoras térmicas
 
-bistro flexy se conecta con impresoras térmicas ESC/POS por:
+bistro flexy se conecta con impresoras térmicas de recibos por:
 
-- **USB:** directo desde el navegador (Chrome en escritorio). Sin drivers especiales.
-- **Red (IP):** a través del agente local de bistro flexy instalado en la computadora del local. El agente es un pequeño programa que vive en segundo plano y recibe las comandas del panel por websocket.
+- **USB:** directo desde el navegador (Chrome en escritorio). Sin programas especiales.
+- **Red local:** a través del agente de bistro flexy instalado en la computadora del local. El agente es un pequeño programa que vive en segundo plano y le pasa las órdenes de impresión a la impresora.
 
 Se configuran en *configuración → impresoras*. Cada impresora puede ser de tipo: cocina, barra, recibos. Las de cocina y barra reciben comandas por categoría del plato; las de recibos imprimen el tiquete del cliente al cerrar el cobro.
 
@@ -108,9 +108,9 @@ Si se va el internet en pleno turno, la caja sigue funcionando en **modo sin con
 
 <div class="callout callout-info">
 <p>
-<strong>Precaución con el offline:</strong> si el internet no vuelve antes del cierre de turno,
-exporta las pendientes a JSON desde la vista de caja para que no se pierda ningún cobro. El
-JSON lo puedes importar manualmente cuando se restablezca la conexión.
+<strong>Precaución sin internet:</strong> si el internet no vuelve antes del cierre de turno,
+descarga el archivo de respaldo con los cobros pendientes desde la vista de caja para que no se
+pierda nada. Cuando vuelva la conexión, lo cargas desde la misma pantalla.
 </p>
 </div>
 
@@ -126,9 +126,7 @@ En caja también puedes agregar el nombre y la **cédula / NIT del cliente** par
 
 <div class="callout callout-warn">
 <p>
-El color
-Verde en el indicador de estado de impresora
-significa que la impresora está lista. Si está en gris, revisa la conexión USB o la IP de red
-antes de abrir el turno.
+El indicador de la impresora en <strong>verde</strong> significa que está lista. Si está en
+gris, revisa la conexión (el cable USB o la red del local) antes de abrir el turno.
 </p>
 </div>

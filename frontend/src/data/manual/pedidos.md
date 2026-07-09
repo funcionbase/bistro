@@ -1,8 +1,8 @@
 ---
 title: "Pedidos"
-description: "Cómo llegan los pedidos, el tablero kanban, aprobación por QR de mesa, mover estados, inventario, actualizaciones en vivo, KDS y devoluciones."
+description: "Cómo llegan los pedidos, el tablero por columnas, aprobación por QR de mesa, mover estados, inventario, actualizaciones en vivo, pantalla de cocina y devoluciones."
 metaTitle: "Pedidos — Manual bistro.flexyflow.co"
-metaDescription: "El tablero de pedidos de bistro.flexyflow.co: kanban, aprobación, KDS, tickets térmicos, devoluciones y todo lo que pasa desde que llega un pedido hasta que se entrega."
+metaDescription: "El tablero de pedidos de bistro.flexyflow.co: columnas por estado, aprobación, pantalla de cocina, tickets térmicos, devoluciones y todo lo que pasa desde que llega un pedido hasta que se entrega."
 section: "el día a día"
 readingTime: "9 min"
 lastUpdated: "8 de julio de 2026"
@@ -19,7 +19,7 @@ Hay cuatro fuentes de pedidos que convergen en el mismo tablero:
 - **WhatsApp (bot):** el cliente conversa con el bot, que arma el carrito y genera un enlace de confirmación.
 - **Caja (POS):** el cajero toma el pedido directamente desde la [caja](/manual/caja), por teléfono o en mostrador.
 
-## El tablero kanban
+## El tablero de pedidos
 
 El tablero tiene columnas por estado: **Pendiente → En cocina → Listo → Completado**. Si tienes domicilios activos, aparece también la columna **En tránsito** (solo para pedidos a domicilio). Cada pedido vive en una tarjeta con la mesa, el cliente, los ítems y el total.
 
@@ -41,7 +41,7 @@ Un clic te lleva directo al pedido para aprobarlo o rechazarlo sin buscar en el 
 
 ## Mover pedidos entre estados
 
-Las transiciones son *forward-only* (hacia adelante) salvo cancelar. Una vez que un pedido está "completado", no vuelve a "en cocina". Si hubo un error, la corrección se hace con una devolución — el registro contable queda limpio.
+Los pedidos solo avanzan hacia adelante (salvo cancelar). Una vez que un pedido está "completado", no vuelve a "en cocina". Si hubo un error, la corrección se hace con una devolución — el registro contable queda limpio.
 
 <div class="callout callout-info">
 <p>
@@ -63,7 +63,7 @@ Si tienes recetas configuradas en los platos, bistro flexy descuenta el inventar
 
 ## Actualizaciones en vivo
 
-El tablero de pedidos se actualiza solo en tiempo real. No tienes que darle F5 — cuando llega un pedido nuevo, aparece en la columna "pendiente" y suena una notificación de audio (configurable en el navegador). Si la pestaña está al fondo, la notificación push del navegador te avisa.
+El tablero de pedidos se actualiza solo en tiempo real. No tienes que recargar la página — cuando llega un pedido nuevo, aparece en la columna "pendiente" y suena una notificación de audio (configurable en el navegador). Si la pestaña está al fondo, la notificación push del navegador te avisa.
 
 Al abrir el **detalle de un pedido**, la información también se refresca sola cada pocos segundos mientras tengas la pantalla abierta — si la cocina marca un plato como listo, lo ves sin cerrar y volver a entrar. Y si en algún momento quieres forzar la actualización, el botón de **refrescar** (la flecha circular) está siempre a la mano.
 
@@ -75,7 +75,7 @@ En pantallas de celular el tablero cambia de columnas a una **lista compacta**, 
 
 Cada estación de cocina tiene su propia vista de pantalla completa. Solo ve los ítems que le corresponden según las categorías asignadas. Desde esa vista el cocinero marca cada ítem como listo. Cuando todos los ítems de un pedido están listos, la comanda pasa a "listo" en el tablero del salón.
 
-La pantalla KDS se abre en [configuración → KDS](/manual/configuracion) → link a la estación. Es una URL distinta que puedes poner en fullscreen en una tablet o monitor de cocina, independiente de la sesión del panel.
+La pantalla KDS se abre en [configuración → KDS](/manual/configuracion) → enlace a la estación. Es un enlace aparte que puedes abrir en pantalla completa en una tablet o monitor de cocina, independiente de la sesión del panel.
 
 ## Tickets térmicos
 

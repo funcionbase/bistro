@@ -23,10 +23,10 @@ Conectar tu WhatsApp Business a flexyflow te deja:
 
 ### Opción A: traer tu propio número
 
-Si ya tienes un número de WhatsApp Business, lo conectas con el flujo oficial de Meta ( *Embedded Signup*) — el mismo que usan grandes plataformas. Todo pasa adentro de una ventanita de Facebook, sin salir del panel.
+Si ya tienes un número de WhatsApp Business, lo conectas con el flujo oficial de Meta — el mismo que usan las grandes plataformas. Todo pasa adentro de una ventanita de Facebook, sin salir del panel.
 
 1. En **WhatsApp del negocio** le das a *"Conectar con Facebook"*.
-2. **Te pide un código de seguridad** que llega al correo del propietario. Lo digitas (válido 10 minutos, máximo 3 intentos).
+2. **Te pide un código de seguridad** que llega al correo del propietario. Lo digitas — vence a los pocos minutos, así que tenlo a la mano.
 3. Te abre el flujo oficial de Facebook (Meta). Inicias sesión con tu cuenta de Facebook donde está tu Business Manager.
 4. Eliges la cuenta de WhatsApp Business que vas a conectar. Autorizas a flexyflow.
 5. Vuelves a la app y ya aparece *"🟢 Conectado"* con tu número.
@@ -45,9 +45,9 @@ Cuando el bot esté operativo, el flujo de un pedido por WhatsApp se parece a es
 
 1. Cliente escribe a tu número. El bot consulta los [horarios](/manual/horarios) y responde solo si estás abierto.
 2. Le muestra la carta (la misma del menú público de tu negocio).
-3. Conversa con el cliente, arma un carrito y le manda un enlace seguro tipo *tutienda.flexyflow.co/carrito/abc123*. Ese enlace vive un tiempo limitado (unos 70 minutos por defecto).
+3. Conversa con el cliente, arma un carrito y le manda un enlace seguro para confirmar. El enlace vence en aproximadamente una hora por seguridad.
 4. El cliente abre el enlace en su navegador, revisa el carrito, paga y confirma. El pedido aparece en tu [tablero](/manual/pedidos) en tiempo real.
-5. Si el cliente quiere hablar con un humano en cualquier momento, escribe algo como *"hablar con alguien"* y el bot le pasa la conversación al equipo (handoff).
+5. Si el cliente quiere hablar con un humano en cualquier momento, escribe algo como *"hablar con alguien"* y el bot le pasa la conversación al equipo.
 
 <div class="callout callout-info">
 <p>
@@ -76,14 +76,14 @@ Te aparece una vista previa estilo WhatsApp mientras editas. La sustitución `{c
 
 ## Cambiar o desconectar el número
 
-Estas acciones son **solo del Propietario** y exigen código de seguridad por correo (OTP). No las puede hacer un Administrador, ni siquiera con permisos especiales.
+Estas acciones son **solo del Propietario** y exigen un código de seguridad que llega por correo. No las puede hacer un Administrador, ni siquiera con permisos especiales.
 
 - **Cambiar número:** útil si cambias de línea. Te desconecta el actual y te deja listo para conectar uno nuevo.
 - **Desconectar:** termina la conexión con Meta. El historial de chats se preserva para auditoría.
 
 <div class="callout callout-warn">
 <p>
-<strong>"No fui yo":</strong> el correo del OTP incluye un botón <em>"No fui yo"</em>. Si
+<strong>"No fui yo":</strong> el correo del código incluye un botón <em>"No fui yo"</em>. Si
 recibes un código que no pediste, haces clic en ese botón y el código queda inválido al
 instante. Es una protección contra accesos no autorizados al cambio de número.
 </p>
@@ -128,7 +128,7 @@ instante. Es una protección contra accesos no autorizados al cambio de número.
 
 <div class="callout callout-info">
 <p>
-<strong>Costos del lado de Meta:</strong> WhatsApp Cloud API tiene su propia tarifa por
+<strong>Costos del lado de Meta:</strong> WhatsApp tiene su propia tarifa por
 conversación (la maneja Meta, no flexyflow). Hoy las conversaciones iniciadas por el cliente
 las primeras 24h suelen ser gratis. Si tu volumen es alto, conviene revisar la política de
 precios vigente de Meta.
