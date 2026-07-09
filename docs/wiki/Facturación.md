@@ -10,7 +10,7 @@
 
 flexyflow factura mensualmente (post-pago) la suscripción de cada empresa al plan vigente. El módulo soporta:
 
-- Suscripción única por empresa al **Plan Default** ($100.000 COP/mes, IVA 19% incluido). Desde #246 se retiraron los tiers `starter`/`basic`/`pro`/`enterprise` (quedan inactivos para preservar FKs; nuevas empresas se registran al plan `default`).
+- Suscripción única por empresa. Desde 2026-07 hay dos planes: **Plan Básico** (slug `default`, $0 COP/mes, is_default — plataforma completa sin costo) y **Plan Plus** (slug `plus`, $300.000 COP/mes IVA 19% incluido + $10 COP por factura electrónica generada, incluye módulo DIAN; el cobro por factura se implementará junto con el módulo). El cambio de plan se opera con `billing:change-plan` (workflow `bistro-ops-company-plan.yml`). Los tiers legacy `starter`/`basic`/`pro`/`enterprise` quedan inactivos para preservar FKs (#246). Con precio $0 no se generan invoices (guard en `generateMonthlyInvoices`); invoices de $0 por descuento 100% se auto-pagan al vencimiento.
 - Generación automática de facturas mensuales por cron (día 1 a las 03:00 América/Bogotá).
 - Marcado de mora con `due_day` + gracia configurable en meses (`BILLING_PAST_DUE_GRACE_MONTHS`).
 - Descuentos por promo code (`subscription_discounts` + `company_promo_codes`).

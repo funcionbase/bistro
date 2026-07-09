@@ -114,6 +114,12 @@ class BillingService
 
             // Snapshot del plan: precio bruto (incluye IVA si `price_includes_tax`).
             $planSnapshotPrice = (float) ($subscription->plan_price_snapshot ?? $subscription->plan->price);
+
+            // Plan gratuito (Plan Básico $0, 2026-07): nada que facturar — sin
+            // esto se emitirían invoices de $0 con correo y emisión DIAN.
+            if ($planSnapshotPrice <= 0.0) {
+                continue;
+            }
             $planName = (string) ($subscription->plan_name_snapshot ?? $subscription->plan->name);
             $taxRate = (float) ($subscription->plan_tax_rate_snapshot ?? $subscription->plan->tax_rate ?? 19.00);
             $taxRegime = (string) ($subscription->plan_tax_regime_snapshot ?? $subscription->plan->tax_regime ?? 'iva_19');
@@ -299,6 +305,22 @@ class BillingService
                     ->first();
 
                 if ($fresh === null || $fresh->status !== 'pending') {
+                    return;
+                }
+
+                // Facturas de $0 (descuento 100% u otro caso borde): se
+                // auto-pagan al vencimiento — no tiene sentido exigir el pago
+                // de cero pesos ni arrastrar la empresa a past_due.
+                if ((float) $fresh->amount <= 0.0) {
+                    $fresh->forceFill(['status' => 'paid'])->save();
+
+                    $this->auditService->log(
+                        'invoice.auto_paid_zero_amount',
+                        null,
+                        $fresh,
+                        ['company_nit' => $fresh->company_nit, 'due_date' => $fresh->due_date?->toDateString()]
+                    );
+
                     return;
                 }
 
