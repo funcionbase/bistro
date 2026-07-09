@@ -85,20 +85,12 @@ export default function Welcome() {
                                     <a href="/dashboard">Ir al panel</a>
                                 </Button>
                             ) : (
-                                <>
-                                    {/* Visible también en mobile: es la única vía de login desde la landing. */}
-                                    <Button asChild variant="ghost" className="rounded-full">
-                                        <Link to="/login" className="text-muted-foreground">
-                                            Iniciar sesión
-                                        </Link>
-                                    </Button>
-                                    <a
-                                        href={DEMO_URL}
-                                        className="text-foreground hidden py-2 text-sm font-medium underline-offset-4 hover:underline md:block"
-                                    >
-                                        Agendar demo
-                                    </a>
-                                </>
+                                /* Visible también en mobile: es la única vía de login desde la landing. */
+                                <Button asChild variant="ghost" className="rounded-full">
+                                    <Link to="/login" className="text-muted-foreground">
+                                        Iniciar sesión
+                                    </Link>
+                                </Button>
                             )}
                         </div>
                     </nav>
