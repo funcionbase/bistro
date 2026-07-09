@@ -40,12 +40,12 @@ return [
     | DIAN y DianProviderConfig se crean vía FlexyFlowProviderSeeder.
     */
     'flexyflow' => [
-        // Sin default: el NIT placeholder (900000001) se mostraba como si fuera
-        // real en "Datos para transferir a flexyflow". Vacío/ausente = no se
+        // Default vacío: el NIT placeholder (900000001) se mostraba como si
+        // fuera real en "Datos para transferir a flexyflow". Vacío = no se
         // muestra en el panel, FlexyFlowProviderSeeder skipea y la emisión DIAN
         // SaaS lanza error explícito (guards existentes).
-        'nit' => env('FLEXYFLOW_NIT'),
-        'dv' => env('FLEXYFLOW_DV'),
+        'nit' => env('FLEXYFLOW_NIT', ''),
+        'dv' => env('FLEXYFLOW_DV', ''),
         'commercial_name' => env('FLEXYFLOW_COMMERCIAL_NAME', 'flexyflow SAS'),
         'legal_name' => env('FLEXYFLOW_LEGAL_NAME', 'flexyflow SAS'),
         'address' => env('FLEXYFLOW_ADDRESS', 'Cartago, Valle del Cauca'),
