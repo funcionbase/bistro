@@ -3,30 +3,18 @@
 declare(strict_types=1);
 
 /**
- * URLs externas de los documentos legales (TOS, privacidad, contrato).
+ * URLs de los documentos legales que enlaza el flujo de enrollment.
  *
- * Los documentos ya no viven en BD ni en este repo: ahora están publicados en
- * el wiki externo (`<wiki_base_url>/wiki/restaurante/legal/...`). Esta config
- * resuelve la URL absoluta por ambiente para que el frontend pueda enlazarlas
- * desde el flujo de enrollment (las abre en una pestaña nueva).
+ * Términos y privacidad viven en el sitio institucional (flexyflow.co) —
+ * mismos links que footer/consent-banner (`app-footer-meta.tsx`), fijos por
+ * dominio, no varían por ambiente.
  *
- * Cambios de contenido se hacen en el wiki externo; el versionado es interno
- * a esa publicación (git history del wiki). En `user_acceptances` ya no se
- * guarda snapshot — la evidencia es `accepted_at` + URL pública del documento.
+ * El contrato de servicio vive dentro del propio SPA (`/legal/contract`),
+ * por eso solo guardamos el path relativo: BootstrapService lo resuelve
+ * contra `app.frontend_url`, que sí varía por ambiente (dev/qa/pdn).
  */
 return [
-
-    // Base del wiki publicado por ambiente.
-    //   dev/local → http://localhost:4321
-    //   qa/pdn    → https://flexyflow.co
-    'wiki_base_url' => env('LEGAL_WIKI_BASE_URL', 'https://flexyflow.co'),
-
-    // Path relativo de cada documento dentro del wiki. La URL absoluta se
-    // compone como `wiki_base_url . paths[type]`. Slug fijo: no varía por
-    // ambiente, solo el host.
-    'paths' => [
-        'terms' => '/wiki/restaurante/legal/terminos/',
-        'privacy' => '/wiki/restaurante/legal/privacidad/',
-        'contract' => '/wiki/restaurante/legal/contrato/',
-    ],
+    'terms' => 'https://flexyflow.co/terms-conditions/',
+    'privacy' => 'https://flexyflow.co/privacy-policy/',
+    'contract_path' => '/legal/contract',
 ];

@@ -330,7 +330,7 @@ export default function EnrollmentUser() {
                                     </div>
                                     <div className="flex items-start gap-2.5 leading-relaxed opacity-90">
                                         <FileLock className="mt-0.5 h-4 w-4 shrink-0" />
-                                        <span>Tus datos viven cifrados. No los usamos para publicidad ni los compartimos con terceros.</span>
+                                        <span>Tus datos viven cifrados. Los usamos solo para operar tu cuenta — no los vendemos ni los usamos para publicidad.</span>
                                     </div>
                                     <div className="flex items-start gap-2.5 leading-relaxed opacity-90">
                                         <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" />

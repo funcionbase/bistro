@@ -205,7 +205,7 @@ Columnas migradas:
 - `delivery_status_logs.reason`
 - `branches.address`
 
-Los documentos legales viven en el wiki externo (`config/legal.php` → `LEGAL_WIKI_BASE_URL`) y no se persisten en BD, así que no entran en esta matriz de saneamiento.
+Los documentos legales no se persisten en BD (TOS/privacidad en el sitio institucional, contrato en `contrato.md` del repo — ver `config/legal.php`), así que no entran en esta matriz de saneamiento.
 
 ---
 

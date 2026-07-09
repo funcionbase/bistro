@@ -240,13 +240,16 @@ class BootstrapService
                 ->orderBy('name')
                 ->get()
                 ->toArray(),
-            // URLs absolutas del wiki externo donde viven TOS, privacidad y
-            // contrato (config/legal.php). El frontend las usa en enrollment
-            // para abrir cada documento en una pestaña nueva.
-            'legalUrls' => array_map(
-                fn (string $path): string => rtrim((string) config('legal.wiki_base_url'), '/').$path,
-                config('legal.paths', []),
-            ),
+            // URLs de TOS, privacidad y contrato (config/legal.php). El
+            // frontend las usa en enrollment para abrir cada documento en
+            // una pestaña nueva. TOS/privacidad son fijas (sitio
+            // institucional); el contrato vive en el propio SPA y se resuelve
+            // contra frontend_url del ambiente actual.
+            'legalUrls' => [
+                'terms' => config('legal.terms'),
+                'privacy' => config('legal.privacy'),
+                'contract' => rtrim((string) config('app.frontend_url'), '/').config('legal.contract_path'),
+            ],
         ];
     }
 }

@@ -85,7 +85,7 @@
 |---|---|---|---|---|
 | Login Google OAuth | [Autenticación](../../docs/wiki/Autenticación.md) | Socialite + JWT custom | `pages/Login.tsx` | — |
 | Onboarding empresa | (cross-ref Autenticación) | flujo create-from-template, registro | `pages/Onboarding/*` | — |
-| Documentos legales | (CLAUDE.md §11) | `config/legal.php` (URLs wiki externo), `user_acceptances` (registro append-only sin snapshot) | enrollment links `target="_blank"` a `bootstrap.legalUrls` | — |
+| Documentos legales | (CLAUDE.md §11) | `config/legal.php` (TOS/privacidad en sitio institucional, contrato en SPA `/legal/contract`), `user_acceptances` (registro append-only sin snapshot) | enrollment links `target="_blank"` a `bootstrap.legalUrls` | — |
 
 ### 9. Seguridad y auditoría
 

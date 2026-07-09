@@ -1,13 +1,14 @@
 import { AppLink } from '@/components/app-link';
 import { useSharedData } from '@/lib/shared-data';
-import { BookOpen, FileText, Shield } from 'lucide-react';
+import { BookOpen, FileSignature, FileText, Shield } from 'lucide-react';
 
 // Inyectadas por Vite en build time (vite.config.ts `define`).
 declare const __FRONTEND_VERSION__: string;
 declare const __BACKEND_VERSION__: string;
 
-// Páginas públicas del sitio institucional (flexyflow.co), no del wiki de
-// enrollment (`legalUrls` del bootstrap) — mismo par que enlaza consent-banner.tsx.
+// Páginas públicas del sitio institucional (flexyflow.co) — mismo par que
+// enlaza consent-banner.tsx. El contrato en cambio vive en el propio SPA
+// (`/legal/contract`), por eso usa AppLink en vez de <a target="_blank">.
 const TERMS_URL = 'https://flexyflow.co/terms-conditions/';
 const PRIVACY_URL = 'https://flexyflow.co/privacy-policy/';
 
@@ -52,6 +53,10 @@ export function AppFooterMeta() {
                     <Shield className="h-3 w-3" />
                     Política de privacidad
                 </a>
+                <AppLink href="/legal/contract" className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
+                    <FileSignature className="h-3 w-3" />
+                    Contrato de servicio
+                </AppLink>
             </div>
             <span className="opacity-70">
                 fv{__FRONTEND_VERSION__} bv{backendVersion}

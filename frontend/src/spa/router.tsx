@@ -177,6 +177,11 @@ export const router = createBrowserRouter([
             { path: '/manual/legal/contrato', element: <ManualLegalContrato /> },
             { path: '/manual/:slug', element: <ManualMarkdownPage /> },
 
+            // Alias corto para el link de aceptación en enrollment (mismo
+            // contenido que /manual/legal/contrato, URL más limpia para
+            // compartir/firmar fuera del contexto del manual).
+            { path: '/legal/contract', element: <ManualLegalContrato /> },
+
             { path: '/login', element: <Login /> },
             { path: '/register', element: <Register /> },
             { path: '/forgot-password', element: <ForgotPassword /> },

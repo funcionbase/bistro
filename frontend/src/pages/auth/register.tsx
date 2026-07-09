@@ -178,7 +178,7 @@ export default function Register() {
                         <p className="text-destructive text-xs">{errors.password}</p>
                     ) : (
                         <p className="text-muted-foreground text-xs">
-                            Mínimo 8 caracteres. Rechazamos contraseñas que aparezcan en filtraciones conocidas.
+                            Mínimo 8 caracteres. No uses contraseñas obvias o muy usadas.
                         </p>
                     )}
 

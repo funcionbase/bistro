@@ -163,22 +163,22 @@ JWT nuevo se entrega vía `Set-Cookie: flexyflow_jwt=...; HttpOnly; Secure; Same
 Wizard de 3 pasos en `pages/enrollment/user.tsx`:
 
 1. **Datos personales**: `first_name`, `last_name`, `cedula`. Sanitización vía `SanitizesInput` (categorías `plain_text_short`).
-2. **Aceptación legal**: dos checkboxes con links al wiki externo (`useBootstrap().data.legalUrls.tos` y `.privacy`). Versiones congeladas en estado React al cargar.
+2. **Aceptación legal**: dos checkboxes con links al sitio institucional (`useBootstrap().data.legalUrls.terms` y `.privacy`). Versiones congeladas en estado React al cargar.
 3. **Vinculación**: dos opciones:
    - "Crear nueva empresa" → al confirmar, `users.status` queda en `active` y redirige a `/enrollment/company`.
    - "Aceptar invitación pendiente" → si `company_invitations.email == user.email && status=pending`, banner aparece. Al confirmar va a `/enrollment/invited`.
 
 `UserEnrollmentController::store` envuelve todo en `DB::transaction`:
 - Update `users` con datos personales + `status='active'`.
-- Inserta `user_acceptances` por cada documento (sin snapshot — la fuente es el wiki externo versionado).
+- Inserta `user_acceptances` por cada documento (sin snapshot — TOS/privacidad versionadas en el sitio institucional).
 - Reissue JWT con `enrollment_step='pending_company'`.
-- `AuditService::log('user.enrolled', ..., {accepted_documents, documents_source: 'external_wiki'})`.
+- `AuditService::log('user.enrolled', ..., {accepted_documents})`.
 
 ### Paso 3 — Verificación de propiedad de la empresa (#154)
 
 Wizard de 2 pasos en `pages/enrollment/company.tsx`:
 
-1. **Contrato de servicio**: link a `bootstrap.legalUrls.contract` (target `_blank`). Checkbox obligatorio.
+1. **Contrato de servicio**: link a `bootstrap.legalUrls.contract` → `/legal/contract` en el propio SPA (target `_blank`). Checkbox obligatorio.
 2. **Datos de empresa + evidencia**: campos descritos arriba.
 
 El campo `proof_document` es el corazón de #154. Acepta PDF, Word (`.doc`/`.docx`), JPG y PNG hasta **10 MB**. Validado por MIME real (`mimetypes:`) tanto en cliente como en backend — el botón "Registrar empresa" queda deshabilitado sin archivo válido.
