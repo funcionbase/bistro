@@ -14,8 +14,9 @@ use Illuminate\Database\Seeder;
  *    electrónica DIAN. Reemplaza al "Plan Default" de $300.000.
  *  - **Plan Plus** (slug `plus`): $300.000 COP/mes + $10 COP por factura
  *    electrónica generada. Incluye el módulo DIAN. El cobro por factura
- *    ($10/unidad) aún no se factura automáticamente — se implementará junto
- *    con el módulo; queda documentado en description/features.
+ *    ($10/unidad, parametrizado en `BILLING_DIAN_UNIT_PRICE`) se factura
+ *    automáticamente cada mes junto con la mensualidad
+ *    (`BillingService::generateMonthlyInvoices`).
  *
  * El slug del plan default sigue siendo `default` (config
  * `billing.default_plan_slug`) — solo cambian name/price/description.

@@ -64,10 +64,18 @@ class BillingController extends Controller
         $overdueTotal = $overdueInvoices->sum('amount');
         $earliestOverdueDate = $overdueInvoices->sortBy('due_date')->first()?->due_date?->toDateString();
 
+        // Detalle de uso DIAN del período en curso — solo para planes con
+        // módulo DIAN (#facturación-dian).
+        $dianUsage = null;
+        if ($subscription?->plan !== null && in_array('dian', $subscription->plan->features ?? [], true)) {
+            $dianUsage = $this->billingService->getCurrentPeriodDianUsage($companyNit, $subscription);
+        }
+
         return response()->json([
             'subscription' => $subscription ? new SubscriptionResource($subscription) : null,
             'overdue_total' => $overdueTotal,
             'earliest_overdue_date' => $earliestOverdueDate,
+            'dian_usage' => $dianUsage,
         ]);
     }
 

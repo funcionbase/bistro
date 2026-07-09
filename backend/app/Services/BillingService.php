@@ -6,6 +6,8 @@ use App\Jobs\EmitDianInvoiceJob;
 use App\Models\BillingPlan;
 use App\Models\Company;
 use App\Models\CompanyPromoCode;
+use App\Models\DianResolution;
+use App\Models\ElectronicDocument;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\PromoCode;
@@ -24,6 +26,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -129,8 +132,18 @@ class BillingService
             $activePromo = $this->resolveActivePromo($subscription->company_nit, $forMonth);
             $discountPct = $activePromo?->discount_percent ?? 0;
 
+            // Cargo por uso DIAN (#facturación-dian): $N COP IVA incluido por
+            // documento electrónico emitido en el período. NO recibe descuento
+            // — el promo solo aplica a la mensualidad (decisión de producto).
+            $dianCounts = $this->countDianDocumentsByResolution(
+                $subscription->company_nit, $periodFromDate, Carbon::parse($periodTo),
+            );
+            $totalDianDocs = (int) $dianCounts->sum('count');
+            $dianUnitPrice = (float) config('billing.dian_unit_price', 10);
+            $usageBruto = Money::round($totalDianDocs * $dianUnitPrice);
+
             $breakdown = $this->computeInvoiceBreakdown(
-                $planSnapshotPrice, $discountPct, $taxRate, $priceIncludesTax,
+                $planSnapshotPrice, $discountPct, $taxRate, $priceIncludesTax, $usageBruto,
             );
 
             $daysInMonth = $forMonth->daysInMonth;
@@ -139,6 +152,7 @@ class BillingService
                 $subscription, $periodFrom, $periodTo, $daysInMonth,
                 $planSnapshotPrice, $planName, $taxRate, $taxRegime,
                 $breakdown, $dueDate, $activePromo,
+                $dianCounts, $totalDianDocs, $dianUnitPrice, $usageBruto,
             ) {
                 $inv = Invoice::create([
                     'company_nit' => $subscription->company_nit,
@@ -151,7 +165,12 @@ class BillingService
                     'period_from' => $periodFrom,
                     'period_to' => $periodTo,
                     'days_billed' => $daysInMonth,
-                    'base_amount' => $planSnapshotPrice,
+                    // Bruto TOTAL pre-descuento (plan + uso DIAN), no solo el
+                    // plan: PDF/CSV/frontend muestran "Precio base − Descuento
+                    // = Total" y el descuento solo pega sobre el plan, así que
+                    // base_amount debe incluir el uso para que esa resta
+                    // reconcilie con `amount` (base_amount - discount_amount = amount).
+                    'base_amount' => Money::round($planSnapshotPrice + $usageBruto),
                     'base_amount_taxable' => $breakdown['base_amount_taxable'],
                     'discount_percent' => $breakdown['discount_percent'],
                     'discount_amount' => $breakdown['discount_amount'],
@@ -169,9 +188,35 @@ class BillingService
                     'description' => "Suscripción {$planName} — ".Carbon::parse($periodFrom)->isoFormat('MMMM YYYY'),
                     'quantity' => 1,
                     'unit_price' => $planSnapshotPrice,
-                    'subtotal' => $breakdown['amount_final'],
+                    'subtotal' => Money::round($breakdown['amount_final'] - $usageBruto),
                     'sort_order' => 1,
                 ]);
+
+                // Cargo por uso DIAN: una línea por resolución con documentos
+                // emitidos en el período. Sin línea si no hubo documentos.
+                if ($totalDianDocs > 0) {
+                    $resolutions = DianResolution::query()
+                        ->whereIn('id', $dianCounts->pluck('dian_resolution_id'))
+                        ->get()
+                        ->keyBy('id');
+
+                    $sortOrder = 2;
+                    foreach ($dianCounts as $row) {
+                        $resolution = $resolutions->get($row->dian_resolution_id);
+                        $label = $resolution
+                            ? "Res. {$resolution->prefix} ({$resolution->resolution_number})"
+                            : 'Resolución DIAN';
+
+                        InvoiceLine::create([
+                            'invoice_id' => $inv->id,
+                            'description' => "Facturación electrónica DIAN — {$label}: {$row->count} documentos",
+                            'quantity' => $row->count,
+                            'unit_price' => $dianUnitPrice,
+                            'subtotal' => Money::round($row->count * $dianUnitPrice),
+                            'sort_order' => $sortOrder++,
+                        ]);
+                    }
+                }
 
                 // Notify dentro del transaction garantiza que el correo solo
                 // se dispare si el INSERT de invoice committa (vía afterCommit).
@@ -203,17 +248,21 @@ class BillingService
     }
 
     /**
-     * Calcula el desglose contable de un invoice según política #246.
+     * Calcula el desglose contable de un invoice según política #246, extendida
+     * con el cargo por uso DIAN (#facturación-dian): el descuento por promo
+     * code aplica SOLO a la mensualidad; el cargo por uso ($10/documento) se
+     * suma bruto (IVA incluido) después del descuento y el IVA final se
+     * extrae sobre el total combinado.
      *
-     * Flujo (precio bruto = 100k, descuento 20%, IVA 19%):
-     *   gross_listed       = 100.000
-     *   discount_amount    = round_even(100.000 × 0,20) = 20.000
-     *   amount_final       = 80.000
-     *   base_original      = 100.000 / 1,19 = 84.033,61
-     *   descuento_sobre_b  = base_original × 0,20 = 16.806,72
-     *   base_amount_taxable = 84.033,61 − 16.806,72 = 67.226,89
-     *   tax_amount         = base_amount_taxable × 0,19 = 12.773,11
-     *   total              = 67.226,89 + 12.773,11 = 80.000,00 ✓
+     * Flujo (plan bruto = 300.000, descuento 20%, uso = 500 docs × $10 = 5.000, IVA 19%):
+     *   plan_neto          = 300.000 − round(300.000 × 0,20) = 240.000
+     *   amount_final       = 240.000 + 5.000 = 245.000
+     *   base_amount_taxable = 245.000 / 1,19 = 205.882,35
+     *   tax_amount         = 245.000 − 205.882,35 = 39.117,65
+     *   total              = 205.882,35 + 39.117,65 = 245.000,00 ✓
+     *
+     * Con `usageBruto = 0.0` (default) el resultado es idéntico al cálculo
+     * previo a #facturación-dian (compatibilidad con planes sin módulo DIAN).
      *
      * @return array{discount_percent: int|null, discount_amount: float|null, amount_final: float, base_amount_taxable: float, tax_amount: float}
      */
@@ -222,16 +271,20 @@ class BillingService
         int $discountPct,
         float $taxRate,
         bool $priceIncludesTax,
+        float $usageBruto = 0.0,
     ): array {
-        // Sin IVA (Régimen Simple): el bruto ES la base.
-        if (! $priceIncludesTax || $taxRate <= 0.0) {
-            $discountAmount = $discountPct > 0
-                ? Money::applyPercent($planPriceBruto, $discountPct)
-                : null;
-            $amountFinal = $discountAmount !== null
-                ? Money::round($planPriceBruto - $discountAmount)
-                : Money::round($planPriceBruto);
+        // Descuento SOLO sobre el plan — el cargo por uso nunca se descuenta.
+        $discountAmount = $discountPct > 0
+            ? Money::applyPercent($planPriceBruto, $discountPct)
+            : null;
+        $planNeto = $discountAmount !== null
+            ? Money::round($planPriceBruto - $discountAmount)
+            : Money::round($planPriceBruto);
 
+        $amountFinal = Money::round($planNeto + $usageBruto);
+
+        // Sin IVA (Régimen Simple): el bruto combinado ES la base.
+        if (! $priceIncludesTax || $taxRate <= 0.0) {
             return [
                 'discount_percent' => $discountPct > 0 ? $discountPct : null,
                 'discount_amount' => $discountAmount,
@@ -241,20 +294,8 @@ class BillingService
             ];
         }
 
-        // Con IVA (Régimen Común): descuento UBL AllowanceCharge antes del IVA.
-        $baseOriginal = Money::extractBase($planPriceBruto, $taxRate);
-        $discountAmount = $discountPct > 0
-            ? Money::applyPercent($planPriceBruto, $discountPct)
-            : null;
-        $amountFinal = $discountAmount !== null
-            ? Money::round($planPriceBruto - $discountAmount)
-            : Money::round($planPriceBruto);
-
-        // base_amount_taxable + tax_amount = amount_final.
-        $discountSobreBase = $discountPct > 0
-            ? Money::applyPercent($baseOriginal, $discountPct)
-            : 0.0;
-        $baseAmountTaxable = Money::round($baseOriginal - $discountSobreBase);
+        // Con IVA (Régimen Común): se extrae una sola vez sobre el combinado.
+        $baseAmountTaxable = Money::extractBase($amountFinal, $taxRate);
         $taxAmount = Money::round($amountFinal - $baseAmountTaxable);
 
         return [
@@ -263,6 +304,82 @@ class BillingService
             'amount_final' => $amountFinal,
             'base_amount_taxable' => $baseAmountTaxable,
             'tax_amount' => $taxAmount,
+        ];
+    }
+
+    /**
+     * Cuenta `electronic_documents` emitidos por una empresa en [from, to]
+     * (inclusive, TZ America/Bogota) agrupados por resolución. `issued_at` es
+     * timestamptz, así que el rango se acota con inicio/fin de día. Reutilizado
+     * por `generateMonthlyInvoices` (período ya cerrado) y por
+     * `getCurrentPeriodDianUsage` (período en curso).
+     *
+     * Cuenta TODOS los `document_type` y TODOS los `status` — cualquier
+     * documento que consumió consecutivo (decisión de producto
+     * #facturación-dian): el conteo es estable en el tiempo y no cambia si un
+     * documento transiciona de estado después del cierre del período.
+     *
+     * Las invoices SaaS de flexyflow generan `electronic_documents` con
+     * `company_nit = FLEXYFLOW_NIT`, no el de la empresa cliente — el filtro
+     * por `$companyNit` ya las excluye sin lógica adicional.
+     *
+     * @return Collection<int, object{dian_resolution_id: string, count: int}>
+     */
+    public function countDianDocumentsByResolution(string $companyNit, CarbonInterface $from, CarbonInterface $to): Collection
+    {
+        return ElectronicDocument::query()
+            ->where('company_nit', $companyNit)
+            ->whereBetween('issued_at', [
+                $from->copy()->startOfDay(),
+                $to->copy()->endOfDay(),
+            ])
+            ->selectRaw('dian_resolution_id, COUNT(*) as count')
+            ->groupBy('dian_resolution_id')
+            ->get();
+    }
+
+    /**
+     * Uso DIAN del período EN CURSO (mes calendario actual) para el panel de
+     * `company/settings` — estimado, no aplica descuento de promo (el
+     * descuento real solo se ve reflejado en el invoice ya generado).
+     *
+     * @return array{period_from: string, period_to: string, unit_price: float, total_documents: int, usage_amount: float, plan_amount: float, estimated_total: float, resolutions: list<array{resolution_id: string, prefix: ?string, resolution_number: ?string, document_type: ?string, count: int}>}
+     */
+    public function getCurrentPeriodDianUsage(string $companyNit, ?Subscription $subscription = null): array
+    {
+        $now = CarbonImmutable::now('America/Bogota');
+        $periodFrom = $now->startOfMonth();
+        $periodTo = $now->endOfMonth();
+
+        $counts = $this->countDianDocumentsByResolution($companyNit, $periodFrom, $periodTo);
+        $unitPrice = (float) config('billing.dian_unit_price', 10);
+        $totalDocs = (int) $counts->sum('count');
+        $usageAmount = Money::round($totalDocs * $unitPrice);
+
+        $resolutions = DianResolution::query()
+            ->whereIn('id', $counts->pluck('dian_resolution_id'))
+            ->get()
+            ->keyBy('id');
+
+        $breakdown = $counts->map(fn ($row) => [
+            'resolution_id' => $row->dian_resolution_id,
+            'prefix' => $resolutions->get($row->dian_resolution_id)?->prefix,
+            'resolution_number' => $resolutions->get($row->dian_resolution_id)?->resolution_number,
+            'document_type' => $resolutions->get($row->dian_resolution_id)?->document_type,
+            'count' => (int) $row->count,
+        ])->values()->all();
+
+        $planAmount = (float) (($subscription ?? $this->getActiveSubscription($companyNit))?->plan_price_snapshot ?? 0);
+
+        return [
+            'period_from' => $periodFrom->toDateString(),
+            'period_to' => $periodTo->toDateString(),
+            'unit_price' => $unitPrice,
+            'total_documents' => $totalDocs,
+            'usage_amount' => $usageAmount,
+            'plan_amount' => $planAmount,
+            'estimated_total' => Money::round($planAmount + $usageAmount),
+            'resolutions' => $breakdown,
         ];
     }
 

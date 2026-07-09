@@ -3,7 +3,7 @@
 return [
     'currency' => env('BILLING_CURRENCY', 'COP'),
     'grace_months' => (int) env('BILLING_GRACE_MONTHS', 2),
-    'due_day' => (int) env('BILLING_DUE_DAY', 15),
+    'due_day' => (int) env('BILLING_DUE_DAY', 10),
     'generate_day' => (int) env('BILLING_GENERATE_DAY', 1),
     'generate_hour' => (int) env('BILLING_GENERATE_HOUR', 3),
     'overdue_day' => (int) env('BILLING_OVERDUE_DAY', 16),
@@ -25,6 +25,10 @@ return [
     // N meses). La DURACIÓN del trial NO está acá: vive en months_duration de
     // esa fila (DB), sembrada por TrialPromoCodeSeeder. Acá solo el identificador.
     'trial_promo_code' => 'TRIAL3',
+
+    // Precio unitario COP (IVA incluido) por documento electrónico DIAN
+    // emitido en el período — cargo por uso del Plan Plus (#facturación-dian).
+    'dian_unit_price' => (float) env('BILLING_DIAN_UNIT_PRICE', 10),
 
     // Si true, después de generar invoices mensuales se dispara EmitDianInvoiceJob
     // que crea el ElectronicDocument vinculado (CUFE + consecutivo). En dev y QA
