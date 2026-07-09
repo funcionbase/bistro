@@ -26,6 +26,19 @@ return [
     'default_environment' => env('DIAN_DEFAULT_ENVIRONMENT', 'habilitacion'),
 
     /*
+     * Kill-switch global de emisión DIAN de órdenes. En `false`,
+     * `DianDispatchService::emit()`/`retry()` rechazan con
+     * `DianEmissionDisabledException` — ningún flujo (emisión manual desde
+     * el panel, `EmitDianDocumentJob`, ni los crons `dian:dispatch-pending`/
+     * `dian:check-pending-acceptance`) genera o reintenta documentos.
+     * Default `false`: el módulo todavía no está habilitado para producción
+     * (solo existe `MockDianProvider`, sin provider real contratado — ver
+     * `DianProviderFactory`). Gate independiente de
+     * `billing.emit_dian_for_invoices` (invoices SaaS de flexyflow).
+     */
+    'emission_enabled' => (bool) env('DIAN_EMISSION_ENABLED', false),
+
+    /*
      * Minutos tras los cuales un documento atascado en un estado NO terminal
      * de transporte (`pending` / `sent`) se considera "stuck" y es elegible
      * para recuperación vía re-submisión al provider (reusando consecutivo).

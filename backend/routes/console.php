@@ -168,8 +168,11 @@ Schedule::command('dian:dispatch-pending')
     ->onOneServer()
     ->withoutOverlapping(10);
 
-// check-pending-acceptance: para documentos en `sent` sin webhook tras 15+
-// min — hoy solo loguea, futuro `PollProviderStatusJob` por cada provider real.
+// check-pending-acceptance: proceso de validación — audita (audit_logs,
+// action dian.document.validation_*) documentos que la recuperación de
+// dispatch-pending no resolvió (pending/sent stale) y reintentos agotados
+// (retry_count>=6) que dispatch-pending excluye para siempre. Corre 15min
+// después de la ventana de recuperación (--stale-minutes=30 > stuck_recovery_minutes).
 Schedule::command('dian:check-pending-acceptance')
     ->everyFifteenMinutes()
     ->onOneServer()

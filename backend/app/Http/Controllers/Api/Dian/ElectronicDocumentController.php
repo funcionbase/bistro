@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\Printer;
 use App\Services\AuditService;
 use App\Services\Dian\DianDispatchService;
+use App\Services\Dian\Exceptions\DianEmissionDisabledException;
 use App\Services\Dian\Exceptions\ResolutionExhaustedException;
 use App\Services\Dian\Exceptions\ResolutionNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -224,6 +225,11 @@ class ElectronicDocumentController extends Controller
                 'error' => 'dian.resolution_unavailable',
                 'message' => $exception->getMessage(),
             ], 422);
+        } catch (DianEmissionDisabledException $exception) {
+            return response()->json([
+                'error' => 'dian.emission_disabled',
+                'message' => $exception->getMessage(),
+            ], 503);
         }
 
         if (! empty($payload['force_print'])) {
@@ -242,6 +248,8 @@ class ElectronicDocumentController extends Controller
 
         try {
             $document = $this->dispatch->retry($document);
+        } catch (DianEmissionDisabledException $e) {
+            return response()->json(['error' => 'dian.emission_disabled', 'message' => $e->getMessage()], 503);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'dian.retry_failed', 'message' => $e->getMessage()], 422);
         }

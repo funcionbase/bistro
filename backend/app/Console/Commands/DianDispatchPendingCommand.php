@@ -30,6 +30,12 @@ class DianDispatchPendingCommand extends Command
 
     public function handle(): int
     {
+        if (! config('dian.emission_enabled', false)) {
+            $this->info('Emisión DIAN deshabilitada (DIAN_EMISSION_ENABLED=false) — nada que despachar.');
+
+            return self::SUCCESS;
+        }
+
         $max = (int) $this->option('max');
         $thresholdMinutes = (int) config('dian.stuck_recovery_minutes', 15);
 

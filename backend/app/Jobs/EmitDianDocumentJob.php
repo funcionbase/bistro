@@ -62,6 +62,13 @@ class EmitDianDocumentJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(DianDispatchService $dispatch): void
     {
+        // Kill-switch global (DIAN_EMISSION_ENABLED=false, default): no-op en
+        // vez de dejar que DianDispatchService::emit() lance y el job queme
+        // los 6 reintentos con backoff contra un flag que no va a cambiar solo.
+        if (! config('dian.emission_enabled', false)) {
+            return;
+        }
+
         $order = Order::query()->find($this->orderId);
         if ($order === null) {
             return;

@@ -9,6 +9,7 @@ use App\Models\DianProviderConfig;
 use App\Models\ElectronicDocument;
 use App\Models\Order;
 use App\Services\AuditService;
+use App\Services\Dian\Exceptions\DianEmissionDisabledException;
 use App\Services\Dian\Exceptions\NeedsRecipientDataException;
 use App\Services\Dian\Providers\MockDianProvider;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,10 @@ class DianDispatchService
      */
     public function emit(Order $order, array $payload): ElectronicDocument
     {
+        if (! config('dian.emission_enabled', false)) {
+            throw new DianEmissionDisabledException;
+        }
+
         $documentType = (string) $payload['document_type'];
 
         // Idempotencia (§13 — inmutabilidad/numeración DIAN): si ya existe un
@@ -226,6 +231,10 @@ class DianDispatchService
 
     public function retry(ElectronicDocument $document): ElectronicDocument
     {
+        if (! config('dian.emission_enabled', false)) {
+            throw new DianEmissionDisabledException;
+        }
+
         return DB::transaction(function () use ($document) {
             $document->refresh();
             $document->lockForUpdate();
