@@ -116,9 +116,9 @@ export default function Welcome() {
                         eyebrow="Software para restaurantes"
                         title={
                             <>
-                                El sistema simple{' '}
+                                Pedidos, caja y facturación.{' '}
                                 <br />
-                                para tu restaurante.
+                                Todo en orden.
                             </>
                         }
                         description="Menú digital con QR, pedidos, caja POS, inventario y facturación electrónica DIAN. Hecho para restaurantes pequeños y medianos de Pereira, Manizales y Armenia — sin instalaciones, sin licencias por terminal."
