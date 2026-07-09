@@ -2,6 +2,7 @@ import { Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { DocumentsExplorer } from '@/components/dian/documents-explorer';
+import { PlanLockedBlock } from '@/components/dian/plan-locked-block';
 import InputError from '@/components/input-error';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -15,6 +16,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useHasPlanFeature } from '@/hooks/use-plan-feature';
 import { DianApiError, createResolution, deactivateResolution, listResolutions } from '@/lib/dian-api';
 import { DIAN_DOC_TYPE_LABELS, type DianDocumentType, type DianResolution } from '@/types/dian';
 
@@ -60,6 +62,8 @@ function InformationalLockBanner() {
 }
 
 export default function DianConfigPage() {
+    const hasDianFeature = useHasPlanFeature('dian');
+
     // El catálogo de resoluciones lo comparten los tabs Facturas (selector) y
     // Resoluciones (cards + alta), así que vive acá y baja por props.
     const [resolutions, setResolutions] = useState<DianResolution[]>([]);
@@ -75,7 +79,12 @@ export default function DianConfigPage() {
             .finally(() => setResolutionsLoaded(true));
     };
 
-    useEffect(fetchResolutions, []);
+    useEffect(() => {
+        // Sin Plan Plus no hay nada que consultar — evita el fetch (el
+        // backend igual lo rechazaría con 403 plan.feature_not_included).
+        if (!hasDianFeature) return;
+        fetchResolutions();
+    }, [hasDianFeature]);
 
     // Salto "Consultar facturas" desde una card del tab Resoluciones.
     const consultResolution = (id: string) => {
@@ -96,40 +105,46 @@ export default function DianConfigPage() {
                     showBranchBadge={false}
                 />
 
-                {!DIAN_EDITABLE && <InformationalLockBanner />}
+                {!hasDianFeature ? (
+                    <PlanLockedBlock />
+                ) : (
+                    <>
+                        {!DIAN_EDITABLE && <InformationalLockBanner />}
 
-                <Tabs defaultValue="documents" value={tab} onValueChange={setTab} className="w-full">
-                    <TabsList className="max-w-full overflow-x-auto">
-                        <TabsTrigger value="documents">Facturas</TabsTrigger>
-                        <TabsTrigger value="resolutions">Resoluciones</TabsTrigger>
-                        <TabsTrigger value="recipient">Contacto por defecto</TabsTrigger>
-                    </TabsList>
+                        <Tabs defaultValue="documents" value={tab} onValueChange={setTab} className="w-full">
+                            <TabsList className="max-w-full overflow-x-auto">
+                                <TabsTrigger value="documents">Facturas</TabsTrigger>
+                                <TabsTrigger value="resolutions">Resoluciones</TabsTrigger>
+                                <TabsTrigger value="recipient">Contacto por defecto</TabsTrigger>
+                            </TabsList>
 
-                    <TabsContent value="documents" className="mt-4">
-                        {!resolutionsLoaded ? (
-                            <Skeleton className="h-96 w-full" />
-                        ) : (
-                            <DocumentsExplorer
-                                resolutions={resolutions}
-                                resolutionId={selectedResolutionId}
-                                onResolutionChange={setSelectedResolutionId}
-                            />
-                        )}
-                    </TabsContent>
-                    <TabsContent value="resolutions" className="mt-4">
-                        <ResolutionsTab
-                            editable={DIAN_EDITABLE}
-                            resolutions={resolutions}
-                            loaded={resolutionsLoaded}
-                            loadError={resolutionsError}
-                            onRefresh={fetchResolutions}
-                            onConsult={consultResolution}
-                        />
-                    </TabsContent>
-                    <TabsContent value="recipient" className="mt-4">
-                        <DefaultRecipientTab />
-                    </TabsContent>
-                </Tabs>
+                            <TabsContent value="documents" className="mt-4">
+                                {!resolutionsLoaded ? (
+                                    <Skeleton className="h-96 w-full" />
+                                ) : (
+                                    <DocumentsExplorer
+                                        resolutions={resolutions}
+                                        resolutionId={selectedResolutionId}
+                                        onResolutionChange={setSelectedResolutionId}
+                                    />
+                                )}
+                            </TabsContent>
+                            <TabsContent value="resolutions" className="mt-4">
+                                <ResolutionsTab
+                                    editable={DIAN_EDITABLE}
+                                    resolutions={resolutions}
+                                    loaded={resolutionsLoaded}
+                                    loadError={resolutionsError}
+                                    onRefresh={fetchResolutions}
+                                    onConsult={consultResolution}
+                                />
+                            </TabsContent>
+                            <TabsContent value="recipient" className="mt-4">
+                                <DefaultRecipientTab />
+                            </TabsContent>
+                        </Tabs>
+                    </>
+                )}
             </div>
         </PageShell>
     );

@@ -77,6 +77,10 @@ export interface Company {
     past_due_started_at?: string | null;
     expected_block_at?: string | null;
     payment_blocked_at?: string | null;
+    // Features del plan de facturación ACTIVO (#facturación-dian). `[]` si no
+    // hay subscription activa. Ej: incluye `'dian'` solo en Plan Plus — gatea
+    // el sidebar y /company/dian sin un fetch extra a /billing/subscription.
+    plan_features?: string[];
     flexyflow_payment?: {
         breb_key: string | null;
         bank_name: string | null;

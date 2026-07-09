@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useHasPlanFeature } from '@/hooks/use-plan-feature';
 import type { PaymentMethod, TableOrder } from '@/hooks/use-tables';
 import type { DianRecipientLookup } from '@/types/dian';
 import { AlertCircle, CheckCircle2, FileText } from 'lucide-react';
@@ -84,7 +85,8 @@ export function TablePaymentSheet({
     onRequestRecipientDataCompletion,
 }: TablePaymentSheetProps) {
     const { has } = usePermissions();
-    const canEmitDian = has('dian.documents.emit');
+    const hasDianFeature = useHasPlanFeature('dian');
+    const canEmitDian = has('dian.documents.emit') && hasDianFeature;
     const canPrintDian = has('dian.print');
     const canLookupRecipients = has('dian.recipients.read');
 
@@ -233,7 +235,15 @@ export function TablePaymentSheet({
                             </div>
                         )}
 
-                        {/* HU #235 — sección DIAN. Visible solo con permiso emit. */}
+                        {/* #facturación-dian — con permiso RBAC pero sin Plan Plus, se
+                            informa en vez de ocultar en silencio. */}
+                        {has('dian.documents.emit') && !hasDianFeature && (
+                            <p className="text-muted-foreground rounded-md border border-dashed p-3 text-xs italic">
+                                Facturación DIAN: opción no incluida en tu plan actual.
+                            </p>
+                        )}
+
+                        {/* HU #235 — sección DIAN. Visible solo con permiso emit + Plan Plus. */}
                         {canEmitDian && (
                             <div className="space-y-2 rounded-md border border-dashed p-3">
                                 <div className="flex items-center gap-2">

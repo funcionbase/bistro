@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { PageShell } from '@/components/page-shell';
 import { DocumentStatusBadge } from '@/components/dian/document-status-badge';
 import { DocumentTypeBadge } from '@/components/dian/document-type-badge';
+import { PlanLockedBlock } from '@/components/dian/plan-locked-block';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useHasPlanFeature } from '@/hooks/use-plan-feature';
 import { getDocumentPdfUrl, listDocuments, retryDocument } from '@/lib/dian-api';
 import { formatDateTimeShort } from '@/lib/datetime';
 import {
@@ -30,6 +32,7 @@ import {
  * 25 por página).
  */
 export default function DianDocumentsPage() {
+    const hasDianFeature = useHasPlanFeature('dian');
     const [docs, setDocs] = useState<DianElectronicDocument[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -54,9 +57,15 @@ export default function DianDocumentsPage() {
     };
 
     useEffect(() => {
+        // Sin Plan Plus no hay nada que consultar — evita el fetch (el
+        // backend igual lo rechazaría con 403 plan.feature_not_included).
+        if (!hasDianFeature) {
+            setLoading(false);
+            return;
+        }
         fetchDocs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [status, type, from, to]);
+    }, [hasDianFeature, status, type, from, to]);
 
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
@@ -68,6 +77,22 @@ export default function DianDocumentsPage() {
                 (d.provider_track_id ?? '').toLowerCase().includes(q),
         );
     }, [docs, search]);
+
+    if (!hasDianFeature) {
+        return (
+            <PageShell title="Documentos DIAN">
+                <div className="flex flex-col gap-6">
+                    <PageHeader
+                        eyebrow="FACTURACIÓN ELECTRÓNICA"
+                        title="Documentos DIAN"
+                        description="DEE POS y facturas electrónicas emitidas desde esta sede."
+                        variant="dense"
+                    />
+                    <PlanLockedBlock />
+                </div>
+            </PageShell>
+        );
+    }
 
     return (
         <PageShell title="Documentos DIAN">

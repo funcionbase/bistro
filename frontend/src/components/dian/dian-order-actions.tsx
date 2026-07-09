@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useHasPlanFeature } from '@/hooks/use-plan-feature';
 import {
     convertToFev,
     DianApiError,
@@ -43,6 +44,7 @@ interface Props {
 
 export function DianOrderActions({ orderId, orderStatus, defaultDocumentType = 'pos_equivalent', onChange }: Props) {
     const { has } = usePermissions();
+    const hasDianFeature = useHasPlanFeature('dian');
     const [documents, setDocuments] = useState<DianElectronicDocument[]>([]);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
@@ -63,15 +65,21 @@ export function DianOrderActions({ orderId, orderStatus, defaultDocumentType = '
     }, [orderId]);
 
     useEffect(() => {
-        if (canRead) {
+        // Sin Plan Plus, ni documentos hay que traer — evita el fetch (el
+        // backend igual lo rechazaría con 403 plan.feature_not_included).
+        if (canRead && hasDianFeature) {
             fetchDocs();
         } else {
             setLoading(false);
         }
-    }, [canRead, fetchDocs]);
+    }, [canRead, hasDianFeature, fetchDocs]);
 
     if (!canRead) {
         return null;
+    }
+
+    if (!hasDianFeature) {
+        return <p className="text-muted-foreground text-xs italic">Facturación DIAN: opción no incluida en tu plan actual.</p>;
     }
 
     if (loading) {
@@ -310,6 +318,7 @@ const FRIENDLY_DIAN_ERRORS: Record<string, string> = {
         'No hay una resolución DIAN activa y vigente para emitir este documento. Pedile al administrador que registre una en Configuración → Facturación DIAN → Resoluciones.',
     'dian.order_not_emittable': 'Esta orden no se puede facturar todavía. Debe estar completada y cobrada antes de emitir el documento DIAN.',
     'dian.retry_failed': 'No se pudo reenviar el documento a la DIAN. Esperá un momento y volvé a intentar.',
+    'plan.feature_not_included': 'Esta opción no está incluida en tu plan actual.',
     DIAN_CREDIT_NOTE_ALREADY_EXISTS: 'Este documento ya tiene una nota crédito emitida. No se puede duplicar.',
     DIAN_BLOB_NOT_AVAILABLE: 'El archivo del documento no está disponible. Reemití la orden para regenerarlo.',
 };
