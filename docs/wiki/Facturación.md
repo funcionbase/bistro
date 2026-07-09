@@ -245,3 +245,20 @@ Las notas crédito son facturas con monto negativo que vinculan a una previa ví
 - Las facturas `paid` y `voided` no pueden ser modificadas; el modelo lanza `LogicException` si se intenta mutar `amount`, `base_amount`, `tax_amount`, etc.
 - `BILLING_PAST_DUE_GRACE_MONTHS=0` desactiva la gracia y suspende inmediatamente al vencer.
 - Si `BILLING_EMIT_DIAN_FOR_INVOICES=true`, cada invoice generada dispara `EmitDianInvoiceJob` (ShouldBeUnique por `invoice_id`) que asocia el `electronic_document_id` con CUFE.
+
+---
+
+## Gate del módulo DIAN por plan (#facturación-dian)
+
+Solo el Plan Plus puede operar el módulo DIAN (`billing_plans.features` incluye `'dian'`). El item de sidebar ("Documentos DIAN" / "Facturación DIAN") queda **siempre visible** por RBAC — el gate por plan pasa a nivel de página/acción, no de navegación: la empresa entra igual y ve un aviso "Opción no incluida en tu plan actual" sin datos ni controles operables.
+
+**Backend** — dos capas:
+1. `App\Http\Middleware\EnsurePlanFeature` (alias `plan.feature:<feature>`) envuelve TODO el grupo de rutas `dian/*` operativas y de config (resoluciones, provider-config, adquirentes, documentos) en `routes/api.php` — excepto `dian/fiscal-profile`, que es dato general de empresa editable sin importar el plan. Responde `403 {code: 'plan.feature_not_included'}`.
+2. `DianDispatchService::emit()`/`retry()` repiten el check (`BillingService::companyHasFeature($nit, 'dian')`) porque `EmitDianDocumentJob` no pasa por middleware — lanza `PlanFeatureNotIncludedException`, capturada en `ElectronicDocumentController` (store/retry/creditNote/convertToFev) → mismo 403. El job no-opea (no quema reintentos) si la empresa bajó de plan entre el cierre de la orden y que el job corra.
+
+`BillingService::companyHasFeature()` lee el plan **activo** (no el snapshot histórico) — un upgrade habilita DIAN de inmediato.
+
+**Frontend** — `activeCompany.plan_features` viaja en el bootstrap (`BootstrapService::buildSessionContext`, sin fetch extra) y se lee con el hook `useHasPlanFeature('dian')`. Tres puntos gateados, los tres muestran el mismo aviso ("Opción no incluida en tu plan actual" / componente `PlanLockedBlock`) en vez de dejar operar:
+- `/company/dian` y `/dian/documents` (páginas completas: sin plan, no hacen fetch y muestran solo el bloqueo).
+- `DianOrderActions` (detalle de orden — oculta el botón "Emitir documento DIAN"/acciones, muestra mensaje inline).
+- `TablePaymentSheet` (POS "Cerrar y cobrar" — oculta el toggle "Cliente solicita factura DIAN").
