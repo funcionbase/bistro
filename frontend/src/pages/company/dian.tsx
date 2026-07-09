@@ -59,7 +59,9 @@ function InformationalLockBanner() {
 export default function DianConfigPage() {
     return (
         <PageShell title="Facturación DIAN">
-            <div className="flex flex-col gap-6">
+            {/* Mismo contenedor que company/settings: sin él, el contenido
+                quedaba pegado al sidebar y sin gutter en mobile. */}
+            <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6">
                 <PageHeader
                     eyebrow="CONFIGURACIÓN"
                     title="Facturación electrónica DIAN"
