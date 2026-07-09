@@ -84,6 +84,10 @@ class PastDueDemoCompanySeeder extends Seeder
             ? $expectedBlockAt->copy()->addDay()
             : null;
 
+        // Anterior al primer mes vencido para que el rango de periodos
+        // facturables incluya todas las invoices del escenario.
+        $subStartsAt = $today->copy()->subMonthsNoOverflow(self::MONTHS_OVERDUE + 1)->startOfMonth();
+
         $company = Company::updateOrCreate(
             ['nit' => self::COMPANY_NIT],
             [
@@ -104,16 +108,25 @@ class PastDueDemoCompanySeeder extends Seeder
                 'expected_block_at' => $expectedBlockAt->toDateString(),
                 'payment_blocked_at' => $paymentBlockedAt,
                 'last_paid_at' => null,
+                // Sin esto, recalculateCompanyStatus() cae al fallback legacy
+                // de trial (created_at + BILLING_TRIAL_DAYS) porque este
+                // registro nunca pasa por activateCompany(). Si `created_at`
+                // real de la fila (fecha en que corrió el seeder por primera
+                // vez) queda a menos de trial_days de "hoy", el trial fallback
+                // gana sobre el status hardcodeado acá y el cron de recálculo
+                // revierte la empresa a `active` pese a las invoices vencidas
+                // — rompe el propósito del demo. Fijarlo bien atrás de todas
+                // las invoices simuladas para que el trial jamás aplique.
+                'paid_billing_starts_at' => $subStartsAt->toDateString(),
             ]
         );
 
         $this->call(BillingPlanSeeder::class);
-        // #246 consolidó el catálogo a un único plan activo; ya no existe 'pro'.
-        $plan = BillingPlan::where('slug', config('billing.default_plan_slug', 'default'))->firstOrFail();
-
-        // Suscripción anterior al primer mes vencido para que el rango de
-        // periodos facturables incluya todas las invoices del escenario.
-        $subStartsAt = $today->copy()->subMonthsNoOverflow(self::MONTHS_OVERDUE + 1)->startOfMonth();
+        // Un plan PAGO explícitamente — no `default_plan_slug` (Plan Básico,
+        // $0 desde el split de planes 2026-07): un demo de mora con invoices
+        // de $0 no tiene sentido (auto-pagan al vencer, "monto adeudado" del
+        // SuspendedBanner quedaría en $0). Toma el plan activo más caro.
+        $plan = BillingPlan::where('is_active', true)->where('price', '>', 0)->orderByDesc('price')->firstOrFail();
 
         $subscription = Subscription::updateOrCreate(
             ['company_nit' => $company->nit, 'status' => 'active'],
