@@ -177,8 +177,16 @@ export async function listDocuments(params: {
     document_type?: string;
     from?: string;
     to?: string;
+    /** 'all' = toda la empresa · uuid = esa sede · ausente = sede activa. */
     branch?: string;
     order_id?: string;
+    /** Filtra por la resolución DIAN a la que quedó ligado el documento. */
+    resolution_id?: string;
+    /** Búsqueda server-side: número completo, CUFE/CUDE o track ID. */
+    q?: string;
+    /** Columna de ordenamiento (whitelist backend; default issued_at). */
+    sort?: string;
+    dir?: 'asc' | 'desc';
     per_page?: number;
     page?: number;
 } = {}): Promise<PaginatedResponse<DianElectronicDocument>> {

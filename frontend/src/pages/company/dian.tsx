@@ -1,6 +1,7 @@
 import { Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { DocumentsExplorer } from '@/components/dian/documents-explorer';
 import InputError from '@/components/input-error';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,7 +21,9 @@ import { DIAN_DOC_TYPE_LABELS, type DianDocumentType, type DianResolution } from
 /**
  * Configuración → Facturación DIAN (HU #235 — pantalla owner-only).
  *
- * 2 tabs: Resoluciones (principal) · Contacto por defecto.
+ * 3 tabs: Facturas (principal — consulta de documentos emitidos por
+ * resolución, con filtro por sede/empresa, búsqueda, ordenamiento y
+ * paginación server-side) · Resoluciones · Contacto por defecto.
  * Cada tab es un componente local pequeño. Reutiliza componentes del DS
  * (PageHeader, Card, Tabs, Alert, SanitizedInput, Select, Skeleton).
  *
@@ -57,6 +60,29 @@ function InformationalLockBanner() {
 }
 
 export default function DianConfigPage() {
+    // El catálogo de resoluciones lo comparten los tabs Facturas (selector) y
+    // Resoluciones (cards + alta), así que vive acá y baja por props.
+    const [resolutions, setResolutions] = useState<DianResolution[]>([]);
+    const [resolutionsLoaded, setResolutionsLoaded] = useState(false);
+    const [resolutionsError, setResolutionsError] = useState<string | null>(null);
+    const [tab, setTab] = useState('documents');
+    const [selectedResolutionId, setSelectedResolutionId] = useState('');
+
+    const fetchResolutions = () => {
+        listResolutions()
+            .then(({ data }) => setResolutions(data))
+            .catch((e) => setResolutionsError(e instanceof Error ? e.message : 'Error'))
+            .finally(() => setResolutionsLoaded(true));
+    };
+
+    useEffect(fetchResolutions, []);
+
+    // Salto "Consultar facturas" desde una card del tab Resoluciones.
+    const consultResolution = (id: string) => {
+        setSelectedResolutionId(id);
+        setTab('documents');
+    };
+
     return (
         <PageShell title="Facturación DIAN">
             {/* Mismo contenedor que company/settings: sin él, el contenido
@@ -65,21 +91,40 @@ export default function DianConfigPage() {
                 <PageHeader
                     eyebrow="CONFIGURACIÓN"
                     title="Facturación electrónica DIAN"
-                    description="Resoluciones autorizadas y adquirente por defecto. La emisión la opera flexyflow con un proveedor único para toda la plataforma."
+                    description="Facturas emitidas, resoluciones autorizadas y adquirente por defecto. La emisión la opera flexyflow con un proveedor único para toda la plataforma."
                     variant="dense"
                     showBranchBadge={false}
                 />
 
                 {!DIAN_EDITABLE && <InformationalLockBanner />}
 
-                <Tabs defaultValue="resolutions" className="w-full">
+                <Tabs defaultValue="documents" value={tab} onValueChange={setTab} className="w-full">
                     <TabsList className="max-w-full overflow-x-auto">
+                        <TabsTrigger value="documents">Facturas</TabsTrigger>
                         <TabsTrigger value="resolutions">Resoluciones</TabsTrigger>
                         <TabsTrigger value="recipient">Contacto por defecto</TabsTrigger>
                     </TabsList>
 
+                    <TabsContent value="documents" className="mt-4">
+                        {!resolutionsLoaded ? (
+                            <Skeleton className="h-96 w-full" />
+                        ) : (
+                            <DocumentsExplorer
+                                resolutions={resolutions}
+                                resolutionId={selectedResolutionId}
+                                onResolutionChange={setSelectedResolutionId}
+                            />
+                        )}
+                    </TabsContent>
                     <TabsContent value="resolutions" className="mt-4">
-                        <ResolutionsTab editable={DIAN_EDITABLE} />
+                        <ResolutionsTab
+                            editable={DIAN_EDITABLE}
+                            resolutions={resolutions}
+                            loaded={resolutionsLoaded}
+                            loadError={resolutionsError}
+                            onRefresh={fetchResolutions}
+                            onConsult={consultResolution}
+                        />
                     </TabsContent>
                     <TabsContent value="recipient" className="mt-4">
                         <DefaultRecipientTab />
@@ -99,9 +144,17 @@ const DOC_TYPES_RESOLUTION: { value: DianDocumentType; label: string }[] = [
     { value: 'debit_note', label: 'Nota débito FEV' },
 ];
 
-function ResolutionsTab({ editable }: { editable: boolean }) {
-    const [resolutions, setResolutions] = useState<DianResolution[]>([]);
-    const [loaded, setLoaded] = useState(false);
+interface ResolutionsTabProps {
+    editable: boolean;
+    resolutions: DianResolution[];
+    loaded: boolean;
+    loadError: string | null;
+    onRefresh: () => void;
+    /** Abre el tab Facturas con esta resolución preseleccionada. */
+    onConsult: (id: string) => void;
+}
+
+function ResolutionsTab({ editable, resolutions, loaded, loadError, onRefresh, onConsult }: ResolutionsTabProps) {
     const [creating, setCreating] = useState(false);
     const [confirmDeactivateId, setConfirmDeactivateId] = useState<string | null>(null);
     const [form, setForm] = useState({
@@ -119,15 +172,6 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
     // Errores 422 por campo del alta de resolución → inline bajo cada input.
     const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
 
-    const fetchAll = () => {
-        listResolutions()
-            .then(({ data }) => setResolutions(data))
-            .catch((e) => setError(e instanceof Error ? e.message : 'Error'))
-            .finally(() => setLoaded(true));
-    };
-
-    useEffect(fetchAll, []);
-
     const handleCreate = async () => {
         setError(null);
         setCreateErrors({});
@@ -137,7 +181,7 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                 is_active: true,
             } as Partial<DianResolution> & { technical_key: string });
             setCreating(false);
-            fetchAll();
+            onRefresh();
         } catch (e) {
             // 422 con errores por campo → inline bajo cada input; si no, mensaje general.
             if (e instanceof DianApiError && e.errors) {
@@ -157,7 +201,7 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
         try {
             await deactivateResolution(confirmDeactivateId);
             setConfirmDeactivateId(null);
-            fetchAll();
+            onRefresh();
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Error');
         }
@@ -174,9 +218,9 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                 {editable && <Button onClick={() => setCreating(true)}>Registrar nueva</Button>}
             </div>
 
-            {error && (
+            {(error ?? loadError) && (
                 <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{error ?? loadError}</AlertDescription>
                 </Alert>
             )}
 
@@ -228,13 +272,16 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                             Consumido: <strong>{r.current_number}</strong> de {r.range_to} (
                             {Math.round((r.current_number / Math.max(1, r.range_to)) * 100)}%)
                         </div>
-                        {editable && r.is_active && (
-                            <div className="pt-1">
+                        <div className="flex flex-wrap gap-1 pt-1">
+                            <Button variant="outline" size="sm" onClick={() => onConsult(r.id)}>
+                                Consultar facturas
+                            </Button>
+                            {editable && r.is_active && (
                                 <Button variant="ghost" size="sm" onClick={() => setConfirmDeactivateId(r.id)}>
                                     Desactivar
                                 </Button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </Card>
                 ))}
             </div>

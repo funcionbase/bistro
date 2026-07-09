@@ -32,6 +32,8 @@ export interface DianElectronicDocument {
     company_nit: string;
     branch_id: string;
     order_id: string | null;
+    /** Resolución DIAN a la que quedó ligado el documento (sumó a su conteo). */
+    dian_resolution_id: string;
     document_type: DianDocumentType;
     prefix: string;
     consecutive: number;
