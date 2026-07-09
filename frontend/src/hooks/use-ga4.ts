@@ -1,3 +1,5 @@
+import { useIsStandalone } from '@/hooks/use-is-standalone';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getStoredConsent } from '@/lib/consent';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -16,7 +18,32 @@ import { useLocation } from 'react-router-dom';
  * - NO se envía PII ni identificadores sensibles (emails, NITs, nombres). El
  *   `page_path` se redacta (IDs numéricos/uuid → `:id`) para no filtrar
  *   identificadores de entidad ni inflar reportes con paths únicos.
+ *
+ * Segmentación de tráfico (`traffic_type`):
+ * - Distingue navegador vs PWA instalada (`useIsStandalone`, ya usado en el
+ *   resto de la app para adaptar UI) cruzado con mobile vs desktop
+ *   (`useIsMobile`, breakpoint 768px — el mismo que usa el resto del DS).
+ *   Reusa ambos hooks existentes en vez de reinventar detección.
+ * - Se manda como GA4 **user property** (`gtag('set', 'user_properties', …)`)
+ *   — aplica automáticamente a TODOS los eventos posteriores de la sesión
+ *   (page_view, cta_click vía `lib/analytics.ts`, cualquier evento futuro)
+ *   sin tener que tocar cada call site. También viaja como parámetro directo
+ *   en cada `page_view` para poder filtrarlo en GA4 Explore sin esperar a
+ *   que el custom dimension user-scoped propague.
+ * - Para que aparezca en informes estándar de GA4 hay que registrar
+ *   `traffic_type` como Custom Dimension (Admin → Definiciones personalizadas)
+ *   — paso manual en la consola de GA4, no en código.
  */
+
+/** Los 4 buckets de tráfico que pidió el negocio: navegador/PWA × desktop/mobile. */
+export type TrafficType = 'web_desktop' | 'web_mobile' | 'pwa_desktop' | 'pwa_mobile';
+
+export function resolveTrafficType(isMobile: boolean, isStandalone: boolean): TrafficType {
+    if (isStandalone) {
+        return isMobile ? 'pwa_mobile' : 'pwa_desktop';
+    }
+    return isMobile ? 'web_mobile' : 'web_desktop';
+}
 
 declare global {
     interface Window {
@@ -134,23 +161,36 @@ export function resolveGa4Id(bootstrapId: string | null | undefined): string | n
  */
 export function useGa4(measurementId: string | null | undefined): void {
     const location = useLocation();
+    const isMobile = useIsMobile();
+    const isStandalone = useIsStandalone();
+    const trafficType = resolveTrafficType(isMobile, isStandalone);
     const resolvedId = resolveGa4Id(measurementId);
     const enabled = Boolean(resolvedId);
 
-    // Init: carga diferida + consent default. Corre cuando hay ID válido.
+    // Init: carga diferida + consent default + user property de tráfico.
+    // Depende de `trafficType` además de `resolvedId`: si el dispositivo
+    // cruza el breakpoint mobile/desktop o cambia de modo standalone durante
+    // la sesión (resize de ventana, instalación de la PWA en caliente),
+    // re-emite el user property actualizado — `loadGtag` es idempotente
+    // (guard de módulo), así que re-correr el effect no reinyecta el script.
     useEffect(() => {
         if (!resolvedId) {
             return;
         }
         loadGtag(resolvedId);
+        if (typeof window.gtag === 'function') {
+            window.gtag('set', 'user_properties', { traffic_type: trafficType });
+        }
         // Usuario que ya aceptó analíticas en una visita previa: re-otorga el
         // consentimiento (el banner solo aparece cuando NO hay decisión guardada).
         if (getStoredConsent()?.analytics) {
             updateGa4Consent(true);
         }
-    }, [resolvedId]);
+    }, [resolvedId, trafficType]);
 
-    // `page_view` manual en cada cambio de ruta de React Router.
+    // `page_view` manual en cada cambio de ruta de React Router. `traffic_type`
+    // viaja también acá (no solo como user property) para poder filtrarlo de
+    // inmediato en GA4 Explore como custom dimension de evento.
     useEffect(() => {
         if (!enabled || typeof window.gtag !== 'function') {
             return;
@@ -159,7 +199,8 @@ export function useGa4(measurementId: string | null | undefined): void {
         window.gtag('event', 'page_view', {
             page_path: pagePath,
             page_location: window.location.origin + pagePath,
+            traffic_type: trafficType,
             page_title: document.title,
         });
-    }, [enabled, location.pathname]);
+    }, [enabled, location.pathname, trafficType]);
 }
