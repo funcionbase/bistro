@@ -1,4 +1,4 @@
-export const MANUAL_BASE = '/manual/bistro';
+export const MANUAL_BASE = '/manual';
 
 export function manualPageUrl(slug: string): string {
     return slug ? `${MANUAL_BASE}/${slug}` : MANUAL_BASE;

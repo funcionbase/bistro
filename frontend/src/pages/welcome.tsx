@@ -12,11 +12,11 @@ const DEMO_URL = 'https://flexyflow.co/#footer-with-contact';
 
 /** Funcionalidades clave del manual — reemplazan el menú de referencia (homerun.co). */
 const navLinks: Array<{ label: string; to: string }> = [
-    { label: 'Pedidos', to: '/manual/bistro/pedidos' },
-    { label: 'Caja y cobros', to: '/manual/bistro/caja' },
-    { label: 'Inventario', to: '/manual/bistro/inventario' },
-    { label: 'Fidelización', to: '/manual/bistro/fidelizacion' },
-    { label: 'Métricas', to: '/manual/bistro/metricas' },
+    { label: 'Pedidos', to: '/manual/pedidos' },
+    { label: 'Caja y cobros', to: '/manual/caja' },
+    { label: 'Inventario', to: '/manual/inventario' },
+    { label: 'Fidelización', to: '/manual/fidelizacion' },
+    { label: 'Métricas', to: '/manual/metricas' },
 ];
 
 /* ponytail: logos demo — restaurantes locales de Pereira (pequeños/medianos,

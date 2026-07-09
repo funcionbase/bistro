@@ -17,7 +17,7 @@ Hay cuatro fuentes de pedidos que convergen en el mismo tablero:
 - **Menú público (web):** el cliente entra al enlace de tu negocio, agrega al carrito y confirma el pedido desde su navegador.
 - **QR de mesa:** el cliente escanea el QR de la mesa, navega la carta y ordena. La mesa queda asociada al pedido.
 - **WhatsApp (bot):** el cliente conversa con el bot, que arma el carrito y genera un enlace de confirmación.
-- **Caja (POS):** el cajero toma el pedido directamente desde la [caja](/manual/bistro/caja), por teléfono o en mostrador.
+- **Caja (POS):** el cajero toma el pedido directamente desde la [caja](/manual/caja), por teléfono o en mostrador.
 
 ## El tablero kanban
 
@@ -75,7 +75,7 @@ En pantallas de celular el tablero cambia de columnas a una **lista compacta**, 
 
 Cada estación de cocina tiene su propia vista de pantalla completa. Solo ve los ítems que le corresponden según las categorías asignadas. Desde esa vista el cocinero marca cada ítem como listo. Cuando todos los ítems de un pedido están listos, la comanda pasa a "listo" en el tablero del salón.
 
-La pantalla KDS se abre en [configuración → KDS](/manual/bistro/configuracion) → link a la estación. Es una URL distinta que puedes poner en fullscreen en una tablet o monitor de cocina, independiente de la sesión del panel.
+La pantalla KDS se abre en [configuración → KDS](/manual/configuracion) → link a la estación. Es una URL distinta que puedes poner en fullscreen en una tablet o monitor de cocina, independiente de la sesión del panel.
 
 ## Tickets térmicos
 

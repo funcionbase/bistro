@@ -50,11 +50,11 @@ Una vez activo, lo primero que vale la pena hacer antes de operar en serio:
 - **Logo y QR de pagos:** en *configuración → información del negocio*. El logo aparece en el menú público y en los recibos.
 - **Cuenta bancaria:** en el mismo formulario, para que el bot pueda decirle a los clientes cómo pagar por transferencia.
 - **Impuestos:** el régimen tributario (RST, INC 8%, IVA 19%, etc.) desde *configuración → información → impuestos*.
-- **Horarios:** cuándo estás abierto y cuándo cerrado. Sin esto el bot no sabe si puede recibir pedidos. Ve a [horarios](/manual/bistro/horarios).
+- **Horarios:** cuándo estás abierto y cuándo cerrado. Sin esto el bot no sabe si puede recibir pedidos. Ve a [horarios](/manual/horarios).
 
 ## 5. Sube tu menú
 
-Sin menú no hay operación. En [menús](/manual/bistro/menus) creas tus categorías y platos, les pones precio, fotos y recetas (para el control de inventario). Cuando publicas el menú, queda disponible en el enlace público de tu negocio y en el QR de mesa.
+Sin menú no hay operación. En [menús](/manual/menus) creas tus categorías y platos, les pones precio, fotos y recetas (para el control de inventario). Cuando publicas el menú, queda disponible en el enlace público de tu negocio y en el QR de mesa.
 
 <div class="callout callout-info">
 <p>
@@ -65,11 +65,11 @@ ve ajustando. Los clientes prefieren un menú incompleto a no encontrarte online
 
 ## 6. Invita a tu equipo
 
-En [usuarios y roles](/manual/bistro/usuarios) mandas invitaciones por correo. El sistema tiene roles listos para los cargos más comunes (cajero, cocinero, mesero, gerente, contador) y los permisos ya vienen configurados. La invitación dura 7 días.
+En [usuarios y roles](/manual/usuarios) mandas invitaciones por correo. El sistema tiene roles listos para los cargos más comunes (cajero, cocinero, mesero, gerente, contador) y los permisos ya vienen configurados. La invitación dura 7 días.
 
 ## 7. Abre tu primera caja
 
-En [caja](/manual/bistro/caja) abres el turno con el fondo inicial. Desde ahí puedes tomar pedidos, cobrar, imprimir recibos y cerrar el día. Si tienes impresora térmica, conéctala en *configuración → impresoras* antes de abrir.
+En [caja](/manual/caja) abres el turno con el fondo inicial. Desde ahí puedes tomar pedidos, cobrar, imprimir recibos y cerrar el día. Si tienes impresora térmica, conéctala en *configuración → impresoras* antes de abrir.
 
 <div class="callout callout-success">
 <p>

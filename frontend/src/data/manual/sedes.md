@@ -22,8 +22,8 @@ Si manejas un solo local, no te preocupes — bistro flexy crea automáticamente
 
 Un negocio (un NIT) puede tener **tantas sedes como necesite**. Cada sede tiene su propia operación independiente:
 
-- Su propia [caja](/manual/bistro/caja) (los turnos no se cruzan entre sedes).
-- Su propio [tablero de pedidos](/manual/bistro/pedidos) y de cocina (KDS).
+- Su propia [caja](/manual/caja) (los turnos no se cruzan entre sedes).
+- Su propio [tablero de pedidos](/manual/pedidos) y de cocina (KDS).
 - Su propio inventario, con una o varias bodegas internas.
 - Sus propios reportes operativos.
 - Su propio menú: lo puedes copiar entre sedes y a partir de ahí cada una lo edita por separado.

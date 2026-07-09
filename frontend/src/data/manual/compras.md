@@ -92,7 +92,7 @@ la mercancía fue devuelta.
 <p>
 <strong>Entrada de inventario automática:</strong> cuando marcas la OC como "recibida",
 bistro flexy te ofrece registrar la entrada de stock en
-<a href="/manual/bistro/inventario">inventario</a> por cada ítem de la OC. Puedes
+<a href="/manual/inventario">inventario</a> por cada ítem de la OC. Puedes
 aceptarla tal cual o ajustar cantidades si la entrega fue parcial. Si prefieres registrar
 la entrada a mano, también puedes hacerlo desde inventario directamente.
 </p>

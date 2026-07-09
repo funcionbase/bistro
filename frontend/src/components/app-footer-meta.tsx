@@ -23,7 +23,7 @@ export function AppFooterMeta() {
 
     return (
         <div className="border-border text-muted-foreground mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-4 text-xs sm:px-6">
-            <AppLink href="/manual/bistro" className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
+            <AppLink href="/manual" className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
                 <BookOpen className="h-3.5 w-3.5" />
                 Manual de usuario
             </AppLink>

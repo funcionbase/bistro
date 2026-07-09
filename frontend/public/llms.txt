@@ -12,13 +12,13 @@
 ## Contenido público
 
 - [Landing](https://bistro.flexyflow.co/): qué es bistro y cómo probarlo.
-- [Manual de usuario](https://bistro.flexyflow.co/manual/bistro): documentación
+- [Manual de usuario](https://bistro.flexyflow.co/manual): documentación
   completa por módulo — primeros pasos, menús, pedidos, caja y cobros, mesas
   con QR, entregas/domicilios, horarios, chat, inventario, clientes, cupones,
   fidelización, métricas, alertas, facturación, usuarios y roles, sedes y
   bodegas, compras, planificador de turnos, configuración y WhatsApp.
-- [Preguntas frecuentes](https://bistro.flexyflow.co/manual/bistro/faq)
-- [Contrato de servicio](https://bistro.flexyflow.co/manual/bistro/legal/contrato)
+- [Preguntas frecuentes](https://bistro.flexyflow.co/manual/faq)
+- [Contrato de servicio](https://bistro.flexyflow.co/manual/legal/contrato)
 
 ## Contacto
 

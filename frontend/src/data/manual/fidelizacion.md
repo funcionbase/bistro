@@ -14,11 +14,11 @@ lastUpdated: "8 de julio de 2026"
 
 Por cada pedido completado, el cliente acumula puntos en una cuenta que vive a nivel de empresa (no por sede). Esos puntos los puede canjear por descuentos predefinidos: *"500 pts = $5.000 de descuento"*, por ejemplo.
 
-El programa es **opcional** y se prende desde [configuración](/manual/bistro/configuracion). Si no lo activas, los clientes nunca ven el panel de puntos y la operación no cambia.
+El programa es **opcional** y se prende desde [configuración](/manual/configuracion). Si no lo activas, los clientes nunca ven el panel de puntos y la operación no cambia.
 
 ### Una sola cuenta entre todas las sedes
 
-Si tienes [varias sedes](/manual/bistro/sedes), los puntos del cliente se suman en una sola cuenta. **Don Hernán pide en la sede de El Poblado el lunes y en la de Laureles el viernes** — los puntos van al mismo saldo. Cuando canjee, puede usar el descuento en cualquier sede.
+Si tienes [varias sedes](/manual/sedes), los puntos del cliente se suman en una sola cuenta. **Don Hernán pide en la sede de El Poblado el lunes y en la de Laureles el viernes** — los puntos van al mismo saldo. Cuando canjee, puede usar el descuento en cualquier sede.
 
 ### El libro mayor de puntos
 

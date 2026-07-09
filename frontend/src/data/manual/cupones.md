@@ -64,7 +64,7 @@ Desde el detalle puedes **exportar el historial a PDF** para llevarlo a una reun
 
 ## Cómo el cliente aplica el cupón
 
-En el carrito (lado cliente o en la [caja](/manual/bistro/caja) del POS), escribe el código y el descuento se calcula al instante. El sistema verifica:
+En el carrito (lado cliente o en la [caja](/manual/caja) del POS), escribe el código y el descuento se calcula al instante. El sistema verifica:
 
 1. Que el cupón exista, esté activo y dentro de fechas.
 2. Que no haya alcanzado el tope de usos.
@@ -78,7 +78,7 @@ En el carrito (lado cliente o en la [caja](/manual/bistro/caja) del POS), escrib
 
 ### Cupones de fidelización
 
-Cuando un cliente canjea sus puntos (ver [fidelización](/manual/bistro/fidelizacion)), el sistema le emite un cupón temporal único, amarrado a su teléfono y con vencimiento corto (por defecto 60 minutos). Ese cupón no aparece en el listado público de cupones — vive aparte para que tu campaña promocional y tu programa de puntos no se mezclen visualmente.
+Cuando un cliente canjea sus puntos (ver [fidelización](/manual/fidelizacion)), el sistema le emite un cupón temporal único, amarrado a su teléfono y con vencimiento corto (por defecto 60 minutos). Ese cupón no aparece en el listado público de cupones — vive aparte para que tu campaña promocional y tu programa de puntos no se mezclen visualmente.
 
 ## Cómo se trata el descuento contablemente
 

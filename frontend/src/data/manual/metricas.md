@@ -27,7 +27,7 @@ El **panel de control** es la primera pantalla cuando entras a la app. Te muestr
 - **Mapa de calor por hora:** en qué horas del día se concentran tus pedidos. Sirve para programar turnos.
 - **Abandono de carrito:** cuántos clientes empezaron un pedido y no lo terminaron, y cuánto dinero estimado dejaste sobre la mesa.
 - **Resumen de domicilios:** cómo va la operación logística. Solo aparece si tienes permiso para ver entregas.
-- **Alertas:** ver [alertas](/manual/bistro/alertas).
+- **Alertas:** ver [alertas](/manual/alertas).
 
 ## Página de métricas detallada
 

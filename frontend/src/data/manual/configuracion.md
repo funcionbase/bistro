@@ -44,7 +44,7 @@ lastUpdated: "8 de julio de 2026"
 <td>Sedes</td>
 <td>
 Crear, editar y archivar sucursales (ver
-<a href="/manual/bistro/sedes">sedes</a>).
+<a href="/manual/sedes">sedes</a>).
 </td>
 </tr>
 <tr>
@@ -109,7 +109,7 @@ sin tener el perfil DIAN y la resolución vigente configurados, bistro flexy te 
 
 ## WhatsApp Cloud API
 
-En **configuración → WhatsApp** conectas el número de WhatsApp del negocio. Ver la guía completa en [WhatsApp del negocio](/manual/bistro/whatsapp).
+En **configuración → WhatsApp** conectas el número de WhatsApp del negocio. Ver la guía completa en [WhatsApp del negocio](/manual/whatsapp).
 
 <div class="callout callout-info">
 <p>

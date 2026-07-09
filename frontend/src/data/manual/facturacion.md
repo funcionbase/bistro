@@ -110,7 +110,7 @@ Aquí ya no estamos hablando de lo que pagas tú: estamos hablando de los docume
 
 Para emitir cualquiera de los anteriores, tu negocio necesita al menos **dos resoluciones activas** autorizadas por la DIAN: una para POS y otra para factura electrónica. Cada resolución viene con un prefijo, un rango de numeración y una clave técnica.
 
-Si una resolución se está agotando o por vencerse, te llega una [alerta](/manual/bistro/alertas) para que pidas la siguiente con anticipación.
+Si una resolución se está agotando o por vencerse, te llega una [alerta](/manual/alertas) para que pidas la siguiente con anticipación.
 
 ### Dónde quedan guardados
 

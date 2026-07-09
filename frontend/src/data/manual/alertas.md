@@ -40,7 +40,7 @@ Cuando un plato cae por debajo del margen mínimo. Por ejemplo: *"La Bandeja Pai
 - **Crítica:** el margen quedó muy por debajo del umbral — el plato puede estar dejándote pérdida en vez de utilidad.
 - **Advertencia:** está por debajo del mínimo sano pero todavía deja algo.
 
-La alerta te lleva directo al plato en [menús](/manual/bistro/menus) para que decidas: subes el precio, cambias un ingrediente, renegocias con el proveedor o lo sacas de la carta.
+La alerta te lleva directo al plato en [menús](/manual/menus) para que decidas: subes el precio, cambias un ingrediente, renegocias con el proveedor o lo sacas de la carta.
 
 ### Plato sin ventas
 
@@ -55,7 +55,7 @@ Si una factura de tu suscripción al panel quedó vencida, te aparece un aviso e
 - **Naranja:** mora reciente, una factura vencida.
 - **Rojo:** mora prolongada, dos o más facturas vencidas. El equipo comercial de flexyflow está al tanto y se pone en contacto.
 
-Si la mora se prolonga varios meses, la cuenta puede pasar a modo solo-lectura mientras se regulariza. Detalles en [facturación](/manual/bistro/facturacion).
+Si la mora se prolonga varios meses, la cuenta puede pasar a modo solo-lectura mientras se regulariza. Detalles en [facturación](/manual/facturacion).
 
 ### Fallos de emisión electrónica DIAN
 

@@ -14,7 +14,7 @@ lastUpdated: "8 de julio de 2026"
 
 Conectar tu WhatsApp Business a flexyflow te deja:
 
-- Recibir los mensajes de tus clientes en el panel de [chat](/manual/bistro/chat), sin tener que mirar el celular del negocio.
+- Recibir los mensajes de tus clientes en el panel de [chat](/manual/chat), sin tener que mirar el celular del negocio.
 - Responder desde la app, dejando registro de quién atendió cada conversación.
 - Mandar avisos automáticos al cliente cuando le asignan domiciliario o cuando se le entrega su pedido.
 - Que el bot atienda solo lo repetitivo (horarios, carta, recibir un pedido) y le pase al equipo humano solo cuando haga falta.
@@ -37,16 +37,16 @@ Si no tienes WhatsApp Business todavía, puedes solicitar que flexyflow te asign
 
 ## Mensajes entrantes
 
-Cada mensaje que llega a tu número se registra automáticamente en el panel de [chats](/manual/bistro/chat) como una conversación con el cliente. Si es la primera vez que ese teléfono te escribe, te crea el chat solito. Si es un cliente conocido, el mensaje se suma a la conversación existente.
+Cada mensaje que llega a tu número se registra automáticamente en el panel de [chats](/manual/chat) como una conversación con el cliente. Si es la primera vez que ese teléfono te escribe, te crea el chat solito. Si es un cliente conocido, el mensaje se suma a la conversación existente.
 
 ## Cómo arma un pedido el bot
 
 Cuando el bot esté operativo, el flujo de un pedido por WhatsApp se parece a esto:
 
-1. Cliente escribe a tu número. El bot consulta los [horarios](/manual/bistro/horarios) y responde solo si estás abierto.
+1. Cliente escribe a tu número. El bot consulta los [horarios](/manual/horarios) y responde solo si estás abierto.
 2. Le muestra la carta (la misma del menú público de tu negocio).
 3. Conversa con el cliente, arma un carrito y le manda un enlace seguro tipo *tutienda.flexyflow.co/carrito/abc123*. Ese enlace vive un tiempo limitado (unos 70 minutos por defecto).
-4. El cliente abre el enlace en su navegador, revisa el carrito, paga y confirma. El pedido aparece en tu [tablero](/manual/bistro/pedidos) en tiempo real.
+4. El cliente abre el enlace en su navegador, revisa el carrito, paga y confirma. El pedido aparece en tu [tablero](/manual/pedidos) en tiempo real.
 5. Si el cliente quiere hablar con un humano en cualquier momento, escribe algo como *"hablar con alguien"* y el bot le pasa la conversación al equipo (handoff).
 
 <div class="callout callout-info">

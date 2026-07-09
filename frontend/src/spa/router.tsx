@@ -172,10 +172,10 @@ export const router = createBrowserRouter([
 
             // Manual de usuario — públicas, sin auth, layout propio. Las páginas
             // de contenido resuelven por :slug → markdown en src/data/manual/.
-            { path: '/manual/bistro', element: <ManualIndex /> },
-            { path: '/manual/bistro/faq', element: <ManualFaq /> },
-            { path: '/manual/bistro/legal/contrato', element: <ManualLegalContrato /> },
-            { path: '/manual/bistro/:slug', element: <ManualMarkdownPage /> },
+            { path: '/manual', element: <ManualIndex /> },
+            { path: '/manual/faq', element: <ManualFaq /> },
+            { path: '/manual/legal/contrato', element: <ManualLegalContrato /> },
+            { path: '/manual/:slug', element: <ManualMarkdownPage /> },
 
             { path: '/login', element: <Login /> },
             { path: '/register', element: <Register /> },

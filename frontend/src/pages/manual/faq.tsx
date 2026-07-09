@@ -207,7 +207,7 @@ export default function ManualFaq() {
             </p>
             <p>
                 Si encontraste algo que no está en este manual, revisa el índice completo en{' '}
-                <Link to="/manual/bistro">inicio del manual</Link>.
+                <Link to="/manual">inicio del manual</Link>.
             </p>
         </ManualLayout>
     );

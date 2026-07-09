@@ -24,7 +24,7 @@ Cada insumo tiene:
 - **Costo por unidad** — el costo actual. Cuando subes una compra, el costo se actualiza automáticamente si cambias el precio unitario en la orden de compra.
 - **Bodega** — a cuál bodega pertenece (cocina, barra, almacén, etc.).
 - **Stock actual** — la cantidad disponible en ese momento, resultado de todos los movimientos acumulados.
-- **Umbral de alerta** — si el stock cae por debajo de este valor, aparece una alerta en el panel de [alertas](/manual/bistro/alertas).
+- **Umbral de alerta** — si el stock cae por debajo de este valor, aparece una alerta en el panel de [alertas](/manual/alertas).
 
 ### Crear y editar insumos
 
@@ -122,7 +122,7 @@ Puedes cambiar el rango de fechas con el selector. El cálculo usa el costo vige
 
 ## Integración con recetas
 
-Las recetas se configuran en el menú de cada plato (ver [Menús](/manual/bistro/menus)). Cada ítem de receta apunta a un insumo del inventario con una cantidad. Para que el descuento automático funcione:
+Las recetas se configuran en el menú de cada plato (ver [Menús](/manual/menus)). Cada ítem de receta apunta a un insumo del inventario con una cantidad. Para que el descuento automático funcione:
 
 1. El insumo debe existir en inventario y tener stock mayor a cero.
 2. La receta del plato debe tener ese insumo con la cantidad correcta.

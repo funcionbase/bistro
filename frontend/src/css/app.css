@@ -316,7 +316,7 @@ body {
 }
 
 /* ── Manual de usuario — .wiki-prose y .callout-* ─────────────────────────
-   Portados de WikiPanelLayout.astro (website). Usados solo en /manual/bistro/*
+   Portados de WikiPanelLayout.astro (website). Usados solo en /manual/*
    que son páginas públicas sin auth. */
 .wiki-prose {
     color: var(--color-text-default);
