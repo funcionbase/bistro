@@ -34,7 +34,7 @@ Lo que pagas para tener el panel funcionando. Una sola suscripción activa por n
 
 En **facturación** ves la suscripción actual con:
 
-- **Plan contratado.** Hoy todos los negocios arrancan en el *Plan Default* ($300.000 COP/mes, IVA 19% incluido). Si tu asesor te configuró un descuento por código promocional, lo ves marcado con un ícono de porcentaje.
+- **Plan contratado.** Todos los negocios arrancan en el *Plan Básico* ($0 COP/mes — la plataforma completa sin costo). El *Plan Plus* ($300.000 COP/mes, IVA 19% incluido, más $10 COP por factura electrónica generada) agrega la facturación electrónica DIAN; se activa contactando a tu asesor. Si te configuraron un descuento por código promocional, lo ves marcado con un ícono de porcentaje.
 - **Precio** y ciclo de facturación (mensual).
 - **Estado:** activa, pausada o cancelada.
 - **Período actual** (las fechas que cubre la próxima factura).

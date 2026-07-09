@@ -50,7 +50,8 @@ export default function SubscriptionCard({ subscription }: Props) {
                     </p>
                 </StatBlock>
                 <StatBlock label="Próxima factura">
-                    <p className="text-foreground text-sm font-medium">{nextBillingDate()}</p>
+                    {/* Plan gratuito ($0): no se generan facturas — mostrar una fecha sería mentir. */}
+                    <p className="text-foreground text-sm font-medium">{Number(plan.price) > 0 ? nextBillingDate() : 'No aplica'}</p>
                 </StatBlock>
                 <StatBlock label="Estado">
                     {status === 'active' ? <Badge variant="safe">Activa</Badge> : <Badge variant="secondary">Cancelada</Badge>}

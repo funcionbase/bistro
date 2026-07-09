@@ -37,12 +37,22 @@
                 "operatingSystem": "Web",
                 "inLanguage": "es-CO",
                 "description": "Software de gestión para restaurantes pequeños y medianos: menú digital con código QR, pedidos, caja POS, inventario, domicilios y facturación electrónica.",
-                "offers": {
-                    "@type": "Offer",
-                    "price": "300000",
-                    "priceCurrency": "COP",
-                    "description": "Tarifa mensual por empresa, sedes ilimitadas"
-                },
+                "offers": [
+                    {
+                        "@type": "Offer",
+                        "name": "Plan Básico",
+                        "price": "0",
+                        "priceCurrency": "COP",
+                        "description": "Uso completo de la plataforma sin costo, sedes ilimitadas"
+                    },
+                    {
+                        "@type": "Offer",
+                        "name": "Plan Plus",
+                        "price": "300000",
+                        "priceCurrency": "COP",
+                        "description": "Incluye facturación electrónica DIAN. $300.000 COP/mes más $10 COP por factura electrónica generada"
+                    }
+                ],
                 "areaServed": [
                     { "@type": "City", "name": "Pereira" },
                     { "@type": "City", "name": "Manizales" },

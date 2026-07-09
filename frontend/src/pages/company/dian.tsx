@@ -42,7 +42,10 @@ function InformationalLockBanner() {
             <AlertDescription>
                 La facturación electrónica DIAN todavía no está habilitada para edición. Por ahora puedes explorar la configuración para irla
                 conociendo; pronto podrás conectar tu proveedor y registrar tus resoluciones.{' '}
-                <strong>El costo del servicio de facturación electrónica DIAN no está incluido en la suscripción mensual.</strong>
+                <strong>
+                    La facturación electrónica DIAN hace parte del Plan Plus: $300.000 COP/mes más $10 COP por cada factura electrónica
+                    generada.
+                </strong>
             </AlertDescription>
         </Alert>
     );

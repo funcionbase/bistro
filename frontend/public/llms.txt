@@ -4,7 +4,9 @@
 > colombiano (Pereira, Manizales, Armenia). Menú digital con código QR,
 > pedidos, caja POS, inventario, domicilios, fidelización y facturación
 > electrónica DIAN. Web app (PWA), sin instalaciones ni licencias por terminal.
-> Tarifa: $300.000 COP/mes por empresa, sedes ilimitadas. Producto de flexyflow
+> Tarifa: Plan Básico $0 COP/mes (uso completo de la plataforma, sedes
+> ilimitadas); Plan Plus $300.000 COP/mes + $10 COP por factura electrónica
+> generada (incluye facturación electrónica DIAN). Producto de flexyflow
 > (https://flexyflow.co).
 
 ## Contenido público
