@@ -1,16 +1,22 @@
 import { AppLink } from '@/components/app-link';
 import { useSharedData } from '@/lib/shared-data';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, FileText, Shield } from 'lucide-react';
 
 // Inyectadas por Vite en build time (vite.config.ts `define`).
 declare const __FRONTEND_VERSION__: string;
 declare const __BACKEND_VERSION__: string;
 
+// Páginas públicas del sitio institucional (flexyflow.co), no del wiki de
+// enrollment (`legalUrls` del bootstrap) — mismo par que enlaza consent-banner.tsx.
+const TERMS_URL = 'https://flexyflow.co/terms-conditions/';
+const PRIVACY_URL = 'https://flexyflow.co/privacy-policy/';
+
 /**
- * Pie global del área autenticada: link al manual de usuario y versiones
- * desplegadas (fv = frontend, bv = backend). Se monta una sola vez en
- * AppSidebarLayout, después del contenido de cada página; `mt-auto` lo
- * empuja al fondo cuando la página es más corta que el viewport.
+ * Pie global del área autenticada: links al manual de usuario y a los
+ * documentos legales públicos (TOS/privacidad), y versiones desplegadas
+ * (fv = frontend, bv = backend). Se monta una sola vez en AppSidebarLayout,
+ * después del contenido de cada página; `mt-auto` lo empuja al fondo cuando
+ * la página es más corta que el viewport.
  *
  * fv = versión del bundle cargado (build time — correcto por construcción).
  * bv = versión que reporta el backend en runtime vía /api/v1/bootstrap
@@ -23,10 +29,30 @@ export function AppFooterMeta() {
 
     return (
         <div className="border-border text-muted-foreground mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-4 text-xs sm:px-6">
-            <AppLink href="/manual" className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
-                <BookOpen className="h-3.5 w-3.5" />
-                Manual de usuario
-            </AppLink>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+                <AppLink href="/manual" className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
+                    <BookOpen className="h-3 w-3" />
+                    Manual de usuario
+                </AppLink>
+                <a
+                    href={TERMS_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+                >
+                    <FileText className="h-3 w-3" />
+                    Términos y condiciones
+                </a>
+                <a
+                    href={PRIVACY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+                >
+                    <Shield className="h-3 w-3" />
+                    Política de privacidad
+                </a>
+            </div>
             <span className="opacity-70">
                 fv{__FRONTEND_VERSION__} bv{backendVersion}
             </span>
