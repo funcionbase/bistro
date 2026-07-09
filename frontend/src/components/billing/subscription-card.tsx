@@ -1,3 +1,4 @@
+import { StatBlock } from '@/components/billing/stat-block';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCOP, nextBillingDate } from '@/lib/formatters';
@@ -6,20 +7,6 @@ import { Receipt } from 'lucide-react';
 
 interface Props {
     subscription: Subscription | null;
-}
-
-interface StatBlockProps {
-    label: string;
-    children: React.ReactNode;
-}
-
-function StatBlock({ label, children }: StatBlockProps) {
-    return (
-        <div className="space-y-1">
-            <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">{label}</p>
-            {children}
-        </div>
-    );
 }
 
 export default function SubscriptionCard({ subscription }: Props) {

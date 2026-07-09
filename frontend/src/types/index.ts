@@ -165,10 +165,31 @@ export interface InvoicePagination {
     total: number;
 }
 
+export interface DianUsageResolution {
+    resolution_id: string;
+    prefix: string | null;
+    resolution_number: string | null;
+    document_type: string | null;
+    count: number;
+}
+
+/** Detalle de uso DIAN del período en curso — solo presente en planes con módulo DIAN (Plan Plus). */
+export interface DianUsage {
+    period_from: string;
+    period_to: string;
+    unit_price: number;
+    total_documents: number;
+    usage_amount: number;
+    plan_amount: number;
+    estimated_total: number;
+    resolutions: DianUsageResolution[];
+}
+
 export interface BillingSubscriptionData {
     subscription: Subscription | null;
     overdue_total: number;
     earliest_overdue_date: string | null;
+    dian_usage: DianUsage | null;
 }
 
 export interface Bank {

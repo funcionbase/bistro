@@ -1,4 +1,5 @@
 import { ActivePromoCodeCard } from '@/components/billing/active-promo-code-card';
+import DianUsageCard from '@/components/billing/dian-usage-card';
 import { FlexyFlowPaymentInfo } from '@/components/billing/flexyflow-payment-info';
 import InvoiceList from '@/components/billing/invoice-list';
 import OverdueBanner from '@/components/billing/overdue-banner';
@@ -79,6 +80,7 @@ export function BillingTab({
                         />
                     )}
                     <SubscriptionCard subscription={billingData?.subscription ?? null} />
+                    {billingData?.dian_usage && <DianUsageCard usage={billingData.dian_usage} />}
                     {/* #246 — Datos para transferir a flexyflow (visible siempre). */}
                     {flexyflowPayment !== null && <FlexyFlowPaymentInfo payment={flexyflowPayment} />}
                     {/* #246 — promo code activo o form para inscribir uno nuevo. */}
