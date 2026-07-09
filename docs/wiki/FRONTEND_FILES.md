@@ -1319,3 +1319,37 @@ Guía completa: [`docs/wiki/PWA-Push-Notifications.md`](./PWA-Push-Notifications
 - Safari iOS 16.4+: requiere PWA instalada (Add to Home Screen).
 - iOS < 16.4: NO soportado; el hook lo detecta y oculta la UI.
 
+
+---
+
+## Facturación electrónica DIAN — `/company/dian` (HU #235, consulta 2026-07)
+
+### `pages/company/dian.tsx`
+
+Pantalla de configuración/consulta DIAN (permiso `dian.documents.read` / `dian.config.read`). 3 tabs:
+
+| Tab | Default | Contenido |
+|-----|---------|-----------|
+| **Facturas** | ✅ | `DocumentsExplorer` — consulta de documentos emitidos por resolución. |
+| **Resoluciones** | | Cards por resolución (rango, consumo, vigencia, badges Activa/Por vencer/Agotada) + alta (gateada por `DIAN_EDITABLE`). Botón "Consultar facturas" salta al tab Facturas con esa resolución preseleccionada. |
+| **Contacto por defecto** | | Solo lectura: adquirente genérico CONSUMIDOR FINAL (NIT 222222222222). |
+
+- El tab **Proveedor se retiró** (2026-07): el proveedor tecnológico es único para toda la plataforma y lo opera flexyflow; la config sigue en backend (`DianProviderConfig`).
+- `DIAN_EDITABLE = false`: pantalla informativa mientras el módulo no se libera; el banner comunica que DIAN hace parte del **Plan Plus** ($300.000/mes + $10 por factura generada).
+- El catálogo de resoluciones se carga una vez en la página y baja por props a ambos tabs; tabs controlados (`value`/`onValueChange`) para el salto Resoluciones → Facturas.
+- Contenedor estándar `mx-auto max-w-7xl p-4 sm:p-6` (igual a `company/settings`).
+
+### `components/dian/documents-explorer.tsx`
+
+Flujo de consulta: **resolución (obligatoria) → alcance (toda la empresa o una sede del bootstrap) → tabla**.
+
+- Tabla paginada **server-side** (25/página, `meta` de paginación con Prev/Next) con búsqueda debounced (400ms; número, CUFE/CUDE, track ID) y **ordenamiento por columna** (Número, Tipo, Estado, Fecha — `sort`/`dir` al backend). Mobile: cards apiladas `sm:hidden`.
+- Línea de consumo de la resolución seleccionada: rango y `current_number` de `range_to`.
+- Detalle por fila (Dialog): estado + motivo de rechazo, sede, fechas, CUFE/CUDE, ambiente, **resolución ligada** (número, prefijo, rango y el consecutivo que consumió el documento), botones PDF/XML (solo con `has_pdf`/`has_xml`, URL firmada S3) y **"Ver orden"** → `/orders/{order_id}`.
+- Sedes desde `useBootstrap().data.branches`; el nombre de sede se resuelve client-side por `branch_id`.
+
+### `lib/dian-api.ts` · `types/dian.ts`
+
+- `listDocuments` acepta `resolution_id`, `q`, `sort`, `dir`, `branch` (`'all'` | uuid | ausente = sede activa).
+- `DianElectronicDocument` incluye `dian_resolution_id`.
+- `pages/dian/documents.tsx` (vista operativa por sede) sigue existiendo sin cambios.

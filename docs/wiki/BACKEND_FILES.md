@@ -2901,3 +2901,23 @@ Stack canónico (sin Redis/SQS/DynamoDB):
   cron y `AuthController::selectCompany` usan `Cache::lock` y `Cache::add`
   cross-instance; postgres provee atomicidad.
 
+
+### Facturación electrónica DIAN — consulta de documentos (2026-07)
+
+`GET /api/v1/dian/documents` (`ElectronicDocumentController::index`, permiso `dian.documents.read`) — listado paginado de `electronic_documents` con:
+
+| Parámetro | Efecto |
+|-----------|--------|
+| `resolution_id` | Filtra por `dian_resolution_id` (la resolución a la que quedó ligado el documento y a cuyo conteo sumó). |
+| `branch` | `all` = toda la empresa · `<uuid>` = esa sede (validada contra las sedes de `active_company_nit` vía subquery — un uuid ajeno no devuelve filas) · ausente = sede activa del JWT. |
+| `q` | Búsqueda server-side `ILIKE` (con escape de `%`/`_`) sobre `full_number`, `unique_code` (CUFE/CUDE) y `provider_track_id`. |
+| `sort` / `dir` | Whitelist `SORTABLE_COLUMNS` (`issued_at`, `full_number`, `consecutive`, `status`, `document_type`, `created_at`); default `issued_at desc`. Desempate `consecutive desc`. |
+| `status`, `document_type`, `from`, `to`, `order_id`, `per_page`, `page` | Filtros previos sin cambios. |
+
+`ElectronicDocumentResource` expone `dian_resolution_id`. Sin permiso nuevo: el escape cross-sede (`branch=all`) ya existía para `dian.documents.read`. Consumidor principal: tab "Facturas" de `/company/dian` (ver FRONTEND_FILES.md).
+
+### Planes SaaS — modelo dos planes (2026-07)
+
+Catálogo `billing_plans`: **Plan Básico** (slug `default`, `is_default`, $0 COP/mes — plataforma completa sin costo) y **Plan Plus** (slug `plus`, $300.000 COP/mes IVA 19% incluido + $10 COP por factura electrónica generada; incluye módulo DIAN — el cobro por factura se implementa junto con el módulo). Fuente de verdad: `BillingPlanSeeder`; entrega a pdn vía migración `2026_07_08_120000_split_default_plan_into_basico_and_plus` + backfill de snapshots `2026_07_08_120100_backfill_subscriptions_to_plan_basico` (audita `subscription.reprice`).
+
+Guardas asociadas en `BillingService`: `generateMonthlyInvoices` no emite invoices con precio $0; `markOverdueInvoices` auto-paga al vencimiento las invoices pending de $0 (audit `invoice.auto_paid_zero_amount`). Cambio de plan por NIT: `billing:change-plan` (workflow `bistro-ops-company-plan.yml`).
