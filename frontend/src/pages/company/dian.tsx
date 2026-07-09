@@ -14,22 +14,27 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DianApiError, createResolution, deactivateResolution, getProviderConfig, listResolutions, updateProviderConfig } from '@/lib/dian-api';
-import type { DianDocumentType, DianProviderConfig, DianResolution } from '@/types/dian';
+import { DianApiError, createResolution, deactivateResolution, listResolutions } from '@/lib/dian-api';
+import { DIAN_DOC_TYPE_LABELS, type DianDocumentType, type DianResolution } from '@/types/dian';
 
 /**
  * Configuración → Facturación DIAN (HU #235 — pantalla owner-only).
  *
- * 3 tabs: Proveedor · Resoluciones · Cliente por defecto.
+ * 2 tabs: Resoluciones (principal) · Contacto por defecto.
  * Cada tab es un componente local pequeño. Reutiliza componentes del DS
  * (PageHeader, Card, Tabs, Alert, SanitizedInput, Select, Skeleton).
+ *
+ * El tab Proveedor se retiró (2026-07): el proveedor tecnológico es único
+ * para toda la plataforma y lo gestiona flexyflow — el cliente no configura
+ * credenciales ni ambiente. La config sigue viva en el backend
+ * (DianProviderConfig) operada por flexyflow.
  *
  * El perfil fiscal del emisor se edita ahora desde /company/settings →
  * "Información" (componente CompanyFiscalSection), no acá.
  *
  * Por ahora la pantalla es SOLO INFORMATIVA: la facturación DIAN aún no se
  * libera para edición, así que los controles van deshabilitados y las acciones
- * (guardar, registrar, desactivar) se ocultan. Cuando se habilite la edición,
+ * (registrar, desactivar) se ocultan. Cuando se habilite la edición,
  * flipear DIAN_EDITABLE a true (o cablearlo a un gate/feature-flag real).
  */
 const DIAN_EDITABLE = false;
@@ -58,23 +63,19 @@ export default function DianConfigPage() {
                 <PageHeader
                     eyebrow="CONFIGURACIÓN"
                     title="Facturación electrónica DIAN"
-                    description="Proveedor, resoluciones autorizadas y adquirente por defecto."
+                    description="Resoluciones autorizadas y adquirente por defecto. La emisión la opera flexyflow con un proveedor único para toda la plataforma."
                     variant="dense"
                     showBranchBadge={false}
                 />
 
                 {!DIAN_EDITABLE && <InformationalLockBanner />}
 
-                <Tabs defaultValue="provider" className="w-full">
+                <Tabs defaultValue="resolutions" className="w-full">
                     <TabsList className="max-w-full overflow-x-auto">
-                        <TabsTrigger value="provider">Proveedor</TabsTrigger>
                         <TabsTrigger value="resolutions">Resoluciones</TabsTrigger>
                         <TabsTrigger value="recipient">Contacto por defecto</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="provider" className="mt-4">
-                        <ProviderTab editable={DIAN_EDITABLE} />
-                    </TabsContent>
                     <TabsContent value="resolutions" className="mt-4">
                         <ResolutionsTab editable={DIAN_EDITABLE} />
                     </TabsContent>
@@ -87,208 +88,7 @@ export default function DianConfigPage() {
     );
 }
 
-/* ============== TAB 2: PROVEEDOR ============== */
-
-function ProviderTab({ editable }: { editable: boolean }) {
-    const [config, setConfig] = useState<DianProviderConfig | null>(null);
-    const [loaded, setLoaded] = useState(false);
-    const [form, setForm] = useState({
-        provider_slug: 'mock',
-        api_base_url: '',
-        api_token: '',
-        software_id: '',
-        software_pin: '',
-        test_set_id: '',
-        environment: 'habilitacion' as 'habilitacion' | 'produccion',
-        webhook_secret: '',
-    });
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [okMsg, setOkMsg] = useState<string | null>(null);
-
-    useEffect(() => {
-        getProviderConfig()
-            .then(({ data }) => {
-                if (data) {
-                    setConfig(data);
-                    setForm((prev) => ({
-                        ...prev,
-                        provider_slug: data.provider_slug,
-                        api_base_url: data.api_base_url ?? '',
-                        software_id: data.software_id ?? '',
-                        test_set_id: data.test_set_id ?? '',
-                        environment: data.environment,
-                    }));
-                }
-            })
-            .catch((e) => setError(e instanceof Error ? e.message : 'Error'))
-            .finally(() => setLoaded(true));
-    }, []);
-
-    const handleSave = async () => {
-        setSaving(true);
-        setError(null);
-        setOkMsg(null);
-        try {
-            const payload = {
-                ...form,
-                api_token: form.api_token || null,
-                software_pin: form.software_pin || null,
-                webhook_secret: form.webhook_secret || null,
-                api_base_url: form.api_base_url || null,
-                software_id: form.software_id || null,
-                test_set_id: form.test_set_id || null,
-            };
-            const { data } = await updateProviderConfig(payload);
-            setConfig(data);
-            setForm((prev) => ({ ...prev, api_token: '', software_pin: '', webhook_secret: '' }));
-            setOkMsg('Configuración del proveedor guardada. Tokens enmascarados — recuérdalos por separado.');
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error al guardar');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    if (!loaded) return <Skeleton className="h-96 w-full" />;
-
-    return (
-        <Card className="space-y-4 p-4">
-            {config && (
-                <Alert>
-                    <AlertTitle>Proveedor activo: {config.provider_slug}</AlertTitle>
-                    <AlertDescription>
-                        Ambiente: <strong>{config.environment}</strong> · {config.has_api_token ? '🔒 token configurado' : '⚠️ sin token'} ·{' '}
-                        {config.has_webhook_secret ? '🔒 webhook secret configurado' : '⚠️ sin webhook secret'}
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {form.provider_slug === 'mock' && form.environment === 'produccion' && (
-                <Alert variant="destructive">
-                    <AlertTitle>Combinación inválida</AlertTitle>
-                    <AlertDescription>
-                        El proveedor <code>mock</code> NO puede emitir en ambiente productivo. Cambiá a un proveedor real antes de pasar a producción.
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                    <Label>Proveedor</Label>
-                    <Select value={form.provider_slug} onValueChange={(v) => setForm({ ...form, provider_slug: v })} disabled={!editable}>
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="mock">Mock (desarrollo / habilitación)</SelectItem>
-                            <SelectItem value="factura1">Factura1 (próximamente)</SelectItem>
-                            <SelectItem value="siigo">Siigo (próximamente)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div>
-                    <Label>Ambiente</Label>
-                    <Select
-                        value={form.environment}
-                        onValueChange={(v) => setForm({ ...form, environment: v as 'habilitacion' | 'produccion' })}
-                        disabled={!editable}
-                    >
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="habilitacion">Habilitación (pruebas)</SelectItem>
-                            <SelectItem value="produccion">Producción</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="md:col-span-2">
-                    <Label htmlFor="apiBase">URL base API</Label>
-                    <Input
-                        id="apiBase"
-                        value={form.api_base_url}
-                        onChange={(e) => setForm({ ...form, api_base_url: e.target.value })}
-                        placeholder="https://api.proveedor.com/v1"
-                        disabled={!editable}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="softwareId">Software ID</Label>
-                    <Input
-                        id="softwareId"
-                        value={form.software_id}
-                        onChange={(e) => setForm({ ...form, software_id: e.target.value })}
-                        disabled={!editable}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="testSetId">Test set ID</Label>
-                    <Input
-                        id="testSetId"
-                        value={form.test_set_id}
-                        onChange={(e) => setForm({ ...form, test_set_id: e.target.value })}
-                        disabled={!editable}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="apiToken">API token (rotar)</Label>
-                    <Input
-                        id="apiToken"
-                        type="password"
-                        value={form.api_token}
-                        onChange={(e) => setForm({ ...form, api_token: e.target.value })}
-                        placeholder="Pegar para rotar — vacío conserva actual"
-                        disabled={!editable}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="softwarePin">Software PIN (rotar)</Label>
-                    <Input
-                        id="softwarePin"
-                        type="password"
-                        value={form.software_pin}
-                        onChange={(e) => setForm({ ...form, software_pin: e.target.value })}
-                        placeholder="Vacío conserva actual"
-                        disabled={!editable}
-                    />
-                </div>
-                <div className="md:col-span-2">
-                    <Label htmlFor="webhookSecret">Webhook secret (rotar)</Label>
-                    <Input
-                        id="webhookSecret"
-                        type="password"
-                        value={form.webhook_secret}
-                        onChange={(e) => setForm({ ...form, webhook_secret: e.target.value })}
-                        placeholder="Vacío genera uno aleatorio al guardar"
-                        disabled={!editable}
-                    />
-                </div>
-            </div>
-
-            {error && (
-                <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-            {okMsg && (
-                <Alert variant="safe">
-                    <AlertDescription>{okMsg}</AlertDescription>
-                </Alert>
-            )}
-
-            {editable && (
-                <div className="flex justify-end">
-                    <Button onClick={handleSave} disabled={saving}>
-                        {saving ? 'Guardando...' : 'Guardar proveedor'}
-                    </Button>
-                </div>
-            )}
-        </Card>
-    );
-}
-
-/* ============== TAB 3: RESOLUCIONES ============== */
+/* ============== TAB 1: RESOLUCIONES ============== */
 
 const DOC_TYPES_RESOLUTION: { value: DianDocumentType; label: string }[] = [
     { value: 'pos_equivalent', label: 'DEE POS (consumidor final)' },
@@ -389,7 +189,7 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
                                     {r.range_to}
                                 </div>
                                 <div className="text-muted-foreground text-xs">
-                                    {DOC_TYPES_RESOLUTION.find((t) => t.value === r.document_type)?.label ?? r.document_type}
+                                    {DOC_TYPES_RESOLUTION.find((t) => t.value === r.document_type)?.label ?? DIAN_DOC_TYPE_LABELS[r.document_type] ?? r.document_type}
                                 </div>
                             </div>
                             <div className="flex flex-shrink-0 flex-wrap justify-end gap-1">
@@ -564,7 +364,7 @@ function ResolutionsTab({ editable }: { editable: boolean }) {
     );
 }
 
-/* ============== TAB 4: CLIENTE POR DEFECTO ============== */
+/* ============== TAB 2: CLIENTE POR DEFECTO ============== */
 
 /**
  * Cliente por defecto DIAN. Es data fija de la DIAN: el adquirente genérico
