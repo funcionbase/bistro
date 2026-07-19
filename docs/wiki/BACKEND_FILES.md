@@ -1783,7 +1783,7 @@ Cada caller chequea env=pdn antes de invocar. En qa el step se omite.
 |--------|------|----------|------------------------|
 | `aws/ec2/scripts/deploy.sh` (manual o si alguien quita `SKIP_MIGRATIONS=1`) | `[ "$APP_ENV" = "pdn" ]` (lee del `.env`) | `php artisan migrate --force` | Sí (`exit 1`) |
 | `aws/iac/cloudformation/stacks/06-asg.yaml` UserData (primer boot de la EC2) | `[ "${Environment}" = "pdn" ]` | `php artisan migrate --force` | Sí (UserData tiene `set -euxo`) |
-| `.github/workflows/bistro-app-deploy.yml` step "Run migrations (single instance)" | `if [ "$TARGET_ENV" = "pdn" ]` (compone MIGRATE_CMD distinto) | `php artisan migrate --force` via SSM | Sí (SSM command tiene `set -e`) |
+| `.github/workflows/ops-app-deploy.yml` step "Run migrations (single instance)" | `if [ "$TARGET_ENV" = "pdn" ]` (compone MIGRATE_CMD distinto) | `php artisan migrate --force` via SSM | Sí (SSM command tiene `set -e`) |
 
 ### Bucket de destino
 - **`flexyflow-panel-{env}-backups`** — separado del bucket `*-documents` (DIAN, 10 años, datos de cliente). **NUNCA mezclar dumps operacionales con info contable del cliente.**
@@ -2439,7 +2439,7 @@ Controller: `App\Http\Controllers\HealthController`.
 ### Migraciones aplicadas
 
 - `aws/ec2/scripts/deploy.sh` ya NO corre `php artisan migrate --force` (warning si SKIP_MIGRATIONS no está set).
-- Workflow `.github/workflows/bistro-app-deploy.yml` corre el migrate en un step previo (`Run migrations (single instance)`) contra una sola EC2 InService, vía SSM, con timeout 600s. Si falla, aborta antes de tocar el resto de nodos.
+- Workflow `.github/workflows/ops-app-deploy.yml` corre el migrate en un step previo (`Run migrations (single instance)`) contra una sola EC2 InService, vía SSM, con timeout 600s. Si falla, aborta antes de tocar el resto de nodos.
 - `SKIP_MIGRATIONS=1` se setea automáticamente en el comando de deploy general.
 
 ### Scheduler y guard anti-duplicación

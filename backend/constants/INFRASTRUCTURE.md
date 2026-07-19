@@ -103,7 +103,7 @@ Runbook detallado paso a paso: [`docs/wiki/runbooks/panel-migration.md`](../../.
 | Cert ACM | `arn:aws:acm:us-east-1:224458505677:certificate/e3f43ee0-c493-4c62-b032-f0ac51d92c4d` | Wildcard `*.flexyflow.co`. Si rota, actualizar `CertificateArn` en `pdn.json`. |
 | S3 buckets | `flexyflow-panel-pdn-assets` / `flexyflow-panel-pdn-documents` | Documents tiene retención 10 años (DIAN). |
 | Secrets Manager | `flexyflow-panel/pdn/dotenv` | Lo hidrata el workflow `sync-env-secret.yml`. |
-| Secrets Manager | `flexyflow-panel/pdn/github-pat` | PAT para clonar el repo en el UserData. |
+| Secrets Manager | `flexyflow-shared/pdn/github-pat` | PAT para clonar el repo en el UserData. |
 
 ## DNS — records en Cloudflare
 

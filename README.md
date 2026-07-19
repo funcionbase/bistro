@@ -4,7 +4,7 @@
 
 [![Bistro PDN](https://img.shields.io/badge/app-bistro.flexyflow.co-22c55e?logo=cloudflare&logoColor=white)](https://bistro.flexyflow.co)
 [![API PDN](https://img.shields.io/badge/api-panel--api.flexyflow.co-22c55e?logo=amazonaws&logoColor=white)](https://bistro-api.flexyflow.co)
-[![Bistro App Deploy](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/bistro-app-deploy.yml/badge.svg)](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/bistro-app-deploy.yml)
+[![Ops App Deploy](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/ops-app-deploy.yml/badge.svg)](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/ops-app-deploy.yml)
 [![License](https://img.shields.io/badge/license-proprietary-red)](../LICENSE)
 
 [![Backend release](https://img.shields.io/badge/backend-v1.35.0-FF2D20?logo=laravel&logoColor=white)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
@@ -24,7 +24,7 @@ compartidos del monorepo.
 
 | Plano | Stack | Despliegue | Dominio |
 |-------|-------|-----------|---------|
-| **Backend** | Laravel 12 · PHP 8.2 · PostgreSQL · API JWT | AWS EC2 (ASG) vía SSM — workflow *Bistro App Deploy* (`qa`/`pdn`) | `bistro-api.flexyflow.co` |
+| **Backend** | Laravel 12 · PHP 8.2 · PostgreSQL · API JWT | AWS EC2 (ASG) vía SSM — workflow *Ops App Deploy* (`qa`/`pdn`) | `bistro-api.flexyflow.co` |
 | **Frontend** | React 19 · Vite · Tailwind v4 · React Router 7 · TanStack Query | Cloudflare — worker `bistro-flexyflow-co` (`wrangler deploy`) | `bistro.flexyflow.co` |
 
 ```
