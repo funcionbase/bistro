@@ -1,0 +1,20 @@
+# Normalizar a LF (backend Laravel + frontend SPA + scripts). Git en Windows
+# con core.autocrlf=true convierte LF→CRLF en checkout, lo que rompe scripts
+# en EC2/Docker (`$'\r': command not found`).
+* text=auto eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+.gitattributes text eol=lf
+
+# Archivos binarios — sin transformacion
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.ico binary

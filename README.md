@@ -1,14 +1,14 @@
 # 🍽️ flexyflow · Bistro
 
-> SaaS multi-empresa para restaurantes en Colombia: empresas, sedes, menús, pedidos, facturación de suscripción y RBAC granular. Primera app del monorepo [`apps-flexyflow-co`](../README.md).
+> SaaS multi-empresa para restaurantes en Colombia: empresas, sedes, menús, pedidos, facturación de suscripción y RBAC granular. Deploys e IaC viven en [`apps-flexyflow-co`](https://github.com/cristianmarint/apps-flexyflow-co).
 
 [![Bistro PDN](https://img.shields.io/badge/app-bistro.flexyflow.co-22c55e?logo=cloudflare&logoColor=white)](https://bistro.flexyflow.co)
 [![API PDN](https://img.shields.io/badge/api-panel--api.flexyflow.co-22c55e?logo=amazonaws&logoColor=white)](https://bistro-api.flexyflow.co)
 [![Ops App Deploy](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/ops-app-deploy.yml/badge.svg)](https://github.com/cristianmarint/apps-flexyflow-co/actions/workflows/ops-app-deploy.yml)
-[![License](https://img.shields.io/badge/license-proprietary-red)](../LICENSE)
+[![License](https://img.shields.io/badge/license-proprietary-red)](LICENSE)
 
-[![Backend release](https://img.shields.io/badge/backend-v1.35.0-FF2D20?logo=laravel&logoColor=white)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
-[![Frontend release](https://img.shields.io/badge/frontend-v1.54.3-61DAFB?logo=react&logoColor=black)](https://github.com/cristianmarint/apps-flexyflow-co/releases)
+[![Backend release](https://img.shields.io/badge/backend-v1.35.0-FF2D20?logo=laravel&logoColor=white)](https://github.com/cristianmarint/bistro-flexyflow-co/releases)
+[![Frontend release](https://img.shields.io/badge/frontend-v1.54.3-61DAFB?logo=react&logoColor=black)](https://github.com/cristianmarint/bistro-flexyflow-co/releases)
 
 **Backend** &nbsp; ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white) ![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white) ![Pest](https://img.shields.io/badge/Pest-3-5A67D8) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)
 
@@ -47,8 +47,8 @@ bistro/
 ## 🚀 Quick start
 
 ```bash
-git clone https://github.com/cristianmarint/apps-flexyflow-co.git
-cd apps-flexyflow-co/bistro
+git clone https://github.com/cristianmarint/bistro-flexyflow-co.git
+cd bistro-flexyflow-co
 
 cd backend  && composer install && cp .env.example .env && php artisan key:generate && php artisan migrate --seed
 cd ../frontend && npm install && cp .env.example .env
@@ -64,6 +64,6 @@ cd .. && npm run dev   # API + cola + Vite (HMR) en paralelo
 
 ## 📄 Licencia
 
-Software **propietario** © 2026 flexyflow — no es código abierto. Uso/copia/despliegue requieren autorización por escrito. Ver [`../LICENSE`](../LICENSE).
+Software **propietario** © 2026 flexyflow — no es código abierto. Uso/copia/despliegue requieren autorización por escrito. Ver [`../LICENSE`](LICENSE).
 
 Mantenedor: **Cristian Marin** · [@cristianmarint](https://github.com/cristianmarint) · cristian@flexyflow.co

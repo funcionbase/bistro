@@ -2,8 +2,10 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.boundsPen import BoundsPen
 
-FONT = r"D:/github/panel-flexyflow-co/bistro/frontend/public/fonts/FlexyFont.otf"
-BR   = r"D:/github/panel-flexyflow-co/bistro/branding"
+from pathlib import Path
+_BR = Path(__file__).resolve().parent
+FONT = str(_BR.parent / "frontend/public/fonts/FlexyFont.otf")
+BR   = str(_BR)
 DARK="#1E232E"; WHITE="#f6f5f3"
 MARGIN=0.05                    # 5% top & bottom -> glyph = 90% of height
 
