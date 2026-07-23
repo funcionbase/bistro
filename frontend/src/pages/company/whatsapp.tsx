@@ -1,99 +1,76 @@
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
+import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
 import { WhatsappPageSkeleton } from '@/components/ui/whatsapp-page-skeleton';
-import { WhatsappStatusPill } from '@/components/ui/whatsapp-status-pill';
-import WhatsappVerificationCodeModal, { type WhatsappAction } from '@/components/whatsapp/whatsapp-verification-code-modal';
+import { AutomationSection } from '@/components/whatsapp/automation-section';
+import { BranchPlaceholderCard, ChannelCard } from '@/components/whatsapp/channel-card';
+import { ConnectWizard } from '@/components/whatsapp/connect-wizard';
+import { QuickRepliesManager } from '@/components/whatsapp/quick-replies-manager';
+import WhatsappVerificationCodeModal from '@/components/whatsapp/whatsapp-verification-code-modal';
 import { useToken } from '@/hooks/use-token';
+import { useWhatsappChannels, type WhatsappChannel } from '@/hooks/use-whatsapp-channels';
 import { apiFetch } from '@/lib/api';
 import { useSharedData } from '@/lib/shared-data';
 import { type CompanySettings } from '@/types';
 
-import {
-    AlertTriangle,
-    Bot,
-    CheckCheck,
-    CheckCircle2,
-    HelpCircle,
-    MessageCircle,
-    Phone,
-    PhoneOff,
-    RefreshCw,
-    ShieldCheck,
-    UserPlus,
-} from 'lucide-react';
+import { AlertTriangle, Bot, CheckCheck, MessageCircle, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-declare global {
-    interface Window {
-        FB?: {
-            init: (params: Record<string, unknown>) => void;
-            login: (callback: (resp: { authResponse?: { code?: string } }) => void, options?: Record<string, unknown>) => void;
-        };
-        fbAsyncInit?: () => void;
-    }
-}
-
-interface WhatsappAccountResponse {
-    data: {
-        connected: boolean;
-        status: string;
-        provisioning_mode: string | null;
-        phone_e164: string | null;
-        display_name: string | null;
-        display_name_status: string | null;
-        quality_rating: string | null;
-        messaging_tier: string | null;
-        is_business_verified: boolean;
-        connected_at: string | null;
-        last_synced_at: string | null;
-        last_error: string | null;
-    };
-    meta: {
-        config_id: string | null;
-        app_id: string | null;
-        graph_api_version: string | null;
-        environment: string | null;
-    };
-}
-
+/**
+ * Empresa → WhatsApp: lista de canales (§8.2).
+ *
+ * Este rediseño saca de la pantalla todo lo que era de Meta Cloud API — el SDK
+ * de Facebook, el botón de Embedded Signup, el bloque NaaS y los campos
+ * `quality_rating` / `messaging_tier` / `display_name_status` / verificación de
+ * negocio. **El backend de Meta sigue vivo**: `WhatsappAccountController` no se
+ * tocó y los clientes que todavía no migraron siguen funcionando hasta F4.
+ *
+ * El bloque «Preferencias» se conserva: el doble chulito y los mensajes del bot
+ * no eran conceptos de Meta y los sigue usando Evolution.
+ */
+/**
+ * n8n aún no está desplegado (F6/§9 es a futuro). La sección Automatización se
+ * muestra deshabilitada con la razón —no oculta— para que la capacidad sea
+ * descubrible sin permitir configurar un flujo que no tendría a dónde apuntar.
+ * Cuando n8n se despliegue, poner en true (o cablear a un flag de plan/feature).
+ */
+const AUTOMATION_AVAILABLE = false;
 
 export default function WhatsappPage() {
     const navigate = useNavigate();
-    const { activeCompany } = useSharedData();
+    const { activeCompany, ...shared } = useSharedData();
     const token = useToken();
     const { showToast } = useToast();
 
-    const [account, setAccount] = useState<WhatsappAccountResponse['data'] | null>(null);
-    const [meta, setMeta] = useState<WhatsappAccountResponse['meta'] | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [modal, setModal] = useState<null | {
-        action: WhatsappAction;
-        title: string;
-        description: string;
-        confirmLabel: string;
-        onConfirm: (code: string) => Promise<void>;
-    }>(null);
+    const { channels, meta, loading, error, refresh } = useWhatsappChannels(token);
+
+    const [wizardOpen, setWizardOpen] = useState(false);
+    const [presetBranchId, setPresetBranchId] = useState<string | null>(null);
+    const [resumeChannel, setResumeChannel] = useState<WhatsappChannel | null>(null);
+    const [testingId, setTestingId] = useState<string | null>(null);
+    const [pendingDisconnect, setPendingDisconnect] = useState<WhatsappChannel | null>(null);
+    const [otpChannel, setOtpChannel] = useState<WhatsappChannel | null>(null);
 
     const [settings, setSettings] = useState<CompanySettings | null>(null);
     const [canUpdateSettings, setCanUpdateSettings] = useState(false);
     const [savingSection, setSavingSection] = useState<null | 'privacy' | 'bot'>(null);
     const [settingsErrors, setSettingsErrors] = useState<Partial<Record<keyof CompanySettings, string>>>({});
 
+    const permissions = shared.permissions ?? [];
+    const isSystem = shared.role?.is_system ?? false;
+    const canConnect = isSystem || permissions.includes('whatsapp.connect');
+    const canManageAutomation = isSystem || permissions.includes('whatsapp.update');
+
     useEffect(() => {
-        if (!token) {
-            setLoading(false);
-            setError('No hay sesion activa.');
-            return;
-        }
-        void loadAccount();
+        if (!token) return;
         void loadSettings();
     }, [token]);
 
@@ -157,188 +134,73 @@ export default function WhatsappPage() {
         }
     }
 
-    // Carga el SDK de Facebook una sola vez (necesario para Embedded Signup).
-    useEffect(() => {
-        if (!meta?.app_id) return;
-        if (document.getElementById('facebook-jssdk')) return;
+    const openWizard = (branchId: string | null = null, resume: WhatsappChannel | null = null) => {
+        setPresetBranchId(branchId);
+        setResumeChannel(resume);
+        setWizardOpen(true);
+    };
 
-        const script = document.createElement('script');
-        script.id = 'facebook-jssdk';
-        script.async = true;
-        script.defer = true;
-        script.crossOrigin = 'anonymous';
-        script.src = 'https://connect.facebook.net/en_US/sdk.js';
-        document.head.appendChild(script);
-
-        window.fbAsyncInit = () => {
-            window.FB?.init({
-                appId: meta.app_id,
-                cookie: false,
-                xfbml: false,
-                version: meta.graph_api_version ?? 'v25.0',
-            });
-        };
-    }, [meta?.app_id, meta?.graph_api_version]);
-
-    async function loadAccount() {
-        setLoading(true);
-        setError(null);
+    const sendTestMessage = async (channel: WhatsappChannel) => {
+        setTestingId(channel.id);
         try {
-            const res = await apiFetch('/api/v1/whatsapp');
-            const json = (await res.json()) as WhatsappAccountResponse | { message?: string };
+            const res = await apiFetch(`/api/v1/whatsapp/channels/${channel.id}/test-message`, { method: 'POST' });
+            const json = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setError((json as { message?: string }).message ?? 'No se pudo cargar el estado de WhatsApp.');
+                showToast('error', (json as { message?: string }).message ?? 'No se pudo enviar el mensaje de prueba.');
                 return;
             }
-            const data = json as WhatsappAccountResponse;
-            setAccount(data.data);
-            setMeta(data.meta);
+            showToast('success', 'Mensaje de prueba enviado. Revisá tu celular y la bandeja de chats.');
         } catch {
-            setError('Error de conexion al cargar el estado de WhatsApp.');
+            showToast('error', 'Error de conexión al enviar el mensaje de prueba.');
         } finally {
-            setLoading(false);
+            setTestingId(null);
         }
-    }
+    };
 
-    function launchEmbeddedSignup(): Promise<{ code?: string; waba_id?: string; phone_number_id?: string }> {
-        return new Promise((resolve, reject) => {
-            if (!window.FB || !meta?.config_id) {
-                reject(new Error('Embedded Signup no disponible: SDK de Facebook no cargo.'));
+    /**
+     * Un canal que nunca llegó a conectarse no tiene sesión que cerrar: se borra
+     * sin OTP. El resto sí lo exige — desconectar deja a la empresa sin WhatsApp
+     * hasta que alguien vuelva a escanear con el teléfono en la mano.
+     */
+    const requestDisconnect = (channel: WhatsappChannel) => {
+        if (channel.status === 'pending' || channel.status === 'verifying') {
+            setPendingDisconnect(channel);
+            return;
+        }
+        setOtpChannel(channel);
+    };
+
+    const disconnect = async (channel: WhatsappChannel, code?: string) => {
+        try {
+            const res = await apiFetch(`/api/v1/whatsapp/channels/${channel.id}`, {
+                method: 'DELETE',
+                headers: code ? { 'X-Whatsapp-Verification-Code': code } : undefined,
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast('error', (json as { message?: string }).message ?? 'No se pudo desconectar.');
                 return;
             }
-            window.FB.login(
-                (resp) => {
-                    if (resp?.authResponse?.code) {
-                        // El frontend solo recibe el `code`. Los IDs (waba_id,
-                        // phone_number_id) llegan al frontend via un mensaje
-                        // postMessage del popup en flujos reales; para el MVP
-                        // pediremos al usuario confirmacion en pantalla o lo
-                        // recogeremos del callback del SDK.
-                        resolve({ code: resp.authResponse.code });
-                    } else {
-                        reject(new Error('El popup se cerro sin completar.'));
-                    }
-                },
-                {
-                    config_id: meta.config_id,
-                    response_type: 'code',
-                    override_default_response_type: true,
-                    extras: { feature: 'whatsapp_embedded_signup' },
-                },
-            );
-        });
-    }
+            showToast('success', 'Canal desconectado.');
+            setPendingDisconnect(null);
+            setOtpChannel(null);
+            await refresh();
+        } catch {
+            showToast('error', 'Error de conexión al desconectar.');
+        }
+    };
 
-    function openConnectModal() {
-        setModal({
-            action: 'connect',
-            title: 'Conectar WhatsApp',
-            description: 'Confirma con el codigo que enviaremos al propietario. Despues abriremos la ventana de Meta para enlazar tu numero.',
-            confirmLabel: 'Verificar y conectar',
-            onConfirm: async (code) => {
-                try {
-                    const fbResponse = await launchEmbeddedSignup();
-                    const res = await apiFetch('/api/v1/whatsapp/embedded-signup-callback', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Whatsapp-Verification-Code': code,
-                        },
-                        body: JSON.stringify({
-                            code: fbResponse.code,
-                            waba_id: fbResponse.waba_id ?? '',
-                            phone_number_id: fbResponse.phone_number_id ?? '',
-                        }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                        showToast('error', data.message ?? 'No se pudo conectar WhatsApp.');
-                        return;
-                    }
-                    showToast('success', 'WhatsApp conectado.');
-                    setModal(null);
-                    await loadAccount();
-                } catch (e: unknown) {
-                    const message = e instanceof Error ? e.message : 'Error inesperado.';
-                    showToast('error', message);
-                }
-            },
-        });
-    }
+    const branchesWithout = meta?.branches_without_channel ?? [];
+    const connectedCount = meta?.connected_count ?? 0;
+    const branchCount = meta?.branch_count ?? 0;
+    const hasCompanyChannel = meta?.has_company_channel ?? false;
 
-    function openSwapModal() {
-        setModal({
-            action: 'swap',
-            title: 'Cambiar numero de WhatsApp',
-            description:
-                'Esto liberara el numero actual y te permitira registrar uno nuevo. Las conversaciones quedan archivadas. Solo el propietario puede confirmar.',
-            confirmLabel: 'Liberar numero actual',
-            onConfirm: async (code) => {
-                const res = await apiFetch('/api/v1/whatsapp/phone', {
-                    method: 'DELETE',
-                    headers: { 'X-Whatsapp-Verification-Code': code },
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    showToast('error', data.message ?? 'No se pudo cambiar el numero.');
-                    return;
-                }
-                showToast('success', 'Numero liberado. Vuelve a "Conectar WhatsApp" para enlazar el nuevo.');
-                setModal(null);
-                await loadAccount();
-            },
-        });
-    }
-
-    function openDisconnectModal() {
-        setModal({
-            action: 'disconnect',
-            title: 'Desconectar WhatsApp',
-            description: 'Se liberara el numero en Meta y se desactivara la integracion. Solo el propietario puede confirmar.',
-            confirmLabel: 'Desconectar',
-            onConfirm: async (code) => {
-                const res = await apiFetch('/api/v1/whatsapp', {
-                    method: 'DELETE',
-                    headers: { 'X-Whatsapp-Verification-Code': code },
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    showToast('error', data.message ?? 'No se pudo desconectar.');
-                    return;
-                }
-                showToast('success', 'WhatsApp desconectado.');
-                setModal(null);
-                await loadAccount();
-            },
-        });
-    }
-
-    function openNaasModal() {
-        setModal({
-            action: 'connect',
-            title: 'Solicitar numero (flexyflow lo provee)',
-            description: 'Confirma con el codigo del propietario. Te contactaremos para coordinar firma y documentos legales.',
-            confirmLabel: 'Enviar solicitud',
-            onConfirm: async (code) => {
-                const res = await apiFetch('/api/v1/whatsapp/naas-request', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Whatsapp-Verification-Code': code,
-                    },
-                    body: JSON.stringify({ naas_provider: 'pending' }),
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    showToast('error', data.message ?? 'No se pudo crear la solicitud.');
-                    return;
-                }
-                showToast('success', 'Solicitud creada. El equipo te contactara.');
-                setModal(null);
-                await loadAccount();
-            },
-        });
-    }
+    const summary = [
+        branchCount > 0 ? `${connectedCount} de ${branchCount} sede${branchCount === 1 ? '' : 's'} con WhatsApp` : null,
+        hasCompanyChannel ? '1 número de empresa' : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
 
     return (
         <PageShell title="WhatsApp · flexyflow">
@@ -347,55 +209,70 @@ export default function WhatsappPage() {
                     <WhatsappPageSkeleton />
                 ) : (
                     <>
-                        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0 space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-status-safe)]/10 text-[color:var(--color-status-safe)]">
-                                        <MessageCircle className="h-5 w-5" />
-                                    </span>
-                                    <h1 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">WhatsApp</h1>
-                                </div>
-                                <p className="text-muted-foreground text-sm">
-                                    Conecta el número de tu empresa a WhatsApp Cloud API. Los mensajes entrantes aparecerán en el panel de Chats.
-                                </p>
-                                {activeCompany?.name && (
-                                    <p className="text-muted-foreground text-xs">
-                                        Empresa activa: <span className="text-foreground font-medium">{activeCompany.name}</span>
-                                    </p>
-                                )}
-                            </div>
-                            {account && <WhatsappStatusPill status={account.connected ? 'connected' : 'disconnected'} />}
-                        </header>
-
-                        <Alert>
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Bot en desarrollo</AlertTitle>
-                            <AlertDescription>
-                                El bot automatico (n8n) aun no esta disponible. Mientras tanto, los mensajes entrantes apareceran en el panel de chats
-                                con el bot pausado, y un operador puede responder manualmente.
-                            </AlertDescription>
-                        </Alert>
+                        <PageHeader
+                            title="WhatsApp"
+                            description={summary || 'Conectá el WhatsApp de tu negocio para atender a los clientes desde el panel.'}
+                            actions={
+                                canConnect ? (
+                                    <Button onClick={() => openWizard()}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Conectar WhatsApp
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
 
                         {error && (
                             <Alert variant="destructive">
                                 <AlertTriangle className="h-4 w-4" />
-                                <AlertDescription>{error}</AlertDescription>
+                                <AlertTitle>No podemos contactar el servidor de mensajería</AlertTitle>
+                                <AlertDescription className="space-y-2">
+                                    <p>{error}</p>
+                                    <Button size="sm" variant="outline" onClick={() => void refresh()}>
+                                        Reintentar
+                                    </Button>
+                                </AlertDescription>
                             </Alert>
                         )}
 
-                        {account && (
-                            <>
-                                {account.connected ? (
-                                    <ConnectedCard
-                                        account={account}
-                                        onSwap={openSwapModal}
-                                        onDisconnect={openDisconnectModal}
-                                        onRefresh={loadAccount}
+                        {channels.length === 0 && branchesWithout.length === 0 ? (
+                            <EmptyState
+                                icon={MessageCircle}
+                                title="Todavía no conectaste ningún WhatsApp"
+                                description="Vinculá tu número escaneando un QR, igual que WhatsApp Web. Toma menos de dos minutos."
+                                action={
+                                    canConnect ? (
+                                        <Button onClick={() => openWizard()}>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Conectar WhatsApp
+                                        </Button>
+                                    ) : undefined
+                                }
+                            />
+                        ) : (
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                {channels.map((channel) => (
+                                    <ChannelCard
+                                        key={channel.id}
+                                        channel={channel}
+                                        canManage={canConnect}
+                                        testing={testingId === channel.id}
+                                        onReconnect={(c) => openWizard(c.branch_id, c)}
+                                        onDisconnect={requestDisconnect}
+                                        onTestMessage={(c) => void sendTestMessage(c)}
+                                        onOpenChats={(c) => navigate(`/chats?channel=${c.id}`)}
                                     />
-                                ) : (
-                                    <DisconnectedView onConnect={openConnectModal} onNaas={openNaasModal} />
-                                )}
-                            </>
+                                ))}
+
+                                {branchesWithout.map((branch) => (
+                                    <BranchPlaceholderCard
+                                        key={branch.id}
+                                        branchName={branch.name}
+                                        onConnect={() => openWizard(branch.id)}
+                                        disabledReason={canConnect ? undefined : 'Necesitás el permiso «Conectar WhatsApp».'}
+                                    />
+                                ))}
+                            </div>
                         )}
 
                         {settings && (
@@ -409,6 +286,19 @@ export default function WhatsappPage() {
                                 onSave={saveSettingsSection}
                             />
                         )}
+
+                        {/* Gestión de respuestas rápidas (§8.4b punto 7). Solo owner/admin,
+                            proxy en `canUpdateSettings`; el backend valida igual. */}
+                        {canUpdateSettings && <QuickRepliesManager token={token} branches={shared.branches ?? []} />}
+
+                        {/* Automatización (n8n) por empresa/sede (F6, §9.5). Visible como
+                            configuración; las acciones se gatean por `whatsapp.update`. */}
+                        <AutomationSection
+                            token={token}
+                            branches={shared.branches ?? []}
+                            canManage={canManageAutomation}
+                            available={AUTOMATION_AVAILABLE}
+                        />
 
                         <div className="text-muted-foreground text-xs">
                             <button
@@ -424,139 +314,44 @@ export default function WhatsappPage() {
                 )}
             </div>
 
-            {modal && (
+            <ConnectWizard
+                open={wizardOpen}
+                onClose={() => setWizardOpen(false)}
+                branches={branchesWithout}
+                hasCompanyChannel={hasCompanyChannel}
+                canManageCompanyChannel={meta?.can_manage_company_channel ?? false}
+                presetBranchId={presetBranchId}
+                resumeChannel={resumeChannel}
+                onFinished={() => {
+                    setWizardOpen(false);
+                    void refresh();
+                }}
+                onGoToChats={() => navigate('/chats')}
+            />
+
+            <ConfirmDialog
+                open={pendingDisconnect !== null}
+                title="Descartar esta conexión"
+                message="Este canal nunca llegó a conectarse, así que no hay conversaciones ni sesión que perder."
+                confirmLabel="Descartar"
+                onConfirm={() => pendingDisconnect && void disconnect(pendingDisconnect)}
+                onCancel={() => setPendingDisconnect(null)}
+            />
+
+            {otpChannel && (
                 <WhatsappVerificationCodeModal
                     open
-                    action={modal.action}
-                    title={modal.title}
-                    description={modal.description}
-                    confirmLabel={modal.confirmLabel}
-                    onClose={() => setModal(null)}
-                    onVerified={modal.onConfirm}
+                    action="disconnect"
+                    title="Desconectar WhatsApp"
+                    description="Se cerrará la sesión de este número y dejarán de entrar mensajes hasta que vuelvas a escanear el QR. Solo el propietario puede confirmar."
+                    confirmLabel="Desconectar"
+                    onClose={() => setOtpChannel(null)}
+                    onVerified={async (code) => {
+                        await disconnect(otpChannel, code);
+                    }}
                 />
             )}
         </PageShell>
-    );
-}
-
-function ConnectedCard({
-    account,
-    onSwap,
-    onDisconnect,
-    onRefresh,
-}: {
-    account: WhatsappAccountResponse['data'];
-    onSwap: () => void;
-    onDisconnect: () => void;
-    onRefresh: () => void;
-}) {
-    return (
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                        <CardTitle className="flex items-center gap-2 text-[color:var(--color-status-safe)]">
-                            <CheckCircle2 className="h-5 w-5 shrink-0" />
-                            WhatsApp conectado
-                        </CardTitle>
-                        <CardDescription className="mt-1 truncate">{account.display_name ?? 'Sin display name'}</CardDescription>
-                    </div>
-                    <Badge variant="outline" className="w-fit capitalize">
-                        {account.provisioning_mode === 'naas' ? 'Provisto por flexyflow' : 'Embedded Signup'}
-                    </Badge>
-                </div>
-            </CardHeader>
-            <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
-                <Field icon={<Phone className="h-4 w-4" />} label="Numero" value={account.phone_e164 ?? '—'} />
-                <Field
-                    icon={<ShieldCheck className="h-4 w-4" />}
-                    label="Verificado por Meta"
-                    value={account.is_business_verified ? 'Si' : 'No (opcional)'}
-                />
-                <Field icon={<HelpCircle className="h-4 w-4" />} label="Estado del nombre" value={account.display_name_status ?? '—'} />
-                <Field icon={<HelpCircle className="h-4 w-4" />} label="Calidad" value={account.quality_rating ?? '—'} />
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <Button variant="outline" onClick={onRefresh} className="w-full sm:w-auto">
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Actualizar
-                </Button>
-                <Button variant="outline" onClick={onSwap} className="w-full sm:w-auto">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Cambiar numero
-                </Button>
-                <Button variant="destructive" onClick={onDisconnect} className="w-full sm:w-auto">
-                    <PhoneOff className="mr-2 h-4 w-4" />
-                    Desconectar
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-}
-
-function DisconnectedView({ onConnect, onNaas }: { onConnect: () => void; onNaas: () => void }) {
-    return (
-        <div className="grid gap-4 md:grid-cols-2">
-            <Card className="flex flex-col transition-shadow hover:shadow-md">
-                <CardHeader>
-                    <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-status-safe)]/10 text-[color:var(--color-status-safe)]">
-                        <Phone className="h-5 w-5" />
-                    </div>
-                    <CardTitle>Tengo mi número</CardTitle>
-                    <CardDescription>
-                        Conecta tu número actual a WhatsApp Cloud API. ~10 minutos. Necesitas una cuenta de Facebook personal y recibir SMS.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1">
-                    <ul className="text-muted-foreground ml-5 list-disc space-y-1 text-sm">
-                        <li>El número NO debe estar en la app de WhatsApp.</li>
-                        <li>flexyflow administra la WABA en tu nombre.</li>
-                        <li>Sin costo adicional aparte de tu plan.</li>
-                    </ul>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={onConnect} className="w-full sm:w-auto">
-                        Conectar mi número
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            <Card className="flex flex-col transition-shadow hover:shadow-md">
-                <CardHeader>
-                    <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-status-info)]/10 text-[color:var(--color-status-info)]">
-                        <UserPlus className="h-5 w-5" />
-                    </div>
-                    <CardTitle>Que flexyflow me provea uno</CardTitle>
-                    <CardDescription>
-                        Recibes un número nuevo, ya configurado a tu nombre. No tocas Meta ni Facebook. Costo mensual del número.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1">
-                    <ul className="text-muted-foreground ml-5 list-disc space-y-1 text-sm">
-                        <li>Tiempo del cliente: ~15 min repartidos en email/firma.</li>
-                        <li>Documentos legales de la empresa.</li>
-                        <li>Te enviamos confirmación cuando esté listo.</li>
-                    </ul>
-                </CardContent>
-                <CardFooter>
-                    <Button variant="outline" onClick={onNaas} className="w-full sm:w-auto">
-                        Solicitar número
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-    );
-}
-
-function Field({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-    return (
-        <div className="flex items-start gap-2">
-            <div className="text-muted-foreground">{icon}</div>
-            <div>
-                <div className="text-muted-foreground text-xs">{label}</div>
-                <div className="font-medium">{value}</div>
-            </div>
-        </div>
     );
 }
 
@@ -677,6 +472,24 @@ function WhatsappPreferences({
                             <WhatsAppPreview message={settings.bot_welcome_message} companyName={companyName} />
                         </div>
 
+                        <div className="border-border flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5">
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <label htmlFor="away-enabled" className="cursor-pointer text-sm font-medium">
+                                    Responder automáticamente fuera de horario
+                                </label>
+                                <p className="text-muted-foreground text-xs">
+                                    Si está activo, cuando un cliente escribe con el local cerrado se le envía el mensaje de abajo, una sola vez por
+                                    día. No necesita automatización. Por defecto está desactivado.
+                                </p>
+                            </div>
+                            <Checkbox
+                                id="away-enabled"
+                                checked={settings.whatsapp_away_reply_enabled}
+                                disabled={readOnly}
+                                onCheckedChange={(v) => onPatch('whatsapp_away_reply_enabled', Boolean(v))}
+                            />
+                        </div>
+
                         <div className="space-y-1.5">
                             <Label>Mensaje fuera de horario</Label>
                             <textarea
@@ -695,7 +508,7 @@ function WhatsappPreferences({
                         {!readOnly && (
                             <div className="flex justify-end pt-1">
                                 <Button
-                                    onClick={() => onSave('bot', ['bot_welcome_message', 'bot_away_message'])}
+                                    onClick={() => onSave('bot', ['bot_welcome_message', 'bot_away_message', 'whatsapp_away_reply_enabled'])}
                                     disabled={savingSection === 'bot'}
                                     size="sm"
                                     className="min-w-24"

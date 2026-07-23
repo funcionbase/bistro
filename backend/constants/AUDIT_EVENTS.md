@@ -102,7 +102,28 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 
 | `action` | Disparado por | `data` mínimo | Permiso relacionado |
 |---|---|---|---|
-| `chat.reassign_branch` | `ChatController::reassignBranch` | `from_branch_id`, `to_branch_id`, `chat_id` | `chats.reassign_branch` |
+| `chat.reassigned` | `ChatController::reassignBranch` | `from_branch_id`, `to_branch_id`, `reason` | `chats.reassign_branch` |
+| `chat.viewed` | `ChatController::show` | `chat_id`, `company_nit` | `chats.read` (dedupe 30 min) |
+| `chat.client.viewed` | `ChatController::clientDetail` | `chat_id`, `contact_id` | `chats.read` (dedupe 30 min) |
+| `chat.media.viewed` | `ChatController::mediaUrl` | `chat_id`, `message_id`, `media_type` | `chats.read` (dedupe 30 min por mensaje) |
+| `chat.message.sent` | `ChatController::storeMessage` / `storeAttachment` | `chat_message_id`, `body_length`, `status` | `chats.update` |
+| `chat.bot.toggled` | `ChatController::updateBot` | `from_paused`, `to_paused` | `chats.update` |
+| `chat.contact.updated` | `ChatController::updateContact` | `before`, `after` (única excepción PII) | `chats.update` |
+| `chat.access.denied` | `ChatController::findChatOrDeny` + `ChatAuditController` | `chat_id`, `attempted_company_nit`, `route` | — (dedupe 5 min) |
+| `chat.history.read_by_bot` | `ExternalChatMessageController::index` | `chat_id`, `messages_returned`, `user_id=null` | `bot.jwt` (dedupe 15 min) |
+| `chat.message.sent_by_bot` | `ExternalChatMessageController::store` | `chat_message_id`, `body_length`, `user_id=null` | `bot.jwt` |
+| `whatsapp.channel.connected` | `EvolutionChannelService::provision` | `channel_id`, `branch_id`, `instance` | `whatsapp.connect` |
+| `whatsapp.channel.qr_viewed` | `EvolutionChannelService::qr` | `channel_id` | `whatsapp.connect` (dedupe 5 min) |
+| `whatsapp.channel.disconnected` | `EvolutionChannelService::disconnect` | `channel_id`, `branch_id` | `whatsapp.disconnect` |
+
+> **El slug real de la reasignación es `chat.reassigned`**, no `chat.reassign_branch`: este documento
+> lo listaba mal desde #192 y el plan de WhatsApp proponía un tercer nombre (`chat.branch.reassigned`).
+> Gana el código — renombrarlo huerfanaría las filas históricas.
+>
+> **PII (regla dura del módulo de chats)**: `data` guarda SOLO identificadores. Nunca `client_phone`
+> ni el cuerpo del mensaje — de ahí `body_length` en vez de `body`. `ChatAuditLogger` filtra las
+> claves prohibidas aunque el llamador las pase. Única excepción: el `before`/`after` de
+> `chat.contact.updated`, que ES el cambio auditado, marcado explícitamente con `_pii_exempt`.
 | `inventory.transfer_cross_branch` | Endpoint dedicado de transferencia | `from_branch_id`, `to_branch_id`, `items[]`, `total_value` | `inventory.transfer_cross_branch` |
 | `kds.station.*` y `kds.device_token.*` | `KdsStationController` / `KdsDeviceTokenService` | ver sección "Cocina (KDS)" arriba | `kds_stations.*` |
 | `branch.business_type_changed` (#237) | `BranchController::changeBusinessType` | `branch_id`, `before` (slug del vertical previo), `after` (slug nuevo) | `branches.manage,update` |

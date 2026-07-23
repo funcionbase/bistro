@@ -17,6 +17,7 @@ use App\Http\Middleware\NormalizeStrings;
 use App\Http\Middleware\ResolveTableGuest;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ValidateBotJwt;
+use App\Http\Middleware\ValidateBotToken;
 use App\Http\Middleware\ValidateJwt;
 use App\Services\JwtService;
 use Illuminate\Auth\AuthenticationException;
@@ -113,6 +114,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'business.capability' => EnsureBusinessCapability::class,
             'plan.feature' => EnsurePlanFeature::class,
             'bot.jwt' => ValidateBotJwt::class,
+            'bot.token' => ValidateBotToken::class,
             'permission' => EnsureFeaturePermission::class,
             'cache.get' => CacheControlGet::class,
             'table.guest' => ResolveTableGuest::class,

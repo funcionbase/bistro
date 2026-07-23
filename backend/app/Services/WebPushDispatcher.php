@@ -203,6 +203,56 @@ class WebPushDispatcher
     }
 
     /**
+     * Destinatario válido del aviso de mensaje nuevo de WhatsApp (§8.4b punto 1).
+     *
+     * El aviso es la razón por la que el panel existe para alguien que no tiene
+     * el celular del dueño en la mano. Reglas:
+     *  - Membership activa en la empresa.
+     *  - `is_system` (owner/admin/employee) bypassea el permiso, no la sede.
+     *  - Resto: el rol tiene `chats.read` activo.
+     *  - **La sede se respeta siempre**, incluso para `is_system`: notificar a un
+     *    operador de Sede Norte sobre una conversación de Sede Sur filtra por
+     *    push exactamente lo que `BranchScope` impide leer en la bandeja. Es el
+     *    mismo aislamiento, por otro canal.
+     */
+    public static function userCanReceiveChatMessage(User $user, string $companyNit, ?string $branchId): bool
+    {
+        $membership = $user->companyMemberships()
+            ->where('company_nit', $companyNit)
+            ->with('role.permissions.feature:id,slug')
+            ->first();
+
+        if ($membership === null || ! $membership->isActive() || $membership->role === null) {
+            return false;
+        }
+
+        $role = $membership->role;
+
+        if (! $role->is_system) {
+            $hasPerm = $role->permissions->contains(
+                fn ($perm) => $perm->feature?->slug === 'chats.read' && (bool) $perm->can_read === true,
+            );
+
+            if (! $hasPerm) {
+                return false;
+            }
+        }
+
+        // Canal de empresa: no hay sede que respetar, el chat es de todos.
+        if ($branchId === null) {
+            return true;
+        }
+
+        return $user->canAccessBranch($branchId);
+    }
+
+    /** Colapsa varios avisos de la MISMA conversación en una sola notificación del OS. */
+    public static function chatMessageTag(string $chatId): string
+    {
+        return 'chat-'.$chatId;
+    }
+
+    /**
      * Similar a `userCanReceiveOrderUpdate` pero para el digest de inventario.
      * El destinatario debe poder ver alertas — permisos `reports.read` o
      * `inventory.read` cubren ese caso operativo.

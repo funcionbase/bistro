@@ -24,6 +24,8 @@ export interface NavItem {
     /** Visible si el usuario tiene AL MENOS UNO de estos permisos (OR). */
     anyPermission?: string[];
     comingSoon?: boolean;
+    /** Contador rojo a la derecha del item (ej. conversaciones sin responder). 0 = sin badge. */
+    badge?: number;
     children?: NavItem[];
     /**
      * Capability del vertical de la sede activa (#237). Si está definida y la
@@ -51,6 +53,8 @@ export interface CompanySettings {
     payment_methods: string[];
     payment_method_accounts: Record<string, string>;
     whatsapp_read_receipts: boolean;
+    /** Respuesta automática fuera de horario, sin n8n (§8.4b punto 10). Off por defecto. */
+    whatsapp_away_reply_enabled: boolean;
     food_cost_alert_threshold: string;
     'loyalty.enabled': boolean;
     'loyalty.points_per_cop': string;

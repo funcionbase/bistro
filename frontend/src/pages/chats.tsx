@@ -1,5 +1,9 @@
-﻿import { ChatMessageMedia } from '@/components/chats/chat-message-media';
-import { ChatMessageStatusTicks } from '@/components/chats/chat-message-status-ticks';
+import { ChatActivityModal, type ChatAuditEntry } from '@/components/chats/chat-activity-modal';
+import { ChatComposer } from '@/components/chats/chat-composer';
+import type { SharedContact } from '@/components/chats/chat-contact-card';
+import { ChatLightbox } from '@/components/chats/chat-lightbox';
+import { ChatMessageBubble } from '@/components/chats/chat-message-bubble';
+import { ChatPresence } from '@/components/chats/chat-presence';
 import { ChatSourceBadge } from '@/components/chats/chat-source-badge';
 import { ClientDetailModal, type ClientDetail } from '@/components/chats/client-detail-modal';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
@@ -8,22 +12,39 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatsSkeleton } from '@/components/ui/chats-skeleton';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ReasonTooltip } from '@/components/ui/field-hint';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useChats, type ChatLatestOrder } from '@/hooks/use-chats';
+import { readSoundPreference, writeSoundPreference } from '@/hooks/use-chat-notifications';
+import { useChats, type ChatFilter, type ChatLatestOrder, type ChatSummary } from '@/hooks/use-chats';
+import { isFocusInInput } from '@/hooks/use-keyboard-shortcut';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOrderStatuses } from '@/hooks/use-order-statuses';
 import type { KanbanOrder } from '@/hooks/use-orders';
+import { useQuickReplies } from '@/hooks/use-quick-replies';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
+import { APP_LOCALE, APP_TIMEZONE, timeAgo, waitingFor } from '@/lib/datetime';
 import { sanitizePlainText } from '@/lib/input-sanitize';
+import { shortOrderCode } from '@/lib/order-code';
 import { statusBadgeClass, statusLabel } from '@/lib/order-status';
 import { useSharedData } from '@/lib/shared-data';
+import { cn } from '@/lib/utils';
 
-import { AlertCircle, ArrowLeft, Bot, Pause, Pencil, Play, Search, Send } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Bot, History, MessageCircle, Pause, Pencil, Play, Search, Send, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-// Etiquetas y badge classes vienen de useOrderStatuses() / lib/order-status (canónico).
+/** Umbrales fijos de §8.4b punto 2. Configurables solo si alguien los pide. */
+const WAIT_AMBER_MIN = 5;
+const WAIT_RED_MIN = 15;
+
+const FILTERS: { value: ChatFilter; label: string }[] = [
+    { value: 'pending', label: 'Pendientes' },
+    { value: 'all', label: 'Todos' },
+    { value: 'closed', label: 'Cerrados' },
+];
 
 interface OrderBadgeProps {
     order: ChatLatestOrder;
@@ -49,39 +70,72 @@ function OrderBadge({ order, onClick }: OrderBadgeProps) {
     );
 }
 
-function timeAgo(iso: string | null): string {
-    if (!iso) return '';
-    const diffMs = Date.now() - new Date(iso).getTime();
-    const diffMin = Math.floor(diffMs / 60_000);
-    if (diffMin < 1) return 'hace un momento';
-    if (diffMin < 60) return `hace ${diffMin} min`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `hace ${diffH}h`;
-    return `hace ${Math.floor(diffH / 24)}d`;
-}
+/**
+ * "esperando hace 12 min" con umbral ámbar a los 5 y rojo a los 15 (§8.4b).
+ *
+ * El color no viaja solo: el texto dice el tiempo exacto. Un operador daltónico
+ * —o cualquiera mirando de reojo— necesita el número, no el tono.
+ */
+function WaitingBadge({ since }: { since: string }) {
+    const minutes = Math.floor((Date.now() - new Date(since).getTime()) / 60_000);
+    const tone =
+        minutes >= WAIT_RED_MIN
+            ? 'text-[color:var(--color-status-critical)]'
+            : minutes >= WAIT_AMBER_MIN
+              ? 'text-[color:var(--color-status-warning)]'
+              : 'text-muted-foreground';
 
-function formatTime(iso: string | null): string {
-    if (!iso) return '';
-    return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
+    // El tooltip da la hora exacta a la que el cliente escribió (§8.4c). El color
+    // no viaja solo: el texto ya dice el tiempo, el título agrega la hora.
+    const at = new Date(since).toLocaleTimeString(APP_LOCALE, { hour: '2-digit', minute: '2-digit', timeZone: APP_TIMEZONE });
+
+    return (
+        <span title={`El cliente escribió a las ${at} y todavía no tiene respuesta.`} className={cn('text-[10px] font-medium', tone)}>
+            esperando hace {waitingFor(since)}
+        </span>
+    );
 }
 
 export default function ChatsPage() {
     const token = useToken();
+    const navigate = useNavigate();
     const isMobile = useIsMobile();
+    const { replies: quickReplies } = useQuickReplies(token);
     const [searchInput, setSearchInput] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState<ChatFilter>('all');
+    const [channelFilter, setChannelFilter] = useState<string | null>(null);
+    // El beep lo dispara el hook del sidebar; acá solo se cambia la preferencia
+    // (misma clave de localStorage). Arranca apagado: en una cocina un sonido
+    // sorpresa es peor que ninguno.
+    const [soundOn, setSoundOn] = useState(readSoundPreference);
 
     useEffect(() => {
         const handle = setTimeout(() => setSearchTerm(searchInput), 300);
         return () => clearTimeout(handle);
     }, [searchInput]);
 
-    const { chats, selectedChat, selectedChatId, selectChat, sendMessage, setBotPaused, updateContact, loading, error } = useChats(token, searchTerm);
-    const [draft, setDraft] = useState('');
+    const {
+        chats,
+        channels,
+        selectedChat,
+        selectedChatId,
+        selectChat,
+        sendMessage,
+        sendAttachment,
+        retryMessage,
+        setBotPaused,
+        updateContact,
+        loading,
+        error,
+    } = useChats(token, { search: searchTerm, filter, channelId: channelFilter });
+
     const [sending, setSending] = useState(false);
-    const [sendError, setSendError] = useState<string | null>(null);
     const [botBusy, setBotBusy] = useState(false);
     const [botError, setBotError] = useState<string | null>(null);
+    const [retryingId, setRetryingId] = useState<string | null>(null);
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const [editingContact, setEditingContact] = useState(false);
     const [contactName, setContactName] = useState('');
     const [contactPhone, setContactPhone] = useState('');
@@ -128,22 +182,24 @@ export default function ChatsPage() {
         lastMessageCountRef.current = messageCount;
     }, [selectedChat]);
 
-    // Deep-link desde el modal de orden: /chats?chat=<id> selecciona la conversacion.
+    // Deep-link: /chats?chat=<id> abre la conversacion (lo usa la notificacion
+    // push); /chats?channel=<id> pre-filtra por canal (lo usa la tarjeta de la
+    // pantalla de WhatsApp).
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        const requested = params.get('chat');
-        if (!requested) return;
-        selectChat(requested);
+        const requestedChat = params.get('chat');
+        const requestedChannel = params.get('channel');
+        if (requestedChannel) setChannelFilter(requestedChannel);
+        if (requestedChat) selectChat(requestedChat);
     }, [selectChat]);
 
-    // Marca mensajes como leidos en Meta (doble chulito azul) cuando el operador
-    // tiene la conversacion abierta Y la pestana del navegador esta visible. El
+    // Marca mensajes como leidos (doble chulito azul) cuando el operador tiene
+    // la conversacion abierta Y la pestana del navegador esta visible. El
     // backend valida internamente el setting `whatsapp_read_receipts` antes de
-    // tocar la API de Meta — el frontend invoca a ciegas.
+    // tocar al proveedor — el frontend invoca a ciegas.
     //
-    // Se reactiva cada vez que llega un mensaje nuevo en el chat abierto (porque
-    // `selectedChat` cambia con el polling) y cuando la pestana vuelve a primer
-    // plano. El backend hace throttle por chat para no saturar la cola.
+    // El MISMO request registra la presencia del operador en el chat (§5.7), asi
+    // que se dispara aunque los read receipts esten apagados.
     const lastMarkedMessageIdRef = useRef<string | null>(null);
     useEffect(() => {
         if (!selectedChat) return;
@@ -185,6 +241,15 @@ export default function ChatsPage() {
     useEffect(() => {
         lastMarkedMessageIdRef.current = null;
     }, [selectedChatId]);
+
+    // Foco al compositor al abrir una conversacion: el operador entra a
+    // responder, no a mirar. En mobile NO, porque levantaria el teclado y
+    // taparia la conversacion que acaba de abrir.
+    useEffect(() => {
+        if (!selectedChatId || isMobile) return;
+        const input = messagesContainerRef.current?.parentElement?.querySelector<HTMLInputElement>('form input[type="text"]');
+        input?.focus();
+    }, [selectedChatId, isMobile]);
 
     const openOrderDetail = async (orderId: string) => {
         setOrderLoading(true);
@@ -228,11 +293,42 @@ export default function ChatsPage() {
     const permissions = props.permissions ?? [];
     const isSystem = props.role?.is_system ?? false;
     const canUpdate = isSystem || permissions.includes('chats.update');
+    // `chats.audit` es owner/admin por template: el operador no administra su
+    // propia auditoria. El backend valida igual — esconder el boton no es control.
+    const canAudit = isSystem || permissions.includes('chats.audit');
+
+    const [activityOpen, setActivityOpen] = useState(false);
+    const [activityEntries, setActivityEntries] = useState<ChatAuditEntry[]>([]);
+    const [activityLoading, setActivityLoading] = useState(false);
+    const [activityError, setActivityError] = useState<string | null>(null);
+
+    const openActivity = async (chatId: string) => {
+        setActivityOpen(true);
+        setActivityLoading(true);
+        setActivityError(null);
+        setActivityEntries([]);
+        try {
+            const res = await apiFetch(`/api/v1/chats/${chatId}/audit`);
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error((json as { message?: string }).message ?? 'Error al cargar la actividad.');
+            }
+            const json = await res.json();
+            setActivityEntries((json as { data: ChatAuditEntry[] }).data);
+        } catch (err) {
+            setActivityError(err instanceof Error ? err.message : 'Error al cargar la actividad.');
+        } finally {
+            setActivityLoading(false);
+        }
+    };
 
     const sortedChats = useMemo(() => chats, [chats]);
+    // El filtro por canal solo aparece con dos o mas: con uno solo seria ruido
+    // en la pantalla de alguien que no tiene nada que filtrar (§8.4 punto 1).
+    const showChannelFilter = channels.length >= 2;
 
     // Inicializamos los campos del modal una sola vez al abrir. NO podemos
-    // depender de `selectedChat` porque el polling lo reemplaza cada 5s y
+    // depender de `selectedChat` porque el polling lo reemplaza cada 30s y
     // borraria lo que el operador esta escribiendo.
     const openContactEditor = () => {
         if (!selectedChat) return;
@@ -243,18 +339,33 @@ export default function ChatsPage() {
         setEditingContact(true);
     };
 
-    const handleSend = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!draft.trim() || sending || !canUpdate) return;
+    const handleSendText = async (body: string) => {
         setSending(true);
-        setSendError(null);
         try {
-            await sendMessage(draft);
-            setDraft('');
-        } catch (err) {
-            setSendError(err instanceof Error ? err.message : 'Error al enviar mensaje.');
+            await sendMessage(body);
         } finally {
             setSending(false);
+        }
+    };
+
+    const handleSendAttachment = async (file: File, kind: string, caption: string) => {
+        setSending(true);
+        try {
+            await sendAttachment(file, kind, caption);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleRetry = async (messageId: string) => {
+        setRetryingId(messageId);
+        try {
+            await retryMessage(messageId);
+        } catch {
+            // El estado del mensaje se refresca en el siguiente poll; un toast
+            // acá taparía la burbuja que el operador está mirando.
+        } finally {
+            setRetryingId(null);
         }
     };
 
@@ -290,6 +401,114 @@ export default function ChatsPage() {
         }
     };
 
+    /** Contacto compartido → prellenar el editor de contacto de ESTE chat. */
+    const saveSharedContact = (contact: SharedContact) => {
+        setContactName(contact.name ?? '');
+        setContactPhone(contact.phones?.[0] ?? '');
+        setContactNotes('');
+        setContactError(null);
+        setEditingContact(true);
+    };
+
+    const channel = selectedChat?.channel ?? null;
+    const channelDown = Boolean(channel && !channel.can_send);
+    const composerDisabled = !canUpdate || channelDown;
+    const composerReason = !canUpdate
+        ? 'Solo lectura — necesitás el permiso «Editar chats» para responder.'
+        : channelDown
+          ? `${channel?.label ?? 'Este número'} está desconectado. Los mensajes no se enviarán.`
+          : null;
+
+    // Todas las imágenes de la conversación, para que el lightbox pueda
+    // recorrerlas con flechas (§8.4b punto 13) en vez de ser un callejón.
+    const chatImages = useMemo(() => {
+        if (!selectedChat) return [];
+        return selectedChat.messages
+            .filter((m) => m.media_type === 'image' && m.media_url)
+            .map((m) => ({ url: m.media_url as string, caption: m.media_payload?.caption ?? null }));
+    }, [selectedChat]);
+
+    const openImage = (url: string) => {
+        const idx = chatImages.findIndex((img) => img.url === url);
+        setLightboxIndex(idx >= 0 ? idx : null);
+    };
+
+    // Variables de las respuestas rápidas (§8.4b punto 14), resueltas al insertar.
+    // `{{sede}}` sale de la etiqueta del canal (que suele ser el nombre de la sede).
+    const quickReplyVars = useMemo(
+        () => ({
+            cliente: selectedChat?.client_name ?? null,
+            pedido: selectedChat?.latest_order ? `#${shortOrderCode(selectedChat.latest_order.id)}` : null,
+            sede: channel?.label ?? null,
+        }),
+        [selectedChat, channel],
+    );
+
+    // Link público del menú: estático por empresa, se arma en el cliente sin
+    // tocar el backend (§8.4b punto 8).
+    const nit = props.activeCompany?.nit ?? '';
+    const menuUrl = nit ? `${window.location.origin}/menus/${nit}` : null;
+
+    const requestCartLink = async (): Promise<string | null> => {
+        if (!selectedChatId) return null;
+        const res = await apiFetch(`/api/v1/chats/${selectedChatId}/cart-link`, { method: 'POST' });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error((json as { message?: string }).message ?? 'No se pudo generar el carrito.');
+        }
+        return (json as { data: { url: string } }).data.url;
+    };
+
+    const createOrderForChat = () => {
+        if (!selectedChat) return;
+        // Reutiliza el flujo de caja (no reimplementa creación de pedido): navega
+        // con el teléfono como pedido a domicilio. Caja lee `client_phone` de la
+        // URL igual que ya lee `table`.
+        // ponytail: solo prellena el teléfono. Nombre y dirección quedan
+        // pendientes — caja no tiene campo de nombre y el chat no carga la
+        // dirección del Contact (ver pendientes.md). El operador los completa.
+        navigate(`/orders/cashier?client_phone=${encodeURIComponent(selectedChat.client_phone)}`);
+    };
+
+    // Navegación por teclado de la bandeja (§8.4b punto 12): j/k mover, Enter
+    // enfocar el compositor, Esc volver, / buscar. Respeta el foco en inputs para
+    // no pisar la escritura del compositor ni la búsqueda.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if (isFocusInInput(e.target)) return;
+            const key = e.key.toLowerCase();
+            if (key === 'j' || key === 'k') {
+                if (sortedChats.length === 0) return;
+                e.preventDefault();
+                const idx = sortedChats.findIndex((c) => c.id === selectedChatId);
+                const target =
+                    idx === -1
+                        ? key === 'j'
+                            ? 0
+                            : sortedChats.length - 1
+                        : key === 'j'
+                          ? Math.min(sortedChats.length - 1, idx + 1)
+                          : Math.max(0, idx - 1);
+                selectChat(sortedChats[target].id);
+            } else if (e.key === 'Enter') {
+                if (!selectedChatId) return;
+                e.preventDefault();
+                document.querySelector<HTMLInputElement>('form input[type="text"]')?.focus();
+            } else if (e.key === 'Escape') {
+                if (selectedChatId) {
+                    e.preventDefault();
+                    selectChat(null);
+                }
+            } else if (e.key === '/') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [sortedChats, selectedChatId, selectChat]);
+
     return (
         <PageShell title="Chats">
             {/* Wrapper con techo de altura explicito y overflow-hidden:
@@ -314,57 +533,103 @@ export default function ChatsPage() {
                                     isMobile && selectedChatId !== null ? 'hidden' : ''
                                 }`}
                             >
-                                <div className="border-b p-2 text-sm font-semibold">Conversaciones</div>
-                                <div className="border-b p-2">
+                                <div className="flex items-center justify-between border-b p-2 text-sm font-semibold">
+                                    <span>Conversaciones</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const next = !soundOn;
+                                            setSoundOn(next);
+                                            writeSoundPreference(next);
+                                        }}
+                                        className="hover:bg-muted inline-flex h-8 w-8 items-center justify-center rounded"
+                                        aria-pressed={soundOn}
+                                        title={soundOn ? 'Silenciar el aviso de mensajes nuevos' : 'Activar el aviso sonoro de mensajes nuevos'}
+                                    >
+                                        {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="text-muted-foreground h-4 w-4" />}
+                                    </button>
+                                </div>
+                                <div className="space-y-2 border-b p-2">
                                     <div className="relative">
                                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
                                         <Input
+                                            ref={searchInputRef}
                                             type="search"
                                             value={searchInput}
                                             onChange={(e) => setSearchInput(e.target.value)}
-                                            placeholder="Buscar nombre, teléfono, #orden o mensaje"
+                                            placeholder="Buscar nombre, teléfono, #orden o mensaje  ( / )"
                                             className="h-9 pl-8 text-sm"
                                         />
                                     </div>
+
+                                    <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar conversaciones">
+                                        {FILTERS.map((f) => (
+                                            <button
+                                                key={f.value}
+                                                type="button"
+                                                onClick={() => setFilter(f.value)}
+                                                aria-pressed={filter === f.value}
+                                                className={cn(
+                                                    'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                                                    filter === f.value
+                                                        ? 'border-primary bg-primary text-primary-foreground'
+                                                        : 'border-border bg-background hover:bg-muted',
+                                                )}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {showChannelFilter && (
+                                        <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar por número">
+                                            <button
+                                                type="button"
+                                                onClick={() => setChannelFilter(null)}
+                                                aria-pressed={channelFilter === null}
+                                                className={cn(
+                                                    'rounded-full border px-2.5 py-1 text-xs transition-colors',
+                                                    channelFilter === null
+                                                        ? 'border-primary bg-primary/10 text-primary'
+                                                        : 'border-border bg-background hover:bg-muted',
+                                                )}
+                                            >
+                                                Todos los números
+                                            </button>
+                                            {channels.map((c) => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => setChannelFilter(c.id)}
+                                                    aria-pressed={channelFilter === c.id}
+                                                    title={c.phone_e164 ?? undefined}
+                                                    className={cn(
+                                                        'rounded-full border px-2.5 py-1 text-xs transition-colors',
+                                                        channelFilter === c.id
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border bg-background hover:bg-muted',
+                                                    )}
+                                                >
+                                                    {c.label ?? c.phone_e164 ?? 'Canal'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
+
                                 <div className="flex-1 overflow-y-auto">
                                     {sortedChats.length === 0 ? (
-                                        <p className="text-muted-foreground p-4 text-center text-sm">
-                                            {searchTerm ? 'Sin resultados para la búsqueda.' : 'Sin conversaciones'}
-                                        </p>
+                                        <ChatsEmptyState searchTerm={searchTerm} filter={filter} channels={channels} />
                                     ) : (
                                         sortedChats.map((c) => (
-                                            <Card
+                                            <ChatListItem
                                                 key={c.id}
-                                                className={`m-2 cursor-pointer ${selectedChatId === c.id ? 'ring-primary ring-2' : ''}`}
-                                                onClick={() => selectChat(c.id)}
-                                            >
-                                                <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 pb-0">
-                                                    <CardTitle className="flex flex-wrap items-center gap-1 text-base">
-                                                        {c.client_name ?? c.client_phone}
-                                                        <ChatSourceBadge source={c.source} />
-                                                        {c.handoff_requested_at && (
-                                                            <span
-                                                                title="Bot solicitó intervención humana"
-                                                                className="ml-1 inline-block h-2 w-2 rounded-full bg-[color:var(--color-status-warning)]"
-                                                            />
-                                                        )}
-                                                        {c.latest_order && (
-                                                            <OrderBadge
-                                                                order={c.latest_order}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    void openOrderDetail(c.latest_order!.id);
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </CardTitle>
-                                                    <span className="text-muted-foreground text-xs">{timeAgo(c.last_message_at)}</span>
-                                                </CardHeader>
-                                                <CardContent className="text-muted-foreground truncate p-3 pt-1 text-xs">
-                                                    {c.last_message?.body ?? 'Sin mensajes'}
-                                                </CardContent>
-                                            </Card>
+                                                chat={c}
+                                                selected={selectedChatId === c.id}
+                                                showChannel={showChannelFilter}
+                                                onSelect={() => selectChat(c.id)}
+                                                onOpenOrder={(orderId) => void openOrderDetail(orderId)}
+                                            />
                                         ))
                                     )}
                                 </div>
@@ -381,7 +646,7 @@ export default function ChatsPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => selectChat(null)}
-                                                className="hover:bg-muted -ml-1 inline-flex items-center justify-center rounded p-1"
+                                                className="hover:bg-muted -ml-1 inline-flex h-11 w-11 items-center justify-center rounded"
                                                 title="Volver al listado"
                                                 aria-label="Volver al listado"
                                             >
@@ -418,97 +683,105 @@ export default function ChatsPage() {
                                                     Handoff solicitado
                                                 </span>
                                             )}
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                disabled={!canUpdate}
-                                                onClick={openContactEditor}
-                                                title={canUpdate ? 'Editar contacto' : 'Necesitas permiso chats.update'}
+                                            {canAudit && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => void openActivity(selectedChat.id)}
+                                                    title="Ver actividad de la conversación"
+                                                >
+                                                    <History className="size-4" />
+                                                    <span className="sr-only sm:not-sr-only sm:ml-1">Actividad</span>
+                                                </Button>
+                                            )}
+                                            <ReasonTooltip
+                                                reason={!canUpdate ? 'Necesitás el permiso «Editar chats» para editar el contacto.' : null}
                                             >
-                                                <Pencil className="h-4 w-4" />
-                                                Contacto
-                                            </Button>
-                                            <Button
-                                                variant={selectedChat.bot_paused ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!canUpdate || botBusy}
-                                                onClick={handleToggleBot}
-                                                title={
-                                                    canUpdate
-                                                        ? selectedChat.bot_paused
-                                                            ? 'Reanudar bot'
-                                                            : 'Pausar bot e intervenir'
-                                                        : 'Necesitas permiso chats.update'
-                                                }
-                                            >
-                                                {selectedChat.bot_paused ? (
-                                                    <>
-                                                        <Play className="h-4 w-4" /> Reanudar bot
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Pause className="h-4 w-4" /> Pausar bot
-                                                    </>
-                                                )}
-                                            </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    disabled={!canUpdate}
+                                                    onClick={openContactEditor}
+                                                    title={canUpdate ? 'Editar contacto' : undefined}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                    Contacto
+                                                </Button>
+                                            </ReasonTooltip>
+                                            {/* El estado del bot va SIEMPRE explícito en el botón:
+                                                "Bot activo" / "Bot pausado — respondés vos". Un
+                                                toggle mudo obliga a adivinar quién está contestando.
+                                                Deshabilitado sin permiso: el motivo va en el
+                                                ReasonTooltip (envuelve un span, así el hover dispara
+                                                aunque el botón esté disabled — §8.4c regla 2). */}
+                                            <ReasonTooltip reason={!canUpdate ? 'Necesitás el permiso «Editar chats» para controlar el bot.' : null}>
+                                                <Button
+                                                    variant={selectedChat.bot_paused ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    disabled={!canUpdate || botBusy}
+                                                    onClick={handleToggleBot}
+                                                    title={
+                                                        canUpdate
+                                                            ? selectedChat.bot_paused
+                                                                ? 'El bot está pausado: respondés vos. Reanudá para que conteste solo.'
+                                                                : 'El bot responde solo. Si respondés vos, se pausa automáticamente.'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    {selectedChat.bot_paused ? (
+                                                        <>
+                                                            <Play className="h-4 w-4" />
+                                                            <span className="hidden sm:inline">Bot pausado — respondés vos</span>
+                                                            <span className="sm:hidden">Reanudar</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Pause className="h-4 w-4" />
+                                                            <span className="hidden sm:inline">Bot activo</span>
+                                                            <span className="sm:hidden">Pausar</span>
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </ReasonTooltip>
                                         </div>
                                     )}
                                 </div>
 
                                 {botError && <p className="text-destructive px-3 pt-2 text-xs">{botError}</p>}
 
+                                {selectedChat && <ChatPresence viewers={selectedChat.viewers ?? []} />}
+
                                 {selectedChat?.bot_paused && (
                                     <div className="flex items-center gap-2 border-b bg-[color:var(--color-status-warning)]/10 px-3 py-2 text-xs text-[color:var(--color-status-warning)]">
-                                        <Bot className="h-4 w-4" />
+                                        <Bot className="h-4 w-4 shrink-0" />
                                         <span>
                                             Bot pausado{selectedChat.handoff_reason ? ` — motivo: ${selectedChat.handoff_reason}` : ''}. Las
-                                            respuestas automaticas estan detenidas.
+                                            respuestas automáticas están detenidas.
                                         </span>
                                     </div>
                                 )}
 
                                 <div ref={messagesContainerRef} className="flex-1 overflow-y-auto">
                                     {/* min-h-full + justify-end: cuando hay pocos mensajes el wrapper igual ocupa
-                            todo el alto y los mensajes quedan abajo (cerca del input). Cuando hay
-                            muchos crece hacia arriba y el scroll se activa en el padre. */}
-                                    <div className="flex min-h-full flex-col justify-end gap-2 p-4">
+                                        todo el alto y los mensajes quedan abajo (cerca del input). Cuando hay
+                                        muchos crece hacia arriba y el scroll se activa en el padre.
+
+                                        `aria-live="polite"`: un lector de pantalla anuncia los mensajes que
+                                        entran mientras la conversación está abierta. Sin esto un operador
+                                        ciego no se entera de que llegó nada. */}
+                                    <div className="flex min-h-full flex-col justify-end gap-2 p-4" aria-live="polite" aria-relevant="additions">
                                         {selectedChat ? (
                                             selectedChat.messages.map((m) => (
-                                                <div key={m.id} className={`flex ${m.sender === 'client' ? 'justify-start' : 'justify-end'}`}>
-                                                    <div
-                                                        className={`max-w-xs rounded-xl px-3 py-2 text-sm ${
-                                                            m.sender === 'client'
-                                                                ? 'bg-card border-border text-foreground border text-left'
-                                                                : m.sender === 'bot'
-                                                                  ? 'bg-secondary text-secondary-foreground text-right'
-                                                                  : 'bg-primary text-primary-foreground text-right'
-                                                        }`}
-                                                    >
-                                                        {m.media_type ? (
-                                                            <ChatMessageMedia
-                                                                type={m.media_type}
-                                                                url={m.media_url}
-                                                                mime={m.media_mime}
-                                                                body={m.body}
-                                                            />
-                                                        ) : m.body.startsWith('[location]') ? (
-                                                            <ChatMessageMedia type={null} url={null} mime={null} body={m.body} />
-                                                        ) : (
-                                                            <span className="whitespace-pre-wrap">{m.body}</span>
-                                                        )}
-                                                        <div
-                                                            className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                                                                m.sender === 'client' ? 'text-muted-foreground' : 'opacity-80'
-                                                            }`}
-                                                        >
-                                                            <span>
-                                                                {m.sender === 'bot' ? 'bot · ' : m.sender === 'operator' ? 'tú · ' : ''}
-                                                                {formatTime(m.sent_at)}
-                                                            </span>
-                                                            {m.sender !== 'client' && <ChatMessageStatusTicks status={m.status} />}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <ChatMessageBubble
+                                                    key={m.id}
+                                                    message={m}
+                                                    canRetry={canUpdate}
+                                                    retrying={retryingId === m.id}
+                                                    onRetry={(id) => void handleRetry(id)}
+                                                    onOpenImage={(url) => openImage(url)}
+                                                    onWriteToContact={(phone) => setSearchInput(phone)}
+                                                    onSaveContact={canUpdate ? saveSharedContact : undefined}
+                                                />
                                             ))
                                         ) : (
                                             <p className="text-muted-foreground py-12 text-center text-sm">Selecciona una conversación</p>
@@ -517,40 +790,47 @@ export default function ChatsPage() {
                                     </div>
                                 </div>
 
+                                {selectedChat && channelDown && (
+                                    <div className="flex items-center gap-2 border-t bg-[color:var(--color-status-critical)]/10 px-3 py-2 text-xs text-[color:var(--color-status-critical)]">
+                                        <AlertCircle className="h-4 w-4 shrink-0" />
+                                        <span className="flex-1">
+                                            {channel?.label ?? 'Este número'} está desconectado. Los mensajes no se enviarán.
+                                        </span>
+                                        <a href="/company/whatsapp" className="font-medium underline underline-offset-2">
+                                            Reconectar
+                                        </a>
+                                    </div>
+                                )}
+
                                 {selectedChat && (
-                                    <form noValidate onSubmit={handleSend} className="border-t p-3">
-                                        {sendError && <p className="text-destructive mb-2 text-xs">{sendError}</p>}
-                                        {!canUpdate && (
-                                            <p className="text-muted-foreground mb-2 text-xs">
-                                                Solo lectura — necesitas el permiso chats.update para responder.
-                                            </p>
-                                        )}
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                value={draft}
-                                                onChange={(e) => setDraft(sanitizePlainText(e.target.value, 4000, true, false))}
-                                                maxLength={4000}
-                                                placeholder="Escribe un mensaje..."
-                                                className="border-input bg-background focus:ring-primary flex-1 rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-                                                disabled={sending || !canUpdate}
-                                            />
-                                            <button
-                                                type="submit"
-                                                disabled={sending || !draft.trim() || !canUpdate}
-                                                className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm hover:opacity-90 disabled:opacity-50"
-                                            >
-                                                <Send className="h-4 w-4" />
-                                                Enviar
-                                            </button>
-                                        </div>
-                                    </form>
+                                    <ChatComposer
+                                        disabled={composerDisabled}
+                                        disabledReason={composerReason}
+                                        sending={sending}
+                                        onSendText={handleSendText}
+                                        onSendAttachment={handleSendAttachment}
+                                        quickReplies={quickReplies}
+                                        quickReplyVars={quickReplyVars}
+                                        menuUrl={menuUrl}
+                                        onRequestCartLink={requestCartLink}
+                                        onCreateOrder={createOrderForChat}
+                                    />
                                 )}
                             </div>
                         </div>
                     </>
                 )}
             </div>
+
+            <ChatLightbox images={chatImages} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
+
+            <ChatActivityModal
+                isOpen={activityOpen}
+                onClose={() => setActivityOpen(false)}
+                entries={activityEntries}
+                loading={activityLoading}
+                error={activityError}
+            />
 
             <ClientDetailModal
                 isOpen={clientDetailOpen}
@@ -624,5 +904,111 @@ export default function ChatsPage() {
                 </DialogContent>
             </Dialog>
         </PageShell>
+    );
+}
+
+function ChatListItem({
+    chat,
+    selected,
+    showChannel,
+    onSelect,
+    onOpenOrder,
+}: {
+    chat: ChatSummary;
+    selected: boolean;
+    showChannel: boolean;
+    onSelect: () => void;
+    onOpenOrder: (orderId: string) => void;
+}) {
+    return (
+        <Card className={`m-2 cursor-pointer ${selected ? 'ring-primary ring-2' : ''}`} onClick={onSelect}>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 pb-0">
+                <CardTitle className="flex flex-wrap items-center gap-1 text-base">
+                    {chat.client_name ?? chat.client_phone}
+                    <ChatSourceBadge source={chat.source} />
+                    {/* Badge de canal: responde a "¿por cuál de mis números
+                        escribió?". Solo con 2+ canales — con uno es ruido. */}
+                    {showChannel && chat.channel && (
+                        <span
+                            className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-[10px] font-medium"
+                            title={`Entró por el WhatsApp de ${chat.channel.label ?? 'este número'}${chat.channel.phone_e164 ? ` (${chat.channel.phone_e164})` : ''}`}
+                        >
+                            {chat.channel.label ?? chat.channel.phone_e164}
+                        </span>
+                    )}
+                    {chat.handoff_requested_at && (
+                        <span
+                            title="Bot solicitó intervención humana"
+                            className="ml-1 inline-block h-2 w-2 rounded-full bg-[color:var(--color-status-warning)]"
+                        />
+                    )}
+                    {chat.latest_order && (
+                        <OrderBadge
+                            order={chat.latest_order}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenOrder(chat.latest_order!.id);
+                            }}
+                        />
+                    )}
+                </CardTitle>
+                <span className="text-muted-foreground shrink-0 text-xs">{timeAgo(chat.last_message_at)}</span>
+            </CardHeader>
+            <CardContent className="space-y-1 p-3 pt-1">
+                <p className="text-muted-foreground truncate text-xs">{chat.last_message?.body ?? 'Sin mensajes'}</p>
+                {chat.pending_reply_since && <WaitingBadge since={chat.pending_reply_since} />}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Estado vacío accionable (§8.4b punto 3).
+ *
+ * Justo después de conectar, la bandeja está vacía y ese es el momento de mayor
+ * duda del cliente ("¿funcionó?"). Dejarlo con un "Sin conversaciones" pelado es
+ * desperdiciar el único momento en que va a mirar esta pantalla con atención.
+ */
+function ChatsEmptyState({ searchTerm, filter, channels }: { searchTerm: string; filter: ChatFilter; channels: { phone_e164: string | null }[] }) {
+    if (searchTerm) {
+        return <p className="text-muted-foreground p-4 text-center text-sm">Sin resultados para la búsqueda.</p>;
+    }
+
+    if (filter === 'pending') {
+        return (
+            <EmptyState
+                icon={MessageCircle}
+                title="No hay nadie esperando respuesta"
+                description="Todas las conversaciones están al día."
+                className="border-none bg-transparent shadow-none"
+            />
+        );
+    }
+
+    if (filter === 'closed') {
+        return <p className="text-muted-foreground p-4 text-center text-sm">No hay conversaciones cerradas.</p>;
+    }
+
+    const phone = channels.find((c) => c.phone_e164)?.phone_e164;
+
+    return (
+        <EmptyState
+            icon={MessageCircle}
+            title="Todavía nadie te ha escrito"
+            description={
+                phone
+                    ? `Probá vos mismo: escribile al ${phone} desde tu celular y mirá cómo llega acá.`
+                    : 'Conectá tu WhatsApp para empezar a recibir mensajes.'
+            }
+            action={
+                <Button variant="outline" size="sm" asChild>
+                    <a href="/company/whatsapp">
+                        <Send className="mr-2 h-4 w-4" />
+                        {phone ? 'Enviar mensaje de prueba' : 'Conectar WhatsApp'}
+                    </a>
+                </Button>
+            }
+            className="border-none bg-transparent shadow-none"
+        />
     );
 }

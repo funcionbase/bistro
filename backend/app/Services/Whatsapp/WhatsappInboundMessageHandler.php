@@ -3,15 +3,19 @@
 namespace App\Services\Whatsapp;
 
 use App\Jobs\DownloadWhatsappMediaJob;
+use App\Jobs\SendAwayReplyJob;
+use App\Jobs\SendChatInboundPushJob;
 use App\Models\Branch;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\CompanyWhatsappAccount;
 use App\Models\CompanyWhatsappAccountEvent;
 use App\Models\Contact;
+use App\Services\CrmService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Convierte el payload de webhook de WhatsApp Cloud API en filas de chats /
@@ -112,9 +116,6 @@ class WhatsappInboundMessageHandler
             return false;
         }
 
-        $clientPhone = '+'.ltrim($waId, '+');
-        $clientName = $contactsByWaId[$waId] ?? null;
-        $metaMessageId = $message['id'] ?? null;
         // Meta envia timestamp como Unix epoch (UTC). Lo creamos en zona de la
         // app para que Eloquent serialice Bogota wall-clock y la sesion de PG
         // (que setea SET TIME ZONE America/Bogota) lo guarde correcto.
@@ -122,40 +123,112 @@ class WhatsappInboundMessageHandler
             ? Carbon::createFromTimestamp((int) $message['timestamp'], config('app.timezone'))
             : now();
 
-        $createdMessage = null;
+        return $this->persistInbound($account, new NormalizedInboundMessage(
+            clientPhoneE164: '+'.ltrim($waId, '+'),
+            clientName: $contactsByWaId[$waId] ?? null,
+            body: $content['body'],
+            providerMessageId: $message['id'] ?? null,
+            sentAt: $sentAt,
+            fromMe: false,
+            mediaType: $content['media_type'],
+            // Meta no manda el binario: se descarga despues contra Graph.
+            mediaProviderId: $content['media_meta_id'],
+            mediaMime: $content['media_mime'],
+        )) !== null;
+    }
 
-        DB::transaction(function () use ($account, $clientPhone, $clientName, $content, $metaMessageId, $sentAt, &$createdMessage): void {
-            // Multi-sede (#117, #192): el chat es único por (company_nit,
-            // client_phone) — su `branch_id` indica la sede que LO ATIENDE.
-            // Al recibir un mensaje de un teléfono SIN chat previo, el chat
-            // se crea asignado a la sede `is_default=true` de la empresa
-            // (decisión documentada en #192: el cliente final no decide
-            // sede; el operador puede reasignar después).
+    /**
+     * Persiste un mensaje entrante ya normalizado. Es el UNICO lugar donde se
+     * resuelve la sede, se crea el contacto, se abre o adopta el chat y se
+     * escribe la fila — Meta y Evolution lo alimentan por igual (§6.4).
+     *
+     * Devuelve null si el mensaje se descarto por idempotencia (ya existia).
+     */
+    public function persistInbound(CompanyWhatsappAccount $account, NormalizedInboundMessage $msg): ?ChatMessage
+    {
+        $clientPhone = $msg->clientPhoneE164;
+        $clientName = $msg->clientName;
+        $metaMessageId = $msg->providerMessageId;
+        $sentAt = $msg->sentAt;
+
+        $createdMessage = null;
+        $contactWasCreated = false;
+
+        DB::transaction(function () use ($account, $msg, $clientPhone, $clientName, $metaMessageId, $sentAt, &$createdMessage, &$contactWasCreated): void {
+            // Multi-sede (#117, #192) + multi-canal (F1): la sede del chat la
+            // decide EL CANAL por el que entró el mensaje. Un canal de sede
+            // (`branch_id` no nulo) hace nacer el chat en esa sede; un canal de
+            // empresa (`branch_id` nulo) cae al comportamiento anterior — sede
+            // `is_default=true` y reasignación manual.
             // Al recibir un mensaje sobre un chat existente, NO se rebota
             // su `branch_id` — la asignación es manual vía
             // `POST /api/v1/chats/{chat}/reassign-branch` (permiso
             // `chats.reassign_branch` o ser owner).
-            $defaultBranchId = Branch::query()
+            $branchId = $account->branch_id ?? Branch::query()
                 ->where('company_nit', $account->company_nit)
                 ->whereNull('archived_at')
                 ->orderByDesc('is_default')
                 ->orderBy('created_at')
                 ->value('id');
 
-            $contact = Contact::firstOrCreate(
-                ['company_nit' => $account->company_nit, 'phone' => $clientPhone],
-                ['name' => $clientName, 'branch_id' => $defaultBranchId],
-            );
+            // Homologación con el CRM en AMBOS sentidos: un cliente cargado en
+            // /clients con el teléfono en otro formato (sin +57, o con 57 pegado)
+            // es la MISMA persona. Se busca por variantes normalizadas —la misma
+            // idea que usa CrmService para casar órdenes— para no crear un
+            // duplicado del contacto que ya existe.
+            //
+            // `branch_id` NO es fillable en Contact (el trait BelongsToBranch lo
+            // resuelve desde `active_branch_id`, que en un webhook no existe) y la
+            // columna es NOT NULL, así que en el alta se fuerza explícitamente.
+            $contact = Contact::withoutBranchScope()
+                ->where('company_nit', $account->company_nit)
+                ->whereIn('phone', $this->phoneVariants($clientPhone))
+                ->first();
 
+            if ($contact === null) {
+                $contact = new Contact;
+                $contact->forceFill([
+                    'company_nit' => $account->company_nit,
+                    'phone' => $clientPhone,
+                    'name' => $clientName,
+                    'branch_id' => $branchId,
+                ])->save();
+                $contactWasCreated = true;
+            }
+
+            // El chat es único por (canal, client_phone): el mismo cliente
+            // escribiendo al número de la empresa y al de una sede son dos
+            // conversaciones distintas — son interlocutores distintos.
             /** @var Chat $chat */
             $chat = Chat::firstOrNew([
-                'company_nit' => $account->company_nit,
+                'whatsapp_account_id' => $account->id,
                 'client_phone' => $clientPhone,
             ]);
 
+            // Adopción del chat legacy: los creados por el bot externo antes de
+            // conectar un canal quedaron con `whatsapp_account_id` nulo. Sin
+            // esto el mismo cliente aparecería dos veces en la bandeja y la
+            // duplicidad sería permanente y silenciosa.
+            // `withoutBranchScope()` (#192): flujo de webhook sin JWT — no hay
+            // `active_branch_id` y el chat legacy puede estar en cualquier sede
+            // de la empresa. El scope de empresa lo da el `where company_nit`.
             if (! $chat->exists) {
+                $legacy = Chat::withoutBranchScope()
+                    ->where('company_nit', $account->company_nit)
+                    ->where('client_phone', $clientPhone)
+                    ->whereNull('whatsapp_account_id')
+                    ->first();
+
+                if ($legacy !== null) {
+                    $chat = $legacy;
+                    $chat->whatsapp_account_id = $account->id;
+                }
+            }
+
+            if (! $chat->exists) {
+                $chat->company_nit = $account->company_nit;
                 $chat->status = 'open';
-                $chat->branch_id = $defaultBranchId;
+                $chat->branch_id = $branchId;
                 // n8n no disponible: bot apagado. El operador atiende manualmente.
                 $chat->bot_paused = true;
                 $chat->client_name = $clientName ?? $contact->name;
@@ -164,6 +237,16 @@ class WhatsappInboundMessageHandler
 
             $chat->contact_id = $contact->id;
             $chat->last_message_at = $sentAt;
+
+            if ($msg->fromMe) {
+                // El dueño respondio desde SU celular: el cliente ya no espera.
+                $chat->pending_reply_since = null;
+            } elseif ($chat->pending_reply_since === null) {
+                // Marca el INICIO de la espera, no el último mensaje: si ya
+                // estaba esperando, el reloj no se reinicia con cada mensaje.
+                $chat->pending_reply_since = $sentAt;
+            }
+
             $chat->meta_synced_at = now();
             $chat->save();
 
@@ -180,22 +263,59 @@ class WhatsappInboundMessageHandler
 
             $createdMessage = ChatMessage::create([
                 'chat_id' => $chat->id,
-                'sender' => 'client',
-                'status' => null,
-                'body' => $content['body'],
+                // `fromMe` = lo mando el dueño desde su celular. Es un mensaje
+                // saliente sin usuario del panel detras: `sent_by_user_id` queda
+                // null y la UI lo rotula "desde el celular" (§5.7).
+                'sender' => $msg->fromMe ? 'operator' : 'client',
+                'sent_by_user_id' => null,
+                // Marca explicita en vez de deducirla de (operator + sin autor):
+                // esa combinacion tambien matchea todos los mensajes anteriores
+                // a F1 y los rotularia "desde el celular" siendo falso.
+                'from_device' => $msg->fromMe,
+                'status' => $msg->fromMe ? 'sent' : null,
+                'body' => $msg->body,
                 'meta_message_id' => $metaMessageId,
-                'media_type' => $content['media_type'],
-                'media_meta_id' => $content['media_meta_id'],
-                'media_mime' => $content['media_mime'],
+                'media_type' => $msg->mediaType,
+                'media_meta_id' => $msg->mediaProviderId,
+                'media_mime' => $msg->mediaMime,
+                'media_payload' => $msg->mediaPayload,
                 'sent_at' => $sentAt,
             ]);
         });
 
-        // Dispara la descarga del media en cola si aplica. Fuera de la
-        // transaccion para que el job no se enqueue con un id que aun no esta
-        // visible para el worker (race con la BD).
-        if ($createdMessage !== null && ! empty($content['media_meta_id'])) {
-            DownloadWhatsappMediaJob::dispatch($createdMessage->id);
+        // Homologación con el CRM: un contacto nuevo creado por un mensaje
+        // entrante tiene que aparecer YA en /clients. El listado del CRM está
+        // cacheado (`crm:list:base:{nit}`) y persistInbound no lo invalidaba, así
+        // que el contacto recién creado no se veía hasta que expiraba el cache.
+        // Contacto y cliente del CRM son la misma tabla; esto los mantiene en sync.
+        if ($contactWasCreated) {
+            app(CrmService::class)->forgetCache((string) $account->company_nit);
+        }
+
+        if ($createdMessage !== null) {
+            $this->attachMedia($createdMessage, $msg);
+
+            // Aviso al operador (§8.4b punto 1). Solo lo del cliente: lo que el
+            // dueño manda desde su celular no es nada que atender. Va a la cola
+            // para que la latencia del push no se sume a la del webhook —
+            // Evolution reintenta si tardamos.
+            if (! $msg->fromMe) {
+                SendChatInboundPushJob::dispatch((string) $createdMessage->id);
+                // Respuesta automatica fuera de horario (§8.4b punto 10). El job
+                // decide si corresponde (setting + horario + dedupe); aca solo se
+                // encola para no sumar su latencia a la del webhook.
+                SendAwayReplyJob::dispatch((string) $createdMessage->chat_id);
+
+                // F6 (§9.2): push a n8n del mensaje entrante. El dispatcher decide
+                // si hay flujo habilitado y suscrito; si no, no emite. Esto es
+                // sender='client' (nunca 'bot'), así que el anti-loop se cumple
+                // por construcción.
+                app(AutomationDispatcher::class)->forChat(
+                    AutomationDispatcher::EVENT_MESSAGE_RECEIVED,
+                    $createdMessage->chat,
+                    $createdMessage,
+                );
+            }
         }
 
         // El read-receipt (doble chulito azul) ya NO se dispara aqui. Se dispara
@@ -204,16 +324,91 @@ class WhatsappInboundMessageHandler
 
         CompanyWhatsappAccountEvent::create([
             'company_whatsapp_account_id' => $account->id,
-            'event_type' => 'message_received',
+            'event_type' => $msg->fromMe ? 'message_sent_from_device' : 'message_received',
             'payload' => [
-                'wa_id' => $waId,
+                'wa_id' => EvolutionClient::toMsisdn($clientPhone),
                 'meta_message_id' => $metaMessageId,
-                'type' => $message['type'] ?? 'text',
+                'type' => $msg->mediaType ?? 'text',
             ],
             'created_at' => now(),
         ]);
 
-        return true;
+        return $createdMessage;
+    }
+
+    /**
+     * Guarda el binario del mensaje segun de donde venga.
+     *
+     *  - Evolution lo manda EMBEBIDO (`base64: true`). Se escribe a S3 aca mismo:
+     *    los bytes ya estan en RAM y no hay forma de pedirlos despues
+     *    (`getBase64FromMediaMessage` lee una tabla vacia — §6.7). Encolarlos
+     *    trasladaria 16 MB por mensaje a la tabla `jobs`, que es el mismo bloat
+     *    que §6.3 saca de `webhook_events`.
+     *  - Meta manda un id y la descarga va en cola contra Graph.
+     *
+     * ponytail: el PUT es sincrono dentro del webhook. Si la latencia llega a
+     * molestar, la salida es encolar con la media en cache — nunca meterla en el
+     * payload del job.
+     */
+    private function attachMedia(ChatMessage $message, NormalizedInboundMessage $msg): void
+    {
+        if ($msg->mediaBase64 !== null) {
+            $bytes = base64_decode($msg->mediaBase64, true);
+
+            if ($bytes === false) {
+                Log::channel('single')->warning('whatsapp.media.invalid_base64', [
+                    'message_id' => $message->id,
+                ]);
+
+                return;
+            }
+
+            $relativePath = sprintf(
+                'chat-media/%s/%s.%s',
+                $message->chat_id,
+                $message->id,
+                $this->extensionFor($msg->mediaMime),
+            );
+
+            Storage::disk(config('filesystems.default'))->put($relativePath, $bytes);
+
+            $message->forceFill(['media_path' => $relativePath])->save();
+
+            return;
+        }
+
+        // Fuera de la transaccion para que el job no se encole con un id que aun
+        // no esta visible para el worker (race con la BD).
+        if (! empty($msg->mediaProviderId)) {
+            DownloadWhatsappMediaJob::dispatch($message->id);
+        }
+    }
+
+    /**
+     * ponytail: copia deliberada del mapa de `DownloadWhatsappMediaJob`. Ese job
+     * se borra entero con el webhook de Meta en F4; compartir el mapa obligaria
+     * a una clase nueva de la que dependerian los dos caminos por diez lineas
+     * que tienen fecha de vencimiento.
+     */
+    private function extensionFor(?string $mime): string
+    {
+        // `audio/ogg; codecs=opus` → `audio/ogg`.
+        $mime = $mime !== null ? trim(explode(';', $mime)[0]) : null;
+
+        return match ($mime) {
+            'image/webp' => 'webp',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'video/mp4' => 'mp4',
+            'video/3gpp' => '3gp',
+            'video/quicktime' => 'mov',
+            'audio/ogg' => 'ogg',
+            'audio/mpeg' => 'mp3',
+            'audio/mp4', 'audio/aac' => 'm4a',
+            'application/pdf' => 'pdf',
+            default => 'bin',
+        };
     }
 
     /**
@@ -276,8 +471,15 @@ class WhatsappInboundMessageHandler
      * Solo escalamos hacia adelante (sent < delivered < read). Si llega un evento
      * mas viejo despues de uno nuevo (raro pero posible), no lo aplicamos para
      * evitar regresiones visuales en el panel.
+     *
+     * Publico desde F2: los acks de Evolution (`messages.update`) entran por
+     * aca despues de traducir los valores de Baileys (`DELIVERY_ACK`, `READ`) a
+     * los nuestros. La logica monotonica y la guarda de `failed` como terminal
+     * son identicas para los dos proveedores — no se duplican.
+     *
+     * @param  array{id?: ?string, status?: ?string}  $status
      */
-    private function applyOutboundStatus(CompanyWhatsappAccount $account, array $status): bool
+    public function applyOutboundStatus(CompanyWhatsappAccount $account, array $status): bool
     {
         $wamid = $status['id'] ?? null;
         $newStatus = $status['status'] ?? null;
@@ -323,6 +525,31 @@ class WhatsappInboundMessageHandler
         $message->forceFill(['status' => $newStatus])->save();
 
         return true;
+    }
+
+    /**
+     * Variantes del mismo número para casar un contacto entre el chat y el CRM:
+     * el E.164 con `+`, sin `+`, y con/sin el indicativo 57 pegado. Un cliente
+     * cargado como `3001234567` y el mismo que escribe como `+573001234567` son
+     * la misma persona; sin esto se crearía un contacto duplicado por formato.
+     *
+     * @return list<string>
+     */
+    private function phoneVariants(string $e164): array
+    {
+        $digits = preg_replace('/\D+/', '', $e164) ?? '';
+        $variants = ['+'.$digits, $digits, $e164];
+
+        if (str_starts_with($digits, '57')) {
+            $bare = substr($digits, 2);
+            $variants[] = $bare;
+            $variants[] = '+57'.$bare;
+        } else {
+            $variants[] = '57'.$digits;
+            $variants[] = '+57'.$digits;
+        }
+
+        return array_values(array_unique(array_filter($variants, static fn (string $v) => $v !== '' && $v !== '+')));
     }
 
     /**

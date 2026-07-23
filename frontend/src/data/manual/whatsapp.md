@@ -4,8 +4,8 @@ description: "Conecta el número de WhatsApp de tu negocio a flexyflow. Recibe p
 metaTitle: "WhatsApp del negocio — Manual bistro.flexyflow.co"
 metaDescription: "Conecta el WhatsApp Business de tu negocio a flexyflow para recibir pedidos y responder desde la misma app."
 section: "clientes y mercadeo"
-readingTime: "7 min"
-lastUpdated: "8 de julio de 2026"
+readingTime: "8 min"
+lastUpdated: "23 de julio de 2026"
 ---
 
 ![WhatsApp del negocio conectado a bistro](/images/manual/whatsapp.svg "WhatsApp conectado: plantillas y mensajes automáticos.")
@@ -19,21 +19,26 @@ Conectar tu WhatsApp Business a flexyflow te deja:
 - Mandar avisos automáticos al cliente cuando le asignan domiciliario o cuando se le entrega su pedido.
 - Que el bot atienda solo lo repetitivo (horarios, carta, recibir un pedido) y le pase al equipo humano solo cuando haga falta.
 
-## Dos formas de conectar
+## Conectar un número (escaneando un QR)
 
-### Opción A: traer tu propio número
+Conectar es como vincular WhatsApp Web: escaneás un código con el celular y listo. Toma menos de dos minutos y no necesitás cuenta de Facebook ni Business Manager.
 
-Si ya tienes un número de WhatsApp Business, lo conectas con el flujo oficial de Meta — el mismo que usan las grandes plataformas. Todo pasa adentro de una ventanita de Facebook, sin salir del panel.
+1. En **WhatsApp del negocio** le das a *"Conectar WhatsApp"*.
+2. Si tenés varias sedes, primero elegís el alcance: **un número para toda la empresa** o **un número por sede** (cada sede atiende el suyo). Con una sola sede este paso se salta.
+3. Aceptás el aviso de riesgo (WhatsApp puede bloquear un número que se use de forma abusiva) y aparece el **código QR**.
+4. En tu celular abrís WhatsApp → **⋮ → Dispositivos vinculados → Vincular un dispositivo** y apuntás la cámara al código. El QR se renueva solo cada minuto: si vence, se genera otro sin que hagas nada.
+5. ¿Sin cámara a mano? Usás el **código de 8 dígitos**: lo pedís con tu número y lo escribís en el celular.
+6. Al conectar te muestra el número detectado y te pregunta *"¿Es el número correcto?"* — así no queda vinculado el WhatsApp equivocado.
 
-1. En **WhatsApp del negocio** le das a *"Conectar con Facebook"*.
-2. **Te pide un código de seguridad** que llega al correo del propietario. Lo digitas — vence a los pocos minutos, así que tenlo a la mano.
-3. Te abre el flujo oficial de Facebook (Meta). Inicias sesión con tu cuenta de Facebook donde está tu Business Manager.
-4. Eliges la cuenta de WhatsApp Business que vas a conectar. Autorizas a flexyflow.
-5. Vuelves a la app y ya aparece *"🟢 Conectado"* con tu número.
+Cada sede sin número aparece como una tarjeta punteada con el botón **"Conectar esta sede"**, para que ninguna se quede sin WhatsApp sin que te des cuenta.
 
-### Opción B: que flexyflow te dé un número
+### Probar que quedó conectado
 
-Si no tienes WhatsApp Business todavía, puedes solicitar que flexyflow te asigne uno. Llenas un formulario corto con país, descripción del negocio y correo de contacto. Nuestro equipo te gestiona la asignación manualmente y te avisa cuando esté listo.
+Apenas conectás, en la tarjeta del número tenés **"Enviar mensaje de prueba"**: se manda un mensaje a tu propio número y lo ves llegar en la bandeja. Es la confirmación, en un clic, de que todo el circuito funciona.
+
+### Ver cómo va
+
+La tarjeta de cada número conectado muestra los **mensajes de los últimos 7 días** y el **tiempo medio de respuesta** — el número que te dice si el módulo te está sirviendo.
 
 ## Mensajes entrantes
 
@@ -74,12 +79,41 @@ Tienes dos textos personalizables que el bot usará cuando esté operativo:
 
 Te aparece una vista previa estilo WhatsApp mientras editas. La sustitución `{company_name}` se rellena solita con el nombre comercial de tu negocio.
 
+### Responder automáticamente fuera de horario
+
+Con el interruptor **"Responder automáticamente fuera de horario"** activado, cuando un cliente te escribe con el local cerrado se le manda el *mensaje de fuera de horario* de arriba — una sola vez por día, para no acosarlo si escribe varias veces. Usa tus [horarios](/manual/horarios) por sede. Está apagado por defecto: si nunca lo activaste, nadie recibe respuestas automáticas.
+
+## Respuestas rápidas
+
+El 80 % de lo que responde un restaurante son cinco frases: *"¿A qué dirección?"*, *"Sale en 35 min"*, *"Ya va en camino"*. En vez de escribirlas cada vez, las guardás una sola vez y las insertás en el chat escribiendo **`/`**.
+
+- Las creás en **Empresa → WhatsApp → Respuestas rápidas** (solo Propietario y Administrador). Cada una puede ser de toda la empresa o de una sede.
+- En el chat, escribís `/` y aparece la lista; te movés con las flechas y la insertás con Enter.
+- Admiten variables que se completan solas al insertar: `{{cliente}}` (nombre del cliente), `{{pedido}}` (código del último pedido) y `{{sede}}`. Así *"Hola {{cliente}}, tu pedido {{pedido}} va en camino"* sale listo, sin escribirlo a mano.
+
+## Enviar la carta, un carrito o crear un pedido
+
+Desde el compositor del chat, el botón de acciones (✨) te deja:
+
+- **Enviar la carta:** inserta el link del menú público de tu negocio.
+- **Enviar un carrito:** genera un link para que el cliente arme su pedido y lo confirme.
+- **Crear pedido para este cliente:** abre la caja con el teléfono del cliente ya cargado, como pedido a domicilio.
+
+## Atajos de teclado en la bandeja
+
+Para atender rápido sin soltar el teclado:
+
+- **J / K** — moverte entre conversaciones.
+- **Enter** — saltar a escribir la respuesta.
+- **Esc** — volver al listado.
+- **/** — buscar.
+
 ## Cambiar o desconectar el número
 
 Estas acciones son **solo del Propietario** y exigen un código de seguridad que llega por correo. No las puede hacer un Administrador, ni siquiera con permisos especiales.
 
 - **Cambiar número:** útil si cambias de línea. Te desconecta el actual y te deja listo para conectar uno nuevo.
-- **Desconectar:** termina la conexión con Meta. El historial de chats se preserva para auditoría.
+- **Desconectar:** cierra la sesión del número. Dejan de entrar mensajes hasta que vuelvas a escanear el QR. El historial de chats se preserva para auditoría.
 
 <div class="callout callout-warn">
 <p>

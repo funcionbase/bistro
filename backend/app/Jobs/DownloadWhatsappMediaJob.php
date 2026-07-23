@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\ChatMessage;
-use App\Models\CompanyWhatsappAccount;
 use App\Services\Whatsapp\MetaGraphApiClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -15,8 +14,8 @@ use Illuminate\Support\Facades\Storage;
  * y lo guarda en disk public para que el frontend lo muestre.
  *
  * Flujo:
- *   1. Resuelve el ChatMessage y la CompanyWhatsappAccount asociada para
- *      conseguir el access_token del cliente.
+ *   1. Resuelve el ChatMessage y el canal del chat (`resolveWhatsappChannel`)
+ *      para conseguir el access_token del cliente.
  *   2. Pide a Meta /{media_id} la URL temporal de descarga (~5 min de vida).
  *   3. Descarga los bytes con el access_token.
  *   4. Guarda en chat-media/{chat_id}/{message_id}.{ext} y persiste media_path.
@@ -52,9 +51,9 @@ class DownloadWhatsappMediaJob implements ShouldQueue
             return;
         }
 
-        $account = CompanyWhatsappAccount::query()
-            ->where('company_nit', $chat->company_nit)
-            ->first();
+        // Multi-canal (F1): la media se descarga con el token del canal por el
+        // que entró el mensaje.
+        $account = $chat->resolveWhatsappChannel();
 
         if ($account === null || empty($account->accessToken())) {
             Log::channel('single')->warning('whatsapp.media.skip_no_account', [

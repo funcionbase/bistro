@@ -15,6 +15,7 @@ import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
+    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarMenuSub,
@@ -241,6 +242,11 @@ export function NavMain({ items = [], label }: { items: NavItem[]; label?: strin
                                     </AppLink>
                                 </SidebarMenuButton>
                             </NavItemTooltip>
+                            {item.badge !== undefined && item.badge > 0 && (
+                                <SidebarMenuBadge className="bg-[color:var(--color-status-critical)] text-[color:var(--color-status-critical-foreground,white)]">
+                                    {item.badge > 99 ? '99+' : item.badge}
+                                </SidebarMenuBadge>
+                            )}
                         </SidebarMenuItem>
                     ),
                 )}

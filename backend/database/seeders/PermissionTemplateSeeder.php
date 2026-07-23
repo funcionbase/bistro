@@ -246,6 +246,9 @@ class PermissionTemplateSeeder extends Seeder
                         $slug === 'whatsapp.connect' => [true, true, false, false],
                         $slug === 'whatsapp.update' => [false, true, true, false],
                         $slug === 'whatsapp.read' => [false, true, false, false],
+                        // Auditoría de chats: el admin supervisa (lectura), no
+                        // administra la pista de auditoría.
+                        $slug === 'chats.audit' => [false, true, false, false],
                         // Aislamiento por sede. Owner-only por default,
                         // asignables manualmente vía editor de permisos. NO se
                         // otorgan a admin automáticamente — son acciones
@@ -255,6 +258,7 @@ class PermissionTemplateSeeder extends Seeder
                         // dispositivos físicos en cocina).
                         in_array($slug, [
                             'chats.reassign_branch',
+                            'whatsapp.manage_branch_channels',
                             'cash_register.bypass_switch_lock',
                             'cash_register.manage',
                             'cash_register.operate_others',

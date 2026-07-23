@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\CashRegister;
 use App\Models\Company;
+use App\Models\CompanyWhatsappAccount;
 use App\Models\Employee;
 use App\Models\RestaurantMenu;
 use App\Models\Table;
@@ -131,6 +132,17 @@ class SetupGuideController extends Controller
                 'description' => 'Sube tu logo. Se muestra en los recibos y en el portal de tus clientes.',
                 'url' => '/company/preferences',
                 'completed' => $company?->logo_path !== null,
+                'optional' => true,
+            ],
+            [
+                'id' => 'whatsapp',
+                'title' => 'Conecta tu WhatsApp',
+                'description' => 'Atiende a tus clientes por WhatsApp desde el panel, sin usar el celular del dueño.',
+                'url' => '/company/whatsapp',
+                'completed' => CompanyWhatsappAccount::query()
+                    ->where('company_nit', $nit)
+                    ->where('status', 'connected')
+                    ->exists(),
                 'optional' => true,
             ],
             [

@@ -174,6 +174,14 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Mensaje de prueba de WhatsApp (F5): envía un WhatsApp REAL. Límite POR
+        // CANAL (`{id}`), no por IP/usuario — así "probar que conectó" no comparte
+        // cubeta entre canales de la misma empresa ni entre operadores, y un canal
+        // ruidoso no le gasta el cupo a otro. 6/min sobra para el caso legítimo.
+        RateLimiter::for('whatsapp-test-message', function (Request $request) {
+            return Limit::perMinute(6)->by('wa-test:'.($request->route('id') ?? 'unknown'));
+        });
+
         Gate::define('manage-company-roles', function (User $user, Request $request) {
             $role = $request->attributes->get('jwt_payload')['role'] ?? null;
 

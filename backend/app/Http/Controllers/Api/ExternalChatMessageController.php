@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ThrottlesBotChatWrites;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChatMessageResource;
 use App\Models\Branch;
@@ -9,6 +10,7 @@ use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Contact;
 use App\Rules\SafePlainText;
+use App\Services\Chat\ChatAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -30,6 +32,10 @@ use Illuminate\Support\Facades\DB;
  */
 class ExternalChatMessageController extends Controller
 {
+    use ThrottlesBotChatWrites;
+
+    public function __construct(private readonly ChatAuditLogger $auditLogger) {}
+
     public function store(Request $request): JsonResponse
     {
         $companyNit = $request->attributes->get('bot_company_nit');
@@ -43,6 +49,12 @@ class ExternalChatMessageController extends Controller
             'sent_at' => ['nullable', 'date'],
             'status' => ['nullable', 'string', 'in:sent,delivered,read,failed'],
         ]);
+
+        // Anti-loop del bot: la escritura del bot puede disparar un envío real por
+        // WhatsApp aguas abajo — un flujo en bucle quema el número (§9.6, §13).
+        if ($limited = $this->botWriteRateLimit((string) $companyNit, $validated['client_phone'])) {
+            return $limited;
+        }
 
         $sentAt = isset($validated['sent_at']) ? Carbon::parse($validated['sent_at']) : now();
 
@@ -67,6 +79,11 @@ class ExternalChatMessageController extends Controller
                 ],
             );
 
+            // ponytail: el bot externo se autentica por empresa, no por canal,
+            // así que resuelve el chat por (company_nit, client_phone). Techo
+            // conocido: si la empresa llega a tener varios canales con el mismo
+            // teléfono de cliente, elige uno arbitrario. Se cierra en F6, donde
+            // el token del bot ya acota (NIT, sede) y puede filtrar por canal.
             /** @var Chat $chat */
             $chat = Chat::firstOrNew([
                 'company_nit' => $companyNit,
@@ -80,6 +97,15 @@ class ExternalChatMessageController extends Controller
             }
             $chat->contact_id = $contact->id;
             $chat->last_message_at = $sentAt;
+            // Espera del cliente: la abre el mensaje entrante (solo si no había
+            // una en curso) y la cierra la respuesta del bot.
+            if ($validated['sender'] === 'client') {
+                if ($chat->pending_reply_since === null) {
+                    $chat->pending_reply_since = $sentAt;
+                }
+            } else {
+                $chat->pending_reply_since = null;
+            }
             $chat->meta_synced_at = now();
             $chat->save();
 
@@ -105,6 +131,22 @@ class ExternalChatMessageController extends Controller
 
             return [$chat, $message, true];
         });
+
+        // Solo el mensaje del BOT es una respuesta al cliente; el `sender=client`
+        // es el bot empujando lo que ya recibio de WhatsApp, no una accion suya.
+        if ($created && $validated['sender'] === 'bot') {
+            $this->auditLogger->log(
+                action: 'chat.message.sent_by_bot',
+                auditable: $chat,
+                data: [
+                    'chat_id' => $chat->id,
+                    'chat_message_id' => $message->id,
+                    'company_nit' => $companyNit,
+                    'body_length' => mb_strlen((string) $message->body),
+                ],
+                request: $request,
+            );
+        }
 
         return response()->json([
             'data' => new ChatMessageResource($message),
@@ -142,6 +184,22 @@ class ExternalChatMessageController extends Controller
         $messages = $query->limit($validated['limit'] ?? 100)->get();
 
         $chat->forceFill(['meta_synced_at' => now()])->save();
+
+        // `user_id = null`: el actor es una credencial, no una persona. Es la
+        // UNICA lectura de conversaciones que hace el bot (§12), asi que se
+        // audita aunque el resto de lecturas del bot no exista. Dedupe de 15 min
+        // por chat: el bot relee el historial en cada turno.
+        $this->auditLogger->log(
+            action: 'chat.history.read_by_bot',
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'company_nit' => $companyNit,
+                'messages_returned' => $messages->count(),
+            ],
+            request: $request,
+            dedupeKey: $chat->id,
+        );
 
         return response()->json([
             'data' => ChatMessageResource::collection($messages),

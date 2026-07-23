@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Chat\StoreChatAttachmentRequest;
 use App\Http\Requests\Chat\StoreChatMessageRequest;
 use App\Http\Requests\Chat\UpdateChatBotRequest;
 use App\Http\Requests\Chat\UpdateChatContactRequest;
@@ -13,13 +14,17 @@ use App\Models\Branch;
 use App\Models\BranchUser;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\CompanyWhatsappAccount;
 use App\Models\Contact;
 use App\Models\Order;
 use App\Models\User;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
+use App\Services\CartJwtService;
+use App\Services\Chat\ChatAuditLogger;
 use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
+use App\Services\Whatsapp\AutomationDispatcher;
 use App\Services\Whatsapp\WhatsappOutboundMessageSender;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +33,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /**
  * Panel de conversaciones del operador (chats con clientes via WhatsApp/bot).
@@ -45,7 +52,143 @@ class ChatController extends Controller
 {
     public function __construct(
         private readonly FeaturePermissionService $permissionService,
+        private readonly ChatAuditLogger $auditLogger,
     ) {}
+
+    /**
+     * Resuelve un chat de la empresa activa o aborta con 404 auditado.
+     *
+     * Punto único de acceso del módulo (§7.5 capa 3): concentra el scope de
+     * empresa, la respuesta y la auditoría del rechazo. Que exista un solo
+     * camino es lo que hace verificable la regla — ocho `findOrFail` sueltos se
+     * mantienen sincronizados por disciplina, esto por construcción.
+     *
+     * **404, nunca 403** (§7.5 capa 6): un 403 confirmaría que el chat existe en
+     * otra empresa, que es justo lo que el aislamiento tiene que ocultar. El 403
+     * queda reservado para la falta de permiso, que no revela nada.
+     *
+     * @param  list<string>  $with
+     */
+    private function findChatOrDeny(Request $request, string $companyNit, string $id, array $with = []): Chat
+    {
+        // El id se valida ANTES de consultar. `chats.id` es `uuid`, y un valor
+        // que no lo sea hace fallar a PostgreSQL con 22P02 → 500 con el error de
+        // la base en el cuerpo (motor, tipo de columna y forma del query). Eso
+        // rompe la regla de §7.5 capa 6 —toda falla responde 404— y además
+        // convierte el status en un oráculo: 500 para malformado, 404 para bien
+        // formado. Verificado en F2b: `GET /chats/no-es-uuid` devolvía 500.
+        $chat = Str::isUuid($id)
+            ? (function () use ($companyNit, $with, $id): ?Chat {
+                $query = Chat::forCompany($companyNit);
+
+                if ($with !== []) {
+                    $query->with($with);
+                }
+
+                return $query->find($id);
+            })()
+            : null;
+
+        if ($chat === null) {
+            // ponytail: no se consulta si el chat existe en OTRA empresa. Daría
+            // una señal más fina (ataque vs. link viejo), pero cuesta una query
+            // en el camino de error y mete un dato cross-tenant en una tabla
+            // inmutable. La repetición del patrón ya distingue los dos casos.
+            $this->auditLogger->log(
+                action: 'chat.access.denied',
+                user: $this->actor($request),
+                data: [
+                    'chat_id' => $id,
+                    'attempted_company_nit' => $companyNit,
+                    'route' => $request->route()?->getName(),
+                ],
+                request: $request,
+                dedupeKey: $id,
+            );
+
+            abort(404);
+        }
+
+        return $chat;
+    }
+
+    /** Ventana de presencia. El refresco de la bandeja es de 30 s: 90 s tolera un poll perdido. */
+    private const PRESENCE_TTL_SECONDS = 90;
+
+    private static function presenceKey(string $chatId): string
+    {
+        return "chat:{$chatId}:viewers";
+    }
+
+    /**
+     * Deja constancia de que este usuario tiene la conversacion abierta.
+     *
+     * Un solo registro por chat con el mapa de usuarios, no una clave por
+     * usuario: el store `database` no sabe listar por prefijo, asi que con
+     * claves sueltas no habria forma de leer "quienes estan viendo".
+     *
+     * ponytail: read-modify-write sin lock. Con dos instancias escribiendo a la
+     * vez se puede perder un visor hasta el siguiente poll de 30 s. El costo de
+     * un lock por cada apertura de chat no lo compensa; si algun dia hace falta
+     * exactitud, la salida es `Cache::lock`, no una tabla.
+     */
+    private function touchPresence(Chat $chat, ?User $user): void
+    {
+        if ($user === null) {
+            return;
+        }
+
+        $key = self::presenceKey((string) $chat->id);
+        $viewers = (array) Cache::get($key, []);
+        $now = now()->timestamp;
+
+        $viewers[(string) $user->id] = ['name' => (string) $user->name, 'at' => $now];
+
+        // Poda en la escritura: sin esto el mapa crece con cada operador que
+        // paso alguna vez por el chat y nunca se limpia.
+        $viewers = array_filter(
+            $viewers,
+            static fn ($v) => is_array($v) && ($now - (int) ($v['at'] ?? 0)) < self::PRESENCE_TTL_SECONDS,
+        );
+
+        Cache::put($key, $viewers, self::PRESENCE_TTL_SECONDS);
+    }
+
+    /**
+     * Quienes mas estan viendo la conversacion, sin contar a quien pregunta.
+     *
+     * @return list<string> nombres
+     */
+    private function viewersOf(Chat $chat, ?User $user): array
+    {
+        $viewers = (array) Cache::get(self::presenceKey((string) $chat->id), []);
+        $now = now()->timestamp;
+        $selfId = (string) ($user?->id ?? '');
+
+        $names = [];
+
+        foreach ($viewers as $userId => $entry) {
+            if ((string) $userId === $selfId || ! is_array($entry)) {
+                continue;
+            }
+
+            if (($now - (int) ($entry['at'] ?? 0)) >= self::PRESENCE_TTL_SECONDS) {
+                continue;
+            }
+
+            $names[] = (string) ($entry['name'] ?? '');
+        }
+
+        return array_values(array_filter($names, static fn (string $n) => $n !== ''));
+    }
+
+    /** El actor sale del JWT ya validado, nunca del body. */
+    private function actor(Request $request): ?User
+    {
+        $payload = (array) $request->attributes->get('jwt_payload', []);
+
+        return isset($payload['sub']) ? User::find((string) $payload['sub']) : null;
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -57,18 +200,41 @@ class ChatController extends Controller
         // por entradas enormes que disparen full table scans con ILIKE.
         $validated = $request->validate([
             'q' => ['nullable', new SafePlainText(maxBytes: 100)],
+            // Chips de la bandeja (§8.4b punto 2).
+            'filter' => ['nullable', 'string', 'in:pending,all,closed'],
+            'channel_id' => ['nullable', 'uuid'],
         ]);
         $term = trim((string) ($validated['q'] ?? ''));
+        $filter = (string) ($validated['filter'] ?? 'all');
 
-        // Sin busqueda mostramos solo las 5 mas recientes (vista por defecto al
-        // abrir el panel). Cuando hay termino de busqueda subimos el tope para
-        // que los matches por orden/mensaje no queden ocultos.
-        $limit = $term === '' ? 5 : 100;
+        // El tope era 5 sin busqueda, pensado para una bandeja que solo mostraba
+        // "los ultimos". Con chips y orden por urgencia, 5 no es un orden: es un
+        // recorte que esconde justo al cliente que mas espera. 50 cubre el turno
+        // de un restaurante sin paginar.
+        $limit = $term === '' ? 50 : 100;
 
         $query = Chat::forCompany($companyNit)
-            ->with('latestMessage')
+            ->with(['latestMessage', 'whatsappAccount'])
+            // Prioridad real (§8.4b punto 2): primero los que esperan respuesta,
+            // el que espera hace mas tiempo arriba. Postgres pone los NULL al
+            // final con ASC NULLS LAST, que es exactamente "los ya respondidos
+            // van despues". Recien dentro de cada grupo ordena por actividad.
+            ->orderByRaw('pending_reply_since ASC NULLS LAST')
             ->orderByDesc('last_message_at')
             ->limit($limit);
+
+        if ($filter === 'pending') {
+            $query->whereNotNull('pending_reply_since')->where('status', 'open');
+        } elseif ($filter === 'closed') {
+            $query->where('status', 'closed');
+        }
+
+        if (! empty($validated['channel_id'])) {
+            // El canal se filtra sin verificar que sea de la empresa: no hace
+            // falta. La consulta ya esta scopeada por `company_nit`, asi que un
+            // id ajeno devuelve vacio en vez de filtrar nada (§7.5 capa 3).
+            $query->where('whatsapp_account_id', $validated['channel_id']);
+        }
 
         if ($term !== '') {
             // Escapamos los metacaracteres de LIKE/ILIKE (`%`, `_`) y el propio
@@ -109,9 +275,61 @@ class ChatController extends Controller
 
         $this->attachLatestPaidOrders($chats, $companyNit);
 
+        // Los canales viajan con la bandeja y no en un request aparte: el filtro
+        // por canal solo aparece con dos o mas (§8.4 punto 1), asi que el
+        // frontend necesita el conteo antes de decidir si dibujar los chips.
+        // Una consulta corta contra una tabla de a lo sumo una fila por sede.
+        $channels = CompanyWhatsappAccount::query()
+            ->where('company_nit', $companyNit)
+            ->whereNotNull('evo_instance')
+            ->orderByRaw('branch_id IS NOT NULL')
+            ->get(['id', 'label', 'status', 'branch_id', 'phone_e164']);
+
         return response()->json([
             'data' => ChatResource::collection($chats),
+            'meta' => [
+                'pending_count' => $this->pendingCountFor($companyNit),
+                'channels' => $channels->map(fn (CompanyWhatsappAccount $c) => [
+                    'id' => $c->id,
+                    'label' => $c->label,
+                    'status' => $c->status,
+                    'phone_e164' => $c->phone_e164,
+                ])->all(),
+            ],
         ]);
+    }
+
+    /**
+     * Contador para el badge del sidebar y el titulo de pestaña (§8.4b punto 1).
+     *
+     * Endpoint propio y minimo porque el badge vive FUERA de la bandeja: el
+     * operador tiene el panel en otra pestaña o en otra pantalla del panel, que
+     * es justo cuando el aviso hace falta. Devolver la lista entera para contar
+     * seria mover kilobytes cada minuto por un entero.
+     */
+    public function pendingCount(Request $request): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'read');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+
+        return response()->json(['data' => ['pending' => $this->pendingCountFor($companyNit)]]);
+    }
+
+    /**
+     * Conversaciones abiertas esperando respuesta.
+     *
+     * Usa `chats_pending_reply_idx`, el indice parcial que creo F1: el
+     * `whereNotNull` es lo que hace que Postgres pueda aplicarlo. El
+     * `BranchScope` global sigue activo, asi que el operador de Sede Norte
+     * cuenta lo suyo y no lo de Sede Sur.
+     */
+    private function pendingCountFor(string $companyNit): int
+    {
+        return Chat::forCompany($companyNit)
+            ->whereNotNull('pending_reply_since')
+            ->where('status', 'open')
+            ->count();
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -120,9 +338,24 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $chat = Chat::forCompany($companyNit)
-            ->with(['messages', 'contact'])
-            ->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id, ['messages.sentBy:id,name', 'contact', 'whatsappAccount']);
+
+        // Presencia liviana (§5.7): quien mas tiene abierta esta conversacion.
+        // Sobre la cache que ya existe, sin tabla ni WebSocket. El objetivo real
+        // es que dos personas no escriban lo mismo, no el tiempo real — y para
+        // eso alcanza con una ventana de 60 s.
+        $chat->setAttribute('viewers', $this->viewersOf($chat, $this->actor($request)));
+
+        // Dedupe de 30 min: el operador entra y sale del mismo chat decenas de
+        // veces por turno. El listado de la bandeja NO se audita (§7.6).
+        $this->auditLogger->log(
+            action: 'chat.viewed',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: ['chat_id' => $chat->id, 'company_nit' => $companyNit],
+            request: $request,
+            dedupeKey: $chat->id,
+        );
 
         $this->attachLatestPaidOrders(collect([$chat]), $companyNit);
 
@@ -154,7 +387,13 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
+
+        // Presencia ANTES de cualquier return temprano (§5.7). Si se registrara
+        // despues del check de read receipts, la presencia solo funcionaria para
+        // las empresas que tienen el doble chulito activado — dos cosas sin
+        // relacion atadas por el orden de las lineas.
+        $this->touchPresence($chat, $this->actor($request));
 
         $enabled = (bool) $settings->get($companyNit, 'whatsapp_read_receipts', false);
         if (! $enabled) {
@@ -178,9 +417,19 @@ class ChatController extends Controller
             return response()->json(['skipped' => 'already_marked']);
         }
 
+        // El read receipt sale por el canal que origino la conversacion (F1).
+        $channel = $chat->resolveWhatsappChannel();
+        if ($channel === null) {
+            return response()->json(['skipped' => 'no_channel']);
+        }
+
         Cache::put($cacheKey, $latestInbound->meta_message_id, now()->addMinutes(5));
 
-        MarkWhatsappMessageReadJob::dispatch($companyNit, (string) $latestInbound->meta_message_id);
+        MarkWhatsappMessageReadJob::dispatch(
+            $channel->id,
+            (string) $latestInbound->meta_message_id,
+            (string) $chat->client_phone,
+        );
 
         return response()->json([
             'dispatched' => true,
@@ -201,14 +450,57 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
-        /** @var ChatMessage $message */
-        $message = ChatMessage::query()
-            ->whereKey($messageId)
-            ->where('chat_id', $chat->id)
-            ->whereNotNull('media_path')
-            ->firstOrFail();
+        // IDOR de §7.5: el `messageId` se resuelve SIEMPRE dentro del chat ya
+        // scopeado por empresa. Sin el `where('chat_id')`, un operador legítimo
+        // de la empresa A podría bajar la media de un mensaje de B conociendo
+        // solo su UUID — y los UUID viajan en las respuestas de la API.
+        // Misma guarda que para el chat: `chat_messages.id` tambien es `uuid`.
+        $message = Str::isUuid($messageId)
+            ? ChatMessage::query()
+                ->whereKey($messageId)
+                ->where('chat_id', $chat->id)
+                ->whereNotNull('media_path')
+                ->first()
+            : null;
+
+        if ($message === null) {
+            // Mismo 404 que un chat ajeno: pedir la media de otro chat no puede
+            // distinguirse de pedir una que no existe.
+            $this->auditLogger->log(
+                action: 'chat.access.denied',
+                user: $this->actor($request),
+                data: [
+                    'chat_id' => $chat->id,
+                    'message_id' => $messageId,
+                    'attempted_company_nit' => $companyNit,
+                    'route' => $request->route()?->getName(),
+                ],
+                request: $request,
+                dedupeKey: $messageId,
+            );
+
+            abort(404);
+        }
+
+        // SIN dedupe por acceso sería inviable: `media_url` se regenera en cada
+        // poll de 30 s y el browser no cachea el 302 a la prefirmada, así que la
+        // bandeja dispara un GET por imagen por poll. El dedupe es por mensaje,
+        // no por chat: conserva qué media se abrió, que es el dato sensible.
+        $this->auditLogger->log(
+            action: 'chat.media.viewed',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'message_id' => $message->id,
+                'media_type' => $message->media_type,
+                'company_nit' => $companyNit,
+            ],
+            request: $request,
+            dedupeKey: $message->id,
+        );
 
         $disk = (string) config('filesystems.default');
         $url = Storage::disk($disk)
@@ -255,8 +547,18 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        /** @var Chat $chat */
-        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
+
+        // La ficha expone teléfono, notas e historial de pedidos: es la vista
+        // con más PII del módulo y por eso se audita aunque sea de lectura.
+        $this->auditLogger->log(
+            action: 'chat.client.viewed',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: ['chat_id' => $chat->id, 'contact_id' => $chat->contact_id, 'company_nit' => $companyNit],
+            request: $request,
+            dedupeKey: $chat->id,
+        );
 
         $contact = $chat->contact_id
             ? Contact::forCompany($companyNit)->find($chat->contact_id)
@@ -295,21 +597,28 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
         $now = now();
+        $payload = (array) $request->attributes->get('jwt_payload', []);
 
         $message = ChatMessage::create([
             'chat_id' => $chat->id,
             'sender' => 'operator',
+            // Autoria por mensaje: con varios operadores en la misma bandeja,
+            // `sender='operator'` a secas no dice quien le respondio que al
+            // cliente.
+            'sent_by_user_id' => $payload['sub'] ?? null,
             'body' => $request->string('body')->toString(),
             'sent_at' => $now,
         ]);
 
         // Cuando el operador interviene manualmente pausamos el bot para evitar
         // respuestas automaticas mientras dura la conversacion humana.
+        // `pending_reply_since` vuelve a null: el cliente ya no espera.
         $chat->update([
             'last_message_at' => $now,
+            'pending_reply_since' => null,
             'bot_paused' => true,
         ]);
 
@@ -321,9 +630,239 @@ class ChatController extends Controller
             $message->refresh();
         }
 
+        // Sin dedupe: cada mensaje al cliente es un hecho distinto. Se guarda la
+        // LONGITUD, nunca el cuerpo — ya vive en `chat_messages` y duplicarlo en
+        // una tabla inmutable multiplica la exposición (§7.6).
+        $this->auditLogger->log(
+            action: 'chat.message.sent',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'chat_message_id' => $message->id,
+                'company_nit' => $companyNit,
+                'body_length' => mb_strlen((string) $message->body),
+                'status' => $message->status,
+            ],
+            request: $request,
+        );
+
         return response()->json([
             'data' => new ChatMessageResource($message),
         ], 201);
+    }
+
+    /**
+     * Adjunto saliente (§6.7). El archivo sube a S3 y Evolution lo consume por
+     * URL prefirmada de TTL corto — nunca se le manda el base64, que obligaría a
+     * empujar 16 MB por PHP-FPM en una instancia de 2 GB.
+     *
+     * La validación (MIME real por finfo, lista blanca, tope de 16 MB) vive en
+     * StoreChatAttachmentRequest. La UI del compositor llega en F3.
+     */
+    public function storeAttachment(StoreChatAttachmentRequest $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'update');
+
+        $companyNit = $request->attributes->get('active_company_nit');
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
+
+        $file = $request->file('file');
+        $type = (string) $request->input('type');
+        $caption = (string) $request->input('caption', '');
+        $fileName = $request->safeFileName();
+        $now = now();
+        $payload = (array) $request->attributes->get('jwt_payload', []);
+
+        $message = ChatMessage::create([
+            'chat_id' => $chat->id,
+            'sender' => 'operator',
+            'sent_by_user_id' => $payload['sub'] ?? null,
+            'body' => trim('['.$type.'] '.$fileName.' '.$caption),
+            'media_type' => $type,
+            'media_mime' => $file->getMimeType(),
+            'media_payload' => array_filter([
+                'file_name' => $fileName !== '' ? $fileName : null,
+                'size_bytes' => $file->getSize(),
+                'caption' => $caption !== '' ? $caption : null,
+                'ptt' => $type === 'audio' ? $request->boolean('voice_note') : null,
+            ], static fn ($v) => $v !== null),
+            'sent_at' => $now,
+        ]);
+
+        // La CLAVE en S3 la genera el servidor con los UUID: el nombre que mandó
+        // el cliente nunca toca el keyspace.
+        $extension = $file->extension() ?: 'bin';
+        $path = sprintf('chat-media/%s/%s.%s', $chat->id, $message->id, $extension);
+        Storage::disk((string) config('filesystems.default'))->put($path, $file->get());
+
+        $message->forceFill(['media_path' => $path])->save();
+
+        $chat->update([
+            'last_message_at' => $now,
+            'pending_reply_since' => null,
+            'bot_paused' => true,
+        ]);
+
+        if ($chat->source === 'whatsapp') {
+            WhatsappOutboundMessageSender::forCurrentEnvironment()->deliver($chat, $message);
+            $message->refresh();
+        }
+
+        // Sin dedupe: cada mensaje al cliente es un hecho distinto. Se guarda la
+        // LONGITUD, nunca el cuerpo — ya vive en `chat_messages` y duplicarlo en
+        // una tabla inmutable multiplica la exposición (§7.6).
+        $this->auditLogger->log(
+            action: 'chat.message.sent',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'chat_message_id' => $message->id,
+                'company_nit' => $companyNit,
+                'body_length' => mb_strlen((string) $message->body),
+                'status' => $message->status,
+            ],
+            request: $request,
+        );
+
+        return response()->json([
+            'data' => new ChatMessageResource($message),
+        ], 201);
+    }
+
+    /**
+     * Reintenta un mensaje que quedo en `failed` (§8.4b punto 4).
+     *
+     * Hoy un fallo se pinta de rojo y muere ahi: el operador no tiene forma de
+     * reenviar salvo reescribir el mensaje entero, y si era un adjunto lo tiene
+     * que volver a subir.
+     *
+     * Reintenta el MISMO registro en vez de crear uno nuevo: duplicar la fila
+     * dejaria dos burbujas en la conversacion —una fallida y una enviada— por un
+     * solo mensaje que el cliente ve una vez.
+     */
+    public function retryMessage(Request $request, string $id, string $messageId): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'update');
+
+        $companyNit = $request->attributes->get('active_company_nit');
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
+
+        // Mismo IDOR que la media (§7.5): el `messageId` se resuelve SIEMPRE
+        // dentro del chat ya scopeado, y el id se valida antes de tocar la base.
+        $message = Str::isUuid($messageId)
+            ? ChatMessage::query()
+                ->whereKey($messageId)
+                ->where('chat_id', $chat->id)
+                ->first()
+            : null;
+
+        if ($message === null) {
+            $this->auditLogger->log(
+                action: 'chat.access.denied',
+                user: $this->actor($request),
+                data: [
+                    'chat_id' => $chat->id,
+                    'message_id' => $messageId,
+                    'attempted_company_nit' => $companyNit,
+                    'route' => $request->route()?->getName(),
+                ],
+                request: $request,
+                dedupeKey: $messageId,
+            );
+
+            abort(404);
+        }
+
+        if ($message->status !== 'failed') {
+            return response()->json([
+                'message' => 'Ese mensaje no falló: no hay nada que reintentar.',
+                'code' => 'MESSAGE_NOT_FAILED',
+            ], 409);
+        }
+
+        if ($message->sender === 'client') {
+            return response()->json([
+                'message' => 'No se reenvían mensajes del cliente.',
+                'code' => 'MESSAGE_NOT_OUTBOUND',
+            ], 409);
+        }
+
+        // Se limpia el motivo anterior: si vuelve a fallar, el tooltip tiene que
+        // mostrar por que fallo AHORA, no la causa de la vez pasada.
+        $message->forceFill(['status' => null, 'failure_reason' => null])->save();
+
+        if ($chat->source === 'whatsapp') {
+            WhatsappOutboundMessageSender::forCurrentEnvironment()->deliver($chat, $message);
+            $message->refresh();
+        }
+
+        $this->auditLogger->log(
+            action: 'chat.message.retried',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'chat_message_id' => $message->id,
+                'company_nit' => $companyNit,
+                'status' => $message->status,
+                'failure_reason' => $message->failure_reason,
+            ],
+            request: $request,
+        );
+
+        return response()->json([
+            'data' => new ChatMessageResource($message),
+        ]);
+    }
+
+    /**
+     * Link de carrito para insertar en la conversación (§8.4b punto 8).
+     *
+     * Mintea un CartJWT firmado con el teléfono del cliente y el del canal. La
+     * `CartSession` la crea el lado público al abrir el link
+     * (`CartController::migrateJwt`), así que acá no se toca ninguna tabla. El
+     * link del MENÚ es público y estático y lo arma el frontend; este endpoint
+     * es solo para el carrito, que necesita el secreto de firma del servidor.
+     */
+    public function cartLink(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'update');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
+
+        $channel = $chat->resolveWhatsappChannel();
+        if ($channel === null || (string) $channel->phone_e164 === '') {
+            return response()->json([
+                'message' => 'Este chat no tiene un número de WhatsApp conectado para armar el carrito.',
+                'code' => 'CHANNEL_UNAVAILABLE',
+            ], 409);
+        }
+
+        try {
+            $service = app(CartJwtService::class);
+        } catch (RuntimeException) {
+            return response()->json([
+                'message' => 'El carrito no está configurado en este entorno.',
+                'code' => 'CART_NOT_CONFIGURED',
+            ], 503);
+        }
+
+        $link = $service->generateUrl([
+            'session_id' => (string) Str::uuid(),
+            'client_phone' => (string) $chat->client_phone,
+            'restaurant_phone' => (string) $channel->phone_e164,
+            'company_nit' => $companyNit,
+        ]);
+
+        return response()->json([
+            'data' => [
+                'url' => $link['url'],
+                'expires_at' => $link['expires_at'],
+            ],
+        ]);
     }
 
     public function updateBot(UpdateChatBotRequest $request, string $id): JsonResponse
@@ -332,9 +871,10 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
         $paused = $request->boolean('paused');
+        $wasPaused = (bool) $chat->bot_paused;
 
         $chat->update([
             'bot_paused' => $paused,
@@ -342,6 +882,30 @@ class ChatController extends Controller
             'handoff_requested_at' => $paused ? $chat->handoff_requested_at : null,
             'handoff_reason' => $paused ? $chat->handoff_reason : null,
         ]);
+
+        // El toggle es último-en-escribir-gana (§7.5.2): con dos operadores en el
+        // mismo chat, la auditoría es lo único que reconstruye quién lo dejó como
+        // está. Por eso va sin dedupe y con el valor anterior.
+        $this->auditLogger->log(
+            action: 'chat.bot.toggled',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'company_nit' => $companyNit,
+                'from_paused' => $wasPaused,
+                'to_paused' => $paused,
+            ],
+            request: $request,
+        );
+
+        // F6 (§9.2): avisar a n8n del toggle si hay flujo suscrito.
+        app(AutomationDispatcher::class)->forChat(
+            AutomationDispatcher::EVENT_BOT_TOGGLED,
+            $chat,
+            null,
+            ['bot_paused' => $paused],
+        );
 
         return response()->json([
             'data' => new ChatResource($chat->fresh()),
@@ -354,14 +918,23 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        /** @var Chat $chat */
-        $chat = Chat::forCompany($companyNit)->findOrFail($id);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
         $name = $request->filled('name') ? $request->string('name')->toString() : null;
         $phone = $request->filled('phone') ? $request->string('phone')->toString() : $chat->client_phone;
         $notes = $request->filled('notes') ? $request->string('notes')->toString() : null;
 
-        DB::transaction(function () use ($chat, $companyNit, $name, $phone, $notes): void {
+        $before = [
+            'name' => $chat->client_name,
+            'phone' => $chat->client_phone,
+        ];
+
+        // `$request` FALTABA en el `use` y la closure lo referenciaba abajo para
+        // resolver `active_branch_id`. Cualquier PATCH que crease un contacto
+        // nuevo —contacto inexistente, o teléfono cambiado a uno no registrado—
+        // reventaba con "Undefined variable $request" y devolvía 500. Bug
+        // preexistente: está igual en HEAD, no lo introduce F2b.
+        DB::transaction(function () use ($request, $chat, $companyNit, $name, $phone, $notes): void {
             // Si se cambia el telefono, evita colision con otro contacto en la misma empresa.
             if ($phone !== $chat->client_phone) {
                 $exists = Contact::forCompany($companyNit)
@@ -397,6 +970,24 @@ class ChatController extends Controller
             }
             $chat->save();
         });
+
+        // ÚNICA excepción a la regla "solo identificadores" de §7.6: el
+        // before/after ES el cambio auditado — sin los valores, la fila no dice
+        // nada. `_pii_exempt` lo hace explícito para que se lea como una
+        // decisión y no como un filtro que se olvidaron de aplicar.
+        $this->auditLogger->log(
+            action: 'chat.contact.updated',
+            user: $this->actor($request),
+            auditable: $chat->fresh(),
+            data: [
+                '_pii_exempt' => true,
+                'chat_id' => $chat->id,
+                'company_nit' => $companyNit,
+                'before' => $before,
+                'after' => ['name' => $name ?? $before['name'], 'phone' => $phone],
+            ],
+            request: $request,
+        );
 
         return response()->json([
             'data' => new ChatResource($chat->fresh()),
@@ -448,11 +1039,31 @@ class ChatController extends Controller
             'reason' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ]);
 
-        /** @var Chat $chat */
+        // `withoutBranchScope()` es deliberado y NO es un hueco: reasignar exige
+        // ver un chat que hoy está en otra sede. El aislamiento de EMPRESA sigue
+        // duro por el `where('company_nit')` explícito, que es la capa que de
+        // verdad separa clientes (§7.5 capa 3).
+        /** @var ?Chat $chat */
         $chat = Chat::withoutBranchScope()
             ->where('company_nit', $companyNit)
             ->where('id', $id)
-            ->firstOrFail();
+            ->first();
+
+        if ($chat === null) {
+            $this->auditLogger->log(
+                action: 'chat.access.denied',
+                user: $this->actor($request),
+                data: [
+                    'chat_id' => $id,
+                    'attempted_company_nit' => $companyNit,
+                    'route' => $request->route()?->getName(),
+                ],
+                request: $request,
+                dedupeKey: $id,
+            );
+
+            abort(404);
+        }
 
         $target = Branch::query()
             ->where('company_nit', $companyNit)

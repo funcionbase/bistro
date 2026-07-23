@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ThrottlesBotChatWrites;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Contact;
 use App\Rules\SafePlainText;
+use App\Services\Whatsapp\AutomationDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ExternalChatHandoffController extends Controller
 {
+    use ThrottlesBotChatWrites;
+
     public function store(Request $request): JsonResponse
     {
         $companyNit = $request->attributes->get('bot_company_nit');
@@ -35,6 +39,12 @@ class ExternalChatHandoffController extends Controller
             'reason' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
             'last_message' => ['nullable', new SafePlainText(maxBytes: 4000, allowWhitespace: true)],
         ]);
+
+        // Mismo techo por conversación/empresa que el push de mensajes: un handoff
+        // crea chat + puede persistir un mensaje del bot; en bucle también abusa.
+        if ($limited = $this->botWriteRateLimit((string) $companyNit, $validated['client_phone'])) {
+            return $limited;
+        }
 
         $now = now();
 
@@ -72,6 +82,9 @@ class ExternalChatHandoffController extends Controller
                 'handoff_requested_at' => $now,
                 'handoff_reason' => $validated['reason'] ?? null,
                 'last_message_at' => $now,
+                // Pedir handoff ES el cliente esperando: el bot deriva, no
+                // resuelve. Si ya había una espera en curso, no se reinicia.
+                'pending_reply_since' => $chat->pending_reply_since ?? $now,
             ])->save();
 
             if (! empty($validated['last_message'])) {
@@ -85,6 +98,15 @@ class ExternalChatHandoffController extends Controller
 
             return $chat;
         });
+
+        // F6 (§9.2): avisar a n8n del handoff si hay flujo suscrito. El bot puede
+        // registrar que derivó a un humano (o descartarlo — la lógica vive en n8n).
+        app(AutomationDispatcher::class)->forChat(
+            AutomationDispatcher::EVENT_HANDOFF_REQUESTED,
+            $chat,
+            null,
+            ['reason' => $validated['reason'] ?? null],
+        );
 
         return response()->json([
             'data' => [

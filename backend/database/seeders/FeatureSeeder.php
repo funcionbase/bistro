@@ -109,6 +109,14 @@ class FeatureSeeder extends Seeder
                 'description' => 'Permite enviar mensajes manuales a los clientes',
                 'group' => 'Chats',
             ],
+            // Supervisión de la bandeja. Deliberadamente NO se otorga a los roles
+            // que atienden chats: quien es auditado no administra su auditoría.
+            [
+                'slug' => 'chats.audit',
+                'name' => 'Ver la actividad de una conversación',
+                'description' => 'Permite ver quién abrió, respondió y reasignó cada conversación. Pensado para supervisión: no se otorga a quien atiende los chats.',
+                'group' => 'Chats',
+            ],
             [
                 'slug' => 'menu.read',
                 'name' => 'Ver menú',
@@ -324,6 +332,15 @@ class FeatureSeeder extends Seeder
                 'description' => 'Permite desconectar la cuenta de WhatsApp (libera el número en Meta + soft-delete). Solo owner.',
                 'group' => 'WhatsApp',
                 'is_owner_only' => true,
+            ],
+            // Canales por sede (multi-canal). Se compone con whatsapp.connect +
+            // acceso a la sede, igual que chats.reassign_branch: nadie lo recibe
+            // automáticamente, se delega a un jefe de sede desde el editor.
+            [
+                'slug' => 'whatsapp.manage_branch_channels',
+                'name' => 'Gestionar el WhatsApp de una sede',
+                'description' => 'Permite conectar y desconectar el número de WhatsApp de una sede a la que el usuario tenga acceso. Se compone con "Conectar WhatsApp".',
+                'group' => 'WhatsApp',
             ],
             // Sedes (multi-sede #117).
             [

@@ -60,6 +60,15 @@ return [
         'value' => false,
         'type' => 'boolean',
     ],
+    // Si esta en true, un mensaje entrante FUERA de horario dispara una
+    // respuesta automatica (`bot_away_message`), una sola vez por cliente y
+    // ventana (§8.4b punto 10). Default off: una empresa que nunca configuro
+    // automatizacion no debe empezar a auto-responder sola. El texto vive en
+    // `bot_away_message`; este switch decide si se manda.
+    'whatsapp_away_reply_enabled' => [
+        'value' => false,
+        'type' => 'boolean',
+    ],
     // Configuración de impresión térmica (ESC/POS) — recibos de venta.
     'printing.receipt_width' => [
         'value' => 58,

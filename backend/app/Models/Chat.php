@@ -22,7 +22,17 @@ use Illuminate\Support\Carbon;
  * conversacion (o cuando el bot pide handoff via API externa) la conversacion
  * queda en pausa hasta que algun operador la reanude.
  *
+ * whatsapp_account_id es el canal por el que entro la conversacion. Se responde
+ * SIEMPRE por ese canal: reasignar el chat a otra sede cambia quien lo atiende,
+ * no el numero desde el que sale la respuesta. Queda null en chats creados por
+ * el bot externo en empresas sin canal conectado (chats legacy).
+ *
+ * pending_reply_since marca desde cuando el cliente espera respuesta. Es
+ * distinto de last_message_at, que mezcla "el cliente escribio hace 20 min" con
+ * "le respondimos hace 20 min".
+ *
  * @property string $company_nit
+ * @property ?string $whatsapp_account_id
  * @property string $client_phone
  * @property ?string $client_name
  * @property ?int $contact_id
@@ -31,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property bool $bot_paused
  * @property ?Carbon $handoff_requested_at
  * @property ?string $handoff_reason
+ * @property ?Carbon $pending_reply_since
  */
 class Chat extends Model
 {
@@ -44,6 +55,7 @@ class Chat extends Model
     /** @var list<string> */
     protected $fillable = [
         'company_nit',
+        'whatsapp_account_id',
         'client_phone',
         'client_name',
         'contact_id',
@@ -53,6 +65,7 @@ class Chat extends Model
         'handoff_requested_at',
         'handoff_reason',
         'last_message_at',
+        'pending_reply_since',
         'meta_synced_at',
         'meta_conversation_id',
     ];
@@ -61,6 +74,7 @@ class Chat extends Model
     {
         return [
             'last_message_at' => 'datetime',
+            'pending_reply_since' => 'datetime',
             'meta_synced_at' => 'datetime',
             'handoff_requested_at' => 'datetime',
             'bot_paused' => 'boolean',
@@ -71,6 +85,12 @@ class Chat extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_nit', 'nit');
+    }
+
+    /** @return BelongsTo<CompanyWhatsappAccount, $this> */
+    public function whatsappAccount(): BelongsTo
+    {
+        return $this->belongsTo(CompanyWhatsappAccount::class, 'whatsapp_account_id');
     }
 
     /** @return BelongsTo<Contact, $this> */
@@ -89,6 +109,28 @@ class Chat extends Model
     public function latestMessage(): HasMany
     {
         return $this->hasMany(ChatMessage::class)->latest('sent_at')->limit(1);
+    }
+
+    /**
+     * Canal por el que se habla con este cliente.
+     *
+     * Se responde SIEMPRE por el canal que originó la conversación, nunca por
+     * el de la sede que la atiende: reasignar un chat de sede cambia quién
+     * responde, no el número desde el que sale la respuesta.
+     *
+     * Fallback al canal de empresa para los chats legacy (creados por el bot
+     * externo antes de que hubiera canal conectado).
+     */
+    public function resolveWhatsappChannel(): ?CompanyWhatsappAccount
+    {
+        if ($this->whatsapp_account_id !== null) {
+            return $this->whatsappAccount()->first();
+        }
+
+        return CompanyWhatsappAccount::query()
+            ->where('company_nit', $this->company_nit)
+            ->whereNull('branch_id')
+            ->first();
     }
 
     public function scopeForCompany(Builder $query, string $nit): Builder

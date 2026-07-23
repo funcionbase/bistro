@@ -36,7 +36,12 @@ class WhatsappAccountController extends Controller
     public function show(Request $request): JsonResponse
     {
         $companyNit = $request->attributes->get('active_company_nit');
-        $account = CompanyWhatsappAccount::query()->where('company_nit', $companyNit)->first();
+        // Canal de empresa (`branch_id` nulo): esta pantalla es la del número
+        // corporativo. Los canales de sede se listan aparte.
+        $account = CompanyWhatsappAccount::query()
+            ->where('company_nit', $companyNit)
+            ->whereNull('branch_id')
+            ->first();
         $platform = MetaPlatformCredential::activeForCurrentEnvironment();
 
         return response()->json([
@@ -166,7 +171,10 @@ class WhatsappAccountController extends Controller
 
     private function findAccountOrFail(string $companyNit): CompanyWhatsappAccount
     {
-        $account = CompanyWhatsappAccount::query()->where('company_nit', $companyNit)->first();
+        $account = CompanyWhatsappAccount::query()
+            ->where('company_nit', $companyNit)
+            ->whereNull('branch_id')
+            ->first();
 
         if ($account === null) {
             abort(response()->json(['message' => 'Esta empresa no tiene WhatsApp conectado.'], 404));

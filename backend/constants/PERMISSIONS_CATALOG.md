@@ -33,8 +33,9 @@ una columna nueva al modelo `permissions` (raro), actualizar:
 2. `config/rbac.php` (slug + label).
 3. Este archivo (definición de la convención de celda).
 
-**Total slugs activos**: 82 (74 + 8 de #115 KDS: `kds.{read,create,update,delete}` +
-`kds_stations.{read,create,update,delete}`).
+**Total slugs activos**: 83 (74 + 8 de #115 KDS: `kds.{read,create,update,delete}` +
+`kds_stations.{read,create,update,delete}` + `whatsapp.manage_branch_channels`
+de los canales multi-sede).
 
 **Total `role_type` sembrados** en `PermissionTemplateSeeder`: 11 (`owner`, `admin`,
 `employee` + flujo mesa QR: `waiter`, `cook`, `cashier` + administrativos #215 F4:
@@ -126,6 +127,7 @@ por owner — mismo patrón que `cash_register.bypass_switch_lock`,
 | `chats.read` | RCUD | RCUD | R--- | |
 | `chats.update` | RCUD | RCUD | ---- | |
 | `chats.reassign_branch` | RCUD | ---- | ---- | (sensible de sede #192 — asignable manualmente) |
+| `chats.audit` | RCUD | -R-- | ---- | Supervisión: ver la pestaña "Actividad" de una conversación. NO se otorga a quien atiende chats — el auditado no administra su auditoría |
 
 ## Clientes
 
@@ -241,6 +243,12 @@ por owner — mismo patrón que `cash_register.bypass_switch_lock`,
 | `whatsapp.update` | RCUD | -RU- | ---- | |
 | `whatsapp.swap_phone` | RCUD | ---- | ---- | **OO** (`is_owner_only=true`) |
 | `whatsapp.disconnect` | RCUD | ---- | ---- | **OO** (`is_owner_only=true`) |
+| `whatsapp.manage_branch_channels` | RCUD | ---- | ---- | Sensible de sede: se asigna manual |
+
+> `whatsapp.manage_branch_channels` habilita conectar/desconectar el número de
+> **una sede**. Es composable, no autónomo: el backend exige `whatsapp.connect`
+> **+** este permiso **+** acceso a la sede. El canal de empresa (`branch_id`
+> nulo) sigue siendo owner/admin con `whatsapp.connect` a secas.
 
 ---
 
@@ -320,6 +328,7 @@ Los siguientes NO llevan `is_owner_only=true` (sí aparecen en
 asignar manualmente a admin si quiere delegarlos:
 
 - `chats.reassign_branch` (#192)
+- `whatsapp.manage_branch_channels` (canales de WhatsApp por sede)
 - `cash_register.bypass_switch_lock` (#192)
 - `inventory.transfer_cross_branch` (#192)
 - `kds_stations.*` (#115 — afecta dispositivos físicos en cocina; los 4 slugs CRUD)
@@ -342,4 +351,4 @@ Este archivo es **catálogo + defaults**. Para responder *"¿dónde vive la vali
 - [`FEATURES_INDEX.md`](./FEATURES_INDEX.md) — para un dominio funcional dado (Órdenes, Compras, WhatsApp, etc.), qué controllers backend y qué páginas frontend lo consumen. Útil cuando el permiso es uno de varios del módulo.
 - [`RBAC_CHECKLIST.md`](./RBAC_CHECKLIST.md) — escenario #1 lista paso a paso dónde tocar al introducir un permiso (incluye validación backend, UI y audit).
 
-> Última revisión: 2026-05-18 (#201) — 74 slugs, 2 `is_owner_only`, 3 sensibles de sede. Sección "Vista por permiso" agregada en #202.
+> Última revisión: 2026-07-23 — 84 slugs, 2 `is_owner_only`, 4 sensibles de sede (+ `whatsapp.manage_branch_channels`, canales multi-sede; + `chats.audit`, supervisión de conversaciones). Sección "Vista por permiso" agregada en #202.

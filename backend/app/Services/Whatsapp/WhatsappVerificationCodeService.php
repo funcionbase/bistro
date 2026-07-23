@@ -190,8 +190,10 @@ class WhatsappVerificationCodeService
 
     private function logAccountEvent(Company $company, string $eventType, array $payload, ?string $actorUserId = null): void
     {
+        // El OTP de connect/swap/disconnect aplica hoy al canal de empresa.
         $account = CompanyWhatsappAccount::query()
             ->where('company_nit', $company->nit)
+            ->whereNull('branch_id')
             ->withTrashed()
             ->first();
 

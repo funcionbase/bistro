@@ -1018,6 +1018,7 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 | `WhatsappAccountController` | `show, embeddedSignupCallback, naasRequest, deletePhone, disconnect` | Onboarding WhatsApp |
 | `WhatsappVerificationController` | `request, verify, reject` | OTP para acciones sensibles |
 | `WhatsappWebhookController` | `verify, receive` | Handshake + recepción webhooks Meta |
+| `EvolutionWebhookController` | `receive` | Webhook de Evolution por canal. `hash_equals` contra `inbound_secret_encrypted` (con dummy si el canal no existe: respuesta idéntica, sin oráculo de enumeración); `webhook_events` sin base64, sin `apikey` y sin el header; despacho de `qrcode.updated` / `connection.update` / `messages.upsert` / `messages.update` |
 
 ### `app/Http/Controllers/Auth/` (10)
 
@@ -1116,7 +1117,7 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 | Modelo | Tabla | Campos clave | Relaciones | Casts |
 |--------|-------|--------------|------------|-------|
 | `MetaPlatformCredential` | `meta_platform_credentials` | environment, app_id, app_secret (encrypted), system_user_token (encrypted), is_active | — | secrets `encrypted` |
-| `CompanyWhatsappAccount` | `company_whatsapp_accounts` | company_nit, provisioning_mode, status, waba_id, phone_number_id (UNIQUE), access_token (encrypted) | belongsTo(Company), hasMany(CompanyWhatsappAccountEvent) | tokens `encrypted` |
+| `CompanyWhatsappAccount` | `company_whatsapp_accounts` | company_nit, **branch_id (NULL = canal de empresa)**, label, provisioning_mode, status, waba_id, phone_number_id (UNIQUE), access_token / evo_token / inbound_secret (encrypted), evo_server_url, evo_instance (UNIQUE parcial), last_connection_check_at | belongsTo(Company), belongsTo(Branch), hasMany(CompanyWhatsappAccountEvent), hasMany(Chat) | tokens `encrypted`; únicos parciales: 1 canal de empresa + 1 por sede |
 | `CompanyWhatsappAccountEvent` | `company_whatsapp_account_events` | account_id, event_type, payload (JSON), occurred_at | belongsTo(CompanyWhatsappAccount) | `payload: array` |
 | `WhatsappVerificationCode` | `whatsapp_verification_codes` | company_nit, action, code_hash, attempts, expires_at, consumed_at, rejected_at, reject_token | — | datetimes |
 
@@ -1357,8 +1358,12 @@ Reglas comunes:
 | Servicio | Propósito |
 |----------|-----------|
 | `WhatsappAccountService` | Orquesta connect/swap/disconnect/NaaS request; persiste eventos auditables |
-| `WhatsappInboundMessageHandler` | Convierte payload de webhook → `chats` + `chat_messages` (idempotente por `meta_message_id`) |
-| `WhatsappOutboundMessageSender` | Envía texto/media via Meta Graph API |
+| `WhatsappInboundMessageHandler` | `persistInbound(account, NormalizedInboundMessage)` — único punto de escritura de `chats` + `chat_messages`, alimentado por Meta y por Evolution (idempotente por `meta_message_id`). La sede del chat la decide el canal (`account.branch_id`); adopta chats legacy sin canal; abre `pending_reply_since`. `applyOutboundStatus()` es público: los acks de Evolution reutilizan su lógica monotónica |
+| `WhatsappOutboundMessageSender` | Envía por el canal del chat (`Chat::resolveWhatsappChannel()`) — reasignar de sede no cambia el número de respuesta. El canal decide el proveedor: Evolution si tiene instancia, Meta si no. Media saliente por URL prefirmada de S3, nunca base64 |
+| `EvolutionClient` | Cliente HTTP fino contra Evolution API 2.3.7: `sendText/sendMedia/sendWhatsAppAudio/sendSticker/sendLocation/sendContact/markRead/fetchMediaBase64` + ciclo de vida de instancia. Token global para administrar, token de instancia para mensajería |
+| `EvolutionChannelService` | Ciclo de vida del canal: `provision/qr/pairingCode/syncState/disconnect/destroy`. Nombre de instancia determinista `bistro-{env}-{nit}-{sede\|company}` |
+| `EvolutionInboundMapper` | Traduce `messages.upsert` a `NormalizedInboundMessage`: los 9 tipos, vCard parseado a campos, `fileLength.low`, ignora grupos y `@lid` |
+| `NormalizedInboundMessage` | DTO del mensaje entrante, unión de los dos modelos: Meta trae `mediaProviderId` (descarga diferida), Evolution trae `mediaBase64` (embebido) |
 | `WhatsappSignatureValidator` | Valida HMAC `X-Hub-Signature-256` con `META_APP_SECRET` |
 | `WhatsappVerificationCodeService` | Emite OTP al owner (`code_hash`), verifica, gestiona rate limit y rejects |
 | `MetaGraphApiClient` | Cliente HTTP fino: token exchange, subscribe webhook, delete phone |
@@ -1371,7 +1376,7 @@ Reglas comunes:
 |-----|---------|------|-----------|-----------|
 | `GenerateReportPdf` | `OrderReportController@export` (POST `/api/v1/reports/export`) | default | 3 | Genera reporte HTML/PDF asíncrono, lo guarda en disk y deja un token en `Cache::put("report_download:{$token}", ...)` con TTL `reports.download_ttl` (30 min) |
 | `DownloadWhatsappMediaJob` | `WhatsappInboundMessageHandler` cuando llega imagen/audio/doc | default | 3 | Descarga media desde Meta Graph API y la persiste en `chat_messages.media` |
-| `MarkWhatsappMessageReadJob` | `ChatController::markRead` cuando hay nuevo mensaje cliente con `meta_message_id` | default | 3 | Llama Meta API para marcar leído (doble chulito azul). Throttle 5 min por chat (`chat:{id}:last_read_message_id`) |
+| `MarkWhatsappMessageReadJob` | `ChatController::markRead` cuando hay nuevo mensaje cliente con `meta_message_id` | default | 3 | Llama Meta API para marcar leído (doble chulito azul) con el token del canal del chat (recibe `whatsappAccountId`). Throttle 5 min por chat (`chat:{id}:last_read_message_id`) |
 | `AggregateMenuScansJob` | cron diario 00:05 | default | 3 | Agrega `menu_scan_events_*` (particiones) → `menu_scan_daily_rollup`. Idempotente |
 | `DropOldMenuScanPartitionsJob` | cron mensual día 1 04:00 | default | 1 | Elimina particiones `menu_scan_events_YYYY_MM` > 6 meses |
 | `PrintCommandTicketJob` | `OrderController::store` (sólo si la empresa tiene printer activa para cocina/bar) | default | 5 | Envía comanda al `HttpAgentDriver`. Falla silenciosa: la orden no se bloquea por impresora caída (#116) |
@@ -1394,6 +1399,7 @@ Registrados automáticamente por Laravel 12 (no requieren `Kernel.php`).
 | `dian:dispatch-pending` | `everyFiveMinutes()` | cada 5min | Reintenta documentos DIAN `error` (backoff) y recupera `pending`/`sent` atascados > `DIAN_STUCK_RECOVERY_MINUTES` (reusa consecutivo vía `DianDispatchService::retry`, idempotente por CUFE/CUDE). No-op si `DIAN_EMISSION_ENABLED=false`. onOneServer + withoutOverlapping(10). |
 | `dian:check-pending-acceptance` | `everyFifteenMinutes()` | cada 15min | Proceso de validación: audita en `audit_logs` (`dian.document.validation_stuck`, `dian.document.validation_retries_exhausted`) documentos que `dian:dispatch-pending` no pudo resolver o cuyos reintentos se agotaron (`retry_count>=6`, excluidos para siempre de la recuperación automática). No-op si `DIAN_EMISSION_ENABLED=false`. onOneServer + withoutOverlapping(20). |
 | `chats:purge-old` | `dailyAt('03:00')` | 3 AM diaria | Borra `chats` inactivos > 60 días, preservando `contacts` y `orders` |
+| `whatsapp:poll-channel-health` | `everyFiveMinutes()` + `onOneServer()` + `withoutOverlapping(5)` | cada 5 min | Consulta el estado real de cada canal de Evolution. Alerta (bitácora + push) tras 2 ciclos caídos consecutivos; distingue `session_invalidated` (re-escanear QR) de un corte transitorio |
 | `menus:sync-schedule` | `0 * * * *` | cada hora | Activa el menú correspondiente al día de la semana |
 | `whatsapp:replay-events` | manual | — | Reprocesa `webhook_events` no procesados (idempotente) |
 | `menu-scans:ensure-partitions` | mensual día 25 04:00 | — | Garantiza partición del próximo mes en `menu_scan_events_*` |
@@ -1459,6 +1465,8 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `2026_05_11_210000_add_loyalty_columns_to_coupons` | Fidelización | `coupons.locked_to_phone`, `coupons.source` ENUM (`manual`, `loyalty_redeem`, ...) para canjes desde puntos |
 | `2026_05_14_084116_cleanup_stale_legal_document_v1_placeholders` | Legales (#170) | Migración one-shot: borra filas `legal_documents` v1.0 cuyo contenido coincide byte-a-byte con el texto placeholder del seeder anterior. Habilita la transición a la fuente .md sin abortar el deploy por drift. `user_acceptances` no afectados (snapshot propio). |
 | `2026_05_23_000000_drop_legal_documents_and_relax_user_acceptances` | Legales | Drop de `legal_documents` (TOS/privacidad pasaron al sitio institucional `flexyflow.co`, contrato a `contrato.md` en el repo) y `document_version` / `document_content` de `user_acceptances` quedan nullable. Los registros históricos se conservan para Habeas Data CO. |
+| `2026_07_23_000001_whatsapp_multichannel_block` | WhatsApp multi-canal (F1) | `company_whatsapp_accounts`: `branch_id`, `label`, `evo_*`, `inbound_secret_encrypted`, `last_connection_check_at` + únicos parciales (1 canal de empresa + 1 por sede). `chats`: `whatsapp_account_id` (backfill al canal de empresa) + `pending_reply_since` con índice parcial; unique pasa de `(company_nit, client_phone)` a `(whatsapp_account_id, client_phone)` con índice legacy para chats sin canal. `chat_messages`: `sent_by_user_id` |
+| `2026_07_23_000002_add_whatsapp_manage_branch_channels_permission` | RBAC | Feature `whatsapp.manage_branch_channels` + `permission_templates` (solo owner) + backfill idempotente de `company_role_permissions` |
 
 ### Índices de rendimiento (migración `2026_05_01_210000_dashboard_performance`)
 

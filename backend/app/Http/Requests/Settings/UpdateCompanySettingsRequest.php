@@ -66,6 +66,7 @@ class UpdateCompanySettingsRequest extends FormRequest
             'settings.payment_method_accounts.*' => ['nullable', 'string', 'max:100'],
             'settings.menu_primary_color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.whatsapp_read_receipts' => ['sometimes', 'boolean'],
+            'settings.whatsapp_away_reply_enabled' => ['sometimes', 'boolean'],
             // Threshold de margen para alertas de food cost: decimal entre 0.01 y 1.00.
             // Lo aceptamos como string para no perder precisión en serialización.
             'settings.food_cost_alert_threshold' => ['sometimes', 'string', 'regex:/^(0(\.\d{1,2})?|1(\.0{1,2})?)$/'],
@@ -112,7 +113,7 @@ class UpdateCompanySettingsRequest extends FormRequest
         $settings = $this->input('settings', []);
 
         if (is_array($settings)) {
-            foreach (['order_auto_confirm', 'order_notify_customer_email', 'whatsapp_read_receipts', 'loyalty.enabled'] as $boolKey) {
+            foreach (['order_auto_confirm', 'order_notify_customer_email', 'whatsapp_read_receipts', 'whatsapp_away_reply_enabled', 'loyalty.enabled'] as $boolKey) {
                 if (array_key_exists($boolKey, $settings)) {
                     $settings[$boolKey] = filter_var($settings[$boolKey], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $settings[$boolKey];
                 }

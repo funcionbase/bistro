@@ -197,3 +197,14 @@ Schedule::call(function () {
         ->where('created_at', '<', now()->subHours(24))
         ->update(['status' => 'skipped', 'error' => 'expired: no job dispatched within 24h', 'updated_at' => now()]);
 })->hourly()->name('sms:expire-queued')->onOneServer()->withoutOverlapping(5);
+
+// WhatsApp (F2) — salud de los canales de Evolution cada 5 min. Un canal caído
+// es invisible: los mensajes simplemente dejan de llegar y nadie se entera hasta
+// que un cliente reclama. El poll consulta el estado real y avisa tras 2 ciclos
+// consecutivos caídos (~10 min), que filtra el parpadeo de red del corte real.
+// onOneServer (lock cross-EC2) + withoutOverlapping(5) (timeout en el mismo
+// nodo): sin ellos cada instancia del ASG mandaría su propia notificación.
+Schedule::command('whatsapp:poll-channel-health')
+    ->everyFiveMinutes()
+    ->onOneServer()
+    ->withoutOverlapping(5);

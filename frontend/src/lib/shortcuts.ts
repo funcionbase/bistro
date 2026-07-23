@@ -74,6 +74,15 @@ export const APP_SHORTCUTS: ReadonlyArray<AppShortcut> = Object.freeze([
 
     // ── Productividad ──
     { keys: ['Ctrl', '.'], description: 'Mostrar/ocultar barra lateral', category: 'Productividad', chord: true },
+    // Navegación de la bandeja de chats (§8.4b punto 12). Son de contexto: solo
+    // actúan en /chats, donde `pages/chats.tsx` las escucha. Se listan acá para
+    // que aparezcan en el modal de ayuda; el motor global (secuencias con `G`)
+    // las ignora por ser teclas sueltas sin ruta.
+    { keys: ['J'], description: 'Bandeja: conversación siguiente', category: 'Productividad' },
+    { keys: ['K'], description: 'Bandeja: conversación anterior', category: 'Productividad' },
+    { keys: ['Enter'], description: 'Bandeja: abrir la conversación', category: 'Productividad' },
+    { keys: ['Esc'], description: 'Bandeja: volver al listado', category: 'Productividad' },
+    { keys: ['/'], description: 'Bandeja: buscar', category: 'Productividad' },
 
     // ── Ayuda ──
     { keys: ['?'], description: 'Mostrar atajos disponibles', category: 'Ayuda' },

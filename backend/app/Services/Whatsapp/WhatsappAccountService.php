@@ -47,8 +47,11 @@ class WhatsappAccountService
 
         $account = DB::transaction(function () use ($companyNit, $payload, $accessToken, $actorUserId) {
             /** @var CompanyWhatsappAccount $account */
+            // `branch_id => null` acota al canal DE LA EMPRESA: el camino Meta
+            // solo conecta ese. Sin el filtro, con canales de sede presentes el
+            // updateOrCreate pisaría uno arbitrario.
             $account = CompanyWhatsappAccount::query()->updateOrCreate(
-                ['company_nit' => $companyNit],
+                ['company_nit' => $companyNit, 'branch_id' => null],
                 [
                     'provisioning_mode' => 'embedded_signup',
                     'status' => 'connected',
@@ -156,7 +159,7 @@ class WhatsappAccountService
         return DB::transaction(function () use ($companyNit, $payload, $actorUserId) {
             /** @var CompanyWhatsappAccount $account */
             $account = CompanyWhatsappAccount::query()->updateOrCreate(
-                ['company_nit' => $companyNit],
+                ['company_nit' => $companyNit, 'branch_id' => null],
                 [
                     'provisioning_mode' => 'naas',
                     'status' => 'pending',

@@ -32,6 +32,7 @@ class CompanySettingsService
         'payment_method_accounts',
         'menu_primary_color',
         'whatsapp_read_receipts',
+        'whatsapp_away_reply_enabled',
         'printing.receipt_width',
         'printing.header_lines',
         'printing.footer_message',

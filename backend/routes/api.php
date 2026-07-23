@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\ActiveCompanyController;
 use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\AlertRuleController;
+use App\Http\Controllers\Api\AutomationFlowController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\BootstrapController;
 use App\Http\Controllers\Api\BusinessContextController;
@@ -12,7 +13,9 @@ use App\Http\Controllers\Api\CancellationRequestController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CartCouponController;
 use App\Http\Controllers\Api\CashRegisterController;
+use App\Http\Controllers\Api\ChatAuditController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\ChatQuickReplyController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\CompanySettingsController;
 use App\Http\Controllers\Api\CouponController;
@@ -35,8 +38,10 @@ use App\Http\Controllers\Api\Employees\MeShiftController;
 use App\Http\Controllers\Api\Employees\ShiftController;
 use App\Http\Controllers\Api\Employees\WorkforceReportController;
 use App\Http\Controllers\Api\Employees\WorkforceSettingsController;
+use App\Http\Controllers\Api\EvolutionWebhookController;
 use App\Http\Controllers\Api\ExternalChatHandoffController;
 use App\Http\Controllers\Api\ExternalChatMessageController;
+use App\Http\Controllers\Api\ExternalChatReplyController;
 use App\Http\Controllers\Api\ExternalHoursStatusController;
 use App\Http\Controllers\Api\ExternalLoyaltyController;
 use App\Http\Controllers\Api\FeatureController;
@@ -75,6 +80,7 @@ use App\Http\Controllers\Api\TableCashierController;
 use App\Http\Controllers\Api\TableSessionController;
 use App\Http\Controllers\Api\UserRoleController;
 use App\Http\Controllers\Api\WhatsappAccountController;
+use App\Http\Controllers\Api\WhatsappChannelController;
 use App\Http\Controllers\Api\WhatsappVerificationController;
 use App\Http\Controllers\Api\WhatsappWebhookController;
 use App\Http\Controllers\Auth\AuthController;
@@ -108,6 +114,16 @@ Route::prefix('v1')->group(function () {
         ->name('api.webhooks.whatsapp.verify');
     Route::post('webhooks/whatsapp', [WhatsappWebhookController::class, 'receive'])
         ->name('api.webhooks.whatsapp.receive');
+
+    // Webhook publico de Evolution API (F2). Sin JWT: la autenticidad la da un
+    // secreto de 32 bytes POR CANAL, comparado con hash_equals contra
+    // `inbound_secret_encrypted`. El {account} es el id del canal.
+    //
+    // El throttle de plataforma va aparte del rate limit por canal que aplica el
+    // controller: este protege el proceso; aquel, cada canal.
+    Route::post('webhooks/whatsapp/evolution/{account}', [EvolutionWebhookController::class, 'receive'])
+        ->middleware('throttle:600,1')
+        ->name('api.webhooks.whatsapp.evolution');
 
     // Webhook publico de Amazon SES via SNS. Sin JWT: la autenticidad la
     // garantiza la firma RSA-SHA1/SHA256 del payload SNS verificada contra
@@ -1308,6 +1324,88 @@ Route::prefix('v1')->group(function () {
 
             // WhatsApp — gestion de la cuenta de la empresa
             Route::prefix('whatsapp')->group(function () {
+                // Canales multi-sede sobre Evolution (F3, §8.2/§8.3). Van ANTES
+                // de `GET /` para que `channels` no lo capture ninguna ruta con
+                // parametro. Conviven con el camino Meta de abajo, que sigue
+                // vivo hasta el corte de F4.
+                //
+                // El reparto empresa/sede de §7.3 (owner/admin para el canal de
+                // empresa; `whatsapp.manage_branch_channels` + acceso a la sede
+                // para el de sede) NO se puede expresar como middleware: depende
+                // del `branch_id` del cuerpo. Se resuelve dentro del controller,
+                // igual que `chats.reassign_branch`. El middleware de acá cubre
+                // el permiso base.
+                Route::prefix('channels')->group(function () {
+                    Route::get('/', [WhatsappChannelController::class, 'index'])
+                        ->middleware('permission:whatsapp.read,read')
+                        ->name('api.whatsapp.channels.index');
+                    Route::post('/', [WhatsappChannelController::class, 'store'])
+                        ->middleware('permission:whatsapp.connect,create')
+                        ->name('api.whatsapp.channels.store');
+                    // Lo pollea el wizard cada 2 s con el modal del QR abierto:
+                    // es el endpoint mas caliente del modulo.
+                    Route::get('{id}/state', [WhatsappChannelController::class, 'state'])
+                        ->middleware('permission:whatsapp.read,read')
+                        ->name('api.whatsapp.channels.state');
+                    Route::get('{id}/qr', [WhatsappChannelController::class, 'qr'])
+                        ->middleware('permission:whatsapp.connect,create')
+                        ->name('api.whatsapp.channels.qr');
+                    // `pairing-code` recrea la instancia en Evolution (logout +
+                    // create): es caro y no debe poder dispararse en bucle.
+                    Route::post('{id}/pairing-code', [WhatsappChannelController::class, 'pairingCode'])
+                        ->middleware(['permission:whatsapp.connect,create', 'throttle:6,1'])
+                        ->name('api.whatsapp.channels.pairing-code');
+                    // Envía un WhatsApp REAL. Aunque va al propio número del
+                    // canal, es un enviador autenticado y sin throttle sería un
+                    // vector de spam/abuso que podría hacer marcar el número.
+                    // F5: throttle POR CANAL (limiter `whatsapp-test-message`,
+                    // 6/min por `{id}`), no por IP/usuario — cada canal tiene su
+                    // cubeta; 6/min sobra para "probar que conectó" y corta el bucle.
+                    Route::post('{id}/test-message', [WhatsappChannelController::class, 'testMessage'])
+                        ->middleware(['permission:whatsapp.connect,create', 'throttle:whatsapp-test-message'])
+                        ->name('api.whatsapp.channels.test-message');
+                    // Métricas de la tarjeta (§8.4b punto 11): solo lectura agregada.
+                    Route::get('{id}/metrics', [WhatsappChannelController::class, 'metrics'])
+                        ->middleware('permission:whatsapp.read,read')
+                        ->name('api.whatsapp.channels.metrics');
+                    Route::delete('{id}', [WhatsappChannelController::class, 'destroy'])
+                        ->middleware('permission:whatsapp.disconnect,delete')
+                        ->name('api.whatsapp.channels.destroy');
+                });
+
+                // Automatización (n8n) — flujos por (empresa, sede) (F6, §9.5). El
+                // reparto empresa/sede se resuelve en el controller (branch en el
+                // body), igual que `channels`. El token/secreto se muestran una
+                // sola vez al crear/rotar (patrón PAT).
+                Route::prefix('automation-flows')->group(function () {
+                    Route::get('/', [AutomationFlowController::class, 'index'])
+                        ->middleware('permission:whatsapp.read,read')
+                        ->name('api.whatsapp.automation.index');
+                    Route::post('/', [AutomationFlowController::class, 'store'])
+                        ->middleware('permission:whatsapp.update,update')
+                        ->name('api.whatsapp.automation.store');
+                    Route::put('{id}', [AutomationFlowController::class, 'update'])
+                        ->middleware('permission:whatsapp.update,update')
+                        ->name('api.whatsapp.automation.update');
+                    Route::post('{id}/rotate-token', [AutomationFlowController::class, 'rotateToken'])
+                        ->middleware('permission:whatsapp.update,update')
+                        ->name('api.whatsapp.automation.rotate-token');
+                    Route::post('{id}/rotate-secret', [AutomationFlowController::class, 'rotateSecret'])
+                        ->middleware('permission:whatsapp.update,update')
+                        ->name('api.whatsapp.automation.rotate-secret');
+                    // Envía un POST REAL a la URL del flujo: throttle para que no
+                    // sea un vector de SSRF/abuso en bucle.
+                    Route::post('{id}/test', [AutomationFlowController::class, 'test'])
+                        ->middleware(['permission:whatsapp.update,update', 'throttle:6,1'])
+                        ->name('api.whatsapp.automation.test');
+                    Route::get('{id}/deliveries', [AutomationFlowController::class, 'deliveries'])
+                        ->middleware('permission:whatsapp.read,read')
+                        ->name('api.whatsapp.automation.deliveries');
+                    Route::delete('{id}', [AutomationFlowController::class, 'destroy'])
+                        ->middleware('permission:whatsapp.update,update')
+                        ->name('api.whatsapp.automation.destroy');
+                });
+
                 Route::get('/', [WhatsappAccountController::class, 'show'])
                     ->middleware('permission:whatsapp.read,read')
                     ->name('api.whatsapp.show');
@@ -1419,40 +1517,101 @@ Route::prefix('v1')->group(function () {
                     ->name('api.alert-rules.upsert');
             });
 
-            // Conversaciones con clientes (panel del operador)
-            Route::get('chats', [ChatController::class, 'index'])
-                ->middleware('permission:chats.read,read')
-                ->name('api.chats.index');
-            Route::get('chats/{id}', [ChatController::class, 'show'])
-                ->middleware('permission:chats.read,read')
-                ->name('api.chats.show');
-            Route::post('chats/{id}/mark-read', [ChatController::class, 'markRead'])
-                ->middleware('permission:chats.read,read')
-                ->name('api.chats.mark-read');
-            Route::get('chats/{id}/client', [ChatController::class, 'clientDetail'])
-                ->middleware('permission:chats.read,read')
-                ->name('api.chats.client.show');
-            // CIBER-05: media de chat servida por endpoint autenticado (scope
-            // de empresa + chats.read), no por el proxy anónimo de assets.
-            Route::get('chats/{id}/messages/{messageId}/media', [ChatController::class, 'mediaUrl'])
-                ->middleware('permission:chats.read,read')
-                ->name('api.chats.messages.media');
-            Route::post('chats/{id}/messages', [ChatController::class, 'storeMessage'])
-                ->middleware('permission:chats.update,update')
-                ->name('api.chats.messages.store');
-            Route::patch('chats/{id}/bot', [ChatController::class, 'updateBot'])
-                ->middleware('permission:chats.update,update')
-                ->name('api.chats.bot.update');
-            Route::patch('chats/{id}/contact', [ChatController::class, 'updateContact'])
-                ->middleware('permission:chats.update,update')
-                ->name('api.chats.contact.update');
-            // Aislamiento por sede (#192): reasignar chat a otra sede. La
-            // autorización es composable (owner OR chats.reassign_branch +
-            // acceso a sede destino) y se resuelve dentro del controller —
-            // no se aplica middleware permission:* porque el slug no
-            // matchea la convención CRUD.
-            Route::post('chats/{id}/reassign-branch', [ChatController::class, 'reassignBranch'])
-                ->name('api.chats.reassign-branch');
+            // Conversaciones con clientes (panel del operador).
+            //
+            // 🔴 `branch.access` NO estaba y por eso el aislamiento por sede que
+            // §7.2 daba por hecho ("BranchScope, sin codigo nuevo") no existia en
+            // runtime: `BranchScope` sale temprano si el request no trae
+            // `active_branch_id`, y ningun middleware lo inyectaba. Resultado
+            // medido en F2b: la bandeja de un operador de Sede Norte listaba las
+            // conversaciones de Sede Sur con nombre y telefono del cliente. Eran
+            // las 11 unicas rutas del modulo sin este middleware, contra 186 que
+            // si lo tienen.
+            //
+            // `branch.consolidate` (AllowConsolidatedBranches) va detras para
+            // que quien tenga `metrics.view_all_branches` — el dueño que necesita
+            // reasignar entre sedes — pueda pedir `?branch=all` explicitamente.
+            Route::middleware(['branch.access', 'branch.consolidate'])->group(function () {
+                // Conversaciones con clientes (panel del operador)
+                Route::get('chats', [ChatController::class, 'index'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.index');
+                // Badge del sidebar y titulo de pestaña (§8.4b punto 1). Se
+                // pollea desde CUALQUIER pantalla del panel, que es justo cuando
+                // el aviso hace falta: devuelve un entero, no la bandeja.
+                // Va antes de `chats/{id}` o el `{id}` se comeria "pending-count".
+                Route::get('chats/pending-count', [ChatController::class, 'pendingCount'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.pending-count');
+                // Respuestas rapidas (§8.4b punto 7). VA ANTES de `chats/{id}` o el
+                // `{id}` se comeria "quick-replies". Listar/usar = chats.read;
+                // gestionar (POST/PUT/DELETE) = owner/admin, gate en el controller
+                // (opcion A del plan: sin slug nuevo), como reassign-branch.
+                Route::get('chats/quick-replies', [ChatQuickReplyController::class, 'index'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.quick-replies.index');
+                Route::post('chats/quick-replies', [ChatQuickReplyController::class, 'store'])
+                    ->name('api.chats.quick-replies.store');
+                Route::put('chats/quick-replies/{id}', [ChatQuickReplyController::class, 'update'])
+                    ->name('api.chats.quick-replies.update');
+                Route::delete('chats/quick-replies/{id}', [ChatQuickReplyController::class, 'destroy'])
+                    ->name('api.chats.quick-replies.destroy');
+                Route::get('chats/{id}', [ChatController::class, 'show'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.show');
+                Route::post('chats/{id}/mark-read', [ChatController::class, 'markRead'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.mark-read');
+                Route::get('chats/{id}/client', [ChatController::class, 'clientDetail'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.client.show');
+                // Pestana "Actividad" (F2b, §7.6). Permiso PROPIO `chats.audit`: por
+                // template lo tienen owner y admin, no el operador — quien es
+                // auditado no administra su auditoria.
+                Route::get('chats/{id}/audit', [ChatAuditController::class, 'index'])
+                    ->middleware('permission:chats.audit,read')
+                    ->name('api.chats.audit.index');
+                // CIBER-05: media de chat servida por endpoint autenticado (scope
+                // de empresa + chats.read), no por el proxy anónimo de assets.
+                Route::get('chats/{id}/messages/{messageId}/media', [ChatController::class, 'mediaUrl'])
+                    ->middleware('permission:chats.read,read')
+                    ->name('api.chats.messages.media');
+                Route::post('chats/{id}/messages', [ChatController::class, 'storeMessage'])
+                    ->middleware('permission:chats.update,update')
+                    ->name('api.chats.messages.store');
+                // Adjunto saliente (F2). La UI del compositor llega en F3; el
+                // backend va ahora para no partir el módulo entre dos releases.
+                Route::post('chats/{id}/attachments', [ChatController::class, 'storeAttachment'])
+                    ->middleware('permission:chats.update,update')
+                    ->name('api.chats.attachments.store');
+                // Link de carrito para insertar en el chat (§8.4b punto 8). Mintea
+                // un JWT firmado: throttle para que no se convierta en un generador
+                // de links en bucle. El link de menu es client-side, sin endpoint.
+                Route::post('chats/{id}/cart-link', [ChatController::class, 'cartLink'])
+                    ->middleware(['permission:chats.update,update', 'throttle:20,1'])
+                    ->name('api.chats.cart-link');
+                // Reintento de un saliente fallido (§8.4b punto 4). Reintenta el
+                // MISMO registro: crear uno nuevo dejaria dos burbujas por un
+                // mensaje que el cliente ve una sola vez.
+                Route::post('chats/{id}/messages/{messageId}/retry', [ChatController::class, 'retryMessage'])
+                    // Reenvía un WhatsApp real: throttle para que un fallo en
+                    // bucle no se convierta en spam sobre el número del cliente.
+                    ->middleware(['permission:chats.update,update', 'throttle:20,1'])
+                    ->name('api.chats.messages.retry');
+                Route::patch('chats/{id}/bot', [ChatController::class, 'updateBot'])
+                    ->middleware('permission:chats.update,update')
+                    ->name('api.chats.bot.update');
+                Route::patch('chats/{id}/contact', [ChatController::class, 'updateContact'])
+                    ->middleware('permission:chats.update,update')
+                    ->name('api.chats.contact.update');
+                // Aislamiento por sede (#192): reasignar chat a otra sede. La
+                // autorización es composable (owner OR chats.reassign_branch +
+                // acceso a sede destino) y se resuelve dentro del controller —
+                // no se aplica middleware permission:* porque el slug no
+                // matchea la convención CRUD.
+                Route::post('chats/{id}/reassign-branch', [ChatController::class, 'reassignBranch'])
+                    ->name('api.chats.reassign-branch');
+            }); // fin del grupo branch.access de chats
 
             // Gestión de menú
             // Menús son recurso PER-SEDE (#117): cada branch maneja su carta.
@@ -1658,22 +1817,36 @@ Route::prefix('v1')->group(function () {
         });
 });
 
-// Endpoint externo para bot — fuera del prefijo /v1 según contrato API
-Route::prefix('external')->middleware('bot.jwt')->group(function () {
+// Endpoint externo para bot — fuera del prefijo /v1 según contrato API.
+// bot.token (§7.5.1): token POR flujo, acotado a (empresa, sede) y revocable.
+// Acepta también el JWT legado durante la ventana de convivencia (§11.1).
+Route::prefix('external')->middleware('bot.token')->group(function () {
     Route::get('hours/status', [ExternalHoursStatusController::class, 'show'])
         ->name('api.external.hours.status');
 
     // El bot solicita intervencion humana en una conversacion. company_nit
-    // se obtiene del JWT de bot, nunca del body, para impedir cross-company.
+    // se deriva del TOKEN de bot, nunca del body, para impedir cross-company.
     Route::post('chats/handoff', [ExternalChatHandoffController::class, 'store'])
         ->name('api.external.chats.handoff');
 
-    // Cache local de conversaciones para reducir llamadas a la API de Meta:
-    // el bot empuja cada mensaje (POST) y lee deltas desde BD (GET).
+    // Cache local de conversaciones: el bot empuja cada mensaje (POST) y lee
+    // deltas desde BD (GET). El push de F6 (§9.2) reemplaza la lectura activa.
     Route::post('chats/messages', [ExternalChatMessageController::class, 'store'])
         ->name('api.external.chats.messages.store');
     Route::get('chats/messages', [ExternalChatMessageController::class, 'index'])
         ->name('api.external.chats.messages.index');
+
+    // F6 (§9.3, §9.6): el bot RESPONDE una conversación. Resuelve el canal desde
+    // el chat, envía por Evolution y persiste con sender='bot'. n8n nunca ve
+    // credenciales de WhatsApp. Un reply sobre un chat de otra empresa → 404.
+    Route::post('chats/reply', [ExternalChatReplyController::class, 'reply'])
+        ->name('api.external.chats.reply');
+    // Pausar/reanudar el bot en una conversación desde el flujo (§9.8).
+    Route::post('chats/{chat}/bot', [ExternalChatReplyController::class, 'bot'])
+        ->name('api.external.chats.bot');
+    // Indicador de "escribiendo" vía sendPresence de Baileys (§9.3).
+    Route::post('chats/{chat}/typing', [ExternalChatReplyController::class, 'typing'])
+        ->name('api.external.chats.typing');
 
     // Fidelización para el bot WhatsApp (#122). El bot (n8n) consume estos
     // endpoints al detectar intents `/puntos` y `/canjear` en el chat. El

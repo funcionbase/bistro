@@ -80,7 +80,7 @@ Route::middleware([
 
 ## Permisos sensibles owner-only por default (#192)
 
-Cinco permisos quedan en `[false,false,false,false]` para `admin` por
+Seis permisos quedan en `[false,false,false,false]` para `admin` por
 `PermissionTemplateSeeder`. NO llevan `is_owner_only=true` (sí aparecen en
 `UserPermissionsEditor`), pero el owner debe asignarlos manualmente si
 quiere delegarlos:
@@ -88,6 +88,7 @@ quiere delegarlos:
 | Slug | Acción que protege |
 |---|---|
 | `chats.reassign_branch` | Mover un chat de una sede a otra (`POST /api/v1/chats/{id}/reassign-branch`). |
+| `whatsapp.manage_branch_channels` | Conectar / desconectar el número de WhatsApp de una sede. Composable: exige además `whatsapp.connect` y acceso a esa sede. |
 | `cash_register.bypass_switch_lock` | Cambiar de sede activa cuando hay caja abierta (default: bloqueado). |
 | `cash_register.manage` | Crear / renombrar / archivar cajas del catálogo de la sede (#117 Fase 3). |
 | `cash_register.operate_others` | Cerrar la sesión abierta por otro cajero — "turno anterior no cerró, supervisor cierra" (#117 Fase 3). |
@@ -95,6 +96,20 @@ quiere delegarlos:
 
 > Si en el futuro se introduce otro permiso *cross-branch* con riesgo
 > operativo, seguir esta misma convención.
+
+## Canales de WhatsApp por sede
+
+`company_whatsapp_accounts.branch_id` define el alcance del canal: nulo = canal
+de la empresa, UUID = canal de una sede. Consecuencias para el scope por sede:
+
+- **Quién decide el `branch_id` del chat**: el canal por el que entró el
+  mensaje. Un canal de sede hace nacer el chat en esa sede; un canal de empresa
+  cae al default (`is_default=true`) y se reasigna a mano (#192).
+- **Por dónde se responde**: siempre por el canal que originó la conversación
+  (`chats.whatsapp_account_id`), NO por la sede que la atiende. Reasignar un
+  chat cambia quién responde, no el número desde el que sale la respuesta.
+- **Aislamiento**: lo sigue dando `BranchScope` sobre `Chat` — no hay lógica de
+  canal en la lectura de la bandeja.
 
 ## Auditoría automática por sede
 

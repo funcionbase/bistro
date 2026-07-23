@@ -1,5 +1,6 @@
-import type { ChatMediaType } from '@/hooks/use-chats';
-import { ExternalLink, FileText, MapPin, Volume2, VolumeX } from 'lucide-react';
+import { ChatContactCard, type SharedContact } from '@/components/chats/chat-contact-card';
+import type { ChatMediaPayload, ChatMediaType } from '@/hooks/use-chats';
+import { ExternalLink, FileText, Mic, MapPin, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
@@ -7,25 +8,57 @@ interface Props {
     url: string | null | undefined;
     mime: string | null | undefined;
     body: string;
+    /** Lo estructurado de §6.7: {lat,lng,name,address}, {contacts[]}, {file_name,size_bytes}. */
+    payload?: ChatMediaPayload | null;
+    /** Abre la imagen a tamaño completo. Ausente = la miniatura no es clickeable. */
+    onOpenImage?: (url: string, caption?: string | null) => void;
+    onWriteToContact?: (phone: string) => void;
+    onSaveContact?: (contact: SharedContact) => void;
+}
+
+function formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 /**
- * Renderiza la parte multimedia de un mensaje de WhatsApp:
- *   - sticker / image: <img>
+ * Renderiza la parte multimedia de un mensaje de WhatsApp — los 9 tipos de §6.7:
+ *   - image:           miniatura + lightbox + caption
  *   - video:           <video controls>
  *   - audio:           player custom con duracion + barra de progreso
- *   - document:        link descargable con icono
- *   - location:        bloque con preview de mapa estatico + link a Google Maps en nueva pestana
+ *   - nota de voz:     el mismo player, rotulado "nota de voz" (`payload.ptt`)
+ *   - document:        icono + nombre + tamaño + descargar
+ *   - sticker:         imagen ~120 px, SIN fondo de burbuja
+ *   - location:        tarjeta con direccion + boton a Google Maps
+ *   - contact:         tarjeta con acciones "Escribirle" / "Guardar en contactos"
  *   - sin media:       null (el caller renderiza el body como texto)
  *
- * Si type tiene valor pero url aun es null (job de descarga en cola), muestra
- * un placeholder con el body literal.
+ * La ubicacion y el contacto se leen de `media_payload` (jsonb), no del texto
+ * del `body`. El parseo del string `[location] lat, lng | …` sigue existiendo
+ * como fallback para los mensajes anteriores a F1, que no tienen payload.
+ *
+ * Si type tiene valor pero url aun es null (job de descarga en cola, o media
+ * que llego sin base64) muestra un placeholder con el body literal.
  */
-export function ChatMessageMedia({ type, url, body }: Props) {
+export function ChatMessageMedia({ type, url, body, payload, onOpenImage, onWriteToContact, onSaveContact }: Props) {
+    // Ubicacion y contacto NO tienen archivo: se resuelven antes del check de
+    // `url`, que si no los mandaria al placeholder "descargando…" para siempre.
+    if (type === 'location' || (!type && body.startsWith('[location]'))) {
+        return <LocationBlock body={body} payload={payload} />;
+    }
+
+    if (type === 'contact') {
+        return (
+            <ChatContactCard
+                contacts={(payload?.contacts as SharedContact[] | undefined) ?? []}
+                onWriteTo={onWriteToContact}
+                onSave={onSaveContact}
+            />
+        );
+    }
+
     if (!type) {
-        if (body.startsWith('[location]')) {
-            return <LocationBlock body={body} />;
-        }
         return null;
     }
 
@@ -33,14 +66,26 @@ export function ChatMessageMedia({ type, url, body }: Props) {
         return <span className="text-xs italic opacity-70">{body} (descargando…)</span>;
     }
 
-    if (type === 'sticker' || type === 'image') {
+    if (type === 'sticker') {
+        // Sin fondo de burbuja: un sticker con caja alrededor se ve como un
+        // error de render, no como un sticker.
+        return <img src={url} alt="Sticker" className="h-30 w-30 object-contain" loading="lazy" />;
+    }
+
+    if (type === 'image') {
+        const caption = typeof payload?.caption === 'string' ? payload.caption : null;
         return (
-            <img
-                src={url}
-                alt={type === 'sticker' ? 'sticker' : 'imagen'}
-                className={type === 'sticker' ? 'h-32 w-32 object-contain' : 'max-h-64 max-w-full rounded-md object-contain'}
-                loading="lazy"
-            />
+            <figure className="space-y-1">
+                <button
+                    type="button"
+                    onClick={() => onOpenImage?.(url, caption)}
+                    className="focus-visible:ring-ring block rounded-md focus-visible:ring-2 focus-visible:outline-none"
+                    aria-label="Ampliar imagen"
+                >
+                    <img src={url} alt={caption || 'Imagen recibida'} className="max-h-64 max-w-full rounded-md object-contain" loading="lazy" />
+                </button>
+                {caption && <figcaption className="text-xs opacity-80">{caption}</figcaption>}
+            </figure>
         );
     }
 
@@ -49,19 +94,40 @@ export function ChatMessageMedia({ type, url, body }: Props) {
     }
 
     if (type === 'audio') {
-        return <AudioPlayer url={url} />;
+        // Una nota de voz y un mp3 adjunto se reproducen igual pero no son lo
+        // mismo: rotularlo evita que el operador crea que le mandaron un archivo.
+        const isVoiceNote = payload?.ptt === true;
+        return (
+            <div className="space-y-1">
+                {isVoiceNote && (
+                    <p className="flex items-center gap-1 text-[10px] opacity-70">
+                        <Mic className="h-3 w-3" />
+                        Nota de voz
+                    </p>
+                )}
+                <AudioPlayer url={url} />
+            </div>
+        );
     }
 
     if (type === 'document') {
+        const fileName = (typeof payload?.file_name === 'string' ? payload.file_name : null) ?? body.replace(/^\[document\]\s*/, '') ?? 'Documento';
+        const size = typeof payload?.size_bytes === 'number' ? payload.size_bytes : null;
+
         return (
             <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:bg-muted/50 inline-flex items-center gap-2 rounded-md border px-2 py-1.5 text-xs"
+                // 44 px de alto: descargar un adjunto con el pulgar no puede
+                // depender de acertarle a una línea de texto.
+                className="hover:bg-muted/50 flex min-h-11 w-[240px] max-w-full items-center gap-2 rounded-md border px-2 py-1.5 text-xs"
             >
-                <FileText className="h-4 w-4 shrink-0" />
-                <span className="truncate">{body.replace(/^\[document\]\s*/, '') || 'Documento'}</span>
+                <FileText className="h-5 w-5 shrink-0" />
+                <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{fileName || 'Documento'}</span>
+                    {size !== null && <span className="block opacity-70">{formatSize(size)}</span>}
+                </span>
             </a>
         );
     }
@@ -343,20 +409,47 @@ function PauseIcon() {
     );
 }
 
-function LocationBlock({ body }: { body: string }) {
-    // Formato esperado: "[location] lat, lng" o "[location] lat, lng | nombre | direccion"
-    const match = body.match(/\[location\]\s+([-\d.]+),\s*([-\d.]+)(?:\s*\|\s*(.*))?/);
-    if (!match) {
+/**
+ * Ubicacion recibida (§6.7).
+ *
+ * `media_payload` es la fuente preferida: F0 verifico que `locationMessage`
+ * llega SIN `name` ni `address` en el caso crudo, asi que muchas veces solo hay
+ * coordenadas y la tarjeta tiene que rotularse con ellas.
+ *
+ * El parseo del `body` queda como fallback para los mensajes anteriores a F1,
+ * que no tienen payload y solo dejaron el texto "[location] lat, lng | …".
+ */
+function LocationBlock({ body, payload }: { body: string; payload?: ChatMediaPayload | null }) {
+    let lat: string | undefined;
+    let lng: string | undefined;
+    let name: string | undefined;
+    let address: string | undefined;
+
+    if (typeof payload?.lat === 'number' && typeof payload?.lng === 'number') {
+        lat = String(payload.lat);
+        lng = String(payload.lng);
+        name = typeof payload.name === 'string' ? payload.name : undefined;
+        address = typeof payload.address === 'string' ? payload.address : undefined;
+    } else {
+        // Formato legacy: "[location] lat, lng" o "[location] lat, lng | nombre | direccion"
+        const match = body.match(/\[location\]\s+([-\d.]+),\s*([-\d.]+)(?:\s*\|\s*(.*))?/);
+        if (!match) {
+            return <span className="text-xs italic opacity-70">{body}</span>;
+        }
+        const parts = match[3]
+            ? match[3]
+                  .split('|')
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+            : [];
+        [, lat, lng] = match;
+        [name, address] = parts;
+    }
+
+    if (!lat || !lng) {
         return <span className="text-xs italic opacity-70">{body}</span>;
     }
-    const [, lat, lng, extras] = match;
-    const parts = extras
-        ? extras
-              .split('|')
-              .map((s) => s.trim())
-              .filter(Boolean)
-        : [];
-    const [name, address] = parts;
+
     const mapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
     // Static map preview vía OpenStreetMap (sin API key, sin tracking).
     // Tile size 280x140 con un marker centrado en la coordenada.

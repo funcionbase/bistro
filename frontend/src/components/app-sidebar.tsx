@@ -4,6 +4,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { RestaurantIdentity } from '@/components/restaurant-identity';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { useChatNotifications } from '@/hooks/use-chat-notifications';
 import { isFullyBlocked } from '@/lib/company-status';
 import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isCourierOnlyMode } from '@/lib/courier-mode';
@@ -24,7 +25,9 @@ import {
     LayoutGrid,
     LineChart,
     MapPin,
+    MessageCircle,
     Package,
+    Phone,
     Printer,
     Receipt,
     ShieldCheck,
@@ -120,6 +123,15 @@ export function AppSidebar() {
             url: route('orders.board'),
             icon: KanbanSquare,
             permission: 'orders.read',
+        },
+        {
+            // El badge de conversaciones sin responder se inyecta más abajo
+            // (§8.4b punto 1): quien atiende el WhatsApp necesita verlo desde
+            // cualquier pantalla, no solo dentro de la bandeja.
+            title: 'Chats',
+            url: route('chats'),
+            icon: MessageCircle,
+            permission: 'chats.read',
         },
         {
             // #115 — KDS por estación. Item visible para cualquier rol con
@@ -361,9 +373,21 @@ export function AppSidebar() {
             icon: FileText,
             permission: 'dian.config.read',
         },
-        // Canales (WhatsApp/Instagram/Facebook): oculto por ahora — no se
-        // ofrece a clientes todavía. La ruta /company/whatsapp sigue activa.
-        // Reactivar agregando de vuelta este grupo cuando estén los conectores.
+        {
+            // Canales de mensajería (F3). Instagram/Facebook llegan después; por
+            // eso es un grupo aunque hoy tenga un solo hijo.
+            title: 'Canales',
+            icon: Phone,
+            children: [
+                {
+                    title: 'WhatsApp',
+                    url: route('company.whatsapp'),
+                    icon: MessageCircle,
+                    permission: 'whatsapp.read',
+                },
+            ],
+        },
+        // Referencia del grupo previo (WhatsApp/Instagram/Facebook próx.):
         // {
         //     title: 'Canales',
         //     icon: Phone,
@@ -401,6 +425,15 @@ export function AppSidebar() {
             : isCourierOnly
               ? dayToDayItems.filter((item) => item.title === 'Mis entregas')
               : dayToDayItems;
+
+    // Badge + título de pestaña de conversaciones sin responder (§8.4b punto 1).
+    // Vive acá porque el sidebar está montado en todo el panel: el operador ve
+    // el contador desde cualquier pantalla, que es cuando el aviso hace falta.
+    // Se activa solo si el usuario puede leer chats — si no, ni se pollea.
+    const canReadChats = role?.is_system === true || permissions.includes('chats.read');
+    const { pending } = useChatNotifications(canReadChats && !isSuspended && !noBranch);
+
+    const dayToDayWithBadges = pending > 0 ? visibleDayToDay.map((item) => (item.title === 'Chats' ? { ...item, badge: pending } : item)) : visibleDayToDay;
     // Empresa suspendida: solo permitimos ver el submenu "Empresa" (que
     // contiene "Mi empresa" — punto de entrada al cierre de billing).
     // Antes "Mi empresa" era item plano; ahora vive bajo "Empresa".
@@ -419,7 +452,7 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <BlockedCompanySwitchBanner />
-                <NavMain label="Día a día" items={visibleDayToDay} />
+                <NavMain label="Día a día" items={dayToDayWithBadges} />
                 {showCatalogAndOps && <NavMain label="Catálogo y clientes" items={catalogItems} />}
                 {showCatalogAndOps && <NavMain label="Operaciones" items={operationsItems} />}
                 {showCatalogAndOps && <NavMain label="Equipo" items={teamItems} />}

@@ -17,15 +17,31 @@ use Illuminate\Support\Carbon;
  * direccion se deriva de sender (client → inbound, bot/operator →
  * outbound), por eso no almacenamos una columna aparte.
  *
- * meta_message_id permite cachear mensajes ya recibidos desde la API
- * de Meta y se usa como idempotency key (unique parcial chat_id +
- * meta_message_id) para evitar duplicados al reintentar el push.
+ * meta_message_id guarda el id de mensaje DEL PROVEEDOR y se usa como
+ * idempotency key (unique parcial chat_id + meta_message_id) para
+ * evitar duplicados al reintentar el push. El nombre quedo atado a Meta
+ * por historia; no se renombra (obliga a migrar el indice y tocar 4
+ * archivos por un cambio cosmetico).
+ *
+ * sent_by_user_id es el operador del panel que lo envio. Queda null en
+ * mensajes del cliente, del bot, los historicos y los que el dueño manda
+ * desde su propio celular — ahi no hay usuario del panel.
+ *
+ * media_payload guarda lo estructurado que no cabe en media_path:
+ * {lat, lng, name, address} de una ubicacion, {contacts: [{name, phones}]}
+ * de un contacto, {file_name, size_bytes, duration_s} de documentos y
+ * audio. El body mantiene ademas un texto legible ("[ubicacion] Calle 12")
+ * para que el buscador de la bandeja funcione sin decodificar JSON.
  *
  * @property int $chat_id
  * @property string $sender — client | bot | operator
+ * @property ?string $sent_by_user_id
+ * @property bool $from_device — lo mando el dueño desde su celular, no el panel
  * @property ?string $status — sent | delivered | read | failed
+ * @property ?string $failure_reason — codigo corto, nunca el texto del proveedor
  * @property string $body
  * @property ?string $meta_message_id
+ * @property ?array<string, mixed> $media_payload
  * @property Carbon $sent_at
  */
 class ChatMessage extends Model
@@ -39,13 +55,17 @@ class ChatMessage extends Model
     protected $fillable = [
         'chat_id',
         'sender',
+        'sent_by_user_id',
+        'from_device',
         'status',
+        'failure_reason',
         'body',
         'meta_message_id',
         'media_type',
         'media_meta_id',
         'media_path',
         'media_mime',
+        'media_payload',
         'sent_at',
     ];
 
@@ -53,6 +73,8 @@ class ChatMessage extends Model
     {
         return [
             'sent_at' => 'datetime',
+            'from_device' => 'boolean',
+            'media_payload' => 'array',
         ];
     }
 
@@ -66,5 +88,16 @@ class ChatMessage extends Model
     public function chat(): BelongsTo
     {
         return $this->belongsTo(Chat::class);
+    }
+
+    /**
+     * Operador del panel que lo envio. Null en mensajes del cliente, del bot,
+     * los historicos y los que salieron del celular del dueño.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function sentBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sent_by_user_id');
     }
 }

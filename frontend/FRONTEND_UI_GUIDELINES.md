@@ -1049,6 +1049,30 @@ Primitive `components/ui/combobox.tsx`. Úsalo en cualquier selección sobre cat
 <Combobox value={id} onChange={setId} options={results} loading={isFetching} onSearchChange={setQuery} onReachEnd={fetchNextPage} />
 ```
 
+### 11.x Tooltips y ayuda contextual
+
+Objetivo: que el usuario entienda qué hace cada control sin abrir el manual y sin equivocarse primero. Se usan los dos primitivos que ya existen — **no se crea ninguno nuevo**:
+
+- `components/ui/tooltip.tsx` (Radix) para hover sobre un elemento existente.
+- `components/ui/field-hint.tsx` → `FieldHint` (ícono `(i)` junto a un `<Label>`) y `ReasonTooltip` (explica por qué un control está deshabilitado).
+
+Siete reglas (origen: plan WhatsApp §8.4c):
+
+1. **Nada crítico vive solo en el hover.** El tooltip amplía, nunca reemplaza. En móvil no hay hover: si la información es necesaria para decidir, va en el texto o en un `Popover` con tap. (Ej.: el estado del canal se muestra como texto en la tarjeta, no solo en el pill.)
+2. **Los elementos `disabled` no disparan eventos de mouse** — Radix nunca mostraría el tooltip. Hay que envolver el control en un `<span tabIndex={0}>` que sea el `TooltipTrigger`. Eso es exactamente lo que hace `ReasonTooltip`: usarlo para el motivo de una acción gris (falta permiso / sede sin automatización / número desconectado), que es el tooltip que más falta hace. Sin el wrapper se implementa y no aparece nunca.
+3. **`delayDuration={150}`** (el mismo de `FieldHint`). En 0 estorba con solo cruzar el mouse; en 700 parece que la app no responde. (Distinto del `ShortcutTooltip`, que usa 3000 ms para atajos de teclado.)
+4. **Máximo ~140 caracteres, una sola idea.** Si necesita más, es un `Popover` o un link al manual.
+5. **Nunca contenido interactivo adentro** (botones, links): el puntero no llega sin cerrar el tooltip. Eso es un `Popover`.
+6. **No poner tooltip en lo obvio** (ícono de enviar, lupa de buscar). Un tooltip en todo es un tooltip en nada.
+7. El trigger **conserva su `aria-label`**; Radix ya cablea `aria-describedby`.
+
+```tsx
+// Motivo de una acción deshabilitada (el caso crítico de la regla 2):
+<ReasonTooltip reason={!canUpdate ? 'Necesitás el permiso «Editar chats» para responder.' : null}>
+  <Button disabled={!canUpdate}>Responder</Button>
+</ReasonTooltip>
+```
+
 ---
 
 ## 12. Dialogs, Sheets, BottomSheets

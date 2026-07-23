@@ -1,11 +1,10 @@
 import { AlertsFeed } from '@/components/alerts/alerts-feed';
-import { ResolutionExpirationAlert } from '@/components/dian/resolution-expiration-alert';
-import { SetupGuide } from '@/components/setup-guide/setup-guide';
 import { AppLink } from '@/components/app-link';
 import LiveIndicator from '@/components/dashboard/live-indicator';
 import PeriodFilter from '@/components/dashboard/period-filter';
 import DeliveriesSkeleton from '@/components/dashboard/skeleton/deliveries-skeleton';
 import MetricCardSkeleton from '@/components/dashboard/skeleton/metric-card-skeleton';
+import { ResolutionExpirationAlert } from '@/components/dian/resolution-expiration-alert';
 import AbandonmentPanel from '@/components/metrics/abandonment-panel';
 import ActiveOrdersPanel from '@/components/metrics/active-orders-panel';
 import HeatmapPanel from '@/components/metrics/heatmap-panel';
@@ -14,12 +13,14 @@ import { PageShell } from '@/components/page-shell';
 import InstallPwaPrompt from '@/components/pwa/install-pwa-prompt';
 import IosInstallHint from '@/components/pwa/ios-install-hint';
 import UpdateAvailableToast from '@/components/pwa/update-available-toast';
+import { SetupGuide } from '@/components/setup-guide/setup-guide';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { DashboardPanel } from '@/components/ui/dashboard-panel';
 import { LivePollingToggle } from '@/components/ui/live-polling-toggle';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatTile } from '@/components/ui/stat-tile';
+import { WhatsappOnboardingBanner } from '@/components/whatsapp/whatsapp-onboarding-banner';
 import { useLivePolling } from '@/hooks/use-live-polling';
 import { usePeriodFilter } from '@/hooks/use-period-filter';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -27,16 +28,14 @@ import { useWidgetFetch } from '@/hooks/use-widget-fetch';
 import { apiClient } from '@/lib/api-client';
 import { hasNoBranchAssigned } from '@/lib/branch-access';
 import { isFullyBlocked, isPendingVerification } from '@/lib/company-status';
+import { formatCurrency } from '@/lib/formatters';
 import { useSharedData } from '@/lib/shared-data';
 import { type DashboardData, type MetricActiveOrders, type Period } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, AlertTriangle, DollarSign, MapPin, Package, ShoppingBag, TrendingDown, Truck } from 'lucide-react';
 import { useMemo } from 'react';
-import { formatCurrency } from '@/lib/formatters';
-
 
 const OVERDUE_THRESHOLD_MIN = 45;
-
 
 function formatDuration(minutes: number | null): string {
     if (minutes === null) return '—';
@@ -153,9 +152,8 @@ export default function Dashboard() {
                         <AlertTitle>No tienes una sede asignada</AlertTitle>
                         <AlertDescription className="space-y-2 pt-1">
                             <p>
-                                Tu rol es <span className="text-foreground font-semibold">{role?.name ?? '—'}</span>, pero necesitas tener al
-                                menos una sede asignada para operar. La caja, las comandas, el inventario, las entregas y los reportes
-                                funcionan por sede.
+                                Tu rol es <span className="text-foreground font-semibold">{role?.name ?? '—'}</span>, pero necesitas tener al menos
+                                una sede asignada para operar. La caja, las comandas, el inventario, las entregas y los reportes funcionan por sede.
                             </p>
                             <p>Contacta al gerente o al propietario de tu empresa para que te asignen una sede.</p>
                         </AlertDescription>
@@ -186,7 +184,7 @@ export default function Dashboard() {
 
                 {/* BUG-028: usar activeCompany.status (live, de bootstrap con staleTime=60s)
                     como fuente de verdad; el URL param ?company_status= puede quedar stale. */}
-                {(companyStatus !== undefined && isPendingVerification(companyStatus) && isPendingVerification(activeCompany?.status ?? 'pending')) && (
+                {companyStatus !== undefined && isPendingVerification(companyStatus) && isPendingVerification(activeCompany?.status ?? 'pending') && (
                     <Alert variant="warning">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Empresa pendiente de activación</AlertTitle>
@@ -198,6 +196,8 @@ export default function Dashboard() {
                 )}
 
                 {canSeeSetupGuide && <SetupGuide />}
+
+                {canSeeSetupGuide && <WhatsappOnboardingBanner />}
 
                 {/* Alertas accionables (#124). Gate por reports.read — el feed
                     expone información de márgenes/costos indirectamente. */}

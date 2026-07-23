@@ -1,18 +1,56 @@
 import { apiFetch } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type ChatMediaType = 'sticker' | 'image' | 'video' | 'audio' | 'document' | null;
+/** Los 9 tipos de §6.7. `location` y `contact` no tienen archivo asociado. */
+export type ChatMediaType = 'sticker' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | null;
+
+/**
+ * Contenido de `chat_messages.media_payload` (jsonb). La forma depende del
+ * tipo: {lat,lng,name,address} para ubicación, {contacts[]} para contacto,
+ * {file_name,size_bytes,duration_s,ptt,caption} para archivos.
+ */
+export interface ChatMediaPayload {
+    lat?: number;
+    lng?: number;
+    name?: string;
+    address?: string;
+    contacts?: { name?: string | null; phones?: string[] | null }[];
+    file_name?: string;
+    size_bytes?: number;
+    duration_s?: number;
+    ptt?: boolean;
+    caption?: string;
+    [key: string]: unknown;
+}
 
 export interface ChatMessage {
     id: string;
     sender: 'client' | 'bot' | 'operator';
     body: string;
     status?: string | null;
+    /** Código corto del backend; el copy en español lo arma el frontend. */
+    failure_reason?: string | null;
+    /** Lo mandó el dueño desde su celular, no desde el panel. */
+    from_device?: boolean;
+    /** Nombre del operador que lo envió. Null en cliente, bot e históricos. */
+    author?: string | null;
     media_type?: ChatMediaType;
     media_mime?: string | null;
     media_url?: string | null;
+    media_payload?: ChatMediaPayload | null;
     sent_at: string | null;
 }
+
+export interface ChatChannel {
+    id: string;
+    label: string | null;
+    status: string;
+    phone_e164: string | null;
+    can_send?: boolean;
+}
+
+/** Chips de la bandeja (§8.4b punto 2). */
+export type ChatFilter = 'pending' | 'all' | 'closed';
 
 export interface ChatLatestOrder {
     id: string;
@@ -33,12 +71,18 @@ export interface ChatSummary {
     handoff_requested_at: string | null;
     handoff_reason: string | null;
     last_message_at: string | null;
+    /** Desde cuándo el cliente espera respuesta. Null = ya se le respondió. */
+    pending_reply_since: string | null;
+    /** Por cuál de los números de la empresa entró la conversación. */
+    channel?: ChatChannel | null;
     last_message: ChatMessage | null;
     latest_order: ChatLatestOrder | null;
 }
 
 export interface ChatDetail extends ChatSummary {
     messages: ChatMessage[];
+    /** Otros operadores con este chat abierto en los últimos 90 s (§5.7). */
+    viewers?: string[];
 }
 
 export interface ContactPayload {
@@ -49,10 +93,14 @@ export interface ContactPayload {
 
 interface UseChatsReturn {
     chats: ChatSummary[];
+    channels: ChatChannel[];
+    pendingCount: number;
     selectedChat: ChatDetail | null;
     selectedChatId: string | null;
     selectChat: (id: string | null) => void;
     sendMessage: (body: string) => Promise<void>;
+    sendAttachment: (file: File, kind: string, caption: string) => Promise<void>;
+    retryMessage: (messageId: string) => Promise<void>;
     setBotPaused: (paused: boolean) => Promise<void>;
     updateContact: (payload: ContactPayload) => Promise<void>;
     loading: boolean;
@@ -62,8 +110,17 @@ interface UseChatsReturn {
 
 const POLL_INTERVAL_MS = 30_000;
 
-export function useChats(token: string | null, search: string = ''): UseChatsReturn {
+interface UseChatsOptions {
+    search?: string;
+    filter?: ChatFilter;
+    channelId?: string | null;
+}
+
+export function useChats(token: string | null, options: UseChatsOptions = {}): UseChatsReturn {
+    const { search = '', filter = 'all', channelId = null } = options;
     const [chats, setChats] = useState<ChatSummary[]>([]);
+    const [channels, setChannels] = useState<ChatChannel[]>([]);
+    const [pendingCount, setPendingCount] = useState(0);
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [selectedChat, setSelectedChat] = useState<ChatDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -89,8 +146,12 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
     const fetchChats = useCallback(async (): Promise<void> => {
         if (!token) return;
         try {
-            const url = search.trim() !== '' ? `/api/v1/chats?q=${encodeURIComponent(search.trim())}` : '/api/v1/chats';
-            const res = await apiFetch(url);
+            const params = new URLSearchParams();
+            if (search.trim() !== '') params.set('q', search.trim());
+            if (filter !== 'all') params.set('filter', filter);
+            if (channelId) params.set('channel_id', channelId);
+            const query = params.toString();
+            const res = await apiFetch(query ? `/api/v1/chats?${query}` : '/api/v1/chats');
             if (!isMounted.current) return;
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}));
@@ -98,8 +159,11 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
                 return;
             }
             const json = await res.json();
-            const list = (json as { data: ChatSummary[] }).data ?? [];
+            const body = json as { data: ChatSummary[]; meta?: { pending_count?: number; channels?: ChatChannel[] } };
+            const list = body.data ?? [];
             setChats(list);
+            setChannels(body.meta?.channels ?? []);
+            setPendingCount(body.meta?.pending_count ?? 0);
             setError(null);
 
             if (!hasAutoSelectedRef.current && selectedChatId === null && list.length > 0) {
@@ -111,7 +175,7 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
         } finally {
             if (isMounted.current) setLoading(false);
         }
-    }, [token, selectedChatId, search]);
+    }, [token, selectedChatId, search, filter, channelId]);
 
     const fetchChatDetail = useCallback(
         async (id: string): Promise<void> => {
@@ -153,6 +217,52 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}));
                 throw new Error((json as { message?: string }).message ?? 'Error al enviar mensaje.');
+            }
+            await Promise.all([fetchChatDetail(selectedChatId), fetchChats()]);
+        },
+        [token, selectedChatId, fetchChatDetail, fetchChats],
+    );
+
+    /**
+     * Adjunto saliente (§6.7). Va como `multipart/form-data`: mandar 16 MB en
+     * base64 dentro de un JSON los infla un 33 % y obliga a que PHP los
+     * decodifique en memoria.
+     *
+     * NO se fija `Content-Type` a mano: el browser tiene que generar el boundary
+     * del multipart, y ponerlo explícito rompe el parseo del lado del servidor.
+     */
+    const sendAttachment = useCallback(
+        async (file: File, kind: string, caption: string): Promise<void> => {
+            if (!token || !selectedChatId) return;
+
+            const form = new FormData();
+            form.append('file', file);
+            form.append('type', kind);
+            if (caption) form.append('caption', caption);
+
+            const res = await apiFetch(`/api/v1/chats/${selectedChatId}/attachments`, { method: 'POST', body: form });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                const body = json as { message?: string; errors?: Record<string, string[]> };
+                // El 422 del FormRequest trae el motivo real ("el tipo de archivo
+                // no está permitido para «image» (image/svg+xml)"). Mostrar el
+                // `message` genérico escondería justo lo que hay que corregir.
+                const detail = body.errors ? Object.values(body.errors).flat()[0] : undefined;
+                throw new Error(detail ?? body.message ?? 'Error al enviar el adjunto.');
+            }
+
+            await Promise.all([fetchChatDetail(selectedChatId), fetchChats()]);
+        },
+        [token, selectedChatId, fetchChatDetail, fetchChats],
+    );
+
+    const retryMessage = useCallback(
+        async (messageId: string): Promise<void> => {
+            if (!token || !selectedChatId) return;
+            const res = await apiFetch(`/api/v1/chats/${selectedChatId}/messages/${messageId}/retry`, { method: 'POST' });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error((json as { message?: string }).message ?? 'No se pudo reintentar el envío.');
             }
             await Promise.all([fetchChatDetail(selectedChatId), fetchChats()]);
         },
@@ -221,10 +331,14 @@ export function useChats(token: string | null, search: string = ''): UseChatsRet
 
     return {
         chats,
+        channels,
+        pendingCount,
         selectedChat,
         selectedChatId,
         selectChat: setSelectedChatId,
         sendMessage,
+        sendAttachment,
+        retryMessage,
         setBotPaused,
         updateContact,
         loading,

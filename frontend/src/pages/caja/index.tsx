@@ -25,9 +25,9 @@ import { useSharedData } from '@/lib/shared-data';
 import { aggregateTax, calculateTaxLine } from '@/lib/tax';
 import type { MenuItem, RestaurantMenu } from '@/types';
 
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { AlertCircle, Check, Minus, Plus, QrCode, ShoppingBag, Store, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sanitizePlainText } from '@/lib/input-sanitize';
 
 interface CartLine {
     item: MenuItem;
@@ -58,8 +58,17 @@ export default function CajaPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [cart, setCart] = useState<Record<string, CartLine>>({});
-    const [orderType, setOrderType] = useState<OrderType>('table');
-    const [clientPhone, setClientPhone] = useState('');
+    // Prellenado desde el chat (§8.4b punto 9): "Crear pedido para este cliente"
+    // navega a `?client_phone=…`. Se arranca como domicilio porque un cliente de
+    // WhatsApp no está en una mesa. Mismo patrón que `table` de abajo.
+    const [orderType, setOrderType] = useState<OrderType>(() => {
+        if (typeof window === 'undefined') return 'table';
+        return new URLSearchParams(window.location.search).get('client_phone') ? 'delivery' : 'table';
+    });
+    const [clientPhone, setClientPhone] = useState(() => {
+        if (typeof window === 'undefined') return '';
+        return new URLSearchParams(window.location.search).get('client_phone') ?? '';
+    });
     const [tableNumber, setTableNumber] = useState(() => {
         if (typeof window === 'undefined') return '';
         return new URLSearchParams(window.location.search).get('table') ?? '';
@@ -381,9 +390,7 @@ export default function CajaPage() {
     };
 
     return (
-        <PageShell
-            title="Caja"
-        >
+        <PageShell title="Caja">
             <div className="p-4 pb-24 sm:p-6 sm:pb-6">
                 {loading ? (
                     <CashierSkeleton />
@@ -413,12 +420,7 @@ export default function CajaPage() {
                                             )}
                                             {menu && <Badge variant="secondary">Menú activo</Badge>}
                                             {activeBranch?.menu_qr_token && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setMenuQrOpen(true)}
-                                                >
+                                                <Button type="button" variant="outline" size="sm" onClick={() => setMenuQrOpen(true)}>
                                                     <QrCode className="h-4 w-4" />
                                                     QR Menú
                                                 </Button>
@@ -473,267 +475,285 @@ export default function CajaPage() {
 
                             {/* Carrito */}
                             <div ref={cartRef}>
-                            <Card className="h-fit rounded-lg shadow-sm md:sticky md:top-4">
-                                <CardHeader className="p-4 pb-2">
-                                    <CardTitle className="text-base">Nueva orden</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3 p-4 pt-0">
-                                    <div className="space-y-1">
-                                        <Label>Tipo de orden</Label>
-                                        <ToggleGroup
-                                            type="single"
-                                            value={orderType}
-                                            onValueChange={(v) => { if (v) { setOrderType(v as OrderType); setSubmitError(null); } }}
-                                            className="grid w-full grid-cols-3 gap-1"
-                                            disabled={submitting}
-                                        >
-                                            {(
-                                                [
-                                                    { key: 'table', label: 'En sitio' },
-                                                    { key: 'delivery', label: 'Domicilio' },
-                                                    { key: 'pickup', label: 'Para llevar' },
-                                                ] as { key: OrderType; label: string }[]
-                                            ).map((opt) => (
-                                                <ToggleGroupItem
-                                                    key={opt.key}
-                                                    value={opt.key}
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-8 text-xs"
-                                                >
-                                                    {opt.label}
-                                                </ToggleGroupItem>
-                                            ))}
-                                        </ToggleGroup>
-                                    </div>
-
-                                    {orderType === 'table' && (
+                                <Card className="h-fit rounded-lg shadow-sm md:sticky md:top-4">
+                                    <CardHeader className="p-4 pb-2">
+                                        <CardTitle className="text-base">Nueva orden</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3 p-4 pt-0">
                                         <div className="space-y-1">
-                                            <Label htmlFor="table-number">Número de mesa</Label>
-                                            <Select value={tableNumber} onValueChange={setTableNumber} disabled={submitting || tableCount === 0}>
-                                                <SelectTrigger id="table-number">
-                                                    <SelectValue placeholder={tableCount === 0 ? 'Sin mesas configuradas' : 'Selecciona una mesa'} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {tables.map(({ number: n }) => {
-                                                        const occupied = occupiedTables.has(n);
-                                                        return (
-                                                            <SelectItem key={n} value={n}>
-                                                                Mesa {n}
-                                                                {occupied && (
-                                                                    <span className="ml-1 text-xs text-[color:var(--color-status-warning)]">
-                                                                        · ocupada (sumar a la cuenta)
-                                                                    </span>
-                                                                )}
-                                                            </SelectItem>
-                                                        );
-                                                    })}
-                                                </SelectContent>
-                                            </Select>
-                                            <p className="text-muted-foreground text-xs">
-                                                {tableCount} {tableCount === 1 ? 'mesa configurada' : 'mesas configuradas'}. Gestiónalas en{' '}
-                                                <a href="/orders/tables?tab=config" className="underline">
-                                                    Mesas → Configuración
-                                                </a>
-                                                .
-                                            </p>
+                                            <Label>Tipo de orden</Label>
+                                            <ToggleGroup
+                                                type="single"
+                                                value={orderType}
+                                                onValueChange={(v) => {
+                                                    if (v) {
+                                                        setOrderType(v as OrderType);
+                                                        setSubmitError(null);
+                                                    }
+                                                }}
+                                                className="grid w-full grid-cols-3 gap-1"
+                                                disabled={submitting}
+                                            >
+                                                {(
+                                                    [
+                                                        { key: 'table', label: 'En sitio' },
+                                                        { key: 'delivery', label: 'Domicilio' },
+                                                        { key: 'pickup', label: 'Para llevar' },
+                                                    ] as { key: OrderType; label: string }[]
+                                                ).map((opt) => (
+                                                    <ToggleGroupItem
+                                                        key={opt.key}
+                                                        value={opt.key}
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-8 text-xs"
+                                                    >
+                                                        {opt.label}
+                                                    </ToggleGroupItem>
+                                                ))}
+                                            </ToggleGroup>
                                         </div>
-                                    )}
 
-                                    {orderType === 'delivery' && (
+                                        {orderType === 'table' && (
+                                            <div className="space-y-1">
+                                                <Label htmlFor="table-number">Número de mesa</Label>
+                                                <Select value={tableNumber} onValueChange={setTableNumber} disabled={submitting || tableCount === 0}>
+                                                    <SelectTrigger id="table-number">
+                                                        <SelectValue
+                                                            placeholder={tableCount === 0 ? 'Sin mesas configuradas' : 'Selecciona una mesa'}
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {tables.map(({ number: n }) => {
+                                                            const occupied = occupiedTables.has(n);
+                                                            return (
+                                                                <SelectItem key={n} value={n}>
+                                                                    Mesa {n}
+                                                                    {occupied && (
+                                                                        <span className="ml-1 text-xs text-[color:var(--color-status-warning)]">
+                                                                            · ocupada (sumar a la cuenta)
+                                                                        </span>
+                                                                    )}
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-muted-foreground text-xs">
+                                                    {tableCount} {tableCount === 1 ? 'mesa configurada' : 'mesas configuradas'}. Gestiónalas en{' '}
+                                                    <a href="/orders/tables?tab=config" className="underline">
+                                                        Mesas → Configuración
+                                                    </a>
+                                                    .
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {orderType === 'delivery' && (
+                                            <div className="space-y-1">
+                                                <Label htmlFor="delivery-address">Dirección de entrega</Label>
+                                                <Input
+                                                    id="delivery-address"
+                                                    value={deliveryAddress}
+                                                    onChange={(e) => setDeliveryAddress(sanitizePlainText(e.target.value, 500, true, false))}
+                                                    maxLength={500}
+                                                    placeholder="Calle 123 #45-67, apto 802"
+                                                    disabled={submitting}
+                                                />
+                                            </div>
+                                        )}
+
                                         <div className="space-y-1">
-                                            <Label htmlFor="delivery-address">Dirección de entrega</Label>
+                                            <Label htmlFor="client-phone">
+                                                Teléfono del cliente <span className="text-muted-foreground text-xs">(opcional)</span>
+                                            </Label>
                                             <Input
-                                                id="delivery-address"
-                                                value={deliveryAddress}
-                                                onChange={(e) => setDeliveryAddress(sanitizePlainText(e.target.value, 500, true, false))}
-                                            maxLength={500}
-                                                placeholder="Calle 123 #45-67, apto 802"
+                                                id="client-phone"
+                                                value={clientPhone}
+                                                // Saneo cliente (§5): solo dígitos, +, espacios y separadores.
+                                                // La normalización a E.164 vive en backend (fuente de verdad).
+                                                onChange={(e) => setClientPhone(e.target.value.replace(/[^\d+\s()-]/g, '').slice(0, 30))}
+                                                placeholder="+57 300 000 0000"
+                                                inputMode="tel"
+                                                maxLength={30}
                                                 disabled={submitting}
                                             />
+                                            <p className="text-muted-foreground text-xs">
+                                                Si no incluyes prefijo, asumimos +57 (Colombia). Si lo dejas, le enviamos avisos por SMS del estado de
+                                                su pedido.
+                                            </p>
                                         </div>
-                                    )}
 
-                                    <div className="space-y-1">
-                                        <Label htmlFor="client-phone">
-                                            Teléfono del cliente <span className="text-muted-foreground text-xs">(opcional)</span>
-                                        </Label>
-                                        <Input
-                                            id="client-phone"
-                                            value={clientPhone}
-                                            // Saneo cliente (§5): solo dígitos, +, espacios y separadores.
-                                            // La normalización a E.164 vive en backend (fuente de verdad).
-                                            onChange={(e) => setClientPhone(e.target.value.replace(/[^\d+\s()-]/g, '').slice(0, 30))}
-                                            placeholder="+57 300 000 0000"
-                                            inputMode="tel"
-                                            maxLength={30}
-                                            disabled={submitting}
-                                        />
-                                        <p className="text-muted-foreground text-xs">
-                                            Si no incluyes prefijo, asumimos +57 (Colombia). Si lo dejas, le enviamos
-                                            avisos por SMS del estado de su pedido.
-                                        </p>
-                                    </div>
-
-                                    <div className="max-h-[40vh] space-y-2 overflow-y-auto">
-                                        {!menu || cartLines.length === 0 ? (
-                                            <p className="text-muted-foreground py-6 text-center text-sm">Sin ítems aún</p>
-                                        ) : (
-                                            cartLines.map((line) => (
-                                                <div key={line.item.id} className="rounded-md border p-2 text-sm">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="min-w-0">
-                                                            <div className="truncate font-medium">{line.item.name}</div>
-                                                            <div className="text-muted-foreground text-xs tabular-nums">
-                                                                {formatCurrency(line.item.price * line.quantity)}
+                                        <div className="max-h-[40vh] space-y-2 overflow-y-auto">
+                                            {!menu || cartLines.length === 0 ? (
+                                                <p className="text-muted-foreground py-6 text-center text-sm">Sin ítems aún</p>
+                                            ) : (
+                                                cartLines.map((line) => (
+                                                    <div key={line.item.id} className="rounded-md border p-2 text-sm">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="min-w-0">
+                                                                <div className="truncate font-medium">{line.item.name}</div>
+                                                                <div className="text-muted-foreground text-xs tabular-nums">
+                                                                    {formatCurrency(line.item.price * line.quantity)}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex shrink-0 items-center gap-1">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="h-9 w-9 sm:h-8 sm:w-8"
+                                                                    onClick={() => decrementItem(line.item.id)}
+                                                                    disabled={submitting}
+                                                                    aria-label="Quitar uno"
+                                                                >
+                                                                    <Minus className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                                <span className="w-6 text-center text-sm tabular-nums">{line.quantity}</span>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="h-9 w-9 sm:h-8 sm:w-8"
+                                                                    onClick={() => addItem(line.item, line.category)}
+                                                                    disabled={submitting}
+                                                                    aria-label="Agregar uno"
+                                                                >
+                                                                    <Plus className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-9 w-9 sm:h-8 sm:w-8"
+                                                                    onClick={() => removeItem(line.item.id)}
+                                                                    disabled={submitting}
+                                                                    aria-label="Eliminar"
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </Button>
                                                             </div>
                                                         </div>
-                                                        <div className="flex shrink-0 items-center gap-1">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="icon"
-                                                                className="h-9 w-9 sm:h-8 sm:w-8"
-                                                                onClick={() => decrementItem(line.item.id)}
-                                                                disabled={submitting}
-                                                                aria-label="Quitar uno"
-                                                            >
-                                                                <Minus className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                            <span className="w-6 text-center text-sm tabular-nums">{line.quantity}</span>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="icon"
-                                                                className="h-9 w-9 sm:h-8 sm:w-8"
-                                                                onClick={() => addItem(line.item, line.category)}
-                                                                disabled={submitting}
-                                                                aria-label="Agregar uno"
-                                                            >
-                                                                <Plus className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-9 w-9 sm:h-8 sm:w-8"
-                                                                onClick={() => removeItem(line.item.id)}
-                                                                disabled={submitting}
-                                                                aria-label="Eliminar"
-                                                            >
-                                                                <Trash2 className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                        </div>
+                                                        <Input
+                                                            value={line.notes ?? ''}
+                                                            onChange={(e) =>
+                                                                updateNotes(line.item.id, sanitizePlainText(e.target.value, 500, true, false))
+                                                            }
+                                                            maxLength={500}
+                                                            placeholder="Notas (opcional)"
+                                                            className="mt-2 h-9 text-xs"
+                                                            disabled={submitting}
+                                                        />
                                                     </div>
-                                                    <Input
-                                                        value={line.notes ?? ''}
-                                                        onChange={(e) => updateNotes(line.item.id, sanitizePlainText(e.target.value, 500, true, false))}
-                                                    maxLength={500}
-                                                        placeholder="Notas (opcional)"
-                                                        className="mt-2 h-9 text-xs"
-                                                        disabled={submitting}
-                                                    />
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-
-                                    {taxRate > 0 && (
-                                        <div className="space-y-1 border-t pt-2 text-xs">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">Subtotal</span>
-                                                <span className="tabular-nums">{formatCurrency(taxBreakdown.subtotal)}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">{taxLabel}</span>
-                                                <span className="tabular-nums">{formatCurrency(taxBreakdown.tax_amount)}</span>
-                                            </div>
+                                                ))
+                                            )}
                                         </div>
-                                    )}
 
-                                    {/* Cupón */}
-                                    <div className="space-y-1 border-t pt-2 text-xs">
-                                        {activeAutoApply && !appliedCoupon?.valid && (
-                                            <div className="flex items-center justify-between rounded-md border border-[color:var(--color-status-warning)]/30 bg-[color:var(--color-status-warning)]/10 px-2 py-1.5 text-[color:var(--color-status-warning)]">
-                                                <span className="flex items-center gap-1.5">
-                                                    <span aria-hidden>🎉</span>
-                                                    <span className="font-medium">{activeAutoApply.label ?? 'Promo activa'}</span>
-                                                </span>
-                                                {typeof activeAutoApply.discount_amount === 'number' && (
-                                                    <span className="text-[11px] tabular-nums">
-                                                        −{formatCurrency(activeAutoApply.discount_amount)}
+                                        {taxRate > 0 && (
+                                            <div className="space-y-1 border-t pt-2 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-muted-foreground">Subtotal</span>
+                                                    <span className="tabular-nums">{formatCurrency(taxBreakdown.subtotal)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-muted-foreground">{taxLabel}</span>
+                                                    <span className="tabular-nums">{formatCurrency(taxBreakdown.tax_amount)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Cupón */}
+                                        <div className="space-y-1 border-t pt-2 text-xs">
+                                            {activeAutoApply && !appliedCoupon?.valid && (
+                                                <div className="flex items-center justify-between rounded-md border border-[color:var(--color-status-warning)]/30 bg-[color:var(--color-status-warning)]/10 px-2 py-1.5 text-[color:var(--color-status-warning)]">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <span aria-hidden>🎉</span>
+                                                        <span className="font-medium">{activeAutoApply.label ?? 'Promo activa'}</span>
                                                     </span>
-                                                )}
-                                            </div>
+                                                    {typeof activeAutoApply.discount_amount === 'number' && (
+                                                        <span className="text-[11px] tabular-nums">
+                                                            −{formatCurrency(activeAutoApply.discount_amount)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {appliedCoupon?.valid ? (
+                                                <div className="flex items-center justify-between rounded-md border border-[color:var(--color-status-safe)]/30 bg-[color:var(--color-status-safe)]/10 px-2 py-1.5 text-[color:var(--color-status-safe)]">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Check className="h-3 w-3" />
+                                                        <span className="font-medium">{appliedCoupon.coupon_code}</span>
+                                                        <span className="tabular-nums opacity-80">−{formatCurrency(discountAmount)}</span>
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className="text-xs underline opacity-80 hover:opacity-100"
+                                                        onClick={() => {
+                                                            removeCoupon();
+                                                            setCouponInput('');
+                                                        }}
+                                                        disabled={submitting}
+                                                    >
+                                                        quitar
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-1">
+                                                    <Input
+                                                        value={couponInput}
+                                                        onChange={(e) =>
+                                                            setCouponInput(sanitizePlainText(e.target.value.toUpperCase(), 60, false, false))
+                                                        }
+                                                        maxLength={60}
+                                                        placeholder="Código de cupón"
+                                                        className="h-7 text-xs uppercase"
+                                                        disabled={submitting || validatingCoupon || cartLines.length === 0}
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs"
+                                                        disabled={
+                                                            submitting ||
+                                                            validatingCoupon ||
+                                                            cartLines.length === 0 ||
+                                                            couponInput.trim().length === 0
+                                                        }
+                                                        onClick={() =>
+                                                            void validateCoupon(
+                                                                couponInput.trim(),
+                                                                taxBreakdown.total,
+                                                                clientPhone.trim() || undefined,
+                                                            )
+                                                        }
+                                                    >
+                                                        {validatingCoupon ? '…' : 'Aplicar'}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {couponError && !appliedCoupon?.valid && <div className="text-destructive">{couponError}</div>}
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t pt-2">
+                                            <span className="text-sm font-semibold">Total</span>
+                                            <span className="text-base font-semibold tabular-nums">{formatCurrency(total)}</span>
+                                        </div>
+
+                                        {submitError && (
+                                            <Alert variant="destructive" className="p-2 [&>svg]:top-2 [&>svg]:left-2 [&>svg~*]:pl-5">
+                                                <AlertCircle className="h-3.5 w-3.5" />
+                                                <AlertDescription className="text-xs">{submitError}</AlertDescription>
+                                            </Alert>
                                         )}
-                                        {appliedCoupon?.valid ? (
-                                            <div className="flex items-center justify-between rounded-md border border-[color:var(--color-status-safe)]/30 bg-[color:var(--color-status-safe)]/10 px-2 py-1.5 text-[color:var(--color-status-safe)]">
-                                                <span className="flex items-center gap-1.5">
-                                                    <Check className="h-3 w-3" />
-                                                    <span className="font-medium">{appliedCoupon.coupon_code}</span>
-                                                    <span className="tabular-nums opacity-80">−{formatCurrency(discountAmount)}</span>
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs underline opacity-80 hover:opacity-100"
-                                                    onClick={() => {
-                                                        removeCoupon();
-                                                        setCouponInput('');
-                                                    }}
-                                                    disabled={submitting}
-                                                >
-                                                    quitar
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex gap-1">
-                                                <Input
-                                                    value={couponInput}
-                                                    onChange={(e) => setCouponInput(sanitizePlainText(e.target.value.toUpperCase(), 60, false, false))}
-                                                    maxLength={60}
-                                                    placeholder="Código de cupón"
-                                                    className="h-7 text-xs uppercase"
-                                                    disabled={submitting || validatingCoupon || cartLines.length === 0}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-7 text-xs"
-                                                    disabled={
-                                                        submitting || validatingCoupon || cartLines.length === 0 || couponInput.trim().length === 0
-                                                    }
-                                                    onClick={() =>
-                                                        void validateCoupon(couponInput.trim(), taxBreakdown.total, clientPhone.trim() || undefined)
-                                                    }
-                                                >
-                                                    {validatingCoupon ? '…' : 'Aplicar'}
-                                                </Button>
-                                            </div>
+                                        {successMessage && (
+                                            <Alert variant="safe" className="p-2 [&>svg]:top-2 [&>svg]:left-2 [&>svg~*]:pl-5">
+                                                <Check className="h-3.5 w-3.5" />
+                                                <AlertDescription className="text-xs">{successMessage}</AlertDescription>
+                                            </Alert>
                                         )}
-                                        {couponError && !appliedCoupon?.valid && <div className="text-destructive">{couponError}</div>}
-                                    </div>
 
-                                    <div className="flex items-center justify-between border-t pt-2">
-                                        <span className="text-sm font-semibold">Total</span>
-                                        <span className="text-base font-semibold tabular-nums">{formatCurrency(total)}</span>
-                                    </div>
-
-                                    {submitError && (
-                                        <Alert variant="destructive" className="p-2 [&>svg]:top-2 [&>svg]:left-2 [&>svg~*]:pl-5">
-                                            <AlertCircle className="h-3.5 w-3.5" />
-                                            <AlertDescription className="text-xs">{submitError}</AlertDescription>
-                                        </Alert>
-                                    )}
-                                    {successMessage && (
-                                        <Alert variant="safe" className="p-2 [&>svg]:top-2 [&>svg]:left-2 [&>svg~*]:pl-5">
-                                            <Check className="h-3.5 w-3.5" />
-                                            <AlertDescription className="text-xs">{successMessage}</AlertDescription>
-                                        </Alert>
-                                    )}
-
-                                    <Button className="w-full" onClick={handleSubmit} disabled={submitting || !menu || cartLines.length === 0}>
-                                        {submitting ? 'Registrando...' : 'Registrar orden'}
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                                        <Button className="w-full" onClick={handleSubmit} disabled={submitting || !menu || cartLines.length === 0}>
+                                            {submitting ? 'Registrando...' : 'Registrar orden'}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             </div>
                         </div>
                     </CashRegisterPanel>

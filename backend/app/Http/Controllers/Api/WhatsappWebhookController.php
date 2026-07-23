@@ -7,6 +7,7 @@ use App\Models\MetaPlatformCredential;
 use App\Models\WebhookEvent;
 use App\Services\Whatsapp\WhatsappInboundMessageHandler;
 use App\Services\Whatsapp\WhatsappSignatureValidator;
+use App\Support\RedactsPii;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -109,13 +110,13 @@ class WhatsappWebhookController extends Controller
             $stats = $this->inboundHandler->handle($payload);
         } catch (\Throwable $e) {
             $event->forceFill([
-                'error' => mb_substr($e->getMessage(), 0, 65000),
+                'error' => RedactsPii::exceptionMessage($e->getMessage(), 65000),
                 'attempts' => $event->attempts + 1,
             ])->save();
 
             Log::channel('single')->error('whatsapp.webhook.handler_error', [
                 'event_id' => $event->id,
-                'message' => $e->getMessage(),
+                'message' => RedactsPii::exceptionMessage($e->getMessage()),
             ]);
 
             // 500 fuerza retry de Meta. El log + payload quedan en webhook_events.
@@ -149,7 +150,7 @@ class WhatsappWebhookController extends Controller
             ]);
         } catch (\Throwable $e) {
             Log::channel('single')->error('whatsapp.webhook.persist_failed', [
-                'message' => $e->getMessage(),
+                'message' => RedactsPii::exceptionMessage($e->getMessage()),
             ]);
 
             return null;

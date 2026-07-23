@@ -60,7 +60,10 @@ Route::get('apple-touch-icon.png', [PwaManifestController::class, 'appleTouchIco
 // permite acceso anónimo: este endpoint firma con TTL de 60 min y redirige
 // (302) a la URL temporal. Sin auth: los logos y QR se incrustan en páginas
 // públicas (menú del comensal); la autorización fina vive en el prefijo
-// permitido (companies/, menus/, chat/) — ver StorageProxyController.
+// permitido (companies/, menus/) — ver StorageProxyController. `chat-media/`
+// se retiro en CIBER-05 y NO se vuelve a agregar: son conversaciones de
+// clientes y se sirven por el endpoint autenticado
+// GET /api/v1/chats/{id}/messages/{messageId}/media.
 Route::get('storage-proxy/{path}', [StorageProxyController::class, 'show'])
     ->where('path', '.*')
     ->middleware('throttle:120,1')
