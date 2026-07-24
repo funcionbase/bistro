@@ -900,6 +900,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                             {placedOrder?.order_type === 'delivery'
                                 ? `El restaurante confirmará tu domicilio en breve. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`
                                 : `El restaurante confirmará tu pedido en breve para que pases a recogerlo. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`}
+                            {activeCartToken ? ' Te escribimos por WhatsApp con las novedades de tu pedido.' : ''}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

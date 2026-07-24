@@ -414,6 +414,11 @@ class ClientController extends Controller
                 ->lockForUpdate()
                 ->get();
 
+            // El modelo se cargó ANTES del lock: otro merge concurrente pudo
+            // haber rellenado campos (ej. el doc). Sin refresh, las decisiones
+            // fill-empty de abajo usarían valores stale y pisarían ese dato.
+            $principal->refresh();
+
             // 1. Reasignar FKs al principal. Los ids son UUID globales ya
             //    validados como de esta empresa; no hace falta re-filtrar.
             $moved = [];
