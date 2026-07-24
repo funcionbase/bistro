@@ -257,8 +257,8 @@ class KdsTicketService
                         ->exists();
                     if ($hasInKitchen) {
                         $order->status = 'in_kitchen';
-                        $this->maybeConsumeInventory($order);
                         $order->save();
+                        $this->inventory->consumeForOrderOnce($order, null, 'kds.in_kitchen');
 
                         return [$order, 'in_kitchen'];
                     }
@@ -276,24 +276,6 @@ class KdsTicketService
         if ($promotion !== null) {
             [$order, $newStatus] = $promotion;
             $this->smsDispatcher->dispatch($order, $newStatus, $actor);
-        }
-    }
-
-    /**
-     * Descuenta inventario al pasar la orden a `in_kitchen` (idempotente vía
-     * `inventory_consumed_at`). Falla silenciosamente — nunca bloquea el KDS.
-     */
-    private function maybeConsumeInventory(Order $order): void
-    {
-        if ($order->inventory_consumed_at !== null) {
-            return;
-        }
-
-        try {
-            $this->inventory->consumeForOrder($order, $order->items ?? [], null, 'kds.in_kitchen');
-            $order->inventory_consumed_at = now();
-        } catch (\Throwable) {
-            // Nunca bloquear el flujo de cocina por inventario.
         }
     }
 }

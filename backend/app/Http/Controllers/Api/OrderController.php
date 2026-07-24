@@ -1030,9 +1030,11 @@ class OrderController extends Controller
         // receipt para que el cierre de caja calcule el efectivo esperado.
         $session = $this->cashRegister->resolveSessionForCharge($companyNit, $branchId, $validated['cash_session_id'] ?? null);
 
+        $actor = $this->actingUser($request);
+
         // Atomicidad: bloquear la orden, validar estado, crear receipt y actualizar
         // status en una sola transacción. lockForUpdate evita doble cierre concurrente.
-        [$order, $paidAt, $paymentData] = DB::transaction(function () use ($id, $companyNit, $validated, $session) {
+        [$order, $paidAt, $paymentData] = DB::transaction(function () use ($id, $companyNit, $validated, $session, $actor) {
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
 
@@ -1102,6 +1104,11 @@ class OrderController extends Controller
             // (TableCashierService) los seguía viendo con paid_at NULL y ofrecía
             // re-cobrarlos (doble cobro).
             $this->markOrderItemsPaid($order, $receipt->id, $paidAt);
+
+            // Vender completado descuenta stock: una venta rápida cobrada desde
+            // `pending` (sin pasar por cocina) también produjo los platos.
+            // Idempotente y silencioso — nunca bloquea el cobro.
+            $this->inventoryService->consumeForOrderOnce($order, $actor, 'order.close_with_payment');
 
             return [$order, $paidAt, $paymentData];
         });

@@ -516,6 +516,29 @@ class InventoryService
     }
 
     /**
+     * Variante idempotente y silenciosa de `consumeForOrder` para cierres de
+     * venta (cobro en caja, cierre de mesa QR, sync offline, promoción KDS):
+     * descuenta solo si la orden nunca pasó por cocina (`inventory_consumed_at`
+     * null), estampa el timestamp, y JAMÁS lanza — vender completado descuenta
+     * stock, pero un problema de inventario nunca bloquea un cobro/cierre.
+     * Debe correr dentro de la txn que muta la orden.
+     */
+    public function consumeForOrderOnce(Order $order, ?User $actor, string $referencePrefix): void
+    {
+        if ($order->inventory_consumed_at !== null) {
+            return;
+        }
+
+        try {
+            $this->consumeForOrder($order, $order->items ?? [], $actor, $referencePrefix);
+            $order->inventory_consumed_at = now();
+            $order->save();
+        } catch (\Throwable) {
+            // Nunca bloquear un cobro por inventario.
+        }
+    }
+
+    /**
      * Descuenta inventario por consumo de cocina a partir de las recetas activas
      * de cada ítem vendido. Idempotencia garantizada por el caller vía
      * `order.inventory_consumed_at`. Items sin receta se omiten con audit.

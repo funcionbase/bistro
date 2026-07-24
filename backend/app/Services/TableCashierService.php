@@ -49,6 +49,7 @@ class TableCashierService
         private readonly TableSessionService $sessions,
         private readonly CashRegisterService $cashRegister,
         private readonly OrderStatusSmsDispatcher $smsDispatcher,
+        private readonly InventoryService $inventory,
     ) {}
 
     /**
@@ -740,6 +741,11 @@ class TableCashierService
 
         $order->status = 'completed';
         $order->save();
+
+        // Vender completado descuenta stock: si la mesa se cobró sin que la
+        // orden pasara por cocina, el consumo se descuenta acá (idempotente
+        // vía inventory_consumed_at; nunca bloquea el cobro).
+        $this->inventory->consumeForOrderOnce($order, null, 'table.close_session');
 
         // La orden quedó cerrada: items aún abiertos en cocina pasan a `served`
         // para que salgan del KDS (mismo comportamiento que

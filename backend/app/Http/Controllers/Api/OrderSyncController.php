@@ -19,6 +19,7 @@ use App\Rules\SafePlainText;
 use App\Services\AuditService;
 use App\Services\CashRegisterService;
 use App\Services\FeaturePermissionService;
+use App\Services\InventoryService;
 use App\Services\Sms\OrderStatusSmsDispatcher;
 use App\Services\TaxCalculator;
 use Carbon\Carbon;
@@ -61,6 +62,7 @@ class OrderSyncController extends Controller
         private readonly CashRegisterService $cashRegister,
         private readonly OrderController $orderController,
         private readonly OrderStatusSmsDispatcher $smsDispatcher,
+        private readonly InventoryService $inventoryService,
     ) {}
 
     public function syncBatch(Request $request): JsonResponse
@@ -380,6 +382,11 @@ class OrderSyncController extends Controller
         $order->tip_amount = $tip;
         $order->status = 'completed';
         $order->save();
+
+        // Vender completado descuenta stock: una orden offline cobrada sin
+        // pasar por cocina también produjo los platos (idempotente vía
+        // inventory_consumed_at; nunca bloquea el cierre).
+        $this->inventoryService->consumeForOrderOnce($order, null, 'sync.order_close');
 
         // KDS: items abiertos pasan a `served` (la orden ya quedó completed —
         // antes quedaban en `approved` para siempre). Luego el stamping de pago
