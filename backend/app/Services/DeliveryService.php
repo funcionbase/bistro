@@ -103,6 +103,12 @@ class DeliveryService
 
             $order->update(['status' => 'in_transit']);
 
+            // La orden salió a ruta: servir los items que sigan abiertos para
+            // que no queden tickets fantasma en el KDS. Paridad con el drag del
+            // tablero a in_transit — el updateStatus posterior del frontend ve
+            // el mismo status, hace no-op y nunca sincroniza items.
+            OrderItem::serveOpenItems($order->id);
+
             $this->logStatusChange($delivery, 'none', 'pending', null, $assignedBy);
 
             $this->auditService->log('delivery.assigned', $assignedBy, $delivery, [
@@ -179,6 +185,9 @@ class DeliveryService
             $previousOrderStatus = (string) $lockedOrder->status;
             $lockedOrder->update(['status' => 'in_transit']);
 
+            // Mismo cierre de tickets que assignDeliverer.
+            OrderItem::serveOpenItems($lockedOrder->id);
+
             $this->logStatusChange($delivery, 'none', 'pending', null, $courier);
 
             $this->auditService->log('delivery.self_assigned', $courier, $delivery, [
@@ -200,6 +209,10 @@ class DeliveryService
             $delivery->markAsDelivered();
 
             $delivery->order->update(['status' => 'completed']);
+
+            // Orden terminal: items aún abiertos pasan a `served` (paridad con
+            // closeWithPayment y el drag del tablero a completed).
+            OrderItem::serveOpenItems($delivery->order_id);
 
             $this->logStatusChange($delivery, $fromStatus, 'completed', null, $completedBy);
 

@@ -1095,7 +1095,7 @@ class OrderController extends Controller
 
             // La orden quedó cerrada: cualquier item aún abierto en cocina pasa
             // a `served` para que salga del KDS y el estado quede consistente.
-            $this->markOpenKitchenItemsServed($order);
+            OrderItem::serveOpenItems($order->id);
 
             // El receipt cubre el total de la orden: marcar TODOS los items no
             // cancelados como pagados. Sin esto, el cobro de mesa
@@ -1625,25 +1625,6 @@ class OrderController extends Controller
     }
 
     /**
-     * Marca como `served` los `order_items` que sigan abiertos en cocina
-     * (approved | in_kitchen | ready) cuando la orden se cierra. Así dejan de
-     * aparecer en el KDS y el estado queda consistente con la orden completada.
-     *
-     * Los tres estados ya son `consumable`, por lo que `orders.total` no cambia.
-     * NO toca `pending_approval` (no consumable) ni `cancelled`.
-     */
-    private function markOpenKitchenItemsServed(Order $order): void
-    {
-        OrderItem::query()
-            ->where('order_id', $order->id)
-            ->whereIn('status', (array) config('orders.item_statuses.operational'))
-            ->update([
-                'status' => 'served',
-                'served_at' => now(),
-            ]);
-    }
-
-    /**
      * Marca como pagados (paid_at + paid_receipt_id) los items no cancelados
      * que aún no tengan pago, cuando un receipt cubre el TOTAL de la orden
      * (closeWithPayment y los cierres offline). Es el espejo del stamping por
@@ -1705,7 +1686,7 @@ class OrderController extends Controller
 
             case 'in_transit':
             case 'completed':
-                $this->markOpenKitchenItemsServed($order);
+                OrderItem::serveOpenItems($order->id);
                 break;
         }
     }

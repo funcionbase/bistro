@@ -187,19 +187,37 @@ class OrderItem extends Model
     /**
      * Cancela en bloque los items que sigan abiertos (todo lo que no esté
      * `served` ni `cancelled`) cuando la orden muere (cancelación de orden,
-     * rechazo de domicilio). Los saca del KDS y deja `order_items`
-     * consistente con la orden terminal. `cancellation_reason='system'`
-     * porque no fue decisión de mesero/comensal.
+     * rechazo de domicilio, refund total). Los saca del KDS y deja
+     * `order_items` consistente con la orden terminal. `$reason` debe estar
+     * en la lista cerrada del CHECK `order_items_cancellation_reason_check`
+     * (`system` = decisión automática, `refunded` = devolución total).
      */
-    public static function cancelOpenItems(string $orderId): void
+    public static function cancelOpenItems(string $orderId, string $reason = 'system'): void
     {
         static::query()
             ->where('order_id', $orderId)
             ->whereNotIn('status', ['served', 'cancelled'])
             ->update([
                 'status' => 'cancelled',
-                'cancellation_reason' => 'system',
+                'cancellation_reason' => $reason,
                 'cancelled_at' => now(),
+            ]);
+    }
+
+    /**
+     * Marca como `served` los items que sigan abiertos en cocina (estados
+     * `operational`) cuando la orden avanza a `in_transit`/`completed` —
+     * salen del KDS sin alterar `orders.total` (todos los estados tocados
+     * son consumables). No toca `pending_approval` ni `cancelled`.
+     */
+    public static function serveOpenItems(string $orderId): void
+    {
+        static::query()
+            ->where('order_id', $orderId)
+            ->whereIn('status', (array) config('orders.item_statuses.operational'))
+            ->update([
+                'status' => 'served',
+                'served_at' => now(),
             ]);
     }
 }
