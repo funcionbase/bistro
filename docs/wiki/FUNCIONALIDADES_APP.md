@@ -686,7 +686,7 @@ Servido como **deferred prop Inertia** (no como REST). Esto significa: la págin
   revenue_count: number,            // count(orders) WHERE status IN revenue_statuses
   total_revenue: number,            // sum(orders.total) WHERE status IN revenue_statuses
   avg_ticket: number,               // total_revenue / revenue_count (0 si revenue_count == 0)
-  active_count: number,             // count WHERE status IN ['pending','in_kitchen','ready','in_delivery']
+  active_count: number,             // count WHERE status IN config('orders.operational') = ['pending','in_kitchen','ready','in_transit']
   cancelled_count: number,          // count WHERE status = 'cancelled'
   abandoned_count: number,          // count WHERE status = 'abandoned'
 
@@ -775,7 +775,7 @@ Middleware: jwt + company.access + permission:reports.read,read
       "pending": 3,
       "in_kitchen": 5,
       "ready": 2,
-      "in_delivery": 4
+      "in_transit": 4
     },
     "total": 14,
     "generated_at": "2026-05-06T22:14:30Z"
@@ -799,7 +799,8 @@ public function activeOrders(Request $request): JsonResponse {
 private function buildActiveOrders(string $nit): array {
     $rows = DB::table('orders')
         ->where('company_nit', $nit)
-        ->whereIn('status', ['pending', 'in_kitchen', 'ready', 'in_delivery'])
+        // Lista canónica: config('orders.operational')
+        ->whereIn('status', ['pending', 'in_kitchen', 'ready', 'in_transit'])
         ->groupBy('status')
         ->selectRaw('status, COUNT(*) as cnt')
         ->pluck('cnt', 'status')
@@ -807,7 +808,7 @@ private function buildActiveOrders(string $nit): array {
 
     return [
         'by_status' => array_merge(
-            ['pending' => 0, 'in_kitchen' => 0, 'ready' => 0, 'in_delivery' => 0],
+            ['pending' => 0, 'in_kitchen' => 0, 'ready' => 0, 'in_transit' => 0],
             $rows
         ),
         'total' => array_sum($rows),
@@ -1136,7 +1137,7 @@ SELECT
   SUM((item->>'price')::numeric * (item->>'quantity')::int) AS revenue
 FROM orders, jsonb_array_elements(items) AS item
 WHERE company_nit = ? AND ordered_at BETWEEN ? AND ?
-  AND status IN ('completed', 'in_delivery', 'successful')
+  AND status IN ('completed')  -- config('orders.revenue') — MetricsService::getTopItems
 GROUP BY item_id, name
 ORDER BY revenue DESC  -- o qty DESC
 LIMIT ?
@@ -1183,8 +1184,9 @@ Controller: `App\Http\Controllers\Reports\OrderReportController::index`. FormReq
 period:        daily | weekly | monthly | custom (required)
 date_from:     YYYY-MM-DD (required_if:period,custom)
 date_to:       YYYY-MM-DD (required_if:period,custom, after_or_equal:date_from)
-status:        all | pending | in_kitchen | ready | in_delivery |
-                completed | successful | cancelled | abandoned (default: all)
+status:        all | cualquiera de config('orders.all') — pending_approval | pending |
+                in_kitchen | ready | in_transit | completed | failed |
+                cancelled | refunded | abandoned (default: all)
 page:          int min:1 (offset pagination)
 per_page:      int min:1 max:100 (default 25)
 cursor_based:  boolean (default false)
@@ -1261,71 +1263,30 @@ $paginated = $orderedQuery->paginate(min($perPage, 100));
 
 ### 5.2 KPIs del período (key `summary`)
 
-Cálculo en `OrderReportController::buildSummary($query)`:
+Cálculo en `OrderReportController` (agrupación por status en SQL + refunds desde `payment_receipts`):
 
 ```php
-$rows = $query
-    ->selectRaw('status, SUM(total) as total_sum, COUNT(*) as cnt')
-    ->groupBy('status')
-    ->get()
-    ->keyBy('status');
+// COUNT + SUM(total) GROUP BY status, keyBy('status').
+// Devoluciones: SUM(-amount) de payment_receipts method=refund del período.
+// Bruto incluye completed Y refunded (la devolución es asiento aparte —
+// excluir la venta original provocaría doble descuento).
+$grossRevenue = completed.total_sum + refunded.total_sum;
 
 return [
-    'total_orders'  => $rows->sum('cnt'),
-    'successful'    => (int) ($rows['successful']?->cnt ?? 0),
-    'cancelled'     => (int) ($rows['cancelled']?->cnt ?? 0),
-    'abandoned'     => (int) ($rows['abandoned']?->cnt ?? 0),
-    'total_revenue' => (float) ($rows['successful']?->total_sum ?? 0),
+    'total_orders', 'completed', 'failed', 'cancelled', 'refunded', 'abandoned',
+    'total_revenue'  => $grossRevenue,
+    'total_refunded' => $totalRefunded,
+    'net_revenue'    => $grossRevenue - $totalRefunded,
 ];
 ```
 
 **Importante**:
-- `total_revenue` sólo cuenta `status=successful` (no incluye `completed` o `in_delivery`). Esto es **distinto** de los `revenue_statuses` del dashboard. Si necesitas alinear, esto es un punto a revisar — pero hoy el reporte considera "exitoso" como el único estado terminal de revenue.
-- `total_expenses` **se eliminó** del summary y de la UI. La columna `orders.cost` está hard-coded a `0` en `OrderController::store` línea 157, así que sumarla sólo daba `$0`.
+- El summary muestra **gross / refunds / net explícitos** (regla contable `.claude/contabilidad.md`). No existe `successful` en el código — quedó unificado en `completed` por la migración `2026_05_07_192524`.
+- `total_expenses` **se eliminó** del summary y de la UI en su momento; hoy `orders.cost` sí se calcula (food cost #107) y el margen vive en `/api/v1/metrics/dishes/margin`.
 
 ### 5.3 Estados y colores
 
-#### Mapeo en frontend (`pages/reports/index.tsx`)
-
-```ts
-const STATUS_LABELS: Record<string, string> = {
-  pending:     'Pendiente',
-  in_kitchen:  'En cocina',
-  ready:       'Para entrega',
-  in_delivery: 'En domicilio',
-  completed:   'Completado',
-  successful:  'Exitoso',
-  cancelled:   'Cancelado',
-  abandoned:   'Abandonado',
-};
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  pending:     'bg-yellow-100 text-yellow-800',
-  in_kitchen:  'bg-orange-100 text-orange-800',
-  ready:       'bg-blue-100 text-blue-800',
-  in_delivery: 'bg-purple-100 text-purple-800',
-  completed:   'bg-green-100 text-green-800',
-  successful:  'bg-green-100 text-green-800',
-  cancelled:   'bg-red-100 text-red-700',
-  abandoned:   'bg-amber-100 text-amber-700',
-};
-```
-
-#### Selector de estado (9 opciones)
-
-| Valor | Label |
-|---|---|
-| `all` | Todos |
-| `pending` | Pendiente |
-| `in_kitchen` | En cocina |
-| `ready` | Para entrega |
-| `in_delivery` | En domicilio |
-| `completed` | Completado |
-| `successful` | Exitoso |
-| `cancelled` | Cancelado |
-| `abandoned` | Abandonado |
-
-Backend valida con `Rule::in([...los 9 valores...])`. Antes sólo aceptaba 4 (`successful, cancelled, abandoned, all`); ahora 9.
+El frontend NO tiene mapa local: `pages/reports/index.tsx` usa `statusLabel()` y `statusBadgeClass()` de `lib/order-status.ts` con los `orderStatuses` compartidos por el backend (fuente única `config/orders.php`). El selector de estado ofrece `all` + los 10 estados canónicos; el backend valida con `Rule::in(array_merge(['all'], config('orders.all')))` (`OrderReportRequest` / `ExportReportRequest`).
 
 ### 5.4 Tabla "Detalle de Pedidos"
 
