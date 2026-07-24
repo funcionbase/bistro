@@ -68,6 +68,34 @@ class DeliveryService
     }
 
     /**
+     * Gate de asignación de repartidor: solo domicilios (`order_type`
+     * delivery o null legacy) con la comida en producción o lista
+     * (`in_kitchen`/`ready` — el mismo set que lista `available()`). El
+     * frontend ya lo previene; sin este gate un cliente API podía saltar
+     * cocina (pending→in_transit) o poner una mesa/pickup en tránsito.
+     */
+    private function assertOrderAssignable(Order $order): void
+    {
+        if (in_array($order->order_type, ['table', 'pickup'], true)) {
+            throw new HttpResponseException(
+                response()->json([
+                    'message' => 'Solo las órdenes de domicilio pueden asignarse a un repartidor.',
+                    'code' => 'ORDER_NOT_DELIVERY',
+                ], 409)
+            );
+        }
+
+        if (! in_array($order->status, ['in_kitchen', 'ready'], true)) {
+            throw new HttpResponseException(
+                response()->json([
+                    'message' => 'La orden no admite repartidor en su estado actual ('.$order->status.').',
+                    'code' => 'ORDER_NOT_ASSIGNABLE',
+                ], 409)
+            );
+        }
+    }
+
+    /**
      * ¿La orden ya tiene comprobante de pago registrado? Bloquea revert y
      * reject por inmutabilidad contable DIAN — el delivery no puede volver
      * a un estado previo si ya generó receipt (eso requeriría un refund,
@@ -89,6 +117,8 @@ class DeliveryService
         $this->assertCourierCapacity($deliverer, $order->company_nit);
 
         return DB::transaction(function () use ($order, $deliverer, $assignedBy, $reason) {
+            $this->assertOrderAssignable($order);
+
             $previousOrderStatus = (string) $order->status;
 
             $delivery = Delivery::create([
@@ -103,11 +133,15 @@ class DeliveryService
 
             $order->update(['status' => 'in_transit']);
 
-            // La orden salió a ruta: servir los items que sigan abiertos para
-            // que no queden tickets fantasma en el KDS. Paridad con el drag del
-            // tablero a in_transit — el updateStatus posterior del frontend ve
-            // el mismo status, hace no-op y nunca sincroniza items.
-            OrderItem::serveOpenItems($order->id);
+            // Si la comida ya estaba lista, servir los items para que no queden
+            // tickets fantasma en el KDS (paridad con el drag del tablero — el
+            // updateStatus posterior del frontend ve el mismo status, hace no-op
+            // y nunca sincroniza items). Si el courier tomó la orden con cocina
+            // aún trabajando (in_kitchen), los tickets se conservan y
+            // completeDelivery cierra los que queden.
+            if ($previousOrderStatus === 'ready') {
+                OrderItem::serveOpenItems($order->id);
+            }
 
             $this->logStatusChange($delivery, 'none', 'pending', null, $assignedBy);
 
@@ -182,11 +216,15 @@ class DeliveryService
                 'created_by' => $courier->id,
             ]);
 
+            $this->assertOrderAssignable($lockedOrder);
+
             $previousOrderStatus = (string) $lockedOrder->status;
             $lockedOrder->update(['status' => 'in_transit']);
 
-            // Mismo cierre de tickets que assignDeliverer.
-            OrderItem::serveOpenItems($lockedOrder->id);
+            // Mismo cierre condicional de tickets que assignDeliverer.
+            if ($previousOrderStatus === 'ready') {
+                OrderItem::serveOpenItems($lockedOrder->id);
+            }
 
             $this->logStatusChange($delivery, 'none', 'pending', null, $courier);
 
