@@ -905,6 +905,20 @@ class OrderController extends Controller
                 $order->save();
             }
 
+            // Excepción operativa auditada al forward-only del kanban: si la
+            // orden ya estaba "Para entrega" (ready), los platos nuevos la
+            // regresan a "En cocina" para que el tablero refleje que cocina
+            // volvió a tener trabajo pendiente (los items nuevos nacen
+            // `approved` y son visibles en el KDS). No re-consume inventario
+            // (el delta se descuenta abajo) ni re-notifica SMS. Sin impacto
+            // contable: `ready` no es estado revenue ni terminal.
+            $statusRegressed = false;
+            if ($order->status === 'ready') {
+                $order->status = 'in_kitchen';
+                $order->save();
+                $statusRegressed = true;
+            }
+
             // Si la orden ya pasó por cocina (inventario ya descontado),
             // descontar también el delta de las nuevas líneas — el resto no
             // debe re-descontarse. Si aún no pasó por cocina, el descuento
@@ -913,10 +927,19 @@ class OrderController extends Controller
                 $this->inventoryService->consumeForOrder($order, $newLines, $actor, 'order.append_items');
             }
 
-            return [$order, $addedTotal];
+            return [$order, $addedTotal, $statusRegressed];
         });
 
-        [$order, $addedTotal] = $result;
+        [$order, $addedTotal, $statusRegressed] = $result;
+
+        if ($statusRegressed) {
+            $this->auditService->log('order.status_changed', $this->actingUser($request), $order, [
+                'order_id' => $order->id,
+                'from' => 'ready',
+                'to' => 'in_kitchen',
+                'reason' => 'items_appended',
+            ]);
+        }
 
         $this->auditService->log('order.items_appended', $this->actingUser($request), $order, [
             'order_id' => $order->id,
