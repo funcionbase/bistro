@@ -15,8 +15,10 @@ use App\Models\BranchUser;
 use App\Models\CartSession;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\ClientNote;
 use App\Models\CompanyWhatsappAccount;
 use App\Models\Contact;
+use App\Models\Municipality;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Models\User;
@@ -204,6 +206,8 @@ class ChatController extends Controller
             // Chips de la bandeja (§8.4b punto 2).
             'filter' => ['nullable', 'string', 'in:pending,all,closed'],
             'channel_id' => ['nullable', 'uuid'],
+            // Filtro por plataforma: WhatsApp vs SMS (chips de la bandeja).
+            'source' => ['nullable', 'string', 'in:whatsapp,sms'],
         ]);
         $term = trim((string) ($validated['q'] ?? ''));
         $filter = (string) ($validated['filter'] ?? 'all');
@@ -222,7 +226,8 @@ class ChatController extends Controller
             // Sin BranchScope: el contacto puede estar en otra sede que el chat y
             // el nombre debe resolverse igual.
             ->with(['latestMessage', 'whatsappAccount', 'contact' => function ($q): void {
-                $q->withoutGlobalScope(BranchScope::class)->select('id', 'name');
+                $q->withoutGlobalScope(BranchScope::class)
+                    ->select('id', 'name', 'address', 'neighborhood', 'municipality_dane_code');
             }])
             // Prioridad real (§8.4b punto 2): primero los que esperan respuesta,
             // el que espera hace mas tiempo arriba. Postgres pone los NULL al
@@ -243,6 +248,10 @@ class ChatController extends Controller
             // falta. La consulta ya esta scopeada por `company_nit`, asi que un
             // id ajeno devuelve vacio en vez de filtrar nada (§7.5 capa 3).
             $query->where('whatsapp_account_id', $validated['channel_id']);
+        }
+
+        if (! empty($validated['source'])) {
+            $query->where('source', $validated['source']);
         }
 
         if ($term !== '') {
@@ -579,14 +588,38 @@ class ChatController extends Controller
             ->limit(50)
             ->get(['id', 'status', 'order_type', 'total', 'discount_amount', 'items', 'ordered_at']);
 
+        // Notas privadas UNIFICADAS: las mismas client_notes (con autor/fecha)
+        // que muestra y edita /clients. Ya no se usa el texto único
+        // contacts.notes — quedó como histórico migrado a client_notes.
+        $notes = $contact
+            ? ClientNote::forContact($companyNit, $contact->id)
+                ->with('author:id,name')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get()
+            : collect();
+
+        $municipalityLabel = $contact?->municipality_dane_code
+            ? optional(Municipality::find($contact->municipality_dane_code))->label()
+            : null;
+
         return response()->json([
             'data' => [
                 'contact' => [
                     'id' => $contact?->id,
                     'name' => $contact?->name ?? $chat->client_name,
                     'phone' => $chat->client_phone,
-                    'notes' => $contact?->notes,
+                    'address' => $contact?->address,
+                    'neighborhood' => $contact?->neighborhood,
+                    'municipality_dane_code' => $contact?->municipality_dane_code,
+                    'municipality_label' => $municipalityLabel,
                 ],
+                'notes' => $notes->map(fn (ClientNote $n) => [
+                    'id' => $n->id,
+                    'note' => $n->note,
+                    'created_at' => $n->created_at?->toIso8601String(),
+                    'author' => $n->author?->name,
+                ])->all(),
                 'orders' => $orders->map(fn (Order $order) => [
                     'id' => $order->id,
                     'status' => $order->status,
@@ -995,6 +1028,13 @@ class ChatController extends Controller
             }
             if ($notes !== null) {
                 $contact->notes = $notes;
+            }
+            // Dirección estructurada (misma que /clients). Solo se toca lo que el
+            // editor envía ('sometimes' en el request).
+            foreach (['address', 'neighborhood', 'municipality_dane_code'] as $field) {
+                if ($request->has($field)) {
+                    $contact->{$field} = $request->input($field);
+                }
             }
             $contact->save();
 

@@ -110,6 +110,7 @@ class ClientController extends Controller
             'legal_name' => ['nullable', new SafePlainText(maxBytes: 160, allowWhitespace: true)],
             'email' => ['nullable', 'email', 'max:120'],
             'address' => ['nullable', new SafePlainText(maxBytes: 200, allowWhitespace: true)],
+            'neighborhood' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: true)],
             'municipality_dane_code' => ['nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
             'notes' => ['nullable', new SafePlainText(maxBytes: 1000, allowWhitespace: true)],
         ]);
@@ -192,6 +193,7 @@ class ClientController extends Controller
             $contact->legal_name = $validated['legal_name'] ?? null;
             $contact->email = $validated['email'] ?? null;
             $contact->address = $validated['address'] ?? null;
+            $contact->neighborhood = $validated['neighborhood'] ?? null;
             $contact->municipality_dane_code = $validated['municipality_dane_code'] ?? null;
             $contact->notes = $validated['notes'] ?? null;
             $contact->branch_id = $branchId;
@@ -269,6 +271,7 @@ class ClientController extends Controller
             'legal_name' => ['nullable', new SafePlainText(maxBytes: 160, allowWhitespace: true)],
             'email' => ['nullable', 'email', 'max:120'],
             'address' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 200, allowWhitespace: true)],
+            'neighborhood' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 120, allowWhitespace: true)],
             'municipality_dane_code' => ['sometimes', 'nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
             'notes' => ['nullable', new SafePlainText(maxBytes: 1000, allowWhitespace: true)],
         ]);
@@ -334,6 +337,9 @@ class ClientController extends Controller
             // sometimes: solo se tocan si el request los trae (el CRM no).
             if (array_key_exists('address', $validated)) {
                 $contactModel->address = $validated['address'];
+            }
+            if (array_key_exists('neighborhood', $validated)) {
+                $contactModel->neighborhood = $validated['neighborhood'];
             }
             if (array_key_exists('municipality_dane_code', $validated)) {
                 $contactModel->municipality_dane_code = $validated['municipality_dane_code'];

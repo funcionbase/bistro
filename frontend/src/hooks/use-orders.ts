@@ -89,6 +89,8 @@ export interface KanbanOrder {
     table_number: string | null;
     delivery_address: string | null;
     client_phone: string | null;
+    contact_id?: string | null;
+    client_name?: string | null;
     items: KanbanOrderItem[];
     subtotal?: number;
     tax_amount?: number;

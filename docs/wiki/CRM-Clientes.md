@@ -271,6 +271,28 @@ Emitidos por `ClientController` vía `AuditService::log`:
 
 ---
 
+## Dirección estructurada + municipios DANE
+
+El contacto tiene dirección estructurada: **ciudad** (`municipality_dane_code`,
+catálogo DANE), **barrio** (`neighborhood`) y **dirección** (`address`). La
+ciudad se elige con un combobox de búsqueda que muestra "Ciudad, Departamento"
+(`GET /api/v1/municipalities?q=` / `?code=`), respaldado por la tabla
+`municipalities` (poblada desde `database/data/dane_municipalities.csv` en la
+migración `2026_07_24_000001`). El `municipality_dane_code` es el mismo código
+del perfil fiscal DIAN. El componente `AddressFields`
+(`components/clients/address-fields.tsx`) se reutiliza en el diálogo de contacto
+(`/clients`) y en "editar Contacto" (`/chats`).
+
+## Notas privadas unificadas
+
+Las notas dejaron de estar duplicadas: antes `/chats` editaba `contacts.notes`
+(texto único) y `/clients` usaba `client_notes` (lista con autor/fecha). Ahora
+**todo es `client_notes`**: la migración `2026_07_24_000002` copió cada
+`contacts.notes` no vacío a `client_notes`, el diálogo/editor de contacto ya no
+tienen textarea de notas, y el detalle del cliente en `/chats`
+(`ClientDetailModal`) muestra y permite agregar las mismas `client_notes` que el
+`NotesPanel` de `/clients`.
+
 ## Edge cases y empty states
 
 - **Empresa sin sedes activas**: `POST /clients` aborta 422 con mensaje

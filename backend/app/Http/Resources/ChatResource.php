@@ -31,6 +31,10 @@ class ChatResource extends JsonResource
                 : $this->client_name,
             'contact_id' => $this->contact_id,
             'contact_notes' => $this->whenLoaded('contact', fn () => $this->contact?->notes),
+            // Dirección del contacto para prellenar el editor de "editar Contacto".
+            'contact_address' => $this->whenLoaded('contact', fn () => $this->contact?->address),
+            'contact_neighborhood' => $this->whenLoaded('contact', fn () => $this->contact?->neighborhood),
+            'contact_municipality_dane_code' => $this->whenLoaded('contact', fn () => $this->contact?->municipality_dane_code),
             'status' => $this->status,
             'source' => $this->source ?? 'whatsapp',
             'bot_paused' => (bool) $this->bot_paused,

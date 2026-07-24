@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property ?string $legal_name
  * @property ?string $email
  * @property ?string $address
+ * @property ?string $neighborhood
  * @property ?string $municipality_dane_code
  * @property ?array $fiscal_responsibilities
  * @property ?Carbon $dian_profile_completed_at
@@ -71,6 +72,7 @@ class Contact extends Model
         'legal_name',
         'email',
         'address',
+        'neighborhood',
         'municipality_dane_code',
         'fiscal_responsibilities',
         'dian_profile_completed_at',

@@ -6,6 +6,7 @@ use App\Models\Chat;
 use App\Models\ClientNote;
 use App\Models\ClientTag;
 use App\Models\Contact;
+use App\Models\Municipality;
 use App\Models\Order;
 use App\Support\PhoneNumber;
 use Carbon\Carbon;
@@ -198,7 +199,11 @@ class CrmService
                 'legal_name' => $contact->legal_name,
                 'email' => $contact->email,
                 'address' => $contact->address,
+                'neighborhood' => $contact->neighborhood,
                 'municipality_dane_code' => $contact->municipality_dane_code,
+                'municipality_label' => $contact->municipality_dane_code
+                    ? optional(Municipality::find($contact->municipality_dane_code))->label()
+                    : null,
                 'fiscal_responsibilities' => $contact->fiscal_responsibilities ?? [],
                 'dian_profile_completed_at' => $contact->dian_profile_completed_at?->toIso8601String(),
                 'contact_notes' => $contact->notes,

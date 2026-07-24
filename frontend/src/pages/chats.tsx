@@ -1,3 +1,4 @@
+import { AddressFields, type AddressValue } from '@/components/clients/address-fields';
 import { ChatActivityModal, type ChatAuditEntry } from '@/components/chats/chat-activity-modal';
 import { ChatComposer } from '@/components/chats/chat-composer';
 import type { SharedContact } from '@/components/chats/chat-contact-card';
@@ -50,6 +51,12 @@ const FILTERS: { value: ChatFilter; label: string }[] = [
     { value: 'pending', label: 'Pendientes' },
     { value: 'all', label: 'Todos' },
     { value: 'closed', label: 'Cerrados' },
+];
+
+type PlatformFilter = 'whatsapp' | 'sms';
+const PLATFORM_FILTERS: { value: PlatformFilter; label: string }[] = [
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'sms', label: 'SMS' },
 ];
 
 interface OrderBadgeProps {
@@ -113,6 +120,10 @@ export default function ChatsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState<ChatFilter>('all');
     const [channelFilter, setChannelFilter] = useState<string | null>(null);
+    // Plataforma activa. Arranca en WhatsApp (caso común); si la empresa no
+    // tiene canal WhatsApp configurado, el efecto de abajo lo baja a SMS.
+    const [sourceFilter, setSourceFilter] = useState<PlatformFilter>('whatsapp');
+    const platformDefaultRef = useRef(false);
     // El beep lo dispara el hook del sidebar; acá solo se cambia la preferencia
     // (misma clave de localStorage). Arranca apagado: en una cocina un sonido
     // sorpresa es peor que ninguno.
@@ -136,7 +147,21 @@ export default function ChatsPage() {
         updateContact,
         loading,
         error,
-    } = useChats(token, { search: searchTerm, filter, channelId: channelFilter });
+    } = useChats(token, {
+        search: searchTerm,
+        filter,
+        // El filtro por número solo aplica dentro de WhatsApp.
+        channelId: sourceFilter === 'whatsapp' ? channelFilter : null,
+        source: sourceFilter,
+    });
+
+    // Default por plataforma: WhatsApp si hay canal configurado, si no SMS. Se
+    // resuelve una sola vez, tras la primera carga (channels viene del meta).
+    useEffect(() => {
+        if (platformDefaultRef.current || loading) return;
+        platformDefaultRef.current = true;
+        if (channels.length === 0) setSourceFilter('sms');
+    }, [loading, channels]);
 
     const [sending, setSending] = useState(false);
     const [botBusy, setBotBusy] = useState(false);
@@ -147,7 +172,14 @@ export default function ChatsPage() {
     const [editingContact, setEditingContact] = useState(false);
     const [contactName, setContactName] = useState('');
     const [contactPhone, setContactPhone] = useState('');
-    const [contactNotes, setContactNotes] = useState('');
+    // Dirección estructurada del contacto (misma que /clients). Las notas se
+    // unificaron en client_notes: se ven/agregan en el detalle del cliente.
+    const [contactAddress, setContactAddress] = useState<AddressValue>({
+        municipality_dane_code: null,
+        municipality_label: null,
+        neighborhood: null,
+        address: null,
+    });
     const [contactSaving, setContactSaving] = useState(false);
     const [contactError, setContactError] = useState<string | null>(null);
     const [orderDetail, setOrderDetail] = useState<KanbanOrder | null>(null);
@@ -277,8 +309,11 @@ export default function ChatsPage() {
         }
     };
 
+    const [clientDetailChatId, setClientDetailChatId] = useState<string | null>(null);
+
     const openClientDetail = async (chatId: string) => {
         setClientDetailOpen(true);
+        setClientDetailChatId(chatId);
         setClientDetailLoading(true);
         setClientDetailError(null);
         setClientDetail(null);
@@ -342,7 +377,12 @@ export default function ChatsPage() {
         if (!selectedChat) return;
         setContactName(selectedChat.client_name ?? '');
         setContactPhone(selectedChat.client_phone);
-        setContactNotes(selectedChat.contact_notes ?? '');
+        setContactAddress({
+            municipality_dane_code: selectedChat.contact_municipality_dane_code ?? null,
+            municipality_label: null,
+            neighborhood: selectedChat.contact_neighborhood ?? null,
+            address: selectedChat.contact_address ?? null,
+        });
         setContactError(null);
         setEditingContact(true);
     };
@@ -399,7 +439,9 @@ export default function ChatsPage() {
             await updateContact({
                 name: contactName.trim() || null,
                 phone: contactPhone.trim() || null,
-                notes: contactNotes.trim() || null,
+                address: contactAddress.address?.trim() || null,
+                neighborhood: contactAddress.neighborhood?.trim() || null,
+                municipality_dane_code: contactAddress.municipality_dane_code || null,
             });
             setEditingContact(false);
         } catch (err) {
@@ -413,7 +455,7 @@ export default function ChatsPage() {
     const saveSharedContact = (contact: SharedContact) => {
         setContactName(contact.name ?? '');
         setContactPhone(contact.phones?.[0] ?? '');
-        setContactNotes('');
+        setContactAddress({ municipality_dane_code: null, municipality_label: null, neighborhood: null, address: null });
         setContactError(null);
         setEditingContact(true);
     };
@@ -592,6 +634,27 @@ export default function ChatsPage() {
                                         />
                                     </div>
 
+                                    {/* Filtro por plataforma (WhatsApp / SMS). Mismo look que
+                                        los chips de estado; es el filtro primario de la bandeja. */}
+                                    <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar por plataforma">
+                                        {PLATFORM_FILTERS.map((p) => (
+                                            <button
+                                                key={p.value}
+                                                type="button"
+                                                onClick={() => setSourceFilter(p.value)}
+                                                aria-pressed={sourceFilter === p.value}
+                                                className={cn(
+                                                    'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                                                    sourceFilter === p.value
+                                                        ? 'border-primary bg-primary text-primary-foreground'
+                                                        : 'border-border bg-background hover:bg-muted',
+                                                )}
+                                            >
+                                                {p.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar conversaciones">
                                         {FILTERS.map((f) => (
                                             <button
@@ -611,7 +674,7 @@ export default function ChatsPage() {
                                         ))}
                                     </div>
 
-                                    {showChannelFilter && (
+                                    {showChannelFilter && sourceFilter === 'whatsapp' && (
                                         <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar por número">
                                             <button
                                                 type="button"
@@ -875,6 +938,18 @@ export default function ChatsPage() {
                 loading={clientDetailLoading}
                 error={clientDetailError}
                 onSelectOrder={(orderId) => void openOrderDetail(orderId)}
+                onAddNote={
+                    canUpdate
+                        ? async (contactId, note) => {
+                              const res = await apiFetch(`/api/v1/clients/${contactId}/notes`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ note }),
+                              });
+                              if (res.ok && clientDetailChatId) await openClientDetail(clientDetailChatId);
+                          }
+                        : undefined
+                }
             />
 
             <OrderDetailModal order={orderDetail} isOpen={!!orderDetail} onClose={() => setOrderDetail(null)} />
@@ -915,18 +990,9 @@ export default function ChatsPage() {
                                 placeholder="573001234567"
                             />
                         </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="contact-notes">Notas (opcional)</Label>
-                            <textarea
-                                id="contact-notes"
-                                value={contactNotes}
-                                onChange={(e) => setContactNotes(sanitizePlainText(e.target.value, 2000, true, false))}
-                                placeholder="Datos relevantes del cliente"
-                                rows={4}
-                                maxLength={2000}
-                                className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
-                            />
-                        </div>
+                        {/* Dirección estructurada (misma que /clients). Las notas
+                            se ven/agregan en el detalle del cliente (client_notes). */}
+                        <AddressFields idPrefix="chat-contact" value={contactAddress} onChange={setContactAddress} />
                         {contactError && <p className="text-destructive text-xs">{contactError}</p>}
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setEditingContact(false)} disabled={contactSaving}>

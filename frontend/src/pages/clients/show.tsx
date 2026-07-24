@@ -17,7 +17,7 @@ import { useToken } from '@/hooks/use-token';
 import { formatCurrency, formatDate } from '@/lib/coupon-helpers';
 import { statusBadgeClass, statusLabel } from '@/lib/order-status';
 import { useSharedData } from '@/lib/shared-data';
-import { AlertCircle, ArrowLeft, MessageCircle, Pencil, Phone as PhoneIcon } from 'lucide-react';
+import { AlertCircle, ArrowLeft, MapPin, MessageCircle, Pencil, Phone as PhoneIcon } from 'lucide-react';
 import { useState } from 'react';
 
 function formatPhoneDisplay(phone: string | null): string {
@@ -86,6 +86,16 @@ export default function ClientShow() {
                                             <span className="font-mono">{formatPhoneDisplay(profile.phone)}</span>
                                         </span>
                                         <SegmentBadge segment={profile.segment} />
+                                        {(profile.municipality_label || profile.address) && (
+                                            <span className="flex items-center gap-1">
+                                                <MapPin className="h-3.5 w-3.5" />
+                                                <span>
+                                                    {[profile.address, profile.neighborhood, profile.municipality_label]
+                                                        .filter(Boolean)
+                                                        .join(', ')}
+                                                </span>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -210,7 +220,10 @@ export default function ClientShow() {
                                     name: profile.name,
                                     legal_name: profile.legal_name,
                                     email: profile.email,
-                                    notes: profile.contact_notes,
+                                    address: profile.address,
+                                    neighborhood: profile.neighborhood,
+                                    municipality_dane_code: profile.municipality_dane_code,
+                                    municipality_label: profile.municipality_label,
                                 }}
                             />
                         )}

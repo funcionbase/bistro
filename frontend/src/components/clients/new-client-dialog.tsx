@@ -1,4 +1,5 @@
-﻿import { Button } from '@/components/ui/button';
+﻿import { AddressFields } from '@/components/clients/address-fields';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +21,10 @@ export interface EditContactData {
     name: string | null;
     legal_name: string | null;
     email: string | null;
-    notes: string | null;
+    address: string | null;
+    neighborhood: string | null;
+    municipality_dane_code: string | null;
+    municipality_label: string | null;
 }
 
 interface NewClientDialogProps {
@@ -67,7 +71,12 @@ interface FormState {
     name: string;
     legal_name: string;
     email: string;
-    notes: string;
+    // Dirección estructurada. Las notas ya NO viven acá: se unificaron en las
+    // "Notas privadas" (client_notes) del perfil.
+    address: string | null;
+    neighborhood: string | null;
+    municipality_dane_code: string | null;
+    municipality_label: string | null;
 }
 
 const INITIAL_FORM: FormState = {
@@ -79,7 +88,10 @@ const INITIAL_FORM: FormState = {
     name: '',
     legal_name: '',
     email: '',
-    notes: '',
+    address: null,
+    neighborhood: null,
+    municipality_dane_code: null,
+    municipality_label: null,
 };
 
 const DOC_TYPES_NATURAL = [
@@ -132,7 +144,10 @@ export function NewClientDialog({ open, onOpenChange, onCreated, onSaved, initia
                 name: initialContact.name ?? '',
                 legal_name: initialContact.legal_name ?? '',
                 email: initialContact.email ?? '',
-                notes: initialContact.notes ?? '',
+                address: initialContact.address ?? null,
+                neighborhood: initialContact.neighborhood ?? null,
+                municipality_dane_code: initialContact.municipality_dane_code ?? null,
+                municipality_label: initialContact.municipality_label ?? null,
             });
         } else if (initialPhone) {
             setForm((prev) => ({ ...prev, phone: stripCountryPrefix(initialPhone) }));
@@ -183,7 +198,6 @@ export function NewClientDialog({ open, onOpenChange, onCreated, onSaved, initia
         const trimmedDoc = form.doc_number.trim().toUpperCase();
         const trimmedLegalName = form.legal_name.trim();
         const trimmedEmail = form.email.trim();
-        const trimmedNotes = form.notes.trim();
         const phoneForApi = stripCountryPrefix(form.phone);
 
         const localErrors: Record<string, string> = {};
@@ -229,7 +243,9 @@ export function NewClientDialog({ open, onOpenChange, onCreated, onSaved, initia
                     name: trimmedName,
                     legal_name: trimmedLegalName === '' ? null : trimmedLegalName,
                     email: trimmedEmail === '' ? null : trimmedEmail,
-                    notes: trimmedNotes === '' ? null : trimmedNotes,
+                    address: form.address?.trim() || null,
+                    neighborhood: form.neighborhood?.trim() || null,
+                    municipality_dane_code: form.municipality_dane_code || null,
                 }),
             });
 
@@ -466,24 +482,26 @@ export function NewClientDialog({ open, onOpenChange, onCreated, onSaved, initia
                         )}
                     </div>
 
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-client-notes">Notas (opcional)</Label>
-                        <textarea
-                            id="new-client-notes"
-                            value={form.notes}
-                            onChange={(e) => setField('notes', sanitizePlainText(e.target.value, 1000, true, false))}
-                            placeholder="Preferencias, alergias, contexto…"
-                            disabled={submitting}
-                            maxLength={1000}
-                            rows={3}
-                            className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                        />
-                        {errors.notes && (
-                            <p className="text-xs text-[color:var(--color-status-critical)]" role="alert">
-                                {errors.notes}
-                            </p>
-                        )}
-                    </div>
+                    {/* Dirección estructurada (ciudad DANE + barrio + dirección).
+                        Las notas se manejan en "Notas privadas" del perfil. */}
+                    <AddressFields
+                        idPrefix="new-client"
+                        value={{
+                            municipality_dane_code: form.municipality_dane_code,
+                            municipality_label: form.municipality_label,
+                            neighborhood: form.neighborhood,
+                            address: form.address,
+                        }}
+                        onChange={(v) =>
+                            setForm((prev) => ({
+                                ...prev,
+                                municipality_dane_code: v.municipality_dane_code,
+                                municipality_label: v.municipality_label ?? null,
+                                neighborhood: v.neighborhood,
+                                address: v.address,
+                            }))
+                        }
+                    />
 
                     {topError && (
                         <p className="text-sm text-[color:var(--color-status-critical)]" role="alert">

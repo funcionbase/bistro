@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\UrlSanitizer;
 use Database\Factories\ChatMessageFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -76,6 +78,17 @@ class ChatMessage extends Model
             'from_device' => 'boolean',
             'media_payload' => 'array',
         ];
+    }
+
+    /**
+     * Sanea el body en TODA escritura (recibido o enviado, por cualquier canal):
+     * neutraliza esquemas de URL peligrosos y bytes de control. Un solo punto
+     * cubre inbound de WhatsApp, salientes del operador/bot, SMS espejo y avisos
+     * de orden — sin tocar cada caller. Ver App\Support\UrlSanitizer.
+     */
+    protected function body(): Attribute
+    {
+        return Attribute::set(fn (?string $value): ?string => UrlSanitizer::neutralizeDangerousSchemes($value));
     }
 
     /** Direccion derivada del sender — no es columna en BD. */

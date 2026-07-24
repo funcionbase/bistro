@@ -59,6 +59,7 @@ use App\Http\Controllers\Api\LoyaltyReportController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MenuEngineeringController;
 use App\Http\Controllers\Api\MetricsController;
+use App\Http\Controllers\Api\MunicipalityController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderSmsFailureController;
 use App\Http\Controllers\Api\OrderSyncController;
@@ -1440,6 +1441,11 @@ Route::prefix('v1')->group(function () {
             // requiere `branch.access` por diseño (consolidado).
             // Refactor #235: rutas por contact_id (canónico) en vez de phone,
             // que ya no es único en contacts (familia comparte número).
+            // Catálogo DANE para el selector de ciudad del formulario de
+            // dirección (Ciudad, Departamento). Global, sin scope de empresa.
+            Route::get('municipalities', [MunicipalityController::class, 'index'])
+                ->name('api.municipalities.index');
+
             Route::prefix('clients')->group(function () {
                 Route::get('/', [ClientController::class, 'index'])
                     ->middleware('permission:clients.read,read')

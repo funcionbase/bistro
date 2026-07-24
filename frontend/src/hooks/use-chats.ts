@@ -65,6 +65,9 @@ export interface ChatSummary {
     client_name: string | null;
     contact_id: string | null;
     contact_notes?: string | null;
+    contact_address?: string | null;
+    contact_neighborhood?: string | null;
+    contact_municipality_dane_code?: string | null;
     status: 'open' | 'closed';
     source: ChatSource;
     bot_paused: boolean;
@@ -88,7 +91,9 @@ export interface ChatDetail extends ChatSummary {
 export interface ContactPayload {
     name?: string | null;
     phone?: string | null;
-    notes?: string | null;
+    address?: string | null;
+    neighborhood?: string | null;
+    municipality_dane_code?: string | null;
 }
 
 interface UseChatsReturn {
@@ -114,10 +119,12 @@ interface UseChatsOptions {
     search?: string;
     filter?: ChatFilter;
     channelId?: string | null;
+    /** Filtro por plataforma: 'whatsapp' | 'sms'. null = sin filtrar. */
+    source?: string | null;
 }
 
 export function useChats(token: string | null, options: UseChatsOptions = {}): UseChatsReturn {
-    const { search = '', filter = 'all', channelId = null } = options;
+    const { search = '', filter = 'all', channelId = null, source = null } = options;
     const [chats, setChats] = useState<ChatSummary[]>([]);
     const [channels, setChannels] = useState<ChatChannel[]>([]);
     const [pendingCount, setPendingCount] = useState(0);
@@ -150,6 +157,7 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
             if (search.trim() !== '') params.set('q', search.trim());
             if (filter !== 'all') params.set('filter', filter);
             if (channelId) params.set('channel_id', channelId);
+            if (source) params.set('source', source);
             const query = params.toString();
             const res = await apiFetch(query ? `/api/v1/chats?${query}` : '/api/v1/chats');
             if (!isMounted.current) return;
@@ -175,7 +183,7 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
         } finally {
             if (isMounted.current) setLoading(false);
         }
-    }, [token, selectedChatId, search, filter, channelId]);
+    }, [token, selectedChatId, search, filter, channelId, source]);
 
     const fetchChatDetail = useCallback(
         async (id: string): Promise<void> => {
@@ -289,10 +297,14 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
     const updateContact = useCallback(
         async (payload: ContactPayload): Promise<void> => {
             if (!token || !selectedChatId) return;
-            const body: Record<string, string> = {};
-            if (payload.name !== undefined && payload.name !== null) body.name = payload.name;
-            if (payload.phone !== undefined && payload.phone !== null) body.phone = payload.phone;
-            if (payload.notes !== undefined && payload.notes !== null) body.notes = payload.notes;
+            // Dirección se envía SIEMPRE que la clave esté presente (incl. null),
+            // para poder limpiarla; nombre/teléfono solo si tienen valor.
+            const body: Record<string, string | null> = {};
+            if (payload.name != null) body.name = payload.name;
+            if (payload.phone != null) body.phone = payload.phone;
+            if ('address' in payload) body.address = payload.address ?? null;
+            if ('neighborhood' in payload) body.neighborhood = payload.neighborhood ?? null;
+            if ('municipality_dane_code' in payload) body.municipality_dane_code = payload.municipality_dane_code ?? null;
             const res = await apiFetch(`/api/v1/chats/${selectedChatId}/contact`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },

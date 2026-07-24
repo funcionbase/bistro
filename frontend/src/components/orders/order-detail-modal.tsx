@@ -220,17 +220,38 @@ export function OrderDetailModal({
                         </div>
                     )}
 
-                    {/* Teléfono cliente + chat: no aplica cuando la orden es En sitio (cliente presente) */}
-                    {order.order_type !== 'table' && order.client_phone && (
-                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Phone className="text-muted-foreground h-4 w-4" />
-                            <span>{order.client_phone}</span>
-                            {order.chat_id && (
-                                <Button type="button" size="sm" variant="outline" className="ml-auto" onClick={goToChat}>
-                                    <MessageCircle className="mr-1.5 h-3 w-3" />
-                                    Ir a chat
-                                </Button>
+                    {/* Cliente: nombre + teléfono + accesos (ver cliente / ir a chat).
+                        No aplica cuando la orden es En sitio (cliente presente). */}
+                    {order.order_type !== 'table' && (order.client_phone || order.client_name) && (
+                        <div className="space-y-1.5 text-sm">
+                            {order.client_name && (
+                                <div className="flex items-center gap-2">
+                                    <UserCheck className="text-muted-foreground h-4 w-4" />
+                                    <span className="font-medium">{order.client_name}</span>
+                                </div>
                             )}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {order.client_phone && (
+                                    <>
+                                        <Phone className="text-muted-foreground h-4 w-4" />
+                                        <span className="font-mono">{order.client_phone}</span>
+                                    </>
+                                )}
+                                <span className="ml-auto flex items-center gap-2">
+                                    {order.contact_id && (
+                                        <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/clients/${order.contact_id}`)}>
+                                            <UserCheck className="mr-1.5 h-3 w-3" />
+                                            Ver cliente
+                                        </Button>
+                                    )}
+                                    {order.chat_id && (
+                                        <Button type="button" size="sm" variant="outline" onClick={goToChat}>
+                                            <MessageCircle className="mr-1.5 h-3 w-3" />
+                                            Ir a chat
+                                        </Button>
+                                    )}
+                                </span>
+                            </div>
                         </div>
                     )}
 
