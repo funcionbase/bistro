@@ -1,14 +1,15 @@
 import { SidebarInset } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
 import * as React from 'react';
 
 interface AppContentProps extends React.ComponentProps<'div'> {
     variant?: 'header' | 'sidebar';
 }
 
-export function AppContent({ variant = 'header', children, ...props }: AppContentProps) {
+export function AppContent({ variant = 'header', children, className, ...props }: AppContentProps) {
     if (variant === 'sidebar') {
         return (
-            <SidebarInset className="pwa-safe-bottom" {...props}>
+            <SidebarInset className={cn('pwa-safe-bottom', className)} {...props}>
                 {children}
             </SidebarInset>
         );

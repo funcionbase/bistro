@@ -93,7 +93,12 @@ export default function AppSidebarLayout({ children }: { children: React.ReactNo
                 <SyncToast />
                 <OrderSmsFailureWatcher />
                 <AppSidebar />
-                <AppContent variant="sidebar">
+                {/* En vistas full-screen (/chats) la columna de contenido tiene
+                    ALTURA DEFINIDA (h-svh) + overflow-hidden: sin esto, con mucho
+                    contenido `min-h-svh` deja crecer la columna y scrollea toda la
+                    pagina. Acotada, el chain flex queda bounded y solo scrollean
+                    los dos contenedores internos (lista de chats + mensajes). */}
+                <AppContent variant="sidebar" className={isFullScreenView ? 'h-svh overflow-hidden' : undefined}>
                     <AppSidebarHeader />
                     <OfflineBanner />
                     <StorageQuotaWarning />
