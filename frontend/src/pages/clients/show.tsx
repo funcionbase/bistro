@@ -1,5 +1,6 @@
 import { AppLink } from '@/components/app-link';
 import { LoyaltyPanel } from '@/components/clients/loyalty-panel';
+import { NewClientDialog } from '@/components/clients/new-client-dialog';
 import { NotesPanel } from '@/components/clients/notes-panel';
 import { SegmentBadge } from '@/components/clients/segment-badge';
 import { TagsEditor } from '@/components/clients/tags-editor';
@@ -16,7 +17,8 @@ import { useToken } from '@/hooks/use-token';
 import { formatCurrency, formatDate } from '@/lib/coupon-helpers';
 import { statusBadgeClass, statusLabel } from '@/lib/order-status';
 import { useSharedData } from '@/lib/shared-data';
-import { AlertCircle, ArrowLeft, MessageCircle, Phone as PhoneIcon } from 'lucide-react';
+import { AlertCircle, ArrowLeft, MapPin, MessageCircle, Pencil, Phone as PhoneIcon } from 'lucide-react';
+import { useState } from 'react';
 
 function formatPhoneDisplay(phone: string | null): string {
     if (!phone) return 'Sin teléfono';
@@ -39,7 +41,8 @@ export default function ClientShow() {
     const canViewLoyalty = permissions.includes('loyalty.read');
     const orderStatuses = useOrderStatuses();
 
-    const { profile, loading, error, addNote, deleteNote, addTag, deleteTag } = useClient(token, contactId);
+    const { profile, loading, error, refresh, addNote, deleteNote, addTag, deleteTag } = useClient(token, contactId);
+    const [editOpen, setEditOpen] = useState(false);
 
     return (
         <PageShell title={profile?.name || formatPhoneDisplay(profile?.phone ?? null)}>
@@ -83,16 +86,34 @@ export default function ClientShow() {
                                             <span className="font-mono">{formatPhoneDisplay(profile.phone)}</span>
                                         </span>
                                         <SegmentBadge segment={profile.segment} />
+                                        {(profile.municipality_label || profile.address) && (
+                                            <span className="flex items-center gap-1">
+                                                <MapPin className="h-3.5 w-3.5" />
+                                                <span>
+                                                    {[profile.address, profile.neighborhood, profile.municipality_label]
+                                                        .filter(Boolean)
+                                                        .join(', ')}
+                                                </span>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                {profile.chats.length > 0 && (
-                                    <AppLink href={`/chats?chat=${profile.chats[0].id}`}>
-                                        <Button variant="outline" size="sm">
-                                            <MessageCircle className="mr-1 h-4 w-4" />
-                                            Ver chat
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {canEdit && (
+                                        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                                            <Pencil className="mr-1 h-4 w-4" />
+                                            Editar
                                         </Button>
-                                    </AppLink>
-                                )}
+                                    )}
+                                    {profile.chats.length > 0 && (
+                                        <AppLink href={`/chats?chat=${profile.chats[0].id}`}>
+                                            <Button variant="outline" size="sm">
+                                                <MessageCircle className="mr-1 h-4 w-4" />
+                                                Ver chat
+                                            </Button>
+                                        </AppLink>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
@@ -183,6 +204,29 @@ export default function ClientShow() {
                                 <NotesPanel notes={profile.notes} canEdit={canEdit} canDelete={canDelete} onAdd={addNote} onDelete={deleteNote} />
                             </TabsContent>
                         </Tabs>
+
+                        {canEdit && (
+                            <NewClientDialog
+                                open={editOpen}
+                                onOpenChange={setEditOpen}
+                                onSaved={() => void refresh()}
+                                initialContact={{
+                                    id: profile.id,
+                                    kind: profile.kind,
+                                    doc_type: profile.doc_type,
+                                    doc_number: profile.doc_number,
+                                    dv: profile.dv,
+                                    phone: profile.phone,
+                                    name: profile.name,
+                                    legal_name: profile.legal_name,
+                                    email: profile.email,
+                                    address: profile.address,
+                                    neighborhood: profile.neighborhood,
+                                    municipality_dane_code: profile.municipality_dane_code,
+                                    municipality_label: profile.municipality_label,
+                                }}
+                            />
+                        )}
                     </>
                 )}
             </div>

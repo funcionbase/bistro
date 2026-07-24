@@ -86,9 +86,22 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
         wb.register()
             .then((reg) => {
-                // Chequeo periódico: sin esto una PWA abierta 24/7 puede pasar
-                // hasta 24h sin detectar una nueva versión.
-                if (reg) setInterval(() => void reg.update(), 5 * 60 * 1000);
+                if (!reg) return;
+
+                // Chequeo periódico: cubre la PWA/tablet abierta 24/7 (caja, KDS)
+                // que sin esto pasaba hasta 24h sin detectar una versión nueva.
+                setInterval(() => void reg.update(), 5 * 60 * 1000);
+
+                // Y al volver a primer plano: una PWA instalada que se abre,
+                // se usa un rato y se cierra puede NO llegar nunca a los 5 min
+                // del intervalo, y se quedaba pegada en la versión con la que
+                // abrió (el caso reportado: seguía en una build vieja pese a
+                // varios deploys). Checkear en `visibilitychange` detecta el
+                // deploy nuevo apenas el usuario reabre la app. Barato: `update()`
+                // hace un fetch condicional del sw.js (no descarga si no cambió).
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') void reg.update();
+                });
             })
             .catch(() => {
                 // Falla silenciosa: la app sigue funcionando sin SW.

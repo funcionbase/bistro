@@ -21,6 +21,13 @@ return [
 
     'timeout' => (int) env('EVOLUTION_TIMEOUT', 15),
 
+    // Ventana de latido para considerar VIVO al líder de Evolution (tabla
+    // `evolution_leader` del leader-guard). Debe igualar el STALE_SECONDS del
+    // guard (3 × POLL): si el líder no late en esta ventana, se lo da por caído
+    // y el cliente cae al loopback configurado. Sirve para el descubrimiento de
+    // líder cuando hay N≥2 instancias EC2.
+    'leader_stale_seconds' => (int) env('EVOLUTION_LEADER_STALE_SECONDS', 90),
+
     // Prefijo del nombre de instancia: `bistro-{env}-{nit}-{sede|company}`.
     'instance_prefix' => env('EVOLUTION_INSTANCE_PREFIX', 'bistro'),
 

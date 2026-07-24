@@ -19,8 +19,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Una sesión abandonada se usa para calcular la tasa de abandono de carrito.
  * El campo created_at se usa como timestamp de inicio de sesión para métricas de período.
  *
- * @property string $jwt_jti — UUID único de la sesión de carrito (del claim jti del CartJWT)
+ * @property string $jwt_jti — UUID único de la sesión de carrito (del claim jti del CartJWT,
+ *                           o token público del link corto /menus?cart={uuid} enviado desde /chats)
  * @property string $status — active | abandoned | converted
+ * @property ?string $chat_id — chat que originó el link (para precargar el pedido en la conversación)
+ * @property ?string $order_id — orden creada al convertir la sesión
  */
 class CartSession extends Model
 {
@@ -37,9 +40,12 @@ class CartSession extends Model
     protected $fillable = [
         'jwt_jti',
         'company_nit',
+        'branch_id',
         'client_phone',
         'status',
         'expired_at',
+        'chat_id',
+        'order_id',
     ];
 
     protected function casts(): array
@@ -60,6 +66,18 @@ class CartSession extends Model
     public function items(): HasMany
     {
         return $this->hasMany(CartItem::class);
+    }
+
+    /** @return BelongsTo<Chat, $this> */
+    public function chat(): BelongsTo
+    {
+        return $this->belongsTo(Chat::class);
+    }
+
+    /** @return BelongsTo<Order, $this> */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function scopeActive(Builder $query): Builder

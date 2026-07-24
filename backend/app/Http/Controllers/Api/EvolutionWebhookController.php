@@ -358,7 +358,13 @@ class EvolutionWebhookController extends Controller
                 'event_id' => str_starts_with($event, 'messages.')
                     ? ($payload['data']['key']['id'] ?? $payload['data']['keyId'] ?? null)
                     : null,
-                'payload' => $this->scrub($payload),
+                // Firma inválida = tráfico NO autenticado: queda el veredicto y el
+                // tamaño para forense, nunca el cuerpo. Sin este recorte, un
+                // anónimo dentro del throttle (600/min) podría llenar la tabla
+                // con payloads de MBs (webhook_events no tiene purga).
+                'payload' => $signatureValid
+                    ? $this->scrub($payload)
+                    : ['event' => $event, '_rejected' => true, '_bytes' => strlen((string) json_encode($payload))],
                 // El header de autenticación NO se guarda: meter el secreto en
                 // claro en la BD es peor que no tener el dato. Solo el veredicto.
                 'signature_header' => null,

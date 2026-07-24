@@ -57,7 +57,9 @@ export interface ClientProfile {
     legal_name: string | null;
     email: string | null;
     address: string | null;
+    neighborhood: string | null;
     municipality_dane_code: string | null;
+    municipality_label: string | null;
     fiscal_responsibilities: string[];
     dian_profile_completed_at: string | null;
     contact_notes: string | null;

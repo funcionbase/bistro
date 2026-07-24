@@ -119,6 +119,13 @@ class OrderController extends Controller
                 ->whereIn('client_phone', $phones)
                 ->pluck('id', 'client_phone');
 
+        // Nombre del cliente por contacto — para mostrarlo en el detalle de la
+        // orden junto al botón "Ver cliente".
+        $contactIds = $orders->pluck('contact_id')->filter()->unique()->values()->all();
+        $contactNames = empty($contactIds)
+            ? collect()
+            : Contact::withoutBranchScope()->whereIn('id', $contactIds)->pluck('name', 'id');
+
         $payload = $orders->map(fn (Order $order) => [
             'id' => $order->id,
             'status' => $order->status,
@@ -126,6 +133,8 @@ class OrderController extends Controller
             'table_number' => $order->table_number,
             'delivery_address' => $order->delivery_address,
             'client_phone' => $order->client_phone,
+            'contact_id' => $order->contact_id,
+            'client_name' => $order->contact_id ? ($contactNames[$order->contact_id] ?? null) : null,
             'items' => $order->items ?? [],
             'subtotal' => (float) $order->subtotal,
             'tax_amount' => (float) $order->tax_amount,
@@ -650,6 +659,8 @@ class OrderController extends Controller
                 'table_number' => $order->table_number,
                 'delivery_address' => $order->delivery_address,
                 'client_phone' => $order->client_phone,
+                'contact_id' => $order->contact_id,
+                'client_name' => $order->contact_id ? optional(Contact::withoutBranchScope()->find($order->contact_id))->name : null,
                 'items' => $order->items ?? [],
                 'line_items' => $lineItems,
                 'notes' => $notesPayload,

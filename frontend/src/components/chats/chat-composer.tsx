@@ -6,7 +6,7 @@ import { compressImage } from '@/lib/compress-image';
 import { sanitizePlainText } from '@/lib/input-sanitize';
 import { cn } from '@/lib/utils';
 
-import { BookOpen, FileText, Image as ImageIcon, Paperclip, Receipt, Send, ShoppingCart, Sparkles, X } from 'lucide-react';
+import { BookOpen, FileText, Image as ImageIcon, Paperclip, Receipt, Send, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /** Tope propio de §6.7, el mismo que valida el backend. Se avisa ANTES de subir. */
@@ -32,10 +32,12 @@ interface ChatComposerProps {
     quickReplies?: QuickReply[];
     /** Valores para resolver {{cliente}}/{{pedido}}/{{sede}} al insertar (§8.4b punto 14). */
     quickReplyVars?: { cliente?: string | null; pedido?: string | null; sede?: string | null };
-    /** Link público del menú (client-side). Si viene, habilita "Enviar carta" (§8.4b punto 8). */
-    menuUrl?: string | null;
-    /** Mintea el link de carrito en el backend. Si viene, habilita "Enviar carrito" (§8.4b punto 8). */
-    onRequestCartLink?: () => Promise<string | null>;
+    /**
+     * Genera el link de la carta con sesión de seguimiento (backend, con
+     * fallback client-side). Si viene, habilita "Enviar la carta" — opción
+     * unificada que reemplaza carta estática + carrito (§8.4b punto 8).
+     */
+    onRequestMenuLink?: () => Promise<string | null>;
     /** Abre el flujo de creación de pedido con el cliente prellenado (§8.4b punto 9). */
     onCreateOrder?: () => void;
 }
@@ -77,8 +79,7 @@ export function ChatComposer({
     onSendAttachment,
     quickReplies,
     quickReplyVars,
-    menuUrl,
-    onRequestCartLink,
+    onRequestMenuLink,
     onCreateOrder,
 }: ChatComposerProps) {
     const [draft, setDraft] = useState('');
@@ -153,25 +154,25 @@ export function ChatComposer({
         [quickReplyVars],
     );
 
-    /** Agrega texto al borrador (link de carta/carrito), respetando lo ya escrito. */
+    /** Agrega texto al borrador (link de la carta), respetando lo ya escrito. */
     const appendText = useCallback((text: string) => {
         setDraft((prev) => (prev.trim() ? `${prev.trimEnd()}\n${text}` : text));
         inputRef.current?.focus();
     }, []);
 
-    const shareCart = useCallback(async () => {
-        if (!onRequestCartLink) return;
+    const shareMenu = useCallback(async () => {
+        if (!onRequestMenuLink) return;
         setError(null);
         setLinkBusy(true);
         try {
-            const url = await onRequestCartLink();
+            const url = await onRequestMenuLink();
             if (url) appendText(url);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'No se pudo generar el carrito.');
+            setError(err instanceof Error ? err.message : 'No se pudo generar el link de la carta.');
         } finally {
             setLinkBusy(false);
         }
-    }, [onRequestCartLink, appendText]);
+    }, [onRequestMenuLink, appendText]);
 
     const acceptFile = useCallback(async (file: File) => {
         setError(null);
@@ -264,7 +265,7 @@ export function ChatComposer({
 
     const working = busy || sending;
     const canSubmit = !disabled && !working && (Boolean(attachment) || draft.trim().length > 0);
-    const hasActions = Boolean(menuUrl) || Boolean(onRequestCartLink) || Boolean(onCreateOrder);
+    const hasActions = Boolean(onRequestMenuLink) || Boolean(onCreateOrder);
 
     return (
         <form
@@ -365,22 +366,16 @@ export function ChatComposer({
                                 disabled={disabled || working || linkBusy}
                                 className="h-11 w-11 shrink-0"
                                 aria-label="Acciones rápidas"
-                                title="Enviar la carta, un carrito o crear un pedido"
+                                title="Enviar la carta o crear un pedido"
                             >
                                 <Sparkles className="h-5 w-5" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                            {menuUrl && (
-                                <DropdownMenuItem onClick={() => appendText(menuUrl)}>
+                            {onRequestMenuLink && (
+                                <DropdownMenuItem onClick={() => void shareMenu()} disabled={linkBusy}>
                                     <BookOpen className="mr-2 h-4 w-4" />
-                                    Enviar la carta
-                                </DropdownMenuItem>
-                            )}
-                            {onRequestCartLink && (
-                                <DropdownMenuItem onClick={() => void shareCart()} disabled={linkBusy}>
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
-                                    {linkBusy ? 'Generando…' : 'Enviar un carrito'}
+                                    {linkBusy ? 'Generando…' : 'Enviar la carta'}
                                 </DropdownMenuItem>
                             )}
                             {onCreateOrder && (

@@ -146,7 +146,12 @@ class WhatsappInboundMessageHandler
      */
     public function persistInbound(CompanyWhatsappAccount $account, NormalizedInboundMessage $msg): ?ChatMessage
     {
-        $clientPhone = $msg->clientPhoneE164;
+        // Canónico de almacenamiento (`57XXXXXXXXXX`, sin `+`): el webhook entrega
+        // E.164 pero contacts/chats se guardan y se buscan en este formato. Sin
+        // normalizar aquí, el firstOrNew/where de abajo no matchea el contacto ni
+        // el chat del CRM/SMS y crea un duplicado del mismo cliente. (Los mutators
+        // normalizan el SET, pero el WHERE del lookup usa este valor tal cual.)
+        $clientPhone = CrmService::normalizePhone($msg->clientPhoneE164);
         $clientName = $msg->clientName;
         $metaMessageId = $msg->providerMessageId;
         $sentAt = $msg->sentAt;

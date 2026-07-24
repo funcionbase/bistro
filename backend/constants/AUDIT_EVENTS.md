@@ -109,6 +109,7 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `chat.message.sent` | `ChatController::storeMessage` / `storeAttachment` | `chat_message_id`, `body_length`, `status` | `chats.update` |
 | `chat.bot.toggled` | `ChatController::updateBot` | `from_paused`, `to_paused` | `chats.update` |
 | `chat.contact.updated` | `ChatController::updateContact` | `before`, `after` (única excepción PII) | `chats.update` |
+| `chat.menu_link.sent` | `ChatController::menuLink` | `chat_id`, `cart_session_id`, `branch_id` | `chats.update` (throttle 20/min) |
 | `chat.access.denied` | `ChatController::findChatOrDeny` + `ChatAuditController` | `chat_id`, `attempted_company_nit`, `route` | — (dedupe 5 min) |
 | `chat.history.read_by_bot` | `ExternalChatMessageController::index` | `chat_id`, `messages_returned`, `user_id=null` | `bot.jwt` (dedupe 15 min) |
 | `chat.message.sent_by_bot` | `ExternalChatMessageController::store` | `chat_message_id`, `body_length`, `user_id=null` | `bot.jwt` |
@@ -127,6 +128,16 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `inventory.transfer_cross_branch` | Endpoint dedicado de transferencia | `from_branch_id`, `to_branch_id`, `items[]`, `total_value` | `inventory.transfer_cross_branch` |
 | `kds.station.*` y `kds.device_token.*` | `KdsStationController` / `KdsDeviceTokenService` | ver sección "Cocina (KDS)" arriba | `kds_stations.*` |
 | `branch.business_type_changed` (#237) | `BranchController::changeBusinessType` | `branch_id`, `before` (slug del vertical previo), `after` (slug nuevo) | `branches.manage,update` |
+
+### CRM (clientes)
+
+| `action` | Disparado por | `data` mínimo | Permiso relacionado |
+|---|---|---|---|
+| `client.created` | `ClientController::store` | `contact_id`, `kind`, `doc_type`, `doc_number`, `client_phone`, `client_name`, `branch_id` | `clients.create` |
+| `client.updated` | `ClientController::update` | `contact_id`, `kind`, `doc_type`, `doc_number`, `client_phone`, `client_name` | `clients.update` |
+| `client.merged` | `ClientController::merge` | `contact_id` (principal), `merged_contacts[]` (snapshot id/name/doc/phone/email), `moved` (conteos por tabla) | `clients.delete` |
+| `client.note_created` / `client.note_deleted` | `ClientController::storeNote` / `destroyNote` | `contact_id`, `note_id` (+ `note_excerpt` al borrar) | `clients.update` / `clients.delete` |
+| `client.tag_added` / `client.tag_removed` | `ClientController::storeTag` / `destroyTag` | `contact_id`, `tag` | `clients.update` / `clients.delete` |
 
 ### WhatsApp
 

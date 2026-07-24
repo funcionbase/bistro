@@ -9,6 +9,7 @@ use App\Models\Contact;
 use App\Models\Table;
 use App\Models\TableSession;
 use App\Models\TableSessionGuest;
+use App\Support\PhoneNumber;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -200,8 +201,11 @@ class TableSessionService
     }
 
     /**
-     * Normaliza el teléfono: strip de espacios, guiones, paréntesis y prefijo
-     * +57/57 opcional. Retorna 10 dígitos comenzando en 3 o lanza si no aplica.
+     * Valida que sea un celular colombiano (10 dígitos comenzando en 3) y
+     * devuelve el canónico de almacenamiento `57XXXXXXXXXX` (con indicativo,
+     * sin `+`), consistente con Contact/Order/Chat. Antes devolvía 10 dígitos
+     * sin indicativo, lo que creaba contactos en un formato distinto al del CRM
+     * y duplicaba al mismo cliente. Lanza si el número no valida.
      */
     public function normalizePhone(string $raw): string
     {
@@ -220,7 +224,7 @@ class TableSessionService
             );
         }
 
-        return $digits;
+        return PhoneNumber::toColombianCanonical($digits);
     }
 
     /**

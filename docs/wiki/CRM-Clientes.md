@@ -235,7 +235,11 @@ Componentes DS reutilizados:
 - `Table`, `DataCardList` con `DataCard` para responsive mobile.
 - `SegmentBadge` (`components/clients/segment-badge.tsx`) con tokens semánticos.
 - `EmptyState`, `ClientsListSkeleton`, `Alert`.
-- `NewClientDialog` para creación.
+- `NewClientDialog` para creación y edición.
+- `MergeClientsDialog` (`components/clients/merge-clients-dialog.tsx`) para
+  unificar duplicados: checkboxes en el listado (visibles con `clients.delete`),
+  barra de acción con "Unificar (N)" al seleccionar ≥2, radio para elegir el
+  principal (preselecciona quien tiene doc y más pedidos).
 - `LoyaltyPanel` se renderiza en el perfil si `loyalty.read` (ver
   `Fidelizacion-Puntos.md`).
 
@@ -254,6 +258,8 @@ Emitidos por `ClientController` vía `AuditService::log`:
 | Acción | Data mínimo |
 |---|---|
 | `client.created` | `contact_id`, `kind`, `doc_type`, `doc_number`, `client_phone`, `client_name`, `branch_id`. |
+| `client.updated` | `contact_id`, `kind`, `doc_type`, `doc_number`, `client_phone`, `client_name`. |
+| `client.merged` | `contact_id` (principal), `merged_contacts[]` (snapshot id/name/doc/phone/email de los absorbidos), `moved` (conteos por tabla). |
 | `client.note_created` | `contact_id`, `client_phone`, `note_id`. |
 | `client.note_deleted` | `contact_id`, `client_phone`, `note_id`, `note_excerpt` (≤200 chars). |
 | `client.tag_added` | `contact_id`, `client_phone`, `tag`. |
@@ -264,6 +270,28 @@ Emitidos por `ClientController` vía `AuditService::log`:
 `bistro/backend/constants/AUDIT_EVENTS.md`.
 
 ---
+
+## Dirección estructurada + municipios DANE
+
+El contacto tiene dirección estructurada: **ciudad** (`municipality_dane_code`,
+catálogo DANE), **barrio** (`neighborhood`) y **dirección** (`address`). La
+ciudad se elige con un combobox de búsqueda que muestra "Ciudad, Departamento"
+(`GET /api/v1/municipalities?q=` / `?code=`), respaldado por la tabla
+`municipalities` (poblada desde `database/data/dane_municipalities.csv` en la
+migración `2026_07_24_000001`). El `municipality_dane_code` es el mismo código
+del perfil fiscal DIAN. El componente `AddressFields`
+(`components/clients/address-fields.tsx`) se reutiliza en el diálogo de contacto
+(`/clients`) y en "editar Contacto" (`/chats`).
+
+## Notas privadas unificadas
+
+Las notas dejaron de estar duplicadas: antes `/chats` editaba `contacts.notes`
+(texto único) y `/clients` usaba `client_notes` (lista con autor/fecha). Ahora
+**todo es `client_notes`**: la migración `2026_07_24_000002` copió cada
+`contacts.notes` no vacío a `client_notes`, el diálogo/editor de contacto ya no
+tienen textarea de notas, y el detalle del cliente en `/chats`
+(`ClientDetailModal`) muestra y permite agregar las mismas `client_notes` que el
+`NotesPanel` de `/clients`.
 
 ## Edge cases y empty states
 
@@ -280,6 +308,14 @@ Emitidos por `ClientController` vía `AuditService::log`:
   existente con HTTP 200 en lugar de 201.
 - **Cross-tenant contact**: `loadContactOrFail` aborta 404 si el contact no
   pertenece a la empresa activa del JWT.
+- **Merge de duplicados** (`POST /clients/{contact}/merge`, permiso
+  `clients.delete`): `{contact}` sobrevive; `merge_ids` (máx 10) se absorben.
+  Reasigna orders/chats/client_notes/table_session_guests por `contact_id`,
+  tags con dedup (UNIQUE parcial + legacy por phone intactos), rellena solo
+  campos vacíos del principal (doc viaja como grupo type+number+dv), concatena
+  notas de perfil y elimina los duplicados ANTES de copiar el doc (evita chocar
+  el UNIQUE parcial de doc_number). Loyalty/coupons van por `client_phone` y no
+  requieren reasignación. Todo en transacción con `lockForUpdate`.
 - **Listado vacío**: `EmptyState` con CTA "Registrar primer cliente" si
   `clients.create`; sin CTA en otro caso.
 - **Cache stale**: `Cache::flexible([300, 1800])` sirve respuesta vieja hasta

@@ -8,6 +8,9 @@ use App\Events\OrderItemSubmittedForApproval;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\StoreBranchOrderRequest;
 use App\Models\Branch;
+use App\Models\CartSession;
+use App\Models\Chat;
+use App\Models\ChatMessage;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Order;
@@ -22,6 +25,7 @@ use App\Support\OrderTotalCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Pedido público SIN mesa desde el QR de menú de sede (`/menus?branch={token}`):
@@ -193,6 +197,10 @@ class BranchOrderController extends Controller
             ], 422);
         }
 
+        // Fuera de la transacción: si el vínculo con el chat falla, la orden
+        // ya creada NO se rompe (el cliente no debe ver un error por esto).
+        $this->linkCartSession($order, $validated['cart_token'] ?? null, $company->nit);
+
         return response()->json([
             'data' => [
                 'order_id' => (string) $order->id,
@@ -205,15 +213,83 @@ class BranchOrderController extends Controller
     }
 
     /**
-     * Espejo mínimo de `TableSessionService::upsertContact` (privado allá):
-     * prefiere el formato canónico del CRM (57 + 10 dígitos) para no duplicar
-     * clientes; crea con el formato de 10 dígitos si no existe.
+     * Convierte la sesión de carta enviada desde /chats (`/menus?cart={uuid}`)
+     * y precarga en la conversación lo que el cliente seleccionó: marca la
+     * `CartSession` como `converted` con `order_id` y crea un `ChatMessage`
+     * (sender bot, solo visible en el hilo — sin outbound) con el resumen del
+     * pedido, para que el operador lo vea llegar en el chat que envió la carta.
+     */
+    private function linkCartSession(Order $order, ?string $token, string $companyNit): void
+    {
+        if ($token === null || $token === '') {
+            return;
+        }
+
+        try {
+            // Escape del BranchScope: contexto público sin JWT. company_nit
+            // ancla la sesión a la empresa de la sede del pedido.
+            $session = CartSession::withoutGlobalScopes()
+                ->where('jwt_jti', $token)
+                ->where('company_nit', $companyNit)
+                ->where('status', 'active')
+                ->where('expired_at', '>', now())
+                ->first();
+
+            if ($session === null) {
+                return;
+            }
+
+            $session->status = 'converted';
+            $session->order_id = $order->id;
+            $session->save();
+
+            if ($session->chat_id === null) {
+                return;
+            }
+
+            $chat = Chat::withoutBranchScope()->whereKey($session->chat_id)->first();
+            if ($chat === null) {
+                return;
+            }
+
+            $lines = $order->orderItems()
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn (OrderItem $i): string => "{$i->quantity}× {$i->name}")
+                ->implode("\n");
+
+            $typeLabel = $order->order_type === 'delivery' ? 'domicilio' : 'para recoger';
+            $total = '$'.number_format((float) $order->total, 0, ',', '.');
+
+            $message = new ChatMessage;
+            $message->chat_id = $chat->id;
+            $message->sender = 'bot';
+            $message->body = "🛒 Pedido desde la carta ({$typeLabel}):\n{$lines}\nTotal: {$total} — pendiente de aprobación.";
+            $message->status = 'sent';
+            $message->sent_at = now();
+            $message->save();
+
+            $chat->last_message_at = now();
+            $chat->save();
+        } catch (\Throwable $e) {
+            Log::warning('cart_session.link_failed', [
+                'order_id' => $order->id,
+                'cart_token' => $token,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Espejo mínimo de `TableSessionService::upsertContact` (privado allá).
+     * `$phone` ya llega canónico (`57XXXXXXXXXX`, normalizePhone); se tolera la
+     * variante legacy de 10 dígitos por si quedó alguna fila sin migrar.
      */
     private function upsertContact(string $companyNit, string $branchId, string $name, string $phone): void
     {
         $contact = Contact::withoutBranchScope()
             ->where('company_nit', $companyNit)
-            ->whereIn('phone', ['57'.$phone, $phone])
+            ->whereIn('phone', array_unique([$phone, str_starts_with($phone, '57') ? substr($phone, 2) : $phone]))
             ->first();
 
         if ($contact === null) {

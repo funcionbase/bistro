@@ -304,6 +304,15 @@ Componentes destacados:
 - `ClientDetailModal` y `OrderDetailModal` reutilizados.
 - Polling 5 s siempre activo (operación crítica — los clientes esperan
   respuesta rápida).
+- **Enviar la carta** (ChatComposer, opción unificada — reemplaza carta
+  estática + carrito JWT): `POST /api/v1/chats/{id}/menu-link` crea una
+  `CartSession` ligada al chat y devuelve un token; el link corto es
+  `/menus?cart={uuid}` (TTL 24h, `bot.menu_link_ttl_hours`). Cuando el
+  cliente confirma el pedido desde la carta, `BranchOrderController`
+  convierte la sesión y precarga en la conversación lo que seleccionó
+  (ChatMessage sender bot con el resumen). Fallback client-side: si el
+  backend no puede (sede sin carta digital), se envía el link estático
+  `?branch=`/`/menus/{nit}` de siempre.
 
 ---
 
@@ -314,6 +323,7 @@ Emitidos por `ChatController` vía `AuditService::log`:
 | Acción | Data mínimo |
 |---|---|
 | `chat.reassigned` | `from_branch_id`, `to_branch_id`, `reason`. |
+| `chat.menu_link.sent` | `chat_id`, `cart_session_id`, `branch_id` — link corto de carta con sesión de seguimiento. |
 | `chat.bot_toggled` | `bot_paused`, `previous_state`. |
 | `chat.contact_updated` | `contact_id`, `changed_fields`. |
 | `whatsapp.message_sent` | `chat_id`, `meta_message_id`, `status`. |

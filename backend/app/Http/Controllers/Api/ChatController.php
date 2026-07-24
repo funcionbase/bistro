@@ -12,20 +12,24 @@ use App\Http\Resources\ChatResource;
 use App\Jobs\MarkWhatsappMessageReadJob;
 use App\Models\Branch;
 use App\Models\BranchUser;
+use App\Models\CartSession;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\ClientNote;
 use App\Models\CompanyWhatsappAccount;
 use App\Models\Contact;
+use App\Models\Municipality;
 use App\Models\Order;
+use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
-use App\Services\CartJwtService;
 use App\Services\Chat\ChatAuditLogger;
 use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
 use App\Services\Whatsapp\AutomationDispatcher;
 use App\Services\Whatsapp\WhatsappOutboundMessageSender;
+use App\Support\PhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,7 +39,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 /**
  * Panel de conversaciones del operador (chats con clientes via WhatsApp/bot).
@@ -203,6 +206,8 @@ class ChatController extends Controller
             // Chips de la bandeja (§8.4b punto 2).
             'filter' => ['nullable', 'string', 'in:pending,all,closed'],
             'channel_id' => ['nullable', 'uuid'],
+            // Filtro por plataforma: WhatsApp vs SMS (chips de la bandeja).
+            'source' => ['nullable', 'string', 'in:whatsapp,sms'],
         ]);
         $term = trim((string) ($validated['q'] ?? ''));
         $filter = (string) ($validated['filter'] ?? 'all');
@@ -214,7 +219,16 @@ class ChatController extends Controller
         $limit = $term === '' ? 50 : 100;
 
         $query = Chat::forCompany($companyNit)
-            ->with(['latestMessage', 'whatsappAccount'])
+            // `contact` (solo id+name) para que la bandeja muestre el nombre
+            // CANONICO del contacto (el que se edita en /clients), no el snapshot
+            // viejo de `chats.client_name`: sin esto el mismo cliente aparece con
+            // nombres distintos entre el hilo de SMS, el de WhatsApp y /clients.
+            // Sin BranchScope: el contacto puede estar en otra sede que el chat y
+            // el nombre debe resolverse igual.
+            ->with(['latestMessage', 'whatsappAccount', 'contact' => function ($q): void {
+                $q->withoutGlobalScope(BranchScope::class)
+                    ->select('id', 'name', 'address', 'neighborhood', 'municipality_dane_code');
+            }])
             // Prioridad real (§8.4b punto 2): primero los que esperan respuesta,
             // el que espera hace mas tiempo arriba. Postgres pone los NULL al
             // final con ASC NULLS LAST, que es exactamente "los ya respondidos
@@ -234,6 +248,10 @@ class ChatController extends Controller
             // falta. La consulta ya esta scopeada por `company_nit`, asi que un
             // id ajeno devuelve vacio en vez de filtrar nada (§7.5 capa 3).
             $query->where('whatsapp_account_id', $validated['channel_id']);
+        }
+
+        if (! empty($validated['source'])) {
+            $query->where('source', $validated['source']);
         }
 
         if ($term !== '') {
@@ -570,14 +588,38 @@ class ChatController extends Controller
             ->limit(50)
             ->get(['id', 'status', 'order_type', 'total', 'discount_amount', 'items', 'ordered_at']);
 
+        // Notas privadas UNIFICADAS: las mismas client_notes (con autor/fecha)
+        // que muestra y edita /clients. Ya no se usa el texto único
+        // contacts.notes — quedó como histórico migrado a client_notes.
+        $notes = $contact
+            ? ClientNote::forContact($companyNit, $contact->id)
+                ->with('author:id,name')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get()
+            : collect();
+
+        $municipalityLabel = $contact?->municipality_dane_code
+            ? optional(Municipality::find($contact->municipality_dane_code))->label()
+            : null;
+
         return response()->json([
             'data' => [
                 'contact' => [
                     'id' => $contact?->id,
                     'name' => $contact?->name ?? $chat->client_name,
                     'phone' => $chat->client_phone,
-                    'notes' => $contact?->notes,
+                    'address' => $contact?->address,
+                    'neighborhood' => $contact?->neighborhood,
+                    'municipality_dane_code' => $contact?->municipality_dane_code,
+                    'municipality_label' => $municipalityLabel,
                 ],
+                'notes' => $notes->map(fn (ClientNote $n) => [
+                    'id' => $n->id,
+                    'note' => $n->note,
+                    'created_at' => $n->created_at?->toIso8601String(),
+                    'author' => $n->author?->name,
+                ])->all(),
                 'orders' => $orders->map(fn (Order $order) => [
                     'id' => $order->id,
                     'status' => $order->status,
@@ -818,49 +860,70 @@ class ChatController extends Controller
     }
 
     /**
-     * Link de carrito para insertar en la conversación (§8.4b punto 8).
+     * Link corto de carta con sesión de seguimiento (unifica "enviar la carta"
+     * y "enviar carrito", antes cartLink con CartJWT de ~600 chars a
+     * pedidos.flexyflow.co).
      *
-     * Mintea un CartJWT firmado con el teléfono del cliente y el del canal. La
-     * `CartSession` la crea el lado público al abrir el link
-     * (`CartController::migrateJwt`), así que acá no se toca ninguna tabla. El
-     * link del MENÚ es público y estático y lo arma el frontend; este endpoint
-     * es solo para el carrito, que necesita el secreto de firma del servidor.
+     * Crea una `CartSession` ligada al chat (`chat_id`) con un token UUID en
+     * `jwt_jti` y devuelve el token; el frontend arma la URL corta
+     * `/menus?cart={token}`. Cuando el cliente confirma el pedido desde la
+     * carta, `BranchOrderController::store` convierte la sesión y precarga en
+     * la conversación lo que seleccionó (ChatMessage con el resumen).
      */
-    public function cartLink(Request $request, string $id): JsonResponse
+    public function menuLink(Request $request, string $id): JsonResponse
     {
         $this->permissionService->assertPermission($request, 'chats', 'update');
 
         $companyNit = (string) $request->attributes->get('active_company_nit');
         $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
-        $channel = $chat->resolveWhatsappChannel();
-        if ($channel === null || (string) $channel->phone_e164 === '') {
+        // Sede cuya carta se envía: la del chat; fallback a la sede activa del
+        // operador. El checkout público necesita el menu_qr_token de la sede.
+        $branchId = $chat->branch_id ?? $request->attributes->get('active_branch_id');
+        $branch = $branchId !== null
+            ? Branch::query()
+                ->whereKey($branchId)
+                ->where('company_nit', $companyNit)
+                ->whereNull('archived_at')
+                ->first()
+            : null;
+
+        if ($branch === null || (string) $branch->menu_qr_token === '') {
             return response()->json([
-                'message' => 'Este chat no tiene un número de WhatsApp conectado para armar el carrito.',
-                'code' => 'CHANNEL_UNAVAILABLE',
+                'message' => 'La sede no tiene carta digital configurada.',
+                'code' => 'MENU_TOKEN_MISSING',
             ], 409);
         }
 
-        try {
-            $service = app(CartJwtService::class);
-        } catch (RuntimeException) {
-            return response()->json([
-                'message' => 'El carrito no está configurado en este entorno.',
-                'code' => 'CART_NOT_CONFIGURED',
-            ], 503);
-        }
+        $ttlHours = max(1, (int) config('bot.menu_link_ttl_hours', 24));
 
-        $link = $service->generateUrl([
-            'session_id' => (string) Str::uuid(),
-            'client_phone' => (string) $chat->client_phone,
-            'restaurant_phone' => (string) $channel->phone_e164,
+        $session = CartSession::create([
+            'jwt_jti' => (string) Str::uuid(),
             'company_nit' => $companyNit,
+            'branch_id' => (string) $branch->id,
+            'chat_id' => $chat->id,
+            'client_phone' => (string) $chat->client_phone,
+            'status' => 'active',
+            'expired_at' => now()->addHours($ttlHours),
         ]);
+
+        $this->auditLogger->log(
+            action: 'chat.menu_link.sent',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'company_nit' => $companyNit,
+                'cart_session_id' => $session->id,
+                'branch_id' => (string) $branch->id,
+            ],
+            request: $request,
+        );
 
         return response()->json([
             'data' => [
-                'url' => $link['url'],
-                'expires_at' => $link['expires_at'],
+                'token' => $session->jwt_jti,
+                'expires_at' => $session->expired_at?->toIso8601String(),
             ],
         ]);
     }
@@ -921,7 +984,12 @@ class ChatController extends Controller
         $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
         $name = $request->filled('name') ? $request->string('name')->toString() : null;
-        $phone = $request->filled('phone') ? $request->string('phone')->toString() : $chat->client_phone;
+        // Canónico `57...` antes del lookup del contacto: el firstOrNew/where de
+        // abajo compara contra el valor guardado (que ya es canónico por el
+        // mutator), y sin normalizar aquí no matchearía y duplicaría el contacto.
+        $phone = $request->filled('phone')
+            ? PhoneNumber::toColombianCanonical($request->string('phone')->toString())
+            : $chat->client_phone;
         $notes = $request->filled('notes') ? $request->string('notes')->toString() : null;
 
         $before = [
@@ -960,6 +1028,13 @@ class ChatController extends Controller
             }
             if ($notes !== null) {
                 $contact->notes = $notes;
+            }
+            // Dirección estructurada (misma que /clients). Solo se toca lo que el
+            // editor envía ('sometimes' en el request).
+            foreach (['address', 'neighborhood', 'municipality_dane_code'] as $field) {
+                if ($request->has($field)) {
+                    $contact->{$field} = $request->input($field);
+                }
             }
             $contact->save();
 

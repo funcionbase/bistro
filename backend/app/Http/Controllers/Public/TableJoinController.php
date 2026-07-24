@@ -162,14 +162,14 @@ class TableJoinController extends Controller
             return response()->json(['name' => null]);
         }
 
-        // Históricamente coexisten dos formatos de Contact.phone en la BD:
-        //  - 10 dígitos (lo que crea TableSessionService::upsertContact).
-        //  - 12 dígitos con prefijo 57 (lo que crea CrmService al normalizar
-        //    desde órdenes / WhatsApp).
-        // Para no perder matches, buscamos por ambas variantes. La normalización
-        // de fondo se uniformará en un cleanup aparte — esta tolerancia es de
-        // lectura, no introduce nueva inconsistencia.
-        $candidates = [$normalized, '57'.$normalized];
+        // El canónico ya es uniforme (`57XXXXXXXXXX`) tras normalizar datos y
+        // encauzar todas las escrituras (mutators + normalizePhone). Se conserva
+        // la variante SIN indicativo (10 dígitos) por si quedó alguna fila legacy
+        // sin migrar — tolerancia de lectura, sin costo.
+        $candidates = array_values(array_unique([
+            $normalized,
+            str_starts_with($normalized, '57') ? substr($normalized, 2) : $normalized,
+        ]));
 
         // Scope escape justificado (#192): flujo público sin JWT. El contacto
         // es único por (company_nit, phone) sin importar la sede que lo creó

@@ -23,6 +23,11 @@ interface PublicMenuProps {
     branch_id?: string | null;
     /** Token del QR de menú de sede (?branch=CWP). Se resuelve client-side. */
     branchToken?: string | null;
+    /**
+     * Token de la sesión de carta enviada desde /chats (?cart={uuid}). Resuelve
+     * sede + prefill del cliente y liga el pedido al chat que envió la carta.
+     */
+    cartToken?: string | null;
 }
 
 interface RestaurantBranding {
@@ -98,7 +103,7 @@ function generateUuid(): string {
     });
 }
 
-export default function PublicMenu({ nit, table, branch_id, branchToken }: PublicMenuProps) {
+export default function PublicMenu({ nit, table, branch_id, branchToken, cartToken }: PublicMenuProps) {
     const appName = 'bistro';
     const initialEffective = nit ?? readLastNit();
     const [effectiveNit, setEffectiveNit] = useState<string | null>(initialEffective);
@@ -106,6 +111,13 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
     const [state, setState] = useState<LoadState>(initialEffective ? { kind: 'loading' } : { kind: 'no-restaurant' });
     const scanSentRef = useRef(false);
     const branchResolvedRef = useRef(false);
+    const cartResolvedRef = useRef(false);
+    // menu_qr_token efectivo para el checkout: viene del ?branch= o lo resuelve
+    // la sesión de carta (?cart=). Un solo camino de submit para ambos flujos.
+    const [effectiveBranchToken, setEffectiveBranchToken] = useState<string | null>(branchToken ?? null);
+    // Token de la sesión vigente (no expirada): viaja en el POST del pedido
+    // para que el backend lo ligue al chat que envió la carta.
+    const [activeCartToken, setActiveCartToken] = useState<string | null>(null);
 
     const [tableStatus, setTableStatus] = useState<{
         qr_token: string;
@@ -138,7 +150,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [placedOrder, setPlacedOrder] = useState<{ order_id: string; total: string; order_type: string } | null>(null);
 
-    const canOrder = !!branchToken && !!effectiveBranchId && !tableStatus && state.kind === 'menu';
+    const canOrder = !!effectiveBranchToken && !!effectiveBranchId && !tableStatus && state.kind === 'menu';
     const cartLines = Object.values(cart);
     const cartCount = cartLines.reduce((acc, l) => acc + l.quantity, 0);
     const cartItemsTotal = cartLines.reduce((acc, l) => acc + l.price * l.quantity, 0);
@@ -174,11 +186,11 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
         (orderType === 'pickup' || (custAddress.trim().length >= 5 && custNeighborhood.trim().length >= 2));
 
     const submitOrder = async () => {
-        if (!branchToken || !checkoutValid || submitting) return;
+        if (!effectiveBranchToken || !checkoutValid || submitting) return;
         setSubmitting(true);
         setSubmitError(null);
         try {
-            const res = await fetch(resolveBackendUrl(`/api/v1/public/branch/${encodeURIComponent(branchToken)}/orders`), {
+            const res = await fetch(resolveBackendUrl(`/api/v1/public/branch/${encodeURIComponent(effectiveBranchToken)}/orders`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 credentials: 'omit',
@@ -189,6 +201,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                     address: orderType === 'delivery' ? custAddress.trim() : null,
                     neighborhood: orderType === 'delivery' ? custNeighborhood.trim() : null,
                     items: cartLines.map((l) => ({ id: l.id, quantity: l.quantity })),
+                    cart_token: activeCartToken,
                 }),
             });
             const json = (await res.json().catch(() => null)) as
@@ -337,6 +350,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
         // asociaba a la sede default y guardaba el token como "mesa".
         const tableIsToken = !!table && !/^\d+$/.test(table);
         if (branchToken && !effectiveBranchId) return;
+        if (cartToken && !effectiveBranchId) return;
         if (tableIsToken && !tableStatus) return;
         scanSentRef.current = true;
 
@@ -359,7 +373,55 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
         }).catch(() => {
             // Telemetría es fire-and-forget.
         });
-    }, [effectiveNit, table, branchToken, effectiveBranchId, tableStatus, effectiveTableNumber]);
+    }, [effectiveNit, table, branchToken, cartToken, effectiveBranchId, tableStatus, effectiveTableNumber]);
+
+    // Sesión de carta enviada desde /chats: ?cart={uuid}. Resuelve sede +
+    // prefill del cliente (nombre/celular del chat) y guarda el token vigente
+    // para ligar el pedido al chat al confirmarlo. Si la sesión expiró, el
+    // cliente ve la carta y puede pedir igual — solo se pierde el vínculo.
+    useEffect(() => {
+        if (typeof window === 'undefined' || !cartToken || cartResolvedRef.current) return;
+        cartResolvedRef.current = true;
+        let cancelled = false;
+        fetch(resolveBackendUrl(`/api/v1/public/cart-resolve/${encodeURIComponent(cartToken)}`), {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            credentials: 'omit',
+        })
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(res.status === 404 ? 'qr-not-found' : 'no-session'))))
+            .then(
+                (json: {
+                    session_exists: boolean;
+                    expired: boolean;
+                    company_nit: string;
+                    branch_id: string;
+                    menu_qr_token: string;
+                    prefill: { phone: string | null; name: string | null };
+                }) => {
+                    if (cancelled || !json.session_exists) return;
+                    setEffectiveNit(json.company_nit);
+                    setEffectiveBranchId(json.branch_id);
+                    if (json.menu_qr_token) setEffectiveBranchToken(json.menu_qr_token);
+                    if (!json.expired) setActiveCartToken(cartToken);
+                    setCustName((prev) => prev || (json.prefill.name ?? ''));
+                    setCustPhone((prev) => prev || (json.prefill.phone ?? ''));
+                    try {
+                        localStorage.setItem(LAST_NIT_KEY, json.company_nit);
+                    } catch {
+                        // localStorage bloqueado en modo privado — ignorar.
+                    }
+                },
+            )
+            .catch((err: unknown) => {
+                if (!cancelled && !nit && err instanceof Error && err.message === 'qr-not-found') {
+                    setEffectiveNit(null);
+                    setState({ kind: 'no-restaurant' });
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [cartToken, nit]);
 
     // QR de menú de sede: ?branch={menu_qr_token}. Resuelve NIT + branch_id
     // desde el token opaco, sin exponer esos valores en la URL escaneada.
@@ -838,6 +900,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken }: Publi
                             {placedOrder?.order_type === 'delivery'
                                 ? `El restaurante confirmará tu domicilio en breve. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`
                                 : `El restaurante confirmará tu pedido en breve para que pases a recogerlo. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`}
+                            {activeCartToken ? ' Te escribimos por WhatsApp con las novedades de tu pedido.' : ''}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

@@ -14,6 +14,7 @@ import { putCachedBootstrap, requestPersistentStorage } from '@/lib/offline/db';
 import { setActiveCompanyForSync, startSyncEngine } from '@/lib/offline/sync-engine';
 import { useSharedData } from '@/lib/shared-data';
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 function DynamicFavicon() {
     const { activeCompany } = useSharedData();
@@ -77,6 +78,13 @@ function OfflineBootstrap() {
 }
 
 export default function AppSidebarLayout({ children }: { children: React.ReactNode }) {
+    const { pathname } = useLocation();
+    // Vistas full-screen (bandeja de chats): ocupan el viewport con sus propios
+    // scrolls internos (lista de chats + mensajes). El AppFooterMeta, al ir
+    // debajo del contenedor full-height, forzaria un scroll de pagina no
+    // deseado, asi que se oculta en esas rutas. La pagina no scrollea; solo los
+    // dos contenedores internos lo hacen.
+    const isFullScreenView = pathname === '/chats' || pathname.startsWith('/chats/');
     return (
         <ToastProvider>
             <AppShell variant="sidebar">
@@ -85,13 +93,18 @@ export default function AppSidebarLayout({ children }: { children: React.ReactNo
                 <SyncToast />
                 <OrderSmsFailureWatcher />
                 <AppSidebar />
-                <AppContent variant="sidebar">
+                {/* En vistas full-screen (/chats) la columna de contenido tiene
+                    ALTURA DEFINIDA (h-svh) + overflow-hidden: sin esto, con mucho
+                    contenido `min-h-svh` deja crecer la columna y scrollea toda la
+                    pagina. Acotada, el chain flex queda bounded y solo scrollean
+                    los dos contenedores internos (lista de chats + mensajes). */}
+                <AppContent variant="sidebar" className={isFullScreenView ? 'h-svh overflow-hidden' : undefined}>
                     <AppSidebarHeader />
                     <OfflineBanner />
                     <StorageQuotaWarning />
                     <CashRegisterAlertBanner />
                     {children}
-                    <AppFooterMeta />
+                    {!isFullScreenView && <AppFooterMeta />}
                     <PwaUpdateBanner />
                 </AppContent>
             </AppShell>

@@ -45,6 +45,18 @@ export function isValidColombianMobile(digits: string): boolean {
 }
 
 /**
+ * Formatea el teléfono canónico (`57XXXXXXXXXX`) para mostrarlo legible:
+ * "573001234567" → "+57 300 123 4567". Otros formatos se devuelven tal cual.
+ */
+export function formatPhoneDisplay(phone: string | null | undefined): string {
+    if (!phone) return '—';
+    if (phone.startsWith('57') && phone.length === 12) {
+        return `+57 ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
+    }
+    return phone;
+}
+
+/**
  * Enmascara un móvil de 10 dígitos para mostrarlo sin exponer PII completa:
  * "3001234567" → "300 *** 4567". Otros largos se devuelven tal cual.
  */

@@ -1,6 +1,7 @@
 import type { SharedContact } from '@/components/chats/chat-contact-card';
 import { ChatMessageMedia } from '@/components/chats/chat-message-media';
 import { ChatMessageStatusTicks, FAILURE_COPY } from '@/components/chats/chat-message-status-ticks';
+import { firstUrl, LinkPreviewCard } from '@/components/chats/link-preview-card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ChatMessage } from '@/hooks/use-chats';
 import { APP_LOCALE, APP_TIMEZONE } from '@/lib/datetime';
@@ -53,6 +54,9 @@ export function ChatMessageBubble({ message, canRetry, retrying, onRetry, onOpen
     const isClient = message.sender === 'client';
     const isBot = message.sender === 'bot';
     const failed = message.status === 'failed';
+    // Unfurl del primer link solo en mensajes de texto (los de media/ubicación
+    // ya tienen su propio render). El body puede ser vacío en burbujas de media.
+    const previewUrl = !message.media_type && !message.body.startsWith('[location]') ? firstUrl(message.body) : null;
     // El sticker no lleva caja: con fondo de burbuja se ve como un error de
     // render en vez de como un sticker.
     const bare = message.media_type === 'sticker';
@@ -76,7 +80,11 @@ export function ChatMessageBubble({ message, canRetry, retrying, onRetry, onOpen
                               ? 'bg-card border-border text-foreground border text-left'
                               : isBot
                                 ? 'bg-secondary text-secondary-foreground text-right'
-                                : 'bg-primary text-primary-foreground text-right',
+                                : // Saliente (operador): gris claro con texto oscuro, no el azul
+                                  // de marca. Sobre el azul el doble-check azul de "visto"
+                                  // (--color-status-info) no contrastaba; sobre gris sí. zinc-200
+                                  // ≈ #E2E2E4 pedido; dark: se adapta al tema oscuro.
+                                  'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100 text-right',
                         failed && 'ring-1 ring-[color:var(--color-status-critical)]/50',
                     )}
                 >
@@ -92,7 +100,13 @@ export function ChatMessageBubble({ message, canRetry, retrying, onRetry, onOpen
                             onSaveContact={onSaveContact}
                         />
                     ) : (
-                        <span className="whitespace-pre-wrap">{message.body}</span>
+                        <>
+                            <span className="[overflow-wrap:anywhere] whitespace-pre-wrap">{message.body}</span>
+                            {/* Unfurl del primer link (como WhatsApp). El fetch OG lo
+                                resuelve el Worker en /link-preview; si no hay preview,
+                                el card no renderiza nada. */}
+                            {previewUrl && <LinkPreviewCard url={previewUrl} />}
+                        </>
                     )}
 
                     {/* El microtag evita la confusión más cara de la bandeja: creer

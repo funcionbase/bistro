@@ -55,6 +55,9 @@ class StoreBranchOrderRequest extends FormRequest
             'items.*.id' => ['required', 'string', 'max:64'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'items.*.notes' => ['nullable', 'string', new SafePlainText(maxBytes: 200, allowWhitespace: true)],
+            // Token de la sesión de carta enviada desde /chats (/menus?cart=).
+            // Opcional: liga el pedido al chat que envió la carta.
+            'cart_token' => ['nullable', 'uuid'],
         ];
     }
 

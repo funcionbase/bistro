@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $company_nit
  * @property string $branch_id
  * @property string $to_status — estado destino notificable (config order_notifications)
+ * @property string $channel — sms | whatsapp (canal efectivo de la notificación)
  * @property string $phone — destino en E.164
  * @property string $status — queued | sent | failed
  * @property ?string $provider_message_id
@@ -40,6 +41,7 @@ class OrderSmsNotification extends Model
         'company_nit',
         'branch_id',
         'to_status',
+        'channel',
         'phone',
         'user_id',
         'status',

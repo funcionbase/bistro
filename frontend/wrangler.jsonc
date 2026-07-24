@@ -11,9 +11,18 @@
     // `docs/wiki/runbooks/panel-migration.md`.
     "name": "bistro-flexyflow-co",
     "compatibility_date": "2026-05-20",
+    // Worker que sirve los assets (binding ASSETS) y reescribe los OG tags solo
+    // en /menus/:nit para que la preview de WhatsApp sea del menu del restaurante
+    // (worker/index.ts). El resto de rutas pasa a los assets sin tocar.
+    "main": "./worker/index.ts",
     "assets": {
         "directory": "./dist",
-        "not_found_handling": "single-page-application"
+        "not_found_handling": "single-page-application",
+        "binding": "ASSETS",
+        // El Worker corre ANTES que el asset-serving SOLO en /menus/* (para poder
+        // reescribir los OG). El resto de rutas las sirven los assets directo,
+        // sin costo de invocacion del Worker.
+        "run_worker_first": ["/menus", "/menus/*"]
     },
     "observability": {
         "enabled": true,

@@ -1,4 +1,5 @@
-﻿import { Button } from '@/components/ui/button';
+﻿import { AddressFields } from '@/components/clients/address-fields';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,18 +7,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { apiFetch } from '@/lib/api';
 import { sanitizePlainText } from '@/lib/input-sanitize';
 import { isValidColombianMobile, stripCountryPrefix } from '@/lib/phone';
-import { Building2, LoaderCircle, User, UserPlus } from 'lucide-react';
+import { Building2, LoaderCircle, Save, User, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+/** Datos mínimos para pre-llenar el diálogo en modo edición. */
+export interface EditContactData {
+    id: string;
+    kind: ContactKind | null;
+    doc_type: string | null;
+    doc_number: string | null;
+    dv: string | null;
+    phone: string | null;
+    name: string | null;
+    legal_name: string | null;
+    email: string | null;
+    address: string | null;
+    neighborhood: string | null;
+    municipality_dane_code: string | null;
+    municipality_label: string | null;
+}
 
 interface NewClientDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onCreated: (client: CreatedClient) => void;
+    /** Alta: recibe el contacto creado. Opcional en modo edición. */
+    onCreated?: (client: CreatedClient) => void;
+    /** Edición: se llama tras guardar (el caller refresca el perfil). */
+    onSaved?: () => void;
     /**
      * Teléfono con el que pre-llenar el campo al abrir (ej. el que el cajero ya
-     * tecleó en el flujo de cobro DIAN). Opcional.
+     * tecleó en el flujo de cobro DIAN). Opcional. Solo aplica en alta.
      */
     initialPhone?: string;
+    /**
+     * Si viene, el diálogo entra en modo EDICIÓN: pre-llena con estos datos y
+     * hace PATCH en vez de POST. Reusa el mismo form y validación que el alta.
+     */
+    initialContact?: EditContactData | null;
 }
 
 export type ContactKind = 'natural' | 'company';
@@ -45,7 +71,12 @@ interface FormState {
     name: string;
     legal_name: string;
     email: string;
-    notes: string;
+    // Dirección estructurada. Las notas ya NO viven acá: se unificaron en las
+    // "Notas privadas" (client_notes) del perfil.
+    address: string | null;
+    neighborhood: string | null;
+    municipality_dane_code: string | null;
+    municipality_label: string | null;
 }
 
 const INITIAL_FORM: FormState = {
@@ -57,7 +88,10 @@ const INITIAL_FORM: FormState = {
     name: '',
     legal_name: '',
     email: '',
-    notes: '',
+    address: null,
+    neighborhood: null,
+    municipality_dane_code: null,
+    municipality_label: null,
 };
 
 const DOC_TYPES_NATURAL = [
@@ -87,19 +121,38 @@ const DEFAULT_DOC_BY_KIND: Record<ContactKind, string> = {
  * (impide estados imposibles tipo "persona con NIT"). Razón social es
  * obligatoria solo para empresas. Phone es opcional siempre.
  */
-export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }: NewClientDialogProps) {
+export function NewClientDialog({ open, onOpenChange, onCreated, onSaved, initialPhone, initialContact }: NewClientDialogProps) {
+    const isEdit = !!initialContact;
     const [form, setForm] = useState<FormState>(INITIAL_FORM);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [topError, setTopError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
-    // Pre-llena el teléfono al abrir cuando el caller lo provee (flujo de cobro
-    // de mesa: el cajero ya tecleó el teléfono al buscar el contacto DIAN).
+    // Pre-llena al abrir: en edición, con los datos del contacto; en alta, con el
+    // teléfono que el caller pasa (flujo de cobro de mesa: el cajero ya lo tecleó
+    // al buscar el contacto DIAN).
     useEffect(() => {
-        if (open && initialPhone) {
+        if (!open) return;
+        if (initialContact) {
+            const kind = initialContact.kind ?? 'natural';
+            setForm({
+                kind,
+                doc_type: initialContact.doc_type ?? DEFAULT_DOC_BY_KIND[kind],
+                doc_number: initialContact.doc_number ?? '',
+                dv: initialContact.dv ?? '',
+                phone: initialContact.phone ? stripCountryPrefix(initialContact.phone) : '',
+                name: initialContact.name ?? '',
+                legal_name: initialContact.legal_name ?? '',
+                email: initialContact.email ?? '',
+                address: initialContact.address ?? null,
+                neighborhood: initialContact.neighborhood ?? null,
+                municipality_dane_code: initialContact.municipality_dane_code ?? null,
+                municipality_label: initialContact.municipality_label ?? null,
+            });
+        } else if (initialPhone) {
             setForm((prev) => ({ ...prev, phone: stripCountryPrefix(initialPhone) }));
         }
-    }, [open, initialPhone]);
+    }, [open, initialPhone, initialContact]);
 
     const isCompany = form.kind === 'company';
     const docTypeOptions = isCompany ? DOC_TYPES_COMPANY : DOC_TYPES_NATURAL;
@@ -145,7 +198,6 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
         const trimmedDoc = form.doc_number.trim().toUpperCase();
         const trimmedLegalName = form.legal_name.trim();
         const trimmedEmail = form.email.trim();
-        const trimmedNotes = form.notes.trim();
         const phoneForApi = stripCountryPrefix(form.phone);
 
         const localErrors: Record<string, string> = {};
@@ -179,8 +231,8 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
         setTopError(null);
 
         try {
-            const response = await apiFetch('/api/v1/clients', {
-                method: 'POST',
+            const response = await apiFetch(isEdit ? `/api/v1/clients/${initialContact!.id}` : '/api/v1/clients', {
+                method: isEdit ? 'PATCH' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     kind: form.kind,
@@ -191,14 +243,20 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                     name: trimmedName,
                     legal_name: trimmedLegalName === '' ? null : trimmedLegalName,
                     email: trimmedEmail === '' ? null : trimmedEmail,
-                    notes: trimmedNotes === '' ? null : trimmedNotes,
+                    address: form.address?.trim() || null,
+                    neighborhood: form.neighborhood?.trim() || null,
+                    municipality_dane_code: form.municipality_dane_code || null,
                 }),
             });
 
             if (response.ok) {
                 const body = (await response.json()) as { data: CreatedClient };
                 setForm(INITIAL_FORM);
-                onCreated(body.data);
+                if (isEdit) {
+                    onSaved?.();
+                } else {
+                    onCreated?.(body.data);
+                }
                 onOpenChange(false);
                 return;
             }
@@ -227,11 +285,13 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
             }
 
             if (response.status === 403) {
-                setTopError('No tienes permiso para registrar contactos.');
+                setTopError(isEdit ? 'No tienes permiso para editar contactos.' : 'No tienes permiso para registrar contactos.');
                 return;
             }
 
-            setTopError('No fue posible registrar el contacto. Intenta de nuevo.');
+            setTopError(
+                isEdit ? 'No fue posible guardar los cambios. Intenta de nuevo.' : 'No fue posible registrar el contacto. Intenta de nuevo.',
+            );
         } finally {
             setSubmitting(false);
         }
@@ -250,7 +310,7 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
         >
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Nuevo contacto</DialogTitle>
+                    <DialogTitle>{isEdit ? 'Editar contacto' : 'Nuevo contacto'}</DialogTitle>
                     <DialogDescription>
                         El documento es la clave única por empresa. Si ya existe un contacto con ese documento, el sistema te avisa. El teléfono es
                         opcional y puede compartirse entre familiares.
@@ -422,24 +482,26 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                         )}
                     </div>
 
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-client-notes">Notas (opcional)</Label>
-                        <textarea
-                            id="new-client-notes"
-                            value={form.notes}
-                            onChange={(e) => setField('notes', sanitizePlainText(e.target.value, 1000, true, false))}
-                            placeholder="Preferencias, alergias, contexto…"
-                            disabled={submitting}
-                            maxLength={1000}
-                            rows={3}
-                            className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                        />
-                        {errors.notes && (
-                            <p className="text-xs text-[color:var(--color-status-critical)]" role="alert">
-                                {errors.notes}
-                            </p>
-                        )}
-                    </div>
+                    {/* Dirección estructurada (ciudad DANE + barrio + dirección).
+                        Las notas se manejan en "Notas privadas" del perfil. */}
+                    <AddressFields
+                        idPrefix="new-client"
+                        value={{
+                            municipality_dane_code: form.municipality_dane_code,
+                            municipality_label: form.municipality_label,
+                            neighborhood: form.neighborhood,
+                            address: form.address,
+                        }}
+                        onChange={(v) =>
+                            setForm((prev) => ({
+                                ...prev,
+                                municipality_dane_code: v.municipality_dane_code,
+                                municipality_label: v.municipality_label ?? null,
+                                neighborhood: v.neighborhood,
+                                address: v.address,
+                            }))
+                        }
+                    />
 
                     {topError && (
                         <p className="text-sm text-[color:var(--color-status-critical)]" role="alert">
@@ -452,8 +514,14 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                             Cancelar
                         </Button>
                         <Button type="submit" disabled={submitting}>
-                            {submitting ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <UserPlus className="mr-1 h-4 w-4" />}
-                            Registrar contacto
+                            {submitting ? (
+                                <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />
+                            ) : isEdit ? (
+                                <Save className="mr-1 h-4 w-4" />
+                            ) : (
+                                <UserPlus className="mr-1 h-4 w-4" />
+                            )}
+                            {isEdit ? 'Guardar cambios' : 'Registrar contacto'}
                         </Button>
                     </DialogFooter>
                 </form>

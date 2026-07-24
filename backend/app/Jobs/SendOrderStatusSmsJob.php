@@ -10,6 +10,7 @@ use App\Models\Scopes\BranchScope;
 use App\Services\AuditService;
 use App\Services\Sms\SmsChatLogger;
 use App\Services\Sms\SnsSmsSender;
+use App\Services\Whatsapp\WhatsappOrderNotifier;
 use App\Support\PhoneNumber;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -59,7 +60,7 @@ class SendOrderStatusSmsJob implements ShouldBeUnique, ShouldQueue
         return 300;
     }
 
-    public function handle(SnsSmsSender $sender, AuditService $audit, SmsChatLogger $chatLogger): void
+    public function handle(SnsSmsSender $sender, AuditService $audit, SmsChatLogger $chatLogger, WhatsappOrderNotifier $whatsapp): void
     {
         /** @var OrderSmsNotification|null $notification */
         $notification = OrderSmsNotification::query()
@@ -68,20 +69,6 @@ class SendOrderStatusSmsJob implements ShouldBeUnique, ShouldQueue
 
         // Guard de idempotencia: solo procesamos pendientes.
         if ($notification === null || $notification->status !== 'queued') {
-            return;
-        }
-
-        // En local/qa el master switch viene apagado: registramos skipped para
-        // no gastar saldo SNS ni ensuciar los contadores de enviados/fallidos.
-        if (! $sender->isEnabled()) {
-            $notification->status = 'skipped';
-            $notification->save();
-            Log::channel('single')->info('order.sms.skipped_disabled', [
-                'notification_id' => $notification->id,
-                'order_id' => $notification->order_id,
-                'to_status' => $notification->to_status,
-            ]);
-
             return;
         }
 
@@ -94,6 +81,46 @@ class SendOrderStatusSmsJob implements ShouldBeUnique, ShouldQueue
         }
 
         $message = $this->buildMessage($order, $notification->to_status);
+
+        // WhatsApp primario: si el cliente escribió por WhatsApp dentro de la
+        // ventana y hay canal Evolution conectado, se notifica por ahí (mejor UX
+        // y sin costo de SMS). El SMS de abajo es el respaldo cuando WhatsApp no
+        // está disponible o el envío falla. Se decide ANTES del isEnabled() de
+        // SNS: en qa (SNS apagado) WhatsApp igual funciona.
+        $waMessage = $whatsapp->notify($order, $notification->phone, $message);
+        if ($waMessage !== null) {
+            $notification->status = 'sent';
+            $notification->channel = 'whatsapp';
+            $notification->chat_message_id = $waMessage->id;
+            $notification->provider_message_id = $waMessage->meta_message_id;
+            $notification->sent_at = now();
+            $notification->save();
+
+            $audit->log('order.whatsapp_sent', null, $notification, [
+                'order_id' => $notification->order_id,
+                'to_status' => $notification->to_status,
+                'phone' => PhoneNumber::mask($notification->phone),
+                'provider' => 'evolution',
+                'provider_message_id' => $waMessage->meta_message_id,
+            ]);
+
+            return;
+        }
+
+        // En local/qa el master switch de SNS viene apagado: registramos skipped
+        // para no gastar saldo SNS ni ensuciar los contadores de enviados/fallidos.
+        if (! $sender->isEnabled()) {
+            $notification->status = 'skipped';
+            $notification->save();
+            Log::channel('single')->info('order.sms.skipped_disabled', [
+                'notification_id' => $notification->id,
+                'order_id' => $notification->order_id,
+                'to_status' => $notification->to_status,
+            ]);
+
+            return;
+        }
+
         $result = $sender->send($notification->phone, $message);
 
         // Visibilidad por cliente (Fase 2): el SMS queda en el hilo del cliente

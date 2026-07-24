@@ -110,6 +110,7 @@ class ClientController extends Controller
             'legal_name' => ['nullable', new SafePlainText(maxBytes: 160, allowWhitespace: true)],
             'email' => ['nullable', 'email', 'max:120'],
             'address' => ['nullable', new SafePlainText(maxBytes: 200, allowWhitespace: true)],
+            'neighborhood' => ['nullable', new SafePlainText(maxBytes: 120, allowWhitespace: true)],
             'municipality_dane_code' => ['nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
             'notes' => ['nullable', new SafePlainText(maxBytes: 1000, allowWhitespace: true)],
         ]);
@@ -192,6 +193,7 @@ class ClientController extends Controller
             $contact->legal_name = $validated['legal_name'] ?? null;
             $contact->email = $validated['email'] ?? null;
             $contact->address = $validated['address'] ?? null;
+            $contact->neighborhood = $validated['neighborhood'] ?? null;
             $contact->municipality_dane_code = $validated['municipality_dane_code'] ?? null;
             $contact->notes = $validated['notes'] ?? null;
             $contact->branch_id = $branchId;
@@ -242,6 +244,276 @@ class ClientController extends Controller
         }
 
         return response()->json(['data' => $profile]);
+    }
+
+    /**
+     * Edita los datos de un contacto existente desde el CRM (#123). Mismas
+     * reglas que `store` (identidad canónica company_nit+doc_number, validación
+     * cruzada kind↔doc_type, razón social obligatoria en empresas), pero el
+     * UNIQUE de doc_number excluye al propio contacto. `address` y
+     * `municipality_dane_code` son `sometimes`: el diálogo del CRM no los envía,
+     * así que su ausencia NO los borra (los edita el flujo DIAN aparte).
+     */
+    public function update(Request $request, string $contact): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'clients', 'update');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $contactModel = $this->loadContactOrFail($companyNit, $contact);
+
+        $validated = $request->validate([
+            'kind' => ['required', Rule::in([Contact::KIND_NATURAL, Contact::KIND_COMPANY])],
+            'doc_type' => ['required', Rule::in([...Contact::NATURAL_DOC_TYPES, ...Contact::COMPANY_DOC_TYPES])],
+            'doc_number' => ['required', 'string', 'max:30', 'regex:/^[A-Z0-9-]+$/i'],
+            'dv' => ['nullable', 'string', 'size:1', 'regex:/^[0-9]$/'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'name' => ['required', new SafePlainText(maxBytes: 120, allowWhitespace: true)],
+            'legal_name' => ['nullable', new SafePlainText(maxBytes: 160, allowWhitespace: true)],
+            'email' => ['nullable', 'email', 'max:120'],
+            'address' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 200, allowWhitespace: true)],
+            'neighborhood' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 120, allowWhitespace: true)],
+            'municipality_dane_code' => ['sometimes', 'nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
+            'notes' => ['nullable', new SafePlainText(maxBytes: 1000, allowWhitespace: true)],
+        ]);
+
+        $kind = $validated['kind'];
+        $allowedDocs = $kind === Contact::KIND_COMPANY
+            ? Contact::COMPANY_DOC_TYPES
+            : Contact::NATURAL_DOC_TYPES;
+
+        if (! in_array($validated['doc_type'], $allowedDocs, true)) {
+            throw ValidationException::withMessages([
+                'doc_type' => [$kind === Contact::KIND_COMPANY
+                    ? 'Las empresas solo aceptan NIT o NIT extranjero.'
+                    : 'Las personas naturales solo aceptan CC, CE, TI, PA o RC.',
+                ],
+            ]);
+        }
+
+        if ($kind === Contact::KIND_COMPANY && empty(trim((string) ($validated['legal_name'] ?? '')))) {
+            throw ValidationException::withMessages([
+                'legal_name' => ['La razón social es obligatoria para empresas.'],
+            ]);
+        }
+
+        $phone = null;
+        if (! empty($validated['phone'])) {
+            $phone = CrmService::normalizePhone($validated['phone']);
+            if (! preg_match('/^57\d{10}$/', $phone)) {
+                throw ValidationException::withMessages([
+                    'phone' => ['Ingresa un móvil colombiano de 10 dígitos que empiece por 3.'],
+                ]);
+            }
+        }
+
+        // UNIQUE de identidad excluyendo al propio contacto: no puede chocar con
+        // OTRO cliente de la misma empresa, pero sí conservar su propio doc.
+        $dupe = Contact::withoutBranchScope()
+            ->where('company_nit', $companyNit)
+            ->where('doc_number', $validated['doc_number'])
+            ->where('id', '!=', $contactModel->id)
+            ->first();
+
+        if ($dupe !== null) {
+            throw ValidationException::withMessages([
+                'doc_number' => ['Ya existe otro cliente con ese número de documento en esta empresa.'],
+            ]);
+        }
+
+        $actor = $this->actingUserOrFail($request);
+        $name = trim($validated['name']);
+
+        DB::transaction(function () use ($contactModel, $phone, $name, $kind, $validated, $actor): void {
+            $contactModel->kind = $kind;
+            $contactModel->doc_type = $validated['doc_type'];
+            $contactModel->doc_number = $validated['doc_number'];
+            $contactModel->dv = $validated['dv'] ?? null;
+            $contactModel->phone = $phone;
+            $contactModel->name = $name;
+            $contactModel->legal_name = $validated['legal_name'] ?? null;
+            $contactModel->email = $validated['email'] ?? null;
+            $contactModel->notes = $validated['notes'] ?? null;
+
+            // sometimes: solo se tocan si el request los trae (el CRM no).
+            if (array_key_exists('address', $validated)) {
+                $contactModel->address = $validated['address'];
+            }
+            if (array_key_exists('neighborhood', $validated)) {
+                $contactModel->neighborhood = $validated['neighborhood'];
+            }
+            if (array_key_exists('municipality_dane_code', $validated)) {
+                $contactModel->municipality_dane_code = $validated['municipality_dane_code'];
+            }
+
+            $contactModel->save();
+
+            $this->auditService->log('client.updated', $actor, $contactModel, [
+                'contact_id' => $contactModel->id,
+                'kind' => $contactModel->kind,
+                'doc_type' => $contactModel->doc_type,
+                'doc_number' => $contactModel->doc_number,
+                'client_phone' => $contactModel->phone,
+                'client_name' => $contactModel->name,
+            ]);
+        });
+
+        $this->crmService->forgetCache($companyNit, $contactModel->id);
+
+        return response()->json(['data' => $this->crmService->profile($companyNit, $contactModel->id)]);
+    }
+
+    /**
+     * Unifica contactos duplicados (misma persona registrada varias veces con
+     * formatos de teléfono/doc distintos). `{contact}` es el PRINCIPAL que
+     * sobrevive; `merge_ids` los que se absorben y eliminan.
+     *
+     * Qué se mueve al principal: orders, chats, client_notes y
+     * table_session_guests (por contact_id) + client_tags (respetando el
+     * UNIQUE parcial). Loyalty/coupons van por client_phone y no requieren
+     * reasignación (tras la normalización comparten canónico).
+     *
+     * Los campos vacíos del principal se rellenan desde los duplicados (doc,
+     * email, dirección...) — nunca se pisa un dato existente. Las notas de
+     * perfil se concatenan. Todo en una transacción con lockForUpdate y
+     * auditado con snapshot reconstructible (`client.merged`).
+     *
+     * Permiso: clients.delete (fusionar implica eliminar los duplicados).
+     */
+    public function merge(Request $request, string $contact): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'clients', 'delete');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $principal = $this->loadContactOrFail($companyNit, $contact);
+
+        $validated = $request->validate([
+            'merge_ids' => ['required', 'array', 'min:1', 'max:10'],
+            'merge_ids.*' => ['required', 'uuid', 'distinct'],
+        ]);
+
+        $mergeIds = $validated['merge_ids'];
+
+        if (in_array($principal->id, $mergeIds, true)) {
+            throw ValidationException::withMessages([
+                'merge_ids' => ['El contacto principal no puede estar entre los duplicados a fusionar.'],
+            ]);
+        }
+
+        $duplicates = Contact::withoutBranchScope()
+            ->where('company_nit', $companyNit)
+            ->whereIn('id', $mergeIds)
+            ->get();
+
+        if ($duplicates->count() !== count($mergeIds)) {
+            throw ValidationException::withMessages([
+                'merge_ids' => ['Uno o más contactos no existen en esta empresa.'],
+            ]);
+        }
+
+        $actor = $this->actingUserOrFail($request);
+
+        $moved = DB::transaction(function () use ($principal, $duplicates, $mergeIds, $actor): array {
+            // Lock de todas las filas involucradas: previene doble merge
+            // concurrente sobre el mismo contacto.
+            Contact::withoutBranchScope()
+                ->whereIn('id', [...$mergeIds, $principal->id])
+                ->lockForUpdate()
+                ->get();
+
+            // El modelo se cargó ANTES del lock: otro merge concurrente pudo
+            // haber rellenado campos (ej. el doc). Sin refresh, las decisiones
+            // fill-empty de abajo usarían valores stale y pisarían ese dato.
+            $principal->refresh();
+
+            // 1. Reasignar FKs al principal. Los ids son UUID globales ya
+            //    validados como de esta empresa; no hace falta re-filtrar.
+            $moved = [];
+            foreach (['orders', 'chats', 'client_notes', 'table_session_guests'] as $table) {
+                $moved[$table] = DB::table($table)
+                    ->whereIn('contact_id', $mergeIds)
+                    ->update(['contact_id' => $principal->id]);
+            }
+
+            // 2. Tags fila por fila (pocas por cliente): si el principal —u otro
+            //    duplicado ya reasignado— ya tiene la tag, se borra; si no, se
+            //    reasigna contact_id. El client_phone legacy NO se toca: cambiarlo
+            //    podría chocar con el UNIQUE (company_nit, client_phone, tag) de
+            //    un tercer contacto que comparta el número.
+            $principalTags = DB::table('client_tags')
+                ->where('contact_id', $principal->id)
+                ->pluck('tag')
+                ->all();
+            $seen = array_fill_keys($principalTags, true);
+            $moved['client_tags'] = 0;
+            $dupTags = DB::table('client_tags')->whereIn('contact_id', $mergeIds)->get(['id', 'tag']);
+            foreach ($dupTags as $row) {
+                if (isset($seen[$row->tag])) {
+                    DB::table('client_tags')->where('id', $row->id)->delete();
+
+                    continue;
+                }
+                DB::table('client_tags')->where('id', $row->id)->update(['contact_id' => $principal->id]);
+                $seen[$row->tag] = true;
+                $moved['client_tags']++;
+            }
+
+            // 3. Snapshot de los duplicados para auditoría + relleno de vacíos.
+            $snapshot = $duplicates->map(fn (Contact $d): array => [
+                'id' => $d->id,
+                'name' => $d->name,
+                'doc_type' => $d->doc_type,
+                'doc_number' => $d->doc_number,
+                'phone' => $d->phone,
+                'email' => $d->email,
+            ])->all();
+
+            // 4. Eliminar duplicados ANTES de copiar doc_number al principal
+            //    (UNIQUE parcial company_nit+doc_number chocaría si siguieran vivos).
+            Contact::withoutBranchScope()->whereIn('id', $mergeIds)->delete();
+
+            // 5. Rellenar campos vacíos del principal desde los duplicados,
+            //    en el orden recibido. El doc viaja como grupo (type+number+dv)
+            //    para no producir pares inválidos.
+            foreach ($duplicates as $dup) {
+                if (blank($principal->doc_number) && filled($dup->doc_number)) {
+                    $principal->doc_type = $dup->doc_type;
+                    $principal->doc_number = $dup->doc_number;
+                    $principal->dv = $dup->dv;
+                }
+                foreach (['phone', 'name', 'kind', 'legal_name', 'email', 'address', 'municipality_dane_code'] as $field) {
+                    if (blank($principal->{$field}) && filled($dup->{$field})) {
+                        $principal->{$field} = $dup->{$field};
+                    }
+                }
+                if (filled($dup->notes)) {
+                    $principal->notes = mb_substr(trim(($principal->notes ? $principal->notes."\n" : '').$dup->notes), 0, 1000);
+                }
+            }
+            $principal->save();
+
+            $this->auditService->log('client.merged', $actor, $principal, [
+                'contact_id' => $principal->id,
+                'client_name' => $principal->name,
+                'client_phone' => $principal->phone,
+                'merged_contacts' => $snapshot,
+                'moved' => $moved,
+            ]);
+
+            return $moved;
+        });
+
+        $this->crmService->forgetCache($companyNit, $principal->id);
+        foreach ($mergeIds as $id) {
+            $this->crmService->forgetCache($companyNit, $id);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $principal->id,
+                'merged' => count($mergeIds),
+                'moved' => $moved,
+            ],
+        ]);
     }
 
     public function storeNote(StoreNoteRequest $request, string $contact): JsonResponse

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToBranch;
+use App\Support\PhoneNumber;
 use Carbon\Carbon;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -126,6 +128,21 @@ class Order extends Model
             'is_offline_origin' => 'boolean',
             'sync_warnings' => 'array',
         ];
+    }
+
+    /**
+     * `client_phone` se guarda en el canónico `57XXXXXXXXXX` (con indicativo,
+     * sin espacios ni `+`) sin importar cómo lo tipeó el cajero: sin esto se
+     * almacenaba crudo (`+57 315 270 1319`), rompiendo el match con el Contact y
+     * las notificaciones. Solo formato, no toca montos/estado. Vacío → null.
+     */
+    protected function clientPhone(): Attribute
+    {
+        return Attribute::set(function (?string $value): ?string {
+            $canonical = PhoneNumber::toColombianCanonical($value);
+
+            return $canonical === '' ? null : $canonical;
+        });
     }
 
     /**

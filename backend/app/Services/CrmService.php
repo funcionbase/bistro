@@ -6,7 +6,9 @@ use App\Models\Chat;
 use App\Models\ClientNote;
 use App\Models\ClientTag;
 use App\Models\Contact;
+use App\Models\Municipality;
 use App\Models\Order;
+use App\Support\PhoneNumber;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -61,21 +63,12 @@ class CrmService
     private const VIP_TOP_N = 10;
 
     /**
-     * Normaliza phone a `57XXXXXXXXXX`: quita '+' y espacios; si tiene 10 dígitos
-     * y empieza con `3` (móvil CO), antepone `57`. Idempotente. Permite buscar
-     * un Contact existente cuando el cajero tipea con o sin prefijo país.
+     * Normaliza phone al canónico `57XXXXXXXXXX` (delega en el helper único
+     * `PhoneNumber::toColombianCanonical` para no duplicar la regla). Idempotente.
      */
     public static function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-        if ($digits === '') {
-            return '';
-        }
-        if (strlen($digits) === 10 && str_starts_with($digits, '3')) {
-            return '57'.$digits;
-        }
-
-        return $digits;
+        return PhoneNumber::toColombianCanonical($phone);
     }
 
     /**
@@ -154,14 +147,37 @@ class CrmService
                 ->limit(50)
                 ->get(['id', 'branch_id', 'status', 'order_type', 'total', 'discount_amount', 'items', 'ordered_at']);
 
-            $chats = $contact->phone !== null && $contact->phone !== ''
-                ? Chat::withoutBranchScope()
+            // Chats del cliente por CUALQUIER canal. El match debe ser por
+            // variantes de teléfono: el chat de WhatsApp guarda `client_phone` en
+            // E.164 (`+57XXXXXXXXXX`) mientras que el de SMS/CRM usa el formato
+            // del contacto — un match exacto contra `contact.phone` dejaba fuera
+            // el hilo de WhatsApp. Se incluye la forma `+`-prefijada además de las
+            // usadas para órdenes.
+            $chats = collect();
+            if ($contact->phone !== null && $contact->phone !== '') {
+                $normalized = self::normalizePhone($contact->phone);
+                $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+                $chatVariants = array_values(array_unique(array_filter([
+                    $contact->phone,
+                    $normalized,
+                    $alt,
+                    '+'.$normalized,
+                    '+'.$alt,
+                ])));
+
+                $chats = Chat::withoutBranchScope()
                     ->where('company_nit', $companyNit)
-                    ->where('client_phone', $contact->phone)
+                    ->where(function ($q) use ($contact, $chatVariants): void {
+                        // Por `contact_id` (vínculo canónico, robusto si cambia el
+                        // teléfono) O por variantes del teléfono (chats legacy sin
+                        // contact_id o creados por otro canal).
+                        $q->where('contact_id', $contact->id)
+                            ->orWhereIn('client_phone', $chatVariants);
+                    })
                     ->orderByDesc('last_message_at')
                     ->limit(20)
-                    ->get(['id', 'branch_id', 'source', 'status', 'last_message_at'])
-                : collect();
+                    ->get(['id', 'branch_id', 'source', 'status', 'last_message_at']);
+            }
 
             $notes = ClientNote::forContact($companyNit, $contact->id)
                 ->with('author:id,name,email')
@@ -183,7 +199,11 @@ class CrmService
                 'legal_name' => $contact->legal_name,
                 'email' => $contact->email,
                 'address' => $contact->address,
+                'neighborhood' => $contact->neighborhood,
                 'municipality_dane_code' => $contact->municipality_dane_code,
+                'municipality_label' => $contact->municipality_dane_code
+                    ? optional(Municipality::find($contact->municipality_dane_code))->label()
+                    : null,
                 'fiscal_responsibilities' => $contact->fiscal_responsibilities ?? [],
                 'dian_profile_completed_at' => $contact->dian_profile_completed_at?->toIso8601String(),
                 'contact_notes' => $contact->notes,
