@@ -25,6 +25,14 @@ Existen dos canales públicos complementarios:
    del carrito que arma el bot externo. CartJWT corto, sin auth de
    usuario. Sección final.
 
+> **Nota (unificación desde /chats)**: el panel de chats YA NO envía links
+> de carrito con CartJWT a `pedidos.flexyflow.co`. La opción unificada
+> "Enviar la carta" genera un link corto `/menus?cart={uuid}` respaldado por
+> una `CartSession` ligada al chat (`chat_id`); al confirmar el pedido desde
+> la carta, la sesión se convierte (`order_id`) y el resumen se precarga en
+> la conversación. `CartJwtService` y `/api/v1/cart/{jwt}` quedan para el
+> bot externo. Ver `Chats-Clientes.md`.
+
 Ambos respetan que la **caja debe estar abierta** y el menú esté activo
 (de lo contrario `MenuController::showPublic` responde 423
 `cash_register_closed`).

@@ -1592,12 +1592,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('chats/{id}/attachments', [ChatController::class, 'storeAttachment'])
                     ->middleware('permission:chats.update,update')
                     ->name('api.chats.attachments.store');
-                // Link de carrito para insertar en el chat (§8.4b punto 8). Mintea
-                // un JWT firmado: throttle para que no se convierta en un generador
-                // de links en bucle. El link de menu es client-side, sin endpoint.
-                Route::post('chats/{id}/cart-link', [ChatController::class, 'cartLink'])
+                // Link corto de carta con sesión de seguimiento (unifica "enviar
+                // la carta" y "enviar carrito"). Crea una CartSession ligada al
+                // chat; throttle para que no se convierta en un generador de
+                // sesiones en bucle.
+                Route::post('chats/{id}/menu-link', [ChatController::class, 'menuLink'])
                     ->middleware(['permission:chats.update,update', 'throttle:20,1'])
-                    ->name('api.chats.cart-link');
+                    ->name('api.chats.menu-link');
                 // Reintento de un saliente fallido (§8.4b punto 4). Reintenta el
                 // MISMO registro: crear uno nuevo dejaria dos burbujas por un
                 // mensaje que el cliente ve una sola vez.
@@ -1720,6 +1721,13 @@ Route::prefix('v1')->group(function () {
         ->where(['menu_qr_token' => '[A-Z]{3,13}'])
         ->middleware('throttle:menu-scan-public')
         ->name('api.public.branch.resolve');
+
+    // Sesión de carta enviada desde /chats: `/menus?cart={uuid}`. Resuelve la
+    // sede + prefill del cliente para el checkout ligado al chat.
+    Route::get('public/cart-resolve/{token}', [TableResolveController::class, 'showCartSession'])
+        ->where(['token' => '[0-9a-fA-F-]{36}'])
+        ->middleware('throttle:menu-scan-public')
+        ->name('api.public.cart.resolve');
 
     // Pedido público sin mesa (para llevar / domicilio) desde el QR de sede.
     // Nace pending_approval y cae a caja para aprobación manual. Precios del

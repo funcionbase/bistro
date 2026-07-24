@@ -444,10 +444,8 @@ export default function ChatsPage() {
         [selectedChat, channel],
     );
 
-    // Link público del menú, armado en el cliente (§8.4b punto 8). Si hay sede
-    // activa con token, se envía el menú DE ESA SEDE (?branch=CWP) para que el
-    // cliente vea precios/disponibilidad de la sede que lo atiende; si no
-    // (multi-sede sin sede activa), cae al menú por empresa (/menus/:nit).
+    // Fallback client-side del link de carta (§8.4b punto 8): menú de la sede
+    // activa (?branch=CWP) o, sin sede con token, el menú por empresa.
     const nit = props.activeCompany?.nit ?? '';
     const branchToken = props.activeBranch?.menu_qr_token ?? null;
     const menuUrl = branchToken
@@ -456,14 +454,22 @@ export default function ChatsPage() {
           ? `${window.location.origin}/menus/${nit}`
           : null;
 
-    const requestCartLink = async (): Promise<string | null> => {
-        if (!selectedChatId) return null;
-        const res = await apiFetch(`/api/v1/chats/${selectedChatId}/cart-link`, { method: 'POST' });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            throw new Error((json as { message?: string }).message ?? 'No se pudo generar el carrito.');
+    // Opción unificada "Enviar la carta": link corto con sesión de seguimiento
+    // (/menus?cart={uuid}). Cuando el cliente confirma el pedido desde la
+    // carta, el backend precarga en esta conversación lo que seleccionó. Si el
+    // backend no puede (sede sin carta digital, error transitorio), cae al
+    // link estático de siempre — el cliente igual recibe la carta.
+    const requestMenuLink = async (): Promise<string | null> => {
+        if (!selectedChatId) return menuUrl;
+        try {
+            const res = await apiFetch(`/api/v1/chats/${selectedChatId}/menu-link`, { method: 'POST' });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) return menuUrl;
+            const token = (json as { data: { token: string } }).data.token;
+            return `${window.location.origin}/menus?cart=${token}`;
+        } catch {
+            return menuUrl;
         }
-        return (json as { data: { url: string } }).data.url;
     };
 
     const createOrderForChat = () => {
@@ -821,8 +827,7 @@ export default function ChatsPage() {
                                         onSendAttachment={handleSendAttachment}
                                         quickReplies={quickReplies}
                                         quickReplyVars={quickReplyVars}
-                                        menuUrl={menuUrl}
-                                        onRequestCartLink={requestCartLink}
+                                        onRequestMenuLink={requestMenuLink}
                                         onCreateOrder={createOrderForChat}
                                     />
                                 )}

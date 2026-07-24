@@ -3752,6 +3752,7 @@ useEffect(() => {
 | GET | `chats/{id}/client` | `chats.read,read` | Contacto + historial órdenes |
 | PATCH | `chats/{id}/bot` | `chats.update,update` | Pausar/reanudar bot |
 | PATCH | `chats/{id}/contact` | `chats.update,update` | Editar contact |
+| POST | `chats/{id}/menu-link` | `chats.update,update` (throttle 20/min) | Link corto de carta con sesión (`/menus?cart={uuid}`); al confirmar el pedido, el resumen se precarga en el chat |
 
 ---
 

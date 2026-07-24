@@ -109,6 +109,7 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `chat.message.sent` | `ChatController::storeMessage` / `storeAttachment` | `chat_message_id`, `body_length`, `status` | `chats.update` |
 | `chat.bot.toggled` | `ChatController::updateBot` | `from_paused`, `to_paused` | `chats.update` |
 | `chat.contact.updated` | `ChatController::updateContact` | `before`, `after` (única excepción PII) | `chats.update` |
+| `chat.menu_link.sent` | `ChatController::menuLink` | `chat_id`, `cart_session_id`, `branch_id` | `chats.update` (throttle 20/min) |
 | `chat.access.denied` | `ChatController::findChatOrDeny` + `ChatAuditController` | `chat_id`, `attempted_company_nit`, `route` | — (dedupe 5 min) |
 | `chat.history.read_by_bot` | `ExternalChatMessageController::index` | `chat_id`, `messages_returned`, `user_id=null` | `bot.jwt` (dedupe 15 min) |
 | `chat.message.sent_by_bot` | `ExternalChatMessageController::store` | `chat_message_id`, `body_length`, `user_id=null` | `bot.jwt` |

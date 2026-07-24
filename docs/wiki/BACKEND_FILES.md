@@ -980,7 +980,7 @@ Filtros aceptados: `filters: { date_from, date_to, status }`. Cap de filas: `pdf
 | `CartController` | `migrateJwt, show` | Sesión de carrito anónimo (CartJwt) |
 | `CartCouponController` | `apply, activeAutoApply` | Aplicar cupón a carrito; anunciar happy hour activo (#125) |
 | `CashRegisterController` | `current, open, close, index, show, storeExpense, deleteExpense` | Sesiones de caja (turnos) por sede. UNIQUE parcial `(company_nit, branch_id) WHERE status='open'`. Gastos chiquitos con `cash_register_expenses` |
-| `ChatController` | `index, show, storeMessage, markRead, clientDetail, updateBot, updateContact` | Operador ↔ cliente WhatsApp |
+| `ChatController` | `index, show, storeMessage, markRead, clientDetail, updateBot, updateContact, menuLink` | Operador ↔ cliente WhatsApp. `menuLink` (antes `cartLink` con CartJWT a pedidos.flexyflow.co): crea `CartSession` ligada al chat y devuelve token para el link corto `/menus?cart={uuid}` |
 | `ClientController` | `index, store, show, update, merge, storeNote, destroyNote, storeTag, destroyTag` | CRM básico (#123 + #235). Lista cross-sede con KPIs, perfil consolidado, alta/edición de contactos, merge de duplicados (`POST {contact}/merge`, permiso `clients.delete`: reasigna orders/chats/notes/tags/guests al principal, rellena vacíos, elimina absorbidos, audita `client.merged`), notas privadas y etiquetas. Phone normalizado vía `CrmService::normalizePhone()` |
 | `CompanySettingsController` | `index, show, update` | Settings key-value de empresa |
 | `CouponController` | `index, store, show, update, status, destroy` | CRUD cupones (incluye `valid_days`, `valid_hours_*`, `auto_apply` desde #125) |

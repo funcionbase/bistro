@@ -89,6 +89,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `CART_JWT_SECRET` | Sí en pdn | — | Clave HMAC HS256 para `CartJwtService` |
 | `CART_JWT_TTL` | No | `4200` | TTL en segundos del JWT de carrito (70 min) |
 | `CART_BASE_URL` | No | `https://pedidos.flexyflow.co` | URL base del front de carrito (se concatena `{jwt}`) |
+| `MENU_LINK_TTL_HOURS` | No | `24` | TTL (horas) del link corto de carta enviado desde /chats (`/menus?cart={uuid}`) |
 
 ---
 

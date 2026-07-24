@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\CartSession;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Order;
 use App\Models\Table;
 use App\Models\TableSession;
@@ -52,6 +54,65 @@ class TableResolveController extends Controller
             'company_nit' => $branch->company_nit,
             'branch_id' => (string) $branch->id,
             'branch_name' => $branch->name,
+        ]);
+    }
+
+    /**
+     * Resuelve una sesión de carta enviada desde /chats (`/menus?cart={uuid}`).
+     *
+     * Devuelve el contexto para cargar la carta de la sede (NIT, branch,
+     * `menu_qr_token` para el checkout) + prefill del cliente (teléfono sin
+     * indicativo y nombre del Contact si existe). El token es un bearer que
+     * viaja por el WhatsApp del propio cliente; el prefill es su propio dato.
+     *
+     * Si la sesión expiró, el contexto se devuelve igual con `expired: true`:
+     * el cliente puede seguir pidiendo, solo se pierde el vínculo con el chat.
+     */
+    public function showCartSession(string $token): JsonResponse
+    {
+        // Escape del BranchScope: flujo público sin JWT. La sesión es un
+        // bearer único (jwt_jti UNIQUE) creado por el operador del chat.
+        $session = CartSession::withoutGlobalScopes()
+            ->where('jwt_jti', $token)
+            ->first();
+
+        if ($session === null) {
+            return response()->json(['session_exists' => false], 404);
+        }
+
+        $branch = Branch::query()
+            ->whereKey($session->branch_id)
+            ->whereNull('archived_at')
+            ->first();
+
+        $company = Company::query()->where('nit', $session->company_nit)->first();
+        if ($branch === null || $company === null || ! $company->canServePublic()) {
+            return response()->json(['session_exists' => false], 404);
+        }
+
+        $expired = $session->status !== 'active' || $session->expired_at->isPast();
+
+        $contact = Contact::withoutBranchScope()
+            ->where('company_nit', $session->company_nit)
+            ->where('phone', $session->client_phone)
+            ->first(['name']);
+
+        // El form de checkout pide el celular SIN indicativo (10 dígitos).
+        $phone = (string) $session->client_phone;
+        $localPhone = str_starts_with($phone, '57') && strlen($phone) === 12
+            ? substr($phone, 2)
+            : $phone;
+
+        return response()->json([
+            'session_exists' => true,
+            'expired' => $expired,
+            'company_nit' => $session->company_nit,
+            'branch_id' => (string) $session->branch_id,
+            'menu_qr_token' => (string) $branch->menu_qr_token,
+            'prefill' => [
+                'phone' => $localPhone,
+                'name' => $contact?->name,
+            ],
         ]);
     }
 

@@ -12,6 +12,7 @@ use App\Http\Resources\ChatResource;
 use App\Jobs\MarkWhatsappMessageReadJob;
 use App\Models\Branch;
 use App\Models\BranchUser;
+use App\Models\CartSession;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\CompanyWhatsappAccount;
@@ -21,7 +22,6 @@ use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
-use App\Services\CartJwtService;
 use App\Services\Chat\ChatAuditLogger;
 use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
@@ -37,7 +37,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 /**
  * Panel de conversaciones del operador (chats con clientes via WhatsApp/bot).
@@ -828,49 +827,70 @@ class ChatController extends Controller
     }
 
     /**
-     * Link de carrito para insertar en la conversación (§8.4b punto 8).
+     * Link corto de carta con sesión de seguimiento (unifica "enviar la carta"
+     * y "enviar carrito", antes cartLink con CartJWT de ~600 chars a
+     * pedidos.flexyflow.co).
      *
-     * Mintea un CartJWT firmado con el teléfono del cliente y el del canal. La
-     * `CartSession` la crea el lado público al abrir el link
-     * (`CartController::migrateJwt`), así que acá no se toca ninguna tabla. El
-     * link del MENÚ es público y estático y lo arma el frontend; este endpoint
-     * es solo para el carrito, que necesita el secreto de firma del servidor.
+     * Crea una `CartSession` ligada al chat (`chat_id`) con un token UUID en
+     * `jwt_jti` y devuelve el token; el frontend arma la URL corta
+     * `/menus?cart={token}`. Cuando el cliente confirma el pedido desde la
+     * carta, `BranchOrderController::store` convierte la sesión y precarga en
+     * la conversación lo que seleccionó (ChatMessage con el resumen).
      */
-    public function cartLink(Request $request, string $id): JsonResponse
+    public function menuLink(Request $request, string $id): JsonResponse
     {
         $this->permissionService->assertPermission($request, 'chats', 'update');
 
         $companyNit = (string) $request->attributes->get('active_company_nit');
         $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
-        $channel = $chat->resolveWhatsappChannel();
-        if ($channel === null || (string) $channel->phone_e164 === '') {
+        // Sede cuya carta se envía: la del chat; fallback a la sede activa del
+        // operador. El checkout público necesita el menu_qr_token de la sede.
+        $branchId = $chat->branch_id ?? $request->attributes->get('active_branch_id');
+        $branch = $branchId !== null
+            ? Branch::query()
+                ->whereKey($branchId)
+                ->where('company_nit', $companyNit)
+                ->whereNull('archived_at')
+                ->first()
+            : null;
+
+        if ($branch === null || (string) $branch->menu_qr_token === '') {
             return response()->json([
-                'message' => 'Este chat no tiene un número de WhatsApp conectado para armar el carrito.',
-                'code' => 'CHANNEL_UNAVAILABLE',
+                'message' => 'La sede no tiene carta digital configurada.',
+                'code' => 'MENU_TOKEN_MISSING',
             ], 409);
         }
 
-        try {
-            $service = app(CartJwtService::class);
-        } catch (RuntimeException) {
-            return response()->json([
-                'message' => 'El carrito no está configurado en este entorno.',
-                'code' => 'CART_NOT_CONFIGURED',
-            ], 503);
-        }
+        $ttlHours = max(1, (int) config('bot.menu_link_ttl_hours', 24));
 
-        $link = $service->generateUrl([
-            'session_id' => (string) Str::uuid(),
-            'client_phone' => (string) $chat->client_phone,
-            'restaurant_phone' => (string) $channel->phone_e164,
+        $session = CartSession::create([
+            'jwt_jti' => (string) Str::uuid(),
             'company_nit' => $companyNit,
+            'branch_id' => (string) $branch->id,
+            'chat_id' => $chat->id,
+            'client_phone' => (string) $chat->client_phone,
+            'status' => 'active',
+            'expired_at' => now()->addHours($ttlHours),
         ]);
+
+        $this->auditLogger->log(
+            action: 'chat.menu_link.sent',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'company_nit' => $companyNit,
+                'cart_session_id' => $session->id,
+                'branch_id' => (string) $branch->id,
+            ],
+            request: $request,
+        );
 
         return response()->json([
             'data' => [
-                'url' => $link['url'],
-                'expires_at' => $link['expires_at'],
+                'token' => $session->jwt_jti,
+                'expires_at' => $session->expired_at?->toIso8601String(),
             ],
         ]);
     }
