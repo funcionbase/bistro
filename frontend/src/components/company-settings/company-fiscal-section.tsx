@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import InputError from '@/components/input-error';
+import { MunicipalityCombobox } from '@/components/clients/municipality-combobox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -192,17 +193,13 @@ export function CompanyFiscalSection() {
                     <InputError message={fieldErrors.economic_activity_code} className="text-xs" />
                 </div>
                 <div>
-                    <Label htmlFor="dane">Municipio DANE (5 dígitos)</Label>
-                    <Input
+                    <Label htmlFor="dane">Municipio (ciudad)</Label>
+                    <MunicipalityCombobox
                         id="dane"
-                        value={form.municipality_dane_code ?? ''}
-                        onChange={(e) =>
-                            setForm({ ...form, municipality_dane_code: e.target.value.replace(/\D/g, '').slice(0, 5) })
-                        }
-                        maxLength={5}
-                        placeholder="66001"
+                        value={form.municipality_dane_code ?? null}
+                        onChange={(code) => setForm({ ...form, municipality_dane_code: code ?? '' })}
                         disabled={!canEdit}
-                        aria-invalid={!!fieldErrors.municipality_dane_code}
+                        placeholder="Buscá el municipio…"
                     />
                     <InputError message={fieldErrors.municipality_dane_code} className="text-xs" />
                 </div>

@@ -114,8 +114,11 @@ class BranchOrderController extends Controller
                 $order->status = 'pending_approval';
                 $order->order_type = $validated['type'];
                 $order->client_phone = $phone;
+                // La ciudad del domicilio es la de la sede (regla del negocio: una
+                // sede solo entrega en su ciudad). Se anexa a la dirección para que
+                // quede completa sin pedírsela al cliente.
                 $order->delivery_address = $isDelivery
-                    ? trim($validated['address']).' — Barrio '.trim($validated['neighborhood'])
+                    ? trim($validated['address']).' — Barrio '.trim($validated['neighborhood']).($branch->city ? ' — '.$branch->city : '')
                     : null;
                 $order->total = '0.00';
                 $order->subtotal = '0.00';

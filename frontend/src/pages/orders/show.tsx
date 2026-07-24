@@ -884,7 +884,9 @@ export default function OrderShow() {
                                             Cancelar orden
                                         </GatedButton>
                                     )}
-                                    {!isQrSession && order?.status === 'completed' && (
+                                    {/* Reembolsar solo si HAY un pago registrado: sin pago no
+                                        hay nada que devolver y el backend lo rechazaría. */}
+                                    {!isQrSession && order?.status === 'completed' && order.payment && (
                                         <GatedButton
                                             type="button"
                                             size="sm"

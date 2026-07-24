@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $menu_qr_token — token opaco 3-13 letras A-Z, único global, codifica la URL del menú público
  * @property ?string $address
  * @property ?string $city
+ * @property ?string $municipality_dane_code — ciudad DANE (domicilios de la sede van solo acá)
  * @property bool $is_default — informativo
  * @property ?string $business_type_id — slug del vertical (FK business_types.slug)
  * @property ?array<string, bool> $capabilities_override — sobreescritura puntual sobre default_capabilities del vertical
@@ -37,6 +38,7 @@ class Branch extends Model
         'menu_qr_token',
         'address',
         'city',
+        'municipality_dane_code',
         'business_type_id',
         'capabilities_override',
         'is_default',

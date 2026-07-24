@@ -1,5 +1,6 @@
 ﻿import { BusinessTypeSelector } from '@/components/business-type-selector';
 import InputError from '@/components/input-error';
+import { MunicipalityCombobox } from '@/components/clients/municipality-combobox';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldHint } from '@/components/ui/field-hint';
@@ -33,6 +34,8 @@ interface Branch {
     slug: string;
     address: string | null;
     city: string | null;
+    municipality_dane_code: string | null;
+    municipality_label: string | null;
     business_type_id: string | null;
     is_default: boolean;
     archived_at: string | null;
@@ -52,6 +55,8 @@ interface FormState {
     slug: string;
     address: string;
     city: string;
+    municipality_dane_code: string | null;
+    municipality_label: string | null;
     business_type_id: string;
     initial_business_type_id: string | null;
     is_default: boolean;
@@ -70,6 +75,8 @@ const EMPTY_FORM: FormState = {
     slug: '',
     address: '',
     city: '',
+    municipality_dane_code: null,
+    municipality_label: null,
     business_type_id: 'restaurant',
     initial_business_type_id: null,
     is_default: false,
@@ -167,6 +174,8 @@ export default function BranchesIndex() {
             slug: b.slug,
             address: b.address ?? '',
             city: b.city ?? '',
+            municipality_dane_code: b.municipality_dane_code,
+            municipality_label: b.municipality_label,
             business_type_id: b.business_type_id ?? 'restaurant',
             initial_business_type_id: b.business_type_id,
             is_default: b.is_default,
@@ -191,6 +200,7 @@ export default function BranchesIndex() {
                 slug: form.slug,
                 address: form.address || null,
                 city: form.city || null,
+                municipality_dane_code: form.municipality_dane_code,
                 is_default: form.is_default,
             };
             // En create incluimos business_type_id; en edit el vertical va por
@@ -590,13 +600,17 @@ export default function BranchesIndex() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="city">Ciudad</Label>
-                                <Input
+                                <MunicipalityCombobox
                                     id="city"
-                                    value={form.city}
-                                    onChange={(e) => setForm({ ...form, city: e.target.value })}
-                                    aria-invalid={!!fieldErrors.city}
+                                    value={form.municipality_dane_code}
+                                    label={form.municipality_label}
+                                    onChange={(code, label) =>
+                                        setForm({ ...form, municipality_dane_code: code, municipality_label: label, city: label ? label.split(',')[0] : form.city })
+                                    }
+                                    placeholder="Buscá la ciudad de la sede…"
                                 />
-                                <InputError message={fieldErrors.city} className="text-xs" />
+                                <p className="text-muted-foreground text-xs">Los domicilios de esta sede se entregan solo en esta ciudad.</p>
+                                <InputError message={fieldErrors.municipality_dane_code} className="text-xs" />
                             </div>
                         </div>
                         <div className="grid gap-2">

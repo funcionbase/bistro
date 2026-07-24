@@ -43,6 +43,7 @@ class UpdateBranchRequest extends FormRequest
             ],
             'address' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
             'city' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 120)],
+            'municipality_dane_code' => ['sometimes', 'nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
             'is_default' => ['sometimes', 'boolean'],
         ];
     }

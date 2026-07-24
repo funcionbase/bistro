@@ -26,8 +26,11 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
     const formatCurrency = useCurrencyFormatter();
     const method = order.payment?.method ?? null;
     const requiresReference = method === 'card' || method === 'transfer';
+    // Sin pago registrado no hay nada que devolver: el backend lo rechaza. Se
+    // bloquea el confirm y se guía a cancelar, en vez de dejar que falle.
+    const hasPayment = !!order.payment;
 
-    const remaining = order.refund?.remaining_refundable ?? order.total;
+    const remaining = hasPayment ? (order.refund?.remaining_refundable ?? order.total) : 0;
     const alreadyRefunded = order.refund?.total_refunded_all ?? 0;
 
     const [mode, setMode] = useState<'full' | 'partial'>('full');
@@ -160,6 +163,13 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
                     />
                 </div>
 
+                {!hasPayment && (
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Esta orden no tiene un pago registrado, no hay nada que devolver. Usá "Cancelar orden" en su lugar.</AlertDescription>
+                    </Alert>
+                )}
+
                 {error && (
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
@@ -169,9 +179,14 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
 
                 <div className="flex gap-2">
                     <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
-                        Cancelar
+                        Cerrar
                     </Button>
-                    <Button variant="destructive" className="flex-1" onClick={() => void handleConfirm()} disabled={submitting}>
+                    <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => void handleConfirm()}
+                        disabled={submitting || !hasPayment}
+                    >
                         {submitting ? 'Procesando…' : 'Confirmar devolución'}
                     </Button>
                 </div>

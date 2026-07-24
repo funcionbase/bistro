@@ -14,6 +14,7 @@ use App\Models\CashRegister;
 use App\Models\CashRegisterSession;
 use App\Models\CompanyUser;
 use App\Models\KdsStation;
+use App\Models\Municipality;
 use App\Models\PrepArea;
 use App\Models\RestaurantMenu;
 use App\Models\User;
@@ -79,12 +80,21 @@ class BranchController extends Controller
             $businessType = BusinessType::find($businessTypeSlug);
             abort_if($businessType === null, 422, 'Tipo de negocio inválido.');
 
+            // Ciudad DANE de la sede: los domicilios van solo a esta ciudad. El
+            // `city` (texto) se deriva del municipio elegido para no dejar los dos
+            // desincronizados.
+            $daneCode = $data['municipality_dane_code'] ?? null;
+            $cityName = $daneCode
+                ? optional(Municipality::find($daneCode))->city
+                : ($data['city'] ?? null);
+
             $branch = Branch::create([
                 'company_nit' => $nit,
                 'name' => $data['name'],
                 'slug' => $data['slug'],
                 'address' => $data['address'] ?? null,
-                'city' => $data['city'] ?? null,
+                'city' => $cityName,
+                'municipality_dane_code' => $daneCode,
                 'business_type_id' => $businessType->slug,
                 'is_default' => (bool) ($data['is_default'] ?? false),
             ]);
@@ -157,6 +167,12 @@ class BranchController extends Controller
                     ->where('id', '!=', $model->id)
                     ->where('is_default', true)
                     ->update(['is_default' => false]);
+            }
+
+            // Si cambia el municipio DANE, deriva el `city` (texto) del municipio
+            // para mantenerlos sincronizados.
+            if (array_key_exists('municipality_dane_code', $data) && ! empty($data['municipality_dane_code'])) {
+                $data['city'] = optional(Municipality::find($data['municipality_dane_code']))->city ?? ($data['city'] ?? $model->city);
             }
 
             $model->fill($data)->save();
@@ -717,6 +733,10 @@ class BranchController extends Controller
             'slug' => $b->slug,
             'address' => $b->address,
             'city' => $b->city,
+            'municipality_dane_code' => $b->municipality_dane_code,
+            'municipality_label' => $b->municipality_dane_code
+                ? optional(Municipality::find($b->municipality_dane_code))->label()
+                : null,
             'business_type_id' => $b->business_type_id,
             'capabilities_override' => $b->capabilities_override,
             'is_default' => (bool) $b->is_default,

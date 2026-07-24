@@ -39,6 +39,7 @@ class StoreBranchRequest extends FormRequest
             ],
             'address' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
             'city' => ['nullable', new SafePlainText(maxBytes: 120)],
+            'municipality_dane_code' => ['nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
             'is_default' => ['nullable', 'boolean'],
             // #237 — vertical de la sede. Si no llega, default 'restaurant'.
             'business_type_id' => ['nullable', 'string', 'exists:business_types,slug'],
