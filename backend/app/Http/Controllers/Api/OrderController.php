@@ -1485,9 +1485,27 @@ class OrderController extends Controller
             }
 
             // `completed` = entrega operativa consumada (plato en mesa, domicilio
-            // entregado). El cobro es un evento separado que llega vía
-            // closeWithPayment() y crea el PaymentReceipt; no se exige aquí para
-            // no bloquear el flujo de cocina/delivery cuando el pago es posterior.
+            // entregado). El cobro llega por closeWithPayment()/pago de mesa y crea
+            // el PaymentReceipt.
+            //
+            // Mesa y pickup (consumo en sitio / para recoger) se cobran AL cerrar:
+            // no se permite completarlos sin un pago registrado — así el método de
+            // pago siempre queda. El operador debe usar el cobro (Cobrar), que
+            // captura el método. Domicilio se exceptúa: puede cobrarse
+            // contra-entrega y registrarse en caja después, por eso puede pasar a
+            // completed sin pago previo.
+            if ($target === 'completed' && in_array($order->order_type, ['table', 'pickup'], true)) {
+                $hasPayment = PaymentReceipt::query()
+                    ->where('order_id', $order->id)
+                    ->whereNotNull('payment_method')
+                    ->where('payment_method', '!=', 'refund')
+                    ->exists();
+                if (! $hasPayment) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Registrá el pago para completar esta orden: usá "Cobrar" para elegir el método.',
+                    ]);
+                }
+            }
 
             $order->status = $target;
             $order->save();
