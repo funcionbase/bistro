@@ -29,7 +29,7 @@ export function ConsentBanner() {
     }
 
     return (
-        <div role="dialog" aria-modal="false" aria-label="Preferencias de cookies" className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4">
+        <div role="dialog" aria-modal="false" aria-label="Preferencias de cookies" className="fixed inset-x-0 bottom-0 z-50 px-3 pt-3 pb-safe-1 sm:px-4 sm:pt-4">
             <div className="bg-card text-card-foreground border-border mx-auto w-full max-w-3xl rounded-xl border p-4 shadow-lg sm:p-5">
                 <div className="space-y-1">
                     <h2 className="text-foreground text-base font-semibold">Cookies</h2>

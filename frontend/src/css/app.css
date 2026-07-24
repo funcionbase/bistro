@@ -546,16 +546,30 @@ body {
     .pb-safe-1 {
         padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
     }
+    /* Espejo superior de pb-safe-1: 0.75rem base + safe-area. Para toasts o
+       barras fijas al top (env=0 sin notch → queda en la base). */
+    .pt-safe-1 {
+        padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+    }
 
-    /* Espacio de confort + safe-area SOLO cuando la app corre como PWA
-       instalada (display-mode: standalone). En navegador normal estas
-       utilidades no aplican y el layout queda idéntico. Con
-       `viewport-fit=cover` en el <meta viewport>, env(safe-area-inset-*)
-       reporta el inset real del device (notch / status bar / home indicator /
-       gesture bar); el max() garantiza además un margen mínimo cómodo para que
-       header y contenido no queden pegados a la UI del SO y sean difíciles de
-       tocar. Aplicar `pwa-safe-top` en barras superiores fijas/sticky y
-       `pwa-safe-bottom` al contenedor de contenido inferior de cada página. */
+    /* Safe-area del shell (header sticky superior + contenido inferior).
+       El inset CRUDO aplica SIEMPRE, no solo en PWA instalada: también en
+       navegador mobile cuando la toolbar se oculta al scrollear y en landscape
+       sobre notch, donde el SO invade el viewport igual que en standalone. Con
+       `viewport-fit=cover` en el <meta viewport>, env(safe-area-inset-*) reporta
+       el encroachment real (notch / status bar / home indicator / gesture bar)
+       y empuja la UI fuera; en desktop o con la toolbar visible el inset es 0px
+       y el layout queda idéntico al de antes. Aplicar `pwa-safe-top` en barras
+       superiores fijas/sticky y `pwa-safe-bottom` al contenedor inferior. */
+    .pwa-safe-top {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    .pwa-safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    /* En PWA instalada (sin chrome del navegador) se suma además un margen de
+       confort mínimo para que header y contenido no queden pegados a la UI del
+       SO y sean difíciles de tocar. */
     @media (display-mode: standalone) {
         .pwa-safe-top {
             padding-top: max(0.75rem, env(safe-area-inset-top, 0px));

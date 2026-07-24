@@ -1629,7 +1629,7 @@ export default function OrderShow() {
                     />
 
                     {refundItem && (
-                        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md space-y-2 p-4">
+                        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md space-y-2 px-4 pt-4 pb-safe-1">
                             <div className="bg-card border-border rounded-2xl border p-3 shadow-lg">
                                 <p className="text-foreground mb-2 text-xs font-semibold">Detalles del refund</p>
                                 <div

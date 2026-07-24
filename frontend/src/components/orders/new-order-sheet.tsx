@@ -250,14 +250,14 @@ export function NewOrderSheet({ isOpen, onClose, initialTableNumber = '', onSucc
     return (
         <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
             <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-3xl">
-                <SheetHeader className="sticky top-0 z-10 border-b bg-background p-4">
+                <SheetHeader className="pwa-safe-top sticky top-0 z-10 border-b bg-background p-4">
                     <SheetTitle>Nueva orden{tableNumber ? ` — Mesa ${tableNumber}` : ''}</SheetTitle>
                 </SheetHeader>
 
                 {menuLoading ? (
                     <div className="p-6 text-sm text-muted-foreground">Cargando menú…</div>
                 ) : (
-                    <div className="grid gap-4 p-4 md:grid-cols-[1fr_280px]">
+                    <div className="grid gap-4 px-4 pt-4 pb-safe-1 md:grid-cols-[1fr_280px]">
                         {/* Catálogo */}
                         <div className="min-w-0 space-y-4">
                             {menuError && (

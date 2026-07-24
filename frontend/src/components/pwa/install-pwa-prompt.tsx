@@ -76,7 +76,7 @@ export default function InstallPwaPrompt() {
             role="dialog"
             aria-labelledby="pwa-install-title"
             aria-describedby="pwa-install-desc"
-            className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:right-4 sm:bottom-4 sm:left-auto sm:max-w-sm sm:px-0"
+            className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe-1 sm:right-4 sm:bottom-4 sm:left-auto sm:max-w-sm sm:px-0"
         >
             <div className="bg-card border-border text-card-foreground rounded-2xl border p-4 shadow-lg">
                 <div className="flex items-start gap-3">

@@ -174,7 +174,7 @@ export default function ManualLayout({
     );
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-dvh bg-background text-foreground">
             {/* Header sticky */}
             <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
                 <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">

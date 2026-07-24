@@ -27,7 +27,7 @@ export function PwaUpdateBanner() {
     if (!visible) return null;
 
     return (
-        <div className="border-border bg-card text-card-foreground fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-md items-center justify-between gap-2 rounded-t-2xl border border-b-0 px-4 py-3 shadow-lg">
+        <div className="border-border bg-card text-card-foreground fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-md items-center justify-between gap-2 rounded-t-2xl border border-b-0 px-4 pt-3 pb-safe-1 shadow-lg">
             <span className="text-sm">Nueva versión disponible.</span>
             <div className="flex shrink-0 items-center gap-1">
                 <Button size="sm" onClick={() => window.location.reload()}>

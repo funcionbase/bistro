@@ -52,7 +52,7 @@ export default function IosInstallHint() {
     };
 
     return (
-        <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:right-4 sm:bottom-4 sm:left-auto sm:max-w-sm sm:px-0">
+        <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe-1 sm:right-4 sm:bottom-4 sm:left-auto sm:max-w-sm sm:px-0">
             <div className="bg-card rounded-xl border border-[color:var(--color-status-warning)]/30 p-4 shadow-lg">
                 <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-status-warning)]/15 text-[color:var(--color-status-warning)]">

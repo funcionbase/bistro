@@ -35,7 +35,7 @@ export default function UpdateAvailableToast() {
     if (remaining === null) return null;
 
     return (
-        <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3 sm:top-4">
+        <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-safe-1 sm:top-4">
             <div className="bg-card flex items-center gap-3 rounded-full border border-[color:var(--color-status-warning)]/30 px-4 py-2 shadow-lg">
                 <RefreshCw className="h-4 w-4 text-[color:var(--color-status-warning)]" />
                 <span className="text-sm">
