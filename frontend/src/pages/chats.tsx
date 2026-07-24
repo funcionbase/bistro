@@ -5,6 +5,7 @@ import { ChatLightbox } from '@/components/chats/chat-lightbox';
 import { ChatMessageBubble } from '@/components/chats/chat-message-bubble';
 import { ChatPresence } from '@/components/chats/chat-presence';
 import { ChatSourceBadge } from '@/components/chats/chat-source-badge';
+import { formatPhoneDisplay } from '@/lib/phone';
 import { ClientDetailModal, type ClientDetail } from '@/components/chats/client-detail-modal';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { PageShell } from '@/components/page-shell';
@@ -40,6 +41,11 @@ import { useNavigate } from 'react-router-dom';
 const WAIT_AMBER_MIN = 5;
 const WAIT_RED_MIN = 15;
 
+// El control de bot (pausar/reanudar) y su banner se ocultan por ahora: la
+// automatización (n8n) todavía no está operativa, así que el toggle no cambia
+// nada y confundía. Volver a `true` cuando el bot responda de verdad.
+const SHOW_BOT_CONTROLS = false;
+
 const FILTERS: { value: ChatFilter; label: string }[] = [
     { value: 'pending', label: 'Pendientes' },
     { value: 'all', label: 'Todos' },
@@ -64,7 +70,9 @@ function OrderBadge({ order, onClick }: OrderBadgeProps) {
             className="inline-flex items-center gap-1 rounded text-[10px] font-medium hover:opacity-80"
             title="Ver detalle de la orden"
         >
-            <span className="bg-muted text-foreground rounded px-1.5 py-0.5 font-mono">#{order.id}</span>
+            {/* ID corto del pedido: el UUID completo (36 chars) dominaba el
+                header/las cards y se confundía con el id de la conversación. */}
+            <span className="bg-muted text-foreground rounded px-1.5 py-0.5 font-mono">#{order.id.slice(0, 8).toUpperCase()}</span>
             <span className={`rounded px-1.5 py-0.5 ${meta.badgeClass}`}>{meta.label}</span>
         </button>
     );
@@ -412,12 +420,18 @@ export default function ChatsPage() {
 
     const channel = selectedChat?.channel ?? null;
     const channelDown = Boolean(channel && !channel.can_send);
-    const composerDisabled = !canUpdate || channelDown;
+    // Los chats SMS son de solo aviso: el hilo espejo de las notificaciones que
+    // manda la plataforma (SmsChatLogger). No hay respuesta entrante ni forma de
+    // contestar un SMS desde acá, así que el compositor va deshabilitado.
+    const isSmsChat = selectedChat?.source === 'sms';
+    const composerDisabled = !canUpdate || channelDown || isSmsChat;
     const composerReason = !canUpdate
         ? 'Solo lectura — necesitás el permiso «Editar chats» para responder.'
-        : channelDown
-          ? `${channel?.label ?? 'Este número'} está desconectado. Los mensajes no se enviarán.`
-          : null;
+        : isSmsChat
+          ? 'Canal de SMS de solo aviso: acá solo se ven los mensajes que envió la plataforma, no se puede responder.'
+          : channelDown
+            ? `${channel?.label ?? 'Este número'} está desconectado. Los mensajes no se enviarán.`
+            : null;
 
     // Todas las imágenes de la conversación, para que el lightbox pueda
     // recorrerlas con flechas (§8.4b punto 13) en vez de ser un callejón.
@@ -682,7 +696,9 @@ export default function ChatsPage() {
                                             <span>Conversación</span>
                                         )}
                                         {selectedChat && (
-                                            <span className="text-muted-foreground text-xs font-normal">{selectedChat.client_phone}</span>
+                                            <span className="text-muted-foreground font-mono text-xs font-normal">
+                                                {formatPhoneDisplay(selectedChat.client_phone)}
+                                            </span>
                                         )}
                                         {selectedChat && <ChatSourceBadge source={selectedChat.source} />}
                                         {selectedChat?.latest_order && (
@@ -730,6 +746,7 @@ export default function ChatsPage() {
                                                 Deshabilitado sin permiso: el motivo va en el
                                                 ReasonTooltip (envuelve un span, así el hover dispara
                                                 aunque el botón esté disabled — §8.4c regla 2). */}
+                                            {SHOW_BOT_CONTROLS && (
                                             <ReasonTooltip reason={!canUpdate ? 'Necesitás el permiso «Editar chats» para controlar el bot.' : null}>
                                                 <Button
                                                     variant={selectedChat.bot_paused ? 'default' : 'outline'}
@@ -762,6 +779,7 @@ export default function ChatsPage() {
                                                     )}
                                                 </Button>
                                             </ReasonTooltip>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -770,7 +788,7 @@ export default function ChatsPage() {
 
                                 {selectedChat && <ChatPresence viewers={selectedChat.viewers ?? []} />}
 
-                                {selectedChat?.bot_paused && (
+                                {SHOW_BOT_CONTROLS && selectedChat?.bot_paused && (
                                     <div className="flex items-center gap-2 border-b bg-[color:var(--color-status-warning)]/10 px-3 py-2 text-xs text-[color:var(--color-status-warning)]">
                                         <Bot className="h-4 w-4 shrink-0" />
                                         <span>
@@ -973,6 +991,10 @@ function ChatListItem({
                 <span className="text-muted-foreground shrink-0 text-xs">{timeAgo(chat.last_message_at)}</span>
             </CardHeader>
             <CardContent className="space-y-1 p-3 pt-1">
+                {/* Teléfono bajo el nombre: identifica la conversación por
+                    persona (nombre + número + canal), no por el id del pedido.
+                    Solo si hay nombre — sin él, el título ya ES el teléfono. */}
+                {chat.client_name && <p className="text-muted-foreground font-mono text-xs">{formatPhoneDisplay(chat.client_phone)}</p>}
                 <p className="text-muted-foreground truncate text-xs">{chat.last_message?.body ?? 'Sin mensajes'}</p>
                 {chat.pending_reply_since && <WaitingBadge since={chat.pending_reply_since} />}
             </CardContent>
