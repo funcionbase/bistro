@@ -1,58 +1,35 @@
 /**
  * Worker del SPA. Sirve los assets estáticos (binding ASSETS) tal cual, EXCEPTO
- * las rutas del menú público `/menus/:nit`, donde reescribe los meta tags de
- * Open Graph para que la preview en WhatsApp sea del MENÚ del restaurante (con
- * su nombre + un llamado a pedir), no del marketing de la plataforma.
+ * las rutas del menú público, donde reescribe los meta tags de Open Graph para
+ * que la preview en WhatsApp sea del MENÚ (con un llamado a pedir), no del
+ * marketing de la plataforma.
  *
  * El crawler de WhatsApp NO ejecuta JS, así que ve el HTML que devuelve el
- * Worker. Para todo lo demás (home, panel, etc.) se conservan los OG del
- * index.html. Alcance acotado a /menus/* a propósito.
+ * Worker. Alcance acotado a las rutas de menú (run_worker_first en wrangler):
+ *   - /menus/:nit         (QR directo por NIT)
+ *   - /menus?branch=XXX   (QR de sede; "enviar la carta" desde el chat)
+ *   - /menus              (alias)
+ *
+ * El nombre del restaurante NO se resuelve: es variable y se usa un copy neutro
+ * ("Nuestro menú"), evitando un fetch por request del crawler.
  */
 
 interface Env {
     ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
-const MENU_RE = /^\/menus\/([^/]+)\/?$/;
-const API_BASE = 'https://bistro-api.flexyflow.co';
-const OG_IMAGE = 'https://bistro.flexyflow.co/og-menu.svg';
-
-function esc(s: string): string {
-    return s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] as string);
-}
-
-async function restaurantName(nit: string): Promise<string | null> {
-    try {
-        const r = await fetch(`${API_BASE}/api/v1/public/menu/${encodeURIComponent(nit)}`, {
-            cf: { cacheTtl: 300, cacheEverything: true },
-        } as RequestInit);
-        if (!r.ok) return null;
-        const data = (await r.json()) as Record<string, unknown>;
-        // El branding (nombre) puede venir en distintas formas; se prueba en orden.
-        const company = data.company as Record<string, unknown> | undefined;
-        const branding = data.branding as Record<string, unknown> | undefined;
-        const name = (company?.name ?? branding?.name ?? data.name ?? data.company_name) as string | undefined;
-        return typeof name === 'string' && name.trim() !== '' ? name.trim() : null;
-    } catch {
-        return null;
-    }
-}
+const OG_IMAGE = 'https://bistro.flexyflow.co/og-menu.png';
+const TITLE = 'Nuestro menú — Pedí online';
+const DESC = 'Mirá el menú y hacé tu pedido en segundos. Menú digital, sin filas.';
 
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
-        const match = url.pathname.match(MENU_RE);
+        const isMenu = url.pathname === '/menus' || url.pathname.startsWith('/menus/');
 
-        if (!match) {
+        if (!isMenu) {
             return env.ASSETS.fetch(request);
         }
-
-        const nit = decodeURIComponent(match[1]);
-        const name = (await restaurantName(nit)) ?? 'Nuestro menú';
-
-        const title = `${name} — Menú · Pedí online`;
-        const desc = `Mirá el menú de ${name} y hacé tu pedido en segundos. Menú digital, sin filas.`;
-        const canonical = url.toString();
 
         const indexResp = await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin).toString()));
 
@@ -63,22 +40,23 @@ export default {
         });
 
         // HTMLRewriter es un global del runtime de Workers.
-        const rw = new HTMLRewriter()
+        return new HTMLRewriter()
             .on('title', {
                 element(el: { setInnerContent(v: string): void }) {
-                    el.setInnerContent(esc(title));
+                    el.setInnerContent(TITLE);
                 },
             })
-            .on('meta[name="description"]', meta(desc))
-            .on('meta[property="og:title"]', meta(title))
-            .on('meta[property="og:description"]', meta(desc))
+            .on('meta[name="description"]', meta(DESC))
+            .on('meta[property="og:title"]', meta(TITLE))
+            .on('meta[property="og:description"]', meta(DESC))
             .on('meta[property="og:image"]', meta(OG_IMAGE))
-            .on('meta[property="og:url"]', meta(canonical))
+            .on('meta[property="og:image:width"]', meta('1200'))
+            .on('meta[property="og:image:height"]', meta('630'))
+            .on('meta[property="og:url"]', meta(url.toString()))
             .on('meta[property="og:type"]', meta('website'))
-            .on('meta[name="twitter:title"]', meta(title))
-            .on('meta[name="twitter:image"]', meta(OG_IMAGE));
-
-        return rw.transform(indexResp);
+            .on('meta[name="twitter:title"]', meta(TITLE))
+            .on('meta[name="twitter:image"]', meta(OG_IMAGE))
+            .transform(indexResp);
     },
 };
 

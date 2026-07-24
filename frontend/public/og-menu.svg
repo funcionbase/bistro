@@ -31,19 +31,6 @@
     <circle cx="26" cy="18" r="10" fill="#FFEDD5"/>
     <circle cx="4" cy="-24" r="8" fill="#FFEDD5"/>
   </g>
-  <!-- Tenedor -->
-  <g transform="translate(628 205)" fill="#FFF7ED">
-    <rect x="0" y="0" width="7" height="44" rx="3"/>
-    <rect x="13" y="0" width="7" height="44" rx="3"/>
-    <rect x="26" y="0" width="7" height="44" rx="3"/>
-    <path d="M0 44 h33 v10 a16 16 0 0 1 -16 16 h-1 a16 16 0 0 1 -16 -16 Z"/>
-    <rect x="13" y="66" width="7" height="150" rx="3.5"/>
-  </g>
-  <!-- Cuchillo -->
-  <g transform="translate(700 205)" fill="#FFF7ED">
-    <path d="M0 0 c 18 0 30 26 30 70 h-14 v146 h-8 V0 Z"/>
-  </g>
-
   <!-- Texto -->
   <text x="90" y="150" class="m" font-size="30" letter-spacing="4" fill="#FFE4CC">MENÚ DIGITAL</text>
   <text x="88" y="270" class="h" font-size="92" fill="#FFFFFF">Mirá el menú</text>

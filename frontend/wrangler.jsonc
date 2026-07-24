@@ -22,7 +22,7 @@
         // El Worker corre ANTES que el asset-serving SOLO en /menus/* (para poder
         // reescribir los OG). El resto de rutas las sirven los assets directo,
         // sin costo de invocacion del Worker.
-        "run_worker_first": ["/menus/*"]
+        "run_worker_first": ["/menus", "/menus/*"]
     },
     "observability": {
         "enabled": true,
