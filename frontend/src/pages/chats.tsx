@@ -444,10 +444,17 @@ export default function ChatsPage() {
         [selectedChat, channel],
     );
 
-    // Link público del menú: estático por empresa, se arma en el cliente sin
-    // tocar el backend (§8.4b punto 8).
+    // Link público del menú, armado en el cliente (§8.4b punto 8). Si hay sede
+    // activa con token, se envía el menú DE ESA SEDE (?branch=CWP) para que el
+    // cliente vea precios/disponibilidad de la sede que lo atiende; si no
+    // (multi-sede sin sede activa), cae al menú por empresa (/menus/:nit).
     const nit = props.activeCompany?.nit ?? '';
-    const menuUrl = nit ? `${window.location.origin}/menus/${nit}` : null;
+    const branchToken = props.activeBranch?.menu_qr_token ?? null;
+    const menuUrl = branchToken
+        ? `${window.location.origin}/menus?branch=${branchToken}`
+        : nit
+          ? `${window.location.origin}/menus/${nit}`
+          : null;
 
     const requestCartLink = async (): Promise<string | null> => {
         if (!selectedChatId) return null;
