@@ -212,56 +212,71 @@ class KdsTicketService
      */
     public function maybePromoteOrderStatus(string $orderId, User $actor): void
     {
-        /** @var Order $order */
-        $order = Order::query()->whereKey($orderId)->lockForUpdate()->first();
-        if ($order === null) {
-            return;
-        }
-
-        if (! in_array($order->status, ['pending', 'in_kitchen'], true)) {
-            return;
-        }
-
-        $consumableStatuses = config('orders.item_statuses.consumable');
-
-        // Sin items consumibles (p. ej. todos cancelados) no hay nada que
-        // promover — un set vacío NO significa "todo listo".
-        $hasConsumable = OrderItem::query()
-            ->where('order_id', $order->id)
-            ->whereIn('status', $consumableStatuses)
-            ->exists();
-        if (! $hasConsumable) {
-            return;
-        }
-
-        $remaining = OrderItem::query()
-            ->where('order_id', $order->id)
-            ->whereIn('status', $consumableStatuses)
-            ->where('status', '!=', 'ready')
-            ->where('status', '!=', 'served')
-            ->exists();
-
-        if ($remaining) {
-            // Algunos siguen en cocina/approved — promovemos al menos a in_kitchen.
-            if ($order->status === 'pending') {
-                $hasInKitchen = OrderItem::query()
-                    ->where('order_id', $order->id)
-                    ->where('status', 'in_kitchen')
-                    ->exists();
-                if ($hasInKitchen) {
-                    $order->status = 'in_kitchen';
-                    $this->maybeConsumeInventory($order);
-                    $order->save();
-                    $this->smsDispatcher->dispatch($order, 'in_kitchen', $actor);
-                }
+        // Txn explícita: sin ella el lockForUpdate corre en autocommit y el
+        // lock se suelta al terminar el SELECT — check y save no eran atómicos
+        // (race con appendItems agregando platos en paralelo). El SMS se
+        // despacha DESPUÉS del commit (CLAUDE.md §12/§13: su fallo nunca
+        // revierte la promoción).
+        /** @var array{0: Order, 1: string}|null $promotion */
+        $promotion = DB::transaction(function () use ($orderId): ?array {
+            /** @var Order $order */
+            $order = Order::query()->whereKey($orderId)->lockForUpdate()->first();
+            if ($order === null) {
+                return null;
             }
 
-            return;
-        }
+            if (! in_array($order->status, ['pending', 'in_kitchen'], true)) {
+                return null;
+            }
 
-        $order->status = 'ready';
-        $order->save();
-        $this->smsDispatcher->dispatch($order, 'ready', $actor);
+            $consumableStatuses = config('orders.item_statuses.consumable');
+
+            // Sin items consumibles (p. ej. todos cancelados) no hay nada que
+            // promover — un set vacío NO significa "todo listo".
+            $hasConsumable = OrderItem::query()
+                ->where('order_id', $order->id)
+                ->whereIn('status', $consumableStatuses)
+                ->exists();
+            if (! $hasConsumable) {
+                return null;
+            }
+
+            $remaining = OrderItem::query()
+                ->where('order_id', $order->id)
+                ->whereIn('status', $consumableStatuses)
+                ->where('status', '!=', 'ready')
+                ->where('status', '!=', 'served')
+                ->exists();
+
+            if ($remaining) {
+                // Algunos siguen en cocina/approved — promovemos al menos a in_kitchen.
+                if ($order->status === 'pending') {
+                    $hasInKitchen = OrderItem::query()
+                        ->where('order_id', $order->id)
+                        ->where('status', 'in_kitchen')
+                        ->exists();
+                    if ($hasInKitchen) {
+                        $order->status = 'in_kitchen';
+                        $this->maybeConsumeInventory($order);
+                        $order->save();
+
+                        return [$order, 'in_kitchen'];
+                    }
+                }
+
+                return null;
+            }
+
+            $order->status = 'ready';
+            $order->save();
+
+            return [$order, 'ready'];
+        });
+
+        if ($promotion !== null) {
+            [$order, $newStatus] = $promotion;
+            $this->smsDispatcher->dispatch($order, $newStatus, $actor);
+        }
     }
 
     /**
