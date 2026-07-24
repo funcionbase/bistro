@@ -29,6 +29,13 @@ use Illuminate\Support\Facades\Log;
  */
 final class AlertEngine
 {
+    /**
+     * Días que una alerta revisada (actioned) no vuelve a emitirse para el
+     * mismo (rule, target). El usuario ya la atendió; re-alertar al día
+     * siguiente era ruido.
+     */
+    public const ACTIONED_SNOOZE_DAYS = 5;
+
     /** @var array<string, class-string<Evaluator>> */
     private const EVALUATORS = [
         AlertRule::TYPE_MARGIN_BELOW => MarginBelowEvaluator::class,
@@ -131,6 +138,10 @@ final class AlertEngine
      *     `triggered_at` se conserva (refleja desde cuándo está activa). Si el
      *     usuario la descartó, la condición re-alerta al día siguiente con un
      *     evento nuevo (comportamiento previo intacto).
+     *  3. Snooze por revisión: si existe un evento del mismo (rule, target)
+     *     marcado como revisado (`actioned_at`) hace menos de
+     *     ACTIONED_SNOOZE_DAYS días, no se emite un evento nuevo. Descartar
+     *     (dismiss) NO snoozea — solo revisar.
      */
     private function persist(AlertRule $rule, AlertEventDraft $draft): bool
     {
@@ -173,6 +184,17 @@ final class AlertEngine
                 $openPrevious->severity = $draft->severity;
                 $openPrevious->save();
 
+                return false;
+            }
+
+            $recentlyActioned = AlertEvent::query()
+                ->where('alert_rule_id', $rule->id)
+                ->where('target_type', $draft->targetType)
+                ->where($targetFilter)
+                ->where('actioned_at', '>=', now()->subDays(self::ACTIONED_SNOOZE_DAYS))
+                ->exists();
+
+            if ($recentlyActioned) {
                 return false;
             }
 

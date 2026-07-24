@@ -1310,7 +1310,7 @@ Reglas comunes:
 | `WarehouseStockHistoryService` (#120) | Genera `warehouse_stock_snapshots` diarios (comando `inventory:snapshot-daily`). Calcula valor total desde `IngredientStock.on_hand_qty * Ingredient.current_avg_cost`. | — |
 | `MenuEngineeringService` (#114) | Construye matriz popularidad × margen. Popularidad = `units_sold / total_units` en el período; margen = `(price - cost) / price`. Cuatro cuadrantes Stars/Plowhorses/Puzzles/Dogs. | — |
 | `FoodCostMetricsService` (#113) | Calcula `food_cost_pct = SUM(cost*qty) / SUM(price*qty) * 100` agrupando por período. Serie histórica diaria para chart. | — |
-| `Alerts/AlertEngine` (#124) | Orquesta evaluadores. Resuelve reglas activas por empresa, ejecuta cada evaluador, persiste eventos. Idempotente: si ya existe un evento abierto del mismo `(rule, ref_type, ref_id)`, no duplica. | — |
+| `Alerts/AlertEngine` (#124) | Orquesta evaluadores. Resuelve reglas activas por empresa, ejecuta cada evaluador, persiste eventos. Idempotente: si ya existe un evento abierto del mismo `(rule, ref_type, ref_id)`, no duplica. Snooze: un `(rule, target)` revisado (`actioned_at`) hace <5 días (`ACTIONED_SNOOZE_DAYS`) no re-emite; dismiss sí re-alerta al día siguiente. | — |
 | `Alerts/AlertSeedService` | Crea reglas con thresholds default al onboarding de la empresa | — |
 | `Alerts/Evaluators/MarginBelowEvaluator` | Detecta platos con margen actual < threshold | — |
 | `Alerts/Evaluators/CostIncreaseEvaluator` | Detecta insumos con `current_avg_cost` que subió >X% en N días | — |

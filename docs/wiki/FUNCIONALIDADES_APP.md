@@ -3967,6 +3967,7 @@ Convierte el food cost y los datos de costos/stock en señales accionables: el d
 - `app/Services/Alerts/AlertSeedService.php` — `ensureDefaults($nit)` crea las 4 reglas si no existen (margen 30%, incremento 10% / 7d, low volume 14d, low stock 1d). Idempotente.
 - `app/Console/Commands/EvaluateAlertRulesCommand.php` — `alerts:evaluate [--company={nit}]`. Schedule diario 05:00 (después de food cost snapshot).
 - Dedup: el engine usa `lockForUpdate` sobre el evento del día (si existe) y actualiza payload/severity. Cero duplicados aunque el cron corra N veces.
+- Snooze por revisión: si el mismo `(rule, target)` tiene un evento marcado como revisado (`actioned_at`) hace menos de 5 días (`AlertEngine::ACTIONED_SNOOZE_DAYS`), el engine no emite un evento nuevo — la alerta revisada no reaparece en el dashboard hasta pasados 5 días. Descartar (`dismiss`) NO snoozea: la condición re-alerta al día siguiente.
 
 ### 12.quater.4 Endpoints API
 | Method | Path | Permiso | Notas |
