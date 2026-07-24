@@ -1,48 +1,99 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" role="img" aria-label="Mirá el menú y hacé tu pedido">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" role="img" aria-label="Mirá el menú y pedí online con bistro">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F97316"/>
-      <stop offset="0.55" stop-color="#EA580C"/>
-      <stop offset="1" stop-color="#B91C1C"/>
+      <stop offset="0" stop-color="#2560ff"/>
+      <stop offset="0.6" stop-color="#0f52ff"/>
+      <stop offset="1" stop-color="#0a41cc"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.78" cy="0.4" r="0.55">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    <radialGradient id="glowTR" cx="0.82" cy="0.18" r="0.5">
+      <stop offset="0" stop-color="#6f9bff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#6f9bff" stop-opacity="0"/>
     </radialGradient>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#7F1D1D" flood-opacity="0.35"/>
+    <radialGradient id="glowBL" cx="0.1" cy="0.9" r="0.55">
+      <stop offset="0" stop-color="#3f74ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#3f74ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="card" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#052a8c" flood-opacity="0.35"/>
     </filter>
     <style>
-      .h { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; font-weight: 800; }
-      .m { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; font-weight: 600; }
+      .h { font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-weight: 800; }
+      .m { font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-weight: 600; }
     </style>
   </defs>
 
+  <!-- Fondo: azul primario del DS + glows -->
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="1200" height="630" fill="url(#glowTR)"/>
+  <rect width="1200" height="630" fill="url(#glowBL)"/>
 
-  <!-- Plato con cubiertos (motivo de comida) -->
-  <g filter="url(#soft)" transform="translate(880 315)">
-    <circle r="205" fill="#FFF7ED"/>
-    <circle r="150" fill="none" stroke="#FDBA74" stroke-width="6"/>
-    <!-- vapor / bocado apetitoso -->
-    <path d="M-70 -18 C -40 -70 40 -70 70 -18 C 92 22 40 78 0 78 C -40 78 -92 22 -70 -18 Z" fill="#F97316"/>
-    <circle cx="-22" cy="6" r="14" fill="#FFEDD5"/>
-    <circle cx="26" cy="18" r="10" fill="#FFEDD5"/>
-    <circle cx="4" cy="-24" r="8" fill="#FFEDD5"/>
-  </g>
-  <!-- Texto -->
-  <text x="90" y="150" class="m" font-size="30" letter-spacing="4" fill="#FFE4CC">MENÚ DIGITAL</text>
-  <text x="88" y="270" class="h" font-size="92" fill="#FFFFFF">Mirá el menú</text>
-  <text x="88" y="376" class="h" font-size="92" fill="#FFFFFF">y hacé tu pedido</text>
-  <text x="90" y="452" class="m" font-size="38" fill="#FFEAD5">Pedí online en segundos, sin filas.</text>
+  <!-- ================= Columna de texto ================= -->
+  <text x="82" y="120" class="m" font-size="26" letter-spacing="5" fill="#c0fd79">MENÚ DIGITAL</text>
+  <text x="79" y="228" class="h" font-size="66" fill="#ffffff">Mirá el menú</text>
+  <text x="79" y="312" class="h" font-size="66" fill="#ffffff">y pedí online</text>
+  <text x="82" y="380" class="m" font-size="30" fill="#d5e2ff">Sin filas, sin apps. En segundos.</text>
 
-  <!-- CTA pill -->
-  <g transform="translate(90 500)">
-    <rect width="326" height="72" rx="36" fill="#FFFFFF"/>
-    <text x="163" y="47" text-anchor="middle" class="h" font-size="34" fill="#C2410C">Ver menú y pedir →</text>
+  <!-- CTA: pill acento (lima con texto navy, patrón accent del DS) -->
+  <g transform="translate(82 420)" filter="url(#card)">
+    <rect width="330" height="70" rx="35" fill="#c0fd79"/>
+    <text x="165" y="46" text-anchor="middle" class="h" font-size="30" fill="#1e232e">Ver menú y pedir →</text>
   </g>
 
-  <!-- Firma sutil -->
-  <text x="90" y="600" class="m" font-size="24" fill="#FFFFFF" opacity="0.75">con bistro</text>
+  <!-- Firma -->
+  <text x="82" y="590" class="m" font-size="24" fill="#ffffff" opacity="0.85">con <tspan fill="#c0fd79" class="h">bistro</tspan></text>
+
+  <!-- ================= Card lima "Pedí con QR" (atrás, asoma) ================= -->
+  <g transform="rotate(5 770 508)" filter="url(#card)">
+    <rect x="600" y="430" width="340" height="156" rx="26" fill="#c0fd79"/>
+    <text x="632" y="486" class="h" font-size="30" fill="#1e232e">Pedí con QR</text>
+    <text x="632" y="522" class="m" font-size="22" fill="#1e232e" opacity="0.75">Escaneá y ordená</text>
+    <!-- QR decorativo (motivo, no escaneable) -->
+    <g transform="translate(830 452)" fill="#1e232e">
+      <rect x="0" y="0" width="112" height="112" rx="10" fill="#ffffff"/>
+      <g transform="translate(12 12)">
+        <rect x="0" y="0" width="30" height="30" rx="4"/>
+        <rect x="8" y="8" width="14" height="14" rx="2" fill="#ffffff"/>
+        <rect x="58" y="0" width="30" height="30" rx="4"/>
+        <rect x="66" y="8" width="14" height="14" rx="2" fill="#ffffff"/>
+        <rect x="0" y="58" width="30" height="30" rx="4"/>
+        <rect x="8" y="66" width="14" height="14" rx="2" fill="#ffffff"/>
+        <rect x="42" y="8" width="8" height="8"/>
+        <rect x="42" y="26" width="8" height="8"/>
+        <rect x="58" y="42" width="8" height="8"/>
+        <rect x="76" y="42" width="8" height="8"/>
+        <rect x="42" y="58" width="8" height="8"/>
+        <rect x="58" y="66" width="8" height="8"/>
+        <rect x="76" y="76" width="8" height="8"/>
+        <rect x="42" y="76" width="8" height="8"/>
+        <rect x="66" y="58" width="8" height="8"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ================= Card blanca del menú (adelante) ================= -->
+  <g transform="rotate(-3 918 250)" filter="url(#card)">
+    <rect x="700" y="72" width="436" height="356" rx="28" fill="#ffffff"/>
+    <text x="734" y="132" class="h" font-size="32" fill="#1e232e">Menú del día</text>
+    <!-- pill "Abierto" -->
+    <rect x="1002" y="104" width="100" height="34" rx="17" fill="#eafccc"/>
+    <circle cx="1024" cy="121" r="5" fill="#16a34a"/>
+    <text x="1038" y="127" class="m" font-size="19" fill="#166534">Abierto</text>
+
+    <line x1="734" y1="156" x2="1102" y2="156" stroke="#e5e5e5" stroke-width="2"/>
+
+    <!-- Plato 1 -->
+    <text x="734" y="206" class="m" font-size="26" fill="#1e232e">Bandeja paisa</text>
+    <text x="1102" y="206" text-anchor="end" class="h" font-size="26" fill="#1e232e">$32.000</text>
+    <line x1="734" y1="228" x2="1102" y2="228" stroke="#f0f0f0" stroke-width="2"/>
+    <!-- Plato 2 -->
+    <text x="734" y="264" class="m" font-size="26" fill="#1e232e">Limonada de coco</text>
+    <text x="1102" y="264" text-anchor="end" class="h" font-size="26" fill="#1e232e">$18.000</text>
+    <line x1="734" y1="286" x2="1102" y2="286" stroke="#f0f0f0" stroke-width="2"/>
+    <!-- Plato 3 -->
+    <text x="734" y="322" class="m" font-size="26" fill="#1e232e">Arepa de chócolo</text>
+    <text x="1102" y="322" text-anchor="end" class="h" font-size="26" fill="#1e232e">$9.500</text>
+
+    <line x1="734" y1="352" x2="1102" y2="352" stroke="#e5e5e5" stroke-width="2"/>
+    <text x="734" y="396" class="h" font-size="24" fill="#0052ff">+ 24 platos en el menú →</text>
+  </g>
 </svg>

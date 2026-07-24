@@ -702,6 +702,10 @@ class MetricsService
             $base = OrderSmsNotification::withoutBranchScope()
                 ->where('company_nit', $companyNit)
                 ->where('status', 'sent')
+                // Solo SMS reales (con costo por segmento SNS). Las notificaciones
+                // que salieron gratis por WhatsApp (channel='whatsapp') no cuentan
+                // como SMS enviados: inflarían el costo reportado.
+                ->where('channel', 'sms')
                 ->whereBetween('sent_at', [$start, $end]);
 
             if ($branchId !== null) {

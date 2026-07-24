@@ -45,4 +45,18 @@ return [
     // Tope de caracteres del nombre comercial dentro del SMS, para no inflar el
     // mensaje a >1 segmento. Si el nombre es más largo se trunca con '…' → '...'.
     'brand_max_chars' => 24,
+
+    // WhatsApp primario / SMS de respaldo. Cuando está activo, la notificación
+    // se intenta primero por WhatsApp si el cliente escribió por ese canal
+    // dentro de la ventana (abajo) y hay canal Evolution conectado; si no está
+    // disponible o el envío falla, cae al SMS. Kill-switch de PDN: apagar por
+    // env revierte a SMS-only sin deploy.
+    'whatsapp_primary' => (bool) env('ORDER_NOTIFICATIONS_WHATSAPP_PRIMARY', true),
+
+    // Ventana (horas) desde el último mensaje ENTRANTE del cliente por WhatsApp
+    // dentro de la cual se considera "conversación abierta por él" y es seguro
+    // notificar por ahí. Fuera de la ventana se usa SMS: enviar WhatsApp
+    // proactivo a un número que no escribió recientemente arriesga baneo de la
+    // sesión de Baileys (no hay plantillas aprobadas como en Meta Cloud API).
+    'whatsapp_window_hours' => (int) env('ORDER_NOTIFICATIONS_WHATSAPP_WINDOW_HOURS', 24),
 ];
