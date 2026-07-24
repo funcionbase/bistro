@@ -22,7 +22,13 @@ class ChatResource extends JsonResource
         return [
             'id' => $this->id,
             'client_phone' => $this->client_phone,
-            'client_name' => $this->client_name,
+            // Nombre canonico: el del contacto vinculado (fuente de verdad,
+            // editable en /clients) por encima del snapshot `chats.client_name`,
+            // que queda viejo al renombrar el contacto y hacia que el mismo
+            // cliente se viera con nombres distintos por canal.
+            'client_name' => $this->relationLoaded('contact') && $this->contact?->name
+                ? $this->contact->name
+                : $this->client_name,
             'contact_id' => $this->contact_id,
             'contact_notes' => $this->whenLoaded('contact', fn () => $this->contact?->notes),
             'status' => $this->status,

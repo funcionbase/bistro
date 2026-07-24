@@ -174,7 +174,13 @@ class CrmService
 
                 $chats = Chat::withoutBranchScope()
                     ->where('company_nit', $companyNit)
-                    ->whereIn('client_phone', $chatVariants)
+                    ->where(function ($q) use ($contact, $chatVariants): void {
+                        // Por `contact_id` (vínculo canónico, robusto si cambia el
+                        // teléfono) O por variantes del teléfono (chats legacy sin
+                        // contact_id o creados por otro canal).
+                        $q->where('contact_id', $contact->id)
+                            ->orWhereIn('client_phone', $chatVariants);
+                    })
                     ->orderByDesc('last_message_at')
                     ->limit(20)
                     ->get(['id', 'branch_id', 'source', 'status', 'last_message_at']);

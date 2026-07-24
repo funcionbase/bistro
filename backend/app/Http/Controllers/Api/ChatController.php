@@ -17,6 +17,7 @@ use App\Models\ChatMessage;
 use App\Models\CompanyWhatsappAccount;
 use App\Models\Contact;
 use App\Models\Order;
+use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
@@ -214,7 +215,15 @@ class ChatController extends Controller
         $limit = $term === '' ? 50 : 100;
 
         $query = Chat::forCompany($companyNit)
-            ->with(['latestMessage', 'whatsappAccount'])
+            // `contact` (solo id+name) para que la bandeja muestre el nombre
+            // CANONICO del contacto (el que se edita en /clients), no el snapshot
+            // viejo de `chats.client_name`: sin esto el mismo cliente aparece con
+            // nombres distintos entre el hilo de SMS, el de WhatsApp y /clients.
+            // Sin BranchScope: el contacto puede estar en otra sede que el chat y
+            // el nombre debe resolverse igual.
+            ->with(['latestMessage', 'whatsappAccount', 'contact' => function ($q): void {
+                $q->withoutGlobalScope(BranchScope::class)->select('id', 'name');
+            }])
             // Prioridad real (§8.4b punto 2): primero los que esperan respuesta,
             // el que espera hace mas tiempo arriba. Postgres pone los NULL al
             // final con ASC NULLS LAST, que es exactamente "los ya respondidos

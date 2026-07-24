@@ -6,18 +6,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { apiFetch } from '@/lib/api';
 import { sanitizePlainText } from '@/lib/input-sanitize';
 import { isValidColombianMobile, stripCountryPrefix } from '@/lib/phone';
-import { Building2, LoaderCircle, User, UserPlus } from 'lucide-react';
+import { Building2, LoaderCircle, Save, User, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+/** Datos mínimos para pre-llenar el diálogo en modo edición. */
+export interface EditContactData {
+    id: string;
+    kind: ContactKind | null;
+    doc_type: string | null;
+    doc_number: string | null;
+    dv: string | null;
+    phone: string | null;
+    name: string | null;
+    legal_name: string | null;
+    email: string | null;
+    notes: string | null;
+}
 
 interface NewClientDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onCreated: (client: CreatedClient) => void;
+    /** Alta: recibe el contacto creado. Opcional en modo edición. */
+    onCreated?: (client: CreatedClient) => void;
+    /** Edición: se llama tras guardar (el caller refresca el perfil). */
+    onSaved?: () => void;
     /**
      * Teléfono con el que pre-llenar el campo al abrir (ej. el que el cajero ya
-     * tecleó en el flujo de cobro DIAN). Opcional.
+     * tecleó en el flujo de cobro DIAN). Opcional. Solo aplica en alta.
      */
     initialPhone?: string;
+    /**
+     * Si viene, el diálogo entra en modo EDICIÓN: pre-llena con estos datos y
+     * hace PATCH en vez de POST. Reusa el mismo form y validación que el alta.
+     */
+    initialContact?: EditContactData | null;
 }
 
 export type ContactKind = 'natural' | 'company';
@@ -87,19 +109,35 @@ const DEFAULT_DOC_BY_KIND: Record<ContactKind, string> = {
  * (impide estados imposibles tipo "persona con NIT"). Razón social es
  * obligatoria solo para empresas. Phone es opcional siempre.
  */
-export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }: NewClientDialogProps) {
+export function NewClientDialog({ open, onOpenChange, onCreated, onSaved, initialPhone, initialContact }: NewClientDialogProps) {
+    const isEdit = !!initialContact;
     const [form, setForm] = useState<FormState>(INITIAL_FORM);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [topError, setTopError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
-    // Pre-llena el teléfono al abrir cuando el caller lo provee (flujo de cobro
-    // de mesa: el cajero ya tecleó el teléfono al buscar el contacto DIAN).
+    // Pre-llena al abrir: en edición, con los datos del contacto; en alta, con el
+    // teléfono que el caller pasa (flujo de cobro de mesa: el cajero ya lo tecleó
+    // al buscar el contacto DIAN).
     useEffect(() => {
-        if (open && initialPhone) {
+        if (!open) return;
+        if (initialContact) {
+            const kind = initialContact.kind ?? 'natural';
+            setForm({
+                kind,
+                doc_type: initialContact.doc_type ?? DEFAULT_DOC_BY_KIND[kind],
+                doc_number: initialContact.doc_number ?? '',
+                dv: initialContact.dv ?? '',
+                phone: initialContact.phone ? stripCountryPrefix(initialContact.phone) : '',
+                name: initialContact.name ?? '',
+                legal_name: initialContact.legal_name ?? '',
+                email: initialContact.email ?? '',
+                notes: initialContact.notes ?? '',
+            });
+        } else if (initialPhone) {
             setForm((prev) => ({ ...prev, phone: stripCountryPrefix(initialPhone) }));
         }
-    }, [open, initialPhone]);
+    }, [open, initialPhone, initialContact]);
 
     const isCompany = form.kind === 'company';
     const docTypeOptions = isCompany ? DOC_TYPES_COMPANY : DOC_TYPES_NATURAL;
@@ -179,8 +217,8 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
         setTopError(null);
 
         try {
-            const response = await apiFetch('/api/v1/clients', {
-                method: 'POST',
+            const response = await apiFetch(isEdit ? `/api/v1/clients/${initialContact!.id}` : '/api/v1/clients', {
+                method: isEdit ? 'PATCH' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     kind: form.kind,
@@ -198,7 +236,11 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
             if (response.ok) {
                 const body = (await response.json()) as { data: CreatedClient };
                 setForm(INITIAL_FORM);
-                onCreated(body.data);
+                if (isEdit) {
+                    onSaved?.();
+                } else {
+                    onCreated?.(body.data);
+                }
                 onOpenChange(false);
                 return;
             }
@@ -227,11 +269,13 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
             }
 
             if (response.status === 403) {
-                setTopError('No tienes permiso para registrar contactos.');
+                setTopError(isEdit ? 'No tienes permiso para editar contactos.' : 'No tienes permiso para registrar contactos.');
                 return;
             }
 
-            setTopError('No fue posible registrar el contacto. Intenta de nuevo.');
+            setTopError(
+                isEdit ? 'No fue posible guardar los cambios. Intenta de nuevo.' : 'No fue posible registrar el contacto. Intenta de nuevo.',
+            );
         } finally {
             setSubmitting(false);
         }
@@ -250,7 +294,7 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
         >
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Nuevo contacto</DialogTitle>
+                    <DialogTitle>{isEdit ? 'Editar contacto' : 'Nuevo contacto'}</DialogTitle>
                     <DialogDescription>
                         El documento es la clave única por empresa. Si ya existe un contacto con ese documento, el sistema te avisa. El teléfono es
                         opcional y puede compartirse entre familiares.
@@ -452,8 +496,14 @@ export function NewClientDialog({ open, onOpenChange, onCreated, initialPhone }:
                             Cancelar
                         </Button>
                         <Button type="submit" disabled={submitting}>
-                            {submitting ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <UserPlus className="mr-1 h-4 w-4" />}
-                            Registrar contacto
+                            {submitting ? (
+                                <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />
+                            ) : isEdit ? (
+                                <Save className="mr-1 h-4 w-4" />
+                            ) : (
+                                <UserPlus className="mr-1 h-4 w-4" />
+                            )}
+                            {isEdit ? 'Guardar cambios' : 'Registrar contacto'}
                         </Button>
                     </DialogFooter>
                 </form>

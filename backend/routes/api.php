@@ -1450,6 +1450,9 @@ Route::prefix('v1')->group(function () {
                 Route::get('{contact}', [ClientController::class, 'show'])
                     ->middleware('permission:clients.read,read')
                     ->name('api.clients.show');
+                Route::patch('{contact}', [ClientController::class, 'update'])
+                    ->middleware('permission:clients.update,update')
+                    ->name('api.clients.update');
                 Route::post('{contact}/notes', [ClientController::class, 'storeNote'])
                     ->middleware('permission:clients.update,update')
                     ->name('api.clients.notes.store');

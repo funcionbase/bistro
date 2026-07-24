@@ -244,6 +244,118 @@ class ClientController extends Controller
         return response()->json(['data' => $profile]);
     }
 
+    /**
+     * Edita los datos de un contacto existente desde el CRM (#123). Mismas
+     * reglas que `store` (identidad canónica company_nit+doc_number, validación
+     * cruzada kind↔doc_type, razón social obligatoria en empresas), pero el
+     * UNIQUE de doc_number excluye al propio contacto. `address` y
+     * `municipality_dane_code` son `sometimes`: el diálogo del CRM no los envía,
+     * así que su ausencia NO los borra (los edita el flujo DIAN aparte).
+     */
+    public function update(Request $request, string $contact): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'clients', 'update');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $contactModel = $this->loadContactOrFail($companyNit, $contact);
+
+        $validated = $request->validate([
+            'kind' => ['required', Rule::in([Contact::KIND_NATURAL, Contact::KIND_COMPANY])],
+            'doc_type' => ['required', Rule::in([...Contact::NATURAL_DOC_TYPES, ...Contact::COMPANY_DOC_TYPES])],
+            'doc_number' => ['required', 'string', 'max:30', 'regex:/^[A-Z0-9-]+$/i'],
+            'dv' => ['nullable', 'string', 'size:1', 'regex:/^[0-9]$/'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'name' => ['required', new SafePlainText(maxBytes: 120, allowWhitespace: true)],
+            'legal_name' => ['nullable', new SafePlainText(maxBytes: 160, allowWhitespace: true)],
+            'email' => ['nullable', 'email', 'max:120'],
+            'address' => ['sometimes', 'nullable', new SafePlainText(maxBytes: 200, allowWhitespace: true)],
+            'municipality_dane_code' => ['sometimes', 'nullable', 'string', 'size:5', 'regex:/^[0-9]{5}$/'],
+            'notes' => ['nullable', new SafePlainText(maxBytes: 1000, allowWhitespace: true)],
+        ]);
+
+        $kind = $validated['kind'];
+        $allowedDocs = $kind === Contact::KIND_COMPANY
+            ? Contact::COMPANY_DOC_TYPES
+            : Contact::NATURAL_DOC_TYPES;
+
+        if (! in_array($validated['doc_type'], $allowedDocs, true)) {
+            throw ValidationException::withMessages([
+                'doc_type' => [$kind === Contact::KIND_COMPANY
+                    ? 'Las empresas solo aceptan NIT o NIT extranjero.'
+                    : 'Las personas naturales solo aceptan CC, CE, TI, PA o RC.',
+                ],
+            ]);
+        }
+
+        if ($kind === Contact::KIND_COMPANY && empty(trim((string) ($validated['legal_name'] ?? '')))) {
+            throw ValidationException::withMessages([
+                'legal_name' => ['La razón social es obligatoria para empresas.'],
+            ]);
+        }
+
+        $phone = null;
+        if (! empty($validated['phone'])) {
+            $phone = CrmService::normalizePhone($validated['phone']);
+            if (! preg_match('/^57\d{10}$/', $phone)) {
+                throw ValidationException::withMessages([
+                    'phone' => ['Ingresa un móvil colombiano de 10 dígitos que empiece por 3.'],
+                ]);
+            }
+        }
+
+        // UNIQUE de identidad excluyendo al propio contacto: no puede chocar con
+        // OTRO cliente de la misma empresa, pero sí conservar su propio doc.
+        $dupe = Contact::withoutBranchScope()
+            ->where('company_nit', $companyNit)
+            ->where('doc_number', $validated['doc_number'])
+            ->where('id', '!=', $contactModel->id)
+            ->first();
+
+        if ($dupe !== null) {
+            throw ValidationException::withMessages([
+                'doc_number' => ['Ya existe otro cliente con ese número de documento en esta empresa.'],
+            ]);
+        }
+
+        $actor = $this->actingUserOrFail($request);
+        $name = trim($validated['name']);
+
+        DB::transaction(function () use ($contactModel, $phone, $name, $kind, $validated, $actor): void {
+            $contactModel->kind = $kind;
+            $contactModel->doc_type = $validated['doc_type'];
+            $contactModel->doc_number = $validated['doc_number'];
+            $contactModel->dv = $validated['dv'] ?? null;
+            $contactModel->phone = $phone;
+            $contactModel->name = $name;
+            $contactModel->legal_name = $validated['legal_name'] ?? null;
+            $contactModel->email = $validated['email'] ?? null;
+            $contactModel->notes = $validated['notes'] ?? null;
+
+            // sometimes: solo se tocan si el request los trae (el CRM no).
+            if (array_key_exists('address', $validated)) {
+                $contactModel->address = $validated['address'];
+            }
+            if (array_key_exists('municipality_dane_code', $validated)) {
+                $contactModel->municipality_dane_code = $validated['municipality_dane_code'];
+            }
+
+            $contactModel->save();
+
+            $this->auditService->log('client.updated', $actor, $contactModel, [
+                'contact_id' => $contactModel->id,
+                'kind' => $contactModel->kind,
+                'doc_type' => $contactModel->doc_type,
+                'doc_number' => $contactModel->doc_number,
+                'client_phone' => $contactModel->phone,
+                'client_name' => $contactModel->name,
+            ]);
+        });
+
+        $this->crmService->forgetCache($companyNit, $contactModel->id);
+
+        return response()->json(['data' => $this->crmService->profile($companyNit, $contactModel->id)]);
+    }
+
     public function storeNote(StoreNoteRequest $request, string $contact): JsonResponse
     {
         $this->permissionService->assertPermission($request, 'clients', 'update');
