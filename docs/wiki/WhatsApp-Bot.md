@@ -204,3 +204,15 @@ Notas:
 - El menú público (`/api/v1/public/menu/{nit}`) NO requiere autenticación; cualquier visitante o bot lo consulta.
 - Los `cart_sessions` se marcan como `abandoned` cuando exceden `expired_at`; las activas durante reinicios persisten en BD.
 - El webhook entrante de Evolution (`/api/v1/webhooks/whatsapp/evolution/{account}`) autentica por secreto de 32 bytes por canal (header `X-Flexyflow-Token`), responde igual (401 sin cuerpo) ante secreto inválido y canal inexistente, y está whitelisted en `NormalizeStrings`. El webhook legado de Meta (`/api/webhooks/whatsapp`) coexiste hasta el corte de F4.
+
+## N≥2 instancias EC2 — descubrimiento del líder de Evolution
+
+Evolution/Baileys mantiene el socket de WhatsApp en **memoria de UNA sola instancia** (el líder elegido por `leader-guard.sh` en el repo `apps-flexyflow-co`, tabla-heartbeat `public.evolution_leader`). Dos sockets con la misma identidad harían que WhatsApp invalide las credenciales → re-escaneo de todos los canales; por eso el guard garantiza un único líder.
+
+Pero **bistro corre en las N instancias del ASG** (`flexyflow-shared-*-asg`, con scale-out por CPU + refresh a 2). Si bistro apuntara a `127.0.0.1:8080` (loopback), la instancia que NO es líder no tiene Evolution ahí y **todo envío saliente fallaría** (mensaje del operador, QR del wizard, aviso de estado, reply del bot).
+
+Solución (**descubrimiento del líder**):
+- El guard bindea Evolution a la **IP privada de la ENI** (`EVOLUTION_BIND_IP`), no a loopback, y publica esa IP en `evolution_leader.holder_ip` en cada latido.
+- `EvolutionClient::resolveBaseUrl()` — cuando la URL configurada es loopback (`127.0.0.1`/`localhost`), reemplaza el host por `holder_ip` del líder **vivo** (latido dentro de `evolution.leader_stale_seconds`, default 90s = el `STALE_SECONDS` del guard). Cache 10s en store compartido (el líder es global). Una `evo_server_url` externa real (multi-servidor) nunca se toca; sin líder fresco cae al loopback.
+- Red: el `host-sg` abre 8080 **self-ingress** (intra-SG, `HostEvolutionSelfIngress`), nunca público ni por ALB. La Manager UI de 2.3.7 (no apagable) queda alcanzable solo dentro del host-sg y exige el `AUTHENTICATION_API_KEY`.
+- El **webhook entrante** no necesita nada de esto: Evolution (líder) llama al `APP_URL` público → ALB → cualquier instancia.

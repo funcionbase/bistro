@@ -6,6 +6,8 @@ namespace App\Services\Whatsapp;
 
 use App\Models\CompanyWhatsappAccount;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -32,7 +34,7 @@ class EvolutionClient
     public static function default(): self
     {
         return new self(
-            rtrim((string) config('evolution.base_url'), '/'),
+            rtrim(self::resolveBaseUrl((string) config('evolution.base_url')), '/'),
             (string) config('evolution.global_token'),
         );
     }
@@ -40,10 +42,71 @@ class EvolutionClient
     /** Cliente apuntado al servidor del canal, que puede no ser el default. */
     public static function forAccount(CompanyWhatsappAccount $account): self
     {
+        $configured = (string) ($account->evo_server_url ?: config('evolution.base_url'));
+
         return new self(
-            rtrim((string) ($account->evo_server_url ?: config('evolution.base_url')), '/'),
+            rtrim(self::resolveBaseUrl($configured), '/'),
             (string) config('evolution.global_token'),
         );
+    }
+
+    /**
+     * Resuelve la URL EFECTIVA de Evolution para el host actual (N-instance).
+     *
+     * Evolution solo puede tener el socket Baileys en UNA instancia (el líder
+     * del leader-guard); corre atado a su ENI privada. Con N≥2 instancias, la
+     * que NO es líder no tiene Evolution en su loopback, así que apuntar a
+     * `127.0.0.1:8080` fallaría. Aquí, si la URL configurada es loopback, se
+     * reemplaza el host por la IP privada del líder (leída de la tabla-heartbeat
+     * `evolution_leader` que mantiene el guard). Una `evo_server_url` externa
+     * real (multi-servidor) NUNCA se toca.
+     *
+     * Sin líder fresco (o la tabla aún no existe): se deja el loopback — en ese
+     * momento no hay Evolution vivo en ningún lado, así que da igual, y el caller
+     * ya trata el fallo de transporte como resultado, no excepción.
+     */
+    private static function resolveBaseUrl(string $configured): string
+    {
+        $host = parse_url($configured, PHP_URL_HOST);
+
+        if (! in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
+            return $configured;
+        }
+
+        $leaderIp = self::leaderIp();
+        if ($leaderIp === null) {
+            return $configured;
+        }
+
+        $port = parse_url($configured, PHP_URL_PORT);
+
+        return 'http://'.$leaderIp.($port ? ':'.$port : '');
+    }
+
+    /**
+     * IP privada del líder de Evolution, o null si no hay latido fresco. Cache
+     * corto: el líder es GLOBAL (no per-instancia), así que el store compartido
+     * (`database`) es correcto — todas las instancias deben apuntar al mismo.
+     */
+    private static function leaderIp(): ?string
+    {
+        return Cache::remember('evolution:leader_ip', now()->addSeconds(10), static function (): ?string {
+            try {
+                $stale = (int) config('evolution.leader_stale_seconds', 90);
+                $row = DB::selectOne(
+                    'SELECT holder_ip FROM public.evolution_leader
+                      WHERE id = 1 AND holder_ip IS NOT NULL
+                        AND heartbeat_at > now() - make_interval(secs => ?)',
+                    [$stale],
+                );
+
+                return $row->holder_ip ?? null;
+            } catch (\Throwable) {
+                // Tabla ausente (Evolution nunca arrancó) o BD inalcanzable:
+                // se cae al loopback configurado.
+                return null;
+            }
+        });
     }
 
     // ── Ciclo de vida de la instancia (token global) ─────────────────────────
