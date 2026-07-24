@@ -1535,17 +1535,17 @@ Página: `resources/js/pages/orders/board.tsx`. Breadcrumb: `Dashboard › Órde
 
 ### 6.1 Columnas (5 estados operativos)
 
-Definidas en `pages/orders/board.tsx` líneas 90-96:
+Definidas en el array `ESTADOS` de `frontend/src/pages/orders/board.tsx` (colores con tokens del DS, `rank` espejo de `config('orders.kanban_rank')` — mantener en sincronía):
 
-```tsx
-const ESTADOS = [
-    { key: 'pending',     label: 'Pendientes',   color: 'bg-secondary',  badgeClass: 'bg-yellow-100 text-yellow-800' },
-    { key: 'in_kitchen',  label: 'En Cocina',    color: 'bg-orange-100', badgeClass: 'bg-orange-100 text-orange-800' },
-    { key: 'ready',       label: 'Para Entrega', color: 'bg-blue-100',   badgeClass: 'bg-blue-100 text-blue-800' },
-    { key: 'in_delivery', label: 'En Domicilio', color: 'bg-primary/20', badgeClass: 'bg-purple-100 text-purple-800' },
-    { key: 'completed',   label: 'Completado',   color: 'bg-green-100',  badgeClass: 'bg-green-100 text-green-800' },
-];
-```
+| key | label | rank |
+|---|---|---|
+| `pending` | Pendiente | 1 |
+| `in_kitchen` | En cocina | 2 |
+| `ready` | Para entrega | 3 |
+| `in_transit` | En tránsito | 4 |
+| `completed` | Completado | 5 |
+
+(Snippet anterior con `in_delivery` era legacy — el rename `in_delivery → in_transit` vive en la migración `2026_05_07_192524`. Otras secciones de este documento aún muestran payloads legacy con `in_delivery`; el código no lo usa.)
 
 ### 6.2 Hook `useOrders` (polling + estado)
 
