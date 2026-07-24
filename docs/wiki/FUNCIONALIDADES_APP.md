@@ -3863,6 +3863,8 @@ Refactor #235: el route model binding `Contact` ya garantiza que el contact exis
 
 Cada mutación queda en `audit_logs`:
 - `client.created` — incluye `contact_id`, `doc_type`, `doc_number`, `client_phone`, `client_name`, `branch_id`.
+- `client.updated` — mismos campos que created (sin `branch_id`).
+- `client.merged` — `contact_id` del principal, `merged_contacts[]` (snapshot id/name/doc/phone/email de los absorbidos), `moved` (conteos reasignados por tabla).
 - `client.note_created` — incluye `contact_id`, `client_phone`, `note_id`.
 - `client.note_deleted` — incluye `contact_id`, `client_phone`, `note_id`, `note_excerpt`.
 - `client.tag_added` — incluye `contact_id`, `client_phone`, `tag`.
@@ -3870,7 +3872,7 @@ Cada mutación queda en `audit_logs`:
 
 ### 12.bis.10 UI
 
-- **Listado** (`/clients`): tabla con búsqueda con debounce 300ms (matchea nombre / documento / teléfono), filtros por segmento y tag, paginación. Refactor #235: la fila del cliente muestra nombre + documento + teléfono. Identidad canónica = `contacts.id`.
+- **Listado** (`/clients`): tabla con búsqueda con debounce 300ms (matchea nombre / documento / teléfono), filtros por segmento y tag, paginación. Refactor #235: la fila del cliente muestra nombre + documento + teléfono. Identidad canónica = `contacts.id`. Con `clients.delete`: checkboxes de selección + barra "Unificar (N)" → `MergeClientsDialog` para fusionar duplicados (radio elige el principal; pedidos/chats/notas/tags pasan al principal, los absorbidos se eliminan).
 - **Detalle** (`/clients/{contact}`): header con nombre + documento + phone + segmento + KPIs, editor de tags, tabs (historial órdenes / chats / notas). Acción "Ver chat" abre `/chats?chat={id}` si el cliente tiene al menos una conversación.
 
 ### 12.bis.11 Endpoints (resumen)
@@ -3880,6 +3882,8 @@ Cada mutación queda en `audit_logs`:
 | GET | `clients` | `clients.read,read` |
 | POST | `clients` | `clients.create,create` (refactor #235: doc obligatorio, phone opcional) |
 | GET | `clients/{contact}` | `clients.read,read` |
+| PATCH | `clients/{contact}` | `clients.update,update` |
+| POST | `clients/{contact}/merge` | `clients.delete,delete` (fusionar = eliminar duplicados) |
 | POST | `clients/{contact}/notes` | `clients.update,update` |
 | DELETE | `clients/{contact}/notes/{id}` | `clients.delete,delete` |
 | POST | `clients/{contact}/tags` | `clients.update,update` |

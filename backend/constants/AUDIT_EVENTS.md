@@ -128,6 +128,16 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `kds.station.*` y `kds.device_token.*` | `KdsStationController` / `KdsDeviceTokenService` | ver sección "Cocina (KDS)" arriba | `kds_stations.*` |
 | `branch.business_type_changed` (#237) | `BranchController::changeBusinessType` | `branch_id`, `before` (slug del vertical previo), `after` (slug nuevo) | `branches.manage,update` |
 
+### CRM (clientes)
+
+| `action` | Disparado por | `data` mínimo | Permiso relacionado |
+|---|---|---|---|
+| `client.created` | `ClientController::store` | `contact_id`, `kind`, `doc_type`, `doc_number`, `client_phone`, `client_name`, `branch_id` | `clients.create` |
+| `client.updated` | `ClientController::update` | `contact_id`, `kind`, `doc_type`, `doc_number`, `client_phone`, `client_name` | `clients.update` |
+| `client.merged` | `ClientController::merge` | `contact_id` (principal), `merged_contacts[]` (snapshot id/name/doc/phone/email), `moved` (conteos por tabla) | `clients.delete` |
+| `client.note_created` / `client.note_deleted` | `ClientController::storeNote` / `destroyNote` | `contact_id`, `note_id` (+ `note_excerpt` al borrar) | `clients.update` / `clients.delete` |
+| `client.tag_added` / `client.tag_removed` | `ClientController::storeTag` / `destroyTag` | `contact_id`, `tag` | `clients.update` / `clients.delete` |
+
 ### WhatsApp
 
 | `action` | Disparado por | `data` mínimo | Permiso relacionado |

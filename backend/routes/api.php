@@ -1453,6 +1453,11 @@ Route::prefix('v1')->group(function () {
                 Route::patch('{contact}', [ClientController::class, 'update'])
                     ->middleware('permission:clients.update,update')
                     ->name('api.clients.update');
+                // Fusionar duplicados: {contact} sobrevive, merge_ids se absorben
+                // y eliminan → permiso delete (no update).
+                Route::post('{contact}/merge', [ClientController::class, 'merge'])
+                    ->middleware('permission:clients.delete,delete')
+                    ->name('api.clients.merge');
                 Route::post('{contact}/notes', [ClientController::class, 'storeNote'])
                     ->middleware('permission:clients.update,update')
                     ->name('api.clients.notes.store');

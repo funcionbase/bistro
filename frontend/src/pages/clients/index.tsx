@@ -1,22 +1,25 @@
 import { AppLink } from '@/components/app-link';
+import { MergeClientsDialog } from '@/components/clients/merge-clients-dialog';
 import { NewClientDialog } from '@/components/clients/new-client-dialog';
 import { SegmentBadge, segmentLabel } from '@/components/clients/segment-badge';
 import { PageShell } from '@/components/page-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ClientsListSkeleton } from '@/components/ui/clients-list-skeleton';
 import { DataCard, DataCardList } from '@/components/ui/data-card-list';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { PageHeader } from '@/components/ui/page-header';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useClients, type ClientListFilters, type ClientSegment } from '@/hooks/use-clients';
+import { useToast } from '@/components/ui/toast';
+import { useClients, type ClientListFilters, type ClientListItem, type ClientSegment } from '@/hooks/use-clients';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useToken } from '@/hooks/use-token';
 import { formatCurrency } from '@/lib/coupon-helpers';
 
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { AlertCircle, Building2, ChevronLeft, ChevronRight, User, UserPlus, Users } from 'lucide-react';
+import { AlertCircle, Building2, ChevronLeft, ChevronRight, Merge, User, UserPlus, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,11 +47,32 @@ function formatPhone(phone: string | null): string {
 export default function ClientsIndex() {
     const navigate = useNavigate();
     const token = useToken();
+    const { showToast } = useToast();
     const { has } = usePermissions();
     const canCreate = has('clients.create');
+    // Fusionar implica eliminar duplicados → mismo permiso que borrar.
+    const canMerge = has('clients.delete');
     const [searchInput, setSearchInput] = useState('');
     const [filters, setFilters] = useState<ClientListFilters>({ page: 1, per_page: 25 });
     const [newClientOpen, setNewClientOpen] = useState(false);
+    // Selección para unificar duplicados. Guarda el objeto (no solo el id)
+    // para que sobreviva a cambios de página/filtros de la lista.
+    const [selected, setSelected] = useState<Record<string, ClientListItem>>({});
+    const [mergeOpen, setMergeOpen] = useState(false);
+
+    const selectedClients = useMemo(() => Object.values(selected), [selected]);
+
+    function toggleSelected(client: ClientListItem) {
+        setSelected((prev) => {
+            const next = { ...prev };
+            if (next[client.id]) {
+                delete next[client.id];
+            } else {
+                next[client.id] = client;
+            }
+            return next;
+        });
+    }
 
     // Debounce de búsqueda para no disparar requests por cada tecla.
     useEffect(() => {
@@ -108,6 +132,41 @@ export default function ClientsIndex() {
                                     navigate(`/clients/${client.id}`);
                                 }}
                             />
+                        )}
+
+                        {canMerge && (
+                            <MergeClientsDialog
+                                open={mergeOpen}
+                                onOpenChange={setMergeOpen}
+                                clients={selectedClients}
+                                onMerged={() => {
+                                    showToast('success', `${selectedClients.length} contactos unificados.`);
+                                    setSelected({});
+                                    void refresh();
+                                }}
+                            />
+                        )}
+
+                        {canMerge && selectedClients.length > 0 && (
+                            <Alert>
+                                <Merge className="h-4 w-4" />
+                                <AlertDescription className="flex flex-wrap items-center gap-2">
+                                    <span>
+                                        {selectedClients.length} seleccionado{selectedClients.length === 1 ? '' : 's'}
+                                        {selectedClients.length < 2 && ' — selecciona al menos 2 para unificar'}
+                                    </span>
+                                    <span className="ml-auto flex items-center gap-2">
+                                        <Button size="sm" onClick={() => setMergeOpen(true)} disabled={selectedClients.length < 2}>
+                                            <Merge className="mr-1 h-4 w-4" />
+                                            Unificar ({selectedClients.length})
+                                        </Button>
+                                        <Button size="sm" variant="outline" onClick={() => setSelected({})}>
+                                            <X className="mr-1 h-4 w-4" />
+                                            Cancelar
+                                        </Button>
+                                    </span>
+                                </AlertDescription>
+                            </Alert>
                         )}
 
                         <FilterBar
@@ -184,9 +243,18 @@ export default function ClientsIndex() {
                                     renderCard={(client) => (
                                         <DataCard
                                             title={
-                                                <AppLink href={`/clients/${client.id}`} className="text-primary hover:underline">
-                                                    {client.name || 'Sin nombre'}
-                                                </AppLink>
+                                                <span className="flex items-center gap-2">
+                                                    {canMerge && (
+                                                        <Checkbox
+                                                            checked={!!selected[client.id]}
+                                                            onCheckedChange={() => toggleSelected(client)}
+                                                            aria-label={`Seleccionar ${client.name || 'contacto'} para unificar`}
+                                                        />
+                                                    )}
+                                                    <AppLink href={`/clients/${client.id}`} className="text-primary hover:underline">
+                                                        {client.name || 'Sin nombre'}
+                                                    </AppLink>
+                                                </span>
                                             }
                                             subtitle={
                                                 <div className="flex flex-col text-xs">
@@ -261,6 +329,7 @@ export default function ClientsIndex() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                {canMerge && <TableHead className="w-10" aria-label="Seleccionar" />}
                                                 <TableHead>Contacto</TableHead>
                                                 <TableHead>Documento</TableHead>
                                                 <TableHead>Teléfono</TableHead>
@@ -275,6 +344,15 @@ export default function ClientsIndex() {
                                         <TableBody>
                                             {clients.map((client) => (
                                                 <TableRow key={client.id}>
+                                                    {canMerge && (
+                                                        <TableCell>
+                                                            <Checkbox
+                                                                checked={!!selected[client.id]}
+                                                                onCheckedChange={() => toggleSelected(client)}
+                                                                aria-label={`Seleccionar ${client.name || 'contacto'} para unificar`}
+                                                            />
+                                                        </TableCell>
+                                                    )}
                                                     <TableCell>
                                                         <AppLink href={`/clients/${client.id}`} className="text-primary inline-flex items-center gap-2 hover:underline">
                                                             {client.kind === 'company' ? (
