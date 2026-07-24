@@ -511,11 +511,14 @@ export default function ChatsPage() {
 
     return (
         <PageShell title="Chats">
-            {/* Wrapper con techo de altura explicito y overflow-hidden:
-                - Mobile: 100svh - 4rem (solo el AppSidebarHeader h-16)
-                - md+: 100svh - 5rem (header + 1rem del margen `m-2` que agrega Sidebar variant="inset")
-                Asi el unico scroll posible queda dentro del contenedor de mensajes. */}
-            <div className="flex h-[calc(100svh-4rem)] flex-col overflow-hidden md:h-[calc(100svh-5rem)]">
+            {/* El wrapper FLEXEA para llenar el espacio entre el AppSidebarHeader y
+                el AppFooterMeta. SidebarInset es una columna flex `min-h-svh`, así
+                que `flex-1 min-h-0` toma exactamente la altura disponible. NO se
+                hardcodea `100svh - header`: esa cuenta ignoraba el footer (siempre
+                presente) y los banners condicionales, y sumaba un scroll vertical
+                de más en toda la página. Con flex-1 el único scroll posible queda
+                dentro del contenedor de mensajes. */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {loading && chats.length === 0 && !error ? (
                     <ChatsSkeleton />
                 ) : (
