@@ -579,8 +579,8 @@ export default function CajaPage() {
                                                 disabled={submitting}
                                             />
                                             <p className="text-muted-foreground text-xs">
-                                                Si no incluyes prefijo, asumimos +57 (Colombia). Si lo dejas, le enviamos avisos por SMS del estado de
-                                                su pedido.
+                                                Si no incluyes prefijo, asumimos +57 (Colombia). Si lo dejas, le enviamos avisos el estado de su
+                                                pedido.
                                             </p>
                                         </div>
 

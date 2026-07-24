@@ -7,6 +7,7 @@ use App\Models\ClientNote;
 use App\Models\ClientTag;
 use App\Models\Contact;
 use App\Models\Order;
+use App\Support\PhoneNumber;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -61,21 +62,12 @@ class CrmService
     private const VIP_TOP_N = 10;
 
     /**
-     * Normaliza phone a `57XXXXXXXXXX`: quita '+' y espacios; si tiene 10 dígitos
-     * y empieza con `3` (móvil CO), antepone `57`. Idempotente. Permite buscar
-     * un Contact existente cuando el cajero tipea con o sin prefijo país.
+     * Normaliza phone al canónico `57XXXXXXXXXX` (delega en el helper único
+     * `PhoneNumber::toColombianCanonical` para no duplicar la regla). Idempotente.
      */
     public static function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-        if ($digits === '') {
-            return '';
-        }
-        if (strlen($digits) === 10 && str_starts_with($digits, '3')) {
-            return '57'.$digits;
-        }
-
-        return $digits;
+        return PhoneNumber::toColombianCanonical($phone);
     }
 
     /**

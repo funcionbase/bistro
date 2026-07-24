@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToBranch;
+use App\Support\PhoneNumber;
 use Database\Factories\ContactFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -80,6 +82,23 @@ class Contact extends Model
             'fiscal_responsibilities' => 'array',
             'dian_profile_completed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Guarda SIEMPRE el teléfono en el canónico `57XXXXXXXXXX` (con indicativo,
+     * sin espacios ni `+`), sin importar el formato que llegue del form o del
+     * webhook de WhatsApp. Evita duplicados del mismo contacto por diferencias
+     * de notación. Vacío → null (la columna es nullable). Las búsquedas por
+     * teléfono deben normalizar antes (`CrmService::normalizePhone`); el mutator
+     * solo aplica al SET, no al WHERE.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::set(function (?string $value): ?string {
+            $canonical = PhoneNumber::toColombianCanonical($value);
+
+            return $canonical === '' ? null : $canonical;
+        });
     }
 
     public function hasCompleteDianProfile(): bool

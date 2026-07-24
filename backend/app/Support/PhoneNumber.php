@@ -28,6 +28,34 @@ final class PhoneNumber
     private const E164_MAX_DIGITS = 15;
 
     /**
+     * Canónico INTERNO de almacenamiento: `57XXXXXXXXXX` (con indicativo de
+     * país, SIN `+`, sin espacios ni separadores). Es el formato en el que se
+     * guardan los teléfonos de cliente (contacts, orders, chats, loyalty) y con
+     * el que se comparan — un único formato evita duplicados por diferencias de
+     * notación (`+57 315...` vs `+573152...` vs `3152...`).
+     *
+     * Reglas (idempotente):
+     *  - Quita todo lo que no sea dígito (espacios, `+`, guiones, paréntesis).
+     *  - Móvil local de 10 dígitos que empieza por `3` → antepone `57`.
+     *  - Ya prefijado (`57...`) o cualquier otro → los dígitos tal cual.
+     *
+     * Devuelve '' si no queda ningún dígito (el caller decide null vs '').
+     * El `+` (E.164) se agrega solo en el borde SNS/WhatsApp con `toE164()`.
+     */
+    public static function toColombianCanonical(?string $raw): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $raw) ?? '';
+        if ($digits === '') {
+            return '';
+        }
+        if (strlen($digits) === 10 && str_starts_with($digits, '3')) {
+            return self::DEFAULT_COUNTRY_CODE.$digits;
+        }
+
+        return $digits;
+    }
+
+    /**
      * Convierte un teléfono crudo a E.164 o devuelve null si es inválido.
      *
      * Reglas:

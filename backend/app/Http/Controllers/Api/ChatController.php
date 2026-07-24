@@ -27,6 +27,7 @@ use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
 use App\Services\Whatsapp\AutomationDispatcher;
 use App\Services\Whatsapp\WhatsappOutboundMessageSender;
+use App\Support\PhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -930,7 +931,12 @@ class ChatController extends Controller
         $chat = $this->findChatOrDeny($request, $companyNit, $id);
 
         $name = $request->filled('name') ? $request->string('name')->toString() : null;
-        $phone = $request->filled('phone') ? $request->string('phone')->toString() : $chat->client_phone;
+        // Canónico `57...` antes del lookup del contacto: el firstOrNew/where de
+        // abajo compara contra el valor guardado (que ya es canónico por el
+        // mutator), y sin normalizar aquí no matchearía y duplicaría el contacto.
+        $phone = $request->filled('phone')
+            ? PhoneNumber::toColombianCanonical($request->string('phone')->toString())
+            : $chat->client_phone;
         $notes = $request->filled('notes') ? $request->string('notes')->toString() : null;
 
         $before = [

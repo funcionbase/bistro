@@ -7,6 +7,7 @@ namespace App\Services\Whatsapp;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Order;
+use App\Services\CrmService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -30,7 +31,7 @@ class WhatsappOrderNotifier
      * Intenta notificar por WhatsApp. Devuelve el `ChatMessage` enviado, o null
      * si WhatsApp no está disponible para este cliente (→ el caller usa SMS).
      *
-     * @param  string  $phoneE164  Teléfono del cliente en E.164 (== Chat.client_phone de WhatsApp).
+     * @param  string  $phoneE164  Teléfono del cliente en E.164 (viene de la notificación SNS).
      */
     public function notify(Order $order, string $phoneE164, string $body): ?ChatMessage
     {
@@ -40,12 +41,16 @@ class WhatsappOrderNotifier
 
         $windowHours = max(1, (int) config('order_notifications.whatsapp_window_hours', 24));
 
+        // El chat guarda el teléfono en el canónico `57...` (sin `+`), no en E.164:
+        // se normaliza el número de la notificación para que el match funcione.
+        $canonicalPhone = CrmService::normalizePhone($phoneE164);
+
         // Conversación de WhatsApp del cliente (source != 'sms' excluye el hilo
         // espejo que crea SmsChatLogger) con un mensaje ENTRANTE reciente: prueba
         // que está en WhatsApp y dentro de la ventana que abrió él.
         $chat = Chat::withoutBranchScope()
             ->where('company_nit', $order->company_nit)
-            ->where('client_phone', $phoneE164)
+            ->where('client_phone', $canonicalPhone)
             ->where('source', '!=', 'sms')
             ->whereHas('messages', function ($q) use ($windowHours) {
                 $q->where('sender', 'client')

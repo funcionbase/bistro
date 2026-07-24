@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToBranch;
+use App\Support\PhoneNumber;
 use Database\Factories\ChatFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -79,6 +81,17 @@ class Chat extends Model
             'handoff_requested_at' => 'datetime',
             'bot_paused' => 'boolean',
         ];
+    }
+
+    /**
+     * `client_phone` se guarda en el canónico `57XXXXXXXXXX` (con indicativo, sin
+     * `+`), igual que Contact/Order: el webhook de WhatsApp entrega E.164
+     * (`+57...`) y sin normalizar creaba un hilo/contacto distinto del de SMS/CRM.
+     * Las búsquedas por teléfono (firstOrNew/where) deben normalizar antes.
+     */
+    protected function clientPhone(): Attribute
+    {
+        return Attribute::set(fn (?string $value): string => PhoneNumber::toColombianCanonical($value));
     }
 
     /** @return BelongsTo<Company, $this> */
