@@ -1532,13 +1532,19 @@ class OrderController extends Controller
             $order->status = $target;
             $order->save();
 
-            // Descuento de inventario al pasar a cocina (idempotente vía
-            // inventory_consumed_at). Si no hay receta para algún ítem, se
-            // ignora silenciosamente con audit; nunca bloquea el flujo de cocina.
+            // Descuento de inventario al pasar a cocina — o al SALTARLA: un
+            // drag pending→ready o pending→completed también produce los
+            // platos, así que cualquier avance a rank >= in_kitchen descuenta
+            // si aún no se hizo (idempotente vía inventory_consumed_at). Antes
+            // solo target=in_kitchen descontaba y los saltos dejaban el stock
+            // sin tocar. Si no hay receta para algún ítem, se ignora
+            // silenciosamente con audit; nunca bloquea el flujo de cocina.
             $consumedNow = false;
             $inventoryWarnings = [];
-            if ($target === 'in_kitchen' && $order->inventory_consumed_at === null) {
-                $inventoryWarnings = $this->inventoryService->consumeForOrder($order, $order->items ?? [], $actor, 'order.in_kitchen');
+            $ranks = (array) config('orders.kanban_rank');
+            $reachedKitchen = ($ranks[$target] ?? 0) >= ($ranks['in_kitchen'] ?? PHP_INT_MAX);
+            if ($reachedKitchen && $order->inventory_consumed_at === null) {
+                $inventoryWarnings = $this->inventoryService->consumeForOrder($order, $order->items ?? [], $actor, 'order.'.$target);
                 $order->inventory_consumed_at = now();
                 $order->save();
                 $consumedNow = true;
