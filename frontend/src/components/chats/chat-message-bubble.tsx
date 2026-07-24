@@ -92,7 +92,7 @@ export function ChatMessageBubble({ message, canRetry, retrying, onRetry, onOpen
                             onSaveContact={onSaveContact}
                         />
                     ) : (
-                        <span className="whitespace-pre-wrap">{message.body}</span>
+                        <span className="[overflow-wrap:anywhere] whitespace-pre-wrap">{message.body}</span>
                     )}
 
                     {/* El microtag evita la confusión más cara de la bandeja: creer

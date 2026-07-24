@@ -656,8 +656,8 @@ export default function ChatsPage() {
                                     isMobile && selectedChatId === null ? 'hidden' : ''
                                 }`}
                             >
-                                <div className="flex items-center justify-between gap-2 border-b p-2">
-                                    <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b p-2">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold">
                                         {isMobile && selectedChat && (
                                             <button
                                                 type="button"
@@ -693,7 +693,7 @@ export default function ChatsPage() {
                                         )}
                                     </div>
                                     {selectedChat && (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex shrink-0 items-center gap-2">
                                             {selectedChat.handoff_requested_at && (
                                                 <span className="rounded bg-[color:var(--color-status-warning)]/15 px-2 py-1 text-[10px] font-medium text-[color:var(--color-status-warning)]">
                                                     Handoff solicitado
@@ -747,14 +747,17 @@ export default function ChatsPage() {
                                                     {selectedChat.bot_paused ? (
                                                         <>
                                                             <Play className="h-4 w-4" />
-                                                            <span className="hidden sm:inline">Bot pausado — respondés vos</span>
-                                                            <span className="sm:hidden">Reanudar</span>
+                                                            {/* Texto largo solo en lg: entre md y lg hay 2 columnas
+                                                                y la de conversación es angosta — el texto completo
+                                                                desbordaba el header. Abajo de lg va el corto. */}
+                                                            <span className="hidden lg:inline">Bot pausado — respondés vos</span>
+                                                            <span className="lg:hidden">Reanudar</span>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <Pause className="h-4 w-4" />
-                                                            <span className="hidden sm:inline">Bot activo</span>
-                                                            <span className="sm:hidden">Pausar</span>
+                                                            <span className="hidden lg:inline">Bot activo</span>
+                                                            <span className="lg:hidden">Pausar</span>
                                                         </>
                                                     )}
                                                 </Button>
