@@ -115,6 +115,11 @@ return [
     // sin tz explícita en filtros financieros.
     'timezone' => 'America/Bogota',
 
+    // Corte de abandono para pedidos públicos (QR de sede) que nunca fueron
+    // aprobados: pasado este umbral, el cron `orders:mark-abandoned` los pasa
+    // a `abandoned` (métrica de carritos perdidos) y cancela sus items.
+    'abandon_after_hours' => 24,
+
     // Mapeo de status → categoría (para lógica de UI o policies).
     //
     // `pre_operational` es categoría nueva (#191) para órdenes de mesa con QR

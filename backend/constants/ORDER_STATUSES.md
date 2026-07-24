@@ -34,7 +34,9 @@ Modelo plano sin sub-tipos. Forward-only: una orden solo puede avanzar en el flu
 | `refunded` | `terminal_failure` | Devolución | `bg-pink-100 text-pink-700` | — | no |
 | `abandoned` | `terminal_failure` | Abandonado | `bg-amber-100 text-amber-700` | — | no |
 
-ⓘ `pending_approval` (#191): órdenes de mesa con QR aún no aprobadas por el mesero. NO entran en `operational`, `kanban` ni `revenue`. Desde el pedido público sin mesa (QR de sede, `/menus?branch=`) también lo usan órdenes `pickup`/`delivery` creadas por el cliente: se aprueban con `POST /api/v1/orders/{id}/approve` (`OrderController::approve`, solo órdenes SIN `table_session_id`) → pasan a `pending` y sus items a `approved`. El costo del envío entra como línea `order_items` sintética (`menu_item_id='delivery_fee'`, name "Domicilio", tax 0) para conservar el invariante `orders.total = SUM(líneas)`.
+ⓘ `pending_approval` (#191): órdenes de mesa con QR aún no aprobadas por el mesero. NO entran en `operational`, `kanban` ni `revenue`. Desde el pedido público sin mesa (QR de sede, `/menus?branch=`) también lo usan órdenes `pickup`/`delivery` creadas por el cliente: se aprueban con `POST /api/v1/orders/{id}/approve` (`OrderController::approve`, solo órdenes SIN `table_session_id`) → pasan a `pending` y sus items a `approved`. El costo del envío entra como línea `order_items` sintética (`menu_item_id='delivery_fee'`, name "Domicilio", tax 0, nace `served` — no es un plato: no aparece en el KDS ni bloquea la promoción a `ready`) para conservar el invariante `orders.total = SUM(líneas)`.
+
+ⓘ `abandoned`: lo asigna el cron `orders:mark-abandoned` (`MarkAbandonedOrdersCommand`, hourly) a pedidos públicos sin sesión de mesa que llevan más de `config('orders.abandon_after_hours')` (24h) en `pending_approval` sin aprobación. Cancela sus items (`cancellation_reason=system`) y audita `order.abandoned`. Métrica de carritos perdidos en reportes. Los buffers de sesión de mesa NO se marcan (su ciclo lo maneja la sesión).
 
 Fuente: `config/orders.php:23-134`.
 

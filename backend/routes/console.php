@@ -129,6 +129,16 @@ Schedule::command('tables:purge-expired-sessions')
     ->onOneServer()
     ->withoutOverlapping(10);
 
+// Pedidos públicos (QR de sede) que nadie aprobó: pasado el umbral
+// config('orders.abandon_after_hours') pasan a `abandoned` (métrica de
+// carritos perdidos — antes ningún código asignaba ese estado y los reportes
+// siempre daban 0) y sus items se cancelan. Hourly alcanza para un umbral de
+// horas; onOneServer + withoutOverlapping por el ASG N-instancias.
+Schedule::command('orders:mark-abandoned')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping(10);
+
 // Past-due #175: export diario CSV con foto de empresas en past_due/suspended
 // a S3 interno (uso operativo/contable). Siempre escribe archivo aunque haya
 // 0 filas — sirve de heartbeat para ops. Corre 1h después del cron de
