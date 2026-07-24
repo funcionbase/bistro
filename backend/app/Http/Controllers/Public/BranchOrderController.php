@@ -167,8 +167,13 @@ class BranchOrderController extends Controller
                     $fee->tax_rate = 0.0;
                     $fee->quantity = 1;
                     $fee->category = 'domicilio';
-                    $fee->status = 'pending_approval';
+                    // El fee NO es un plato: nace `served` (consumable — sigue
+                    // contando al total) para no aparecer como ticket cocinable
+                    // en el KDS ni bloquear la promoción a `ready`, que exige
+                    // todos los items consumibles en ready|served.
+                    $fee->status = 'served';
                     $fee->submitted_at = $now;
+                    $fee->served_at = $now;
                     $fee->save();
                 }
 
