@@ -136,6 +136,14 @@ La promoción global es la lógica heredada de #191 F5. F115 agrega la
 señal por estación sin tocar la promoción global — el cajero/mesero
 sigue viendo `orders.status=ready` cuando la mesa está completa.
 
+`maybePromoteOrderStatus` es **público** y también corre cuando una
+cancelación de item desbloquea la condición (`TableWaiterService::
+rejectItem` / `cancelItemInKitchen` / `resolveCancellationRequest`):
+cancelar el último plato pendiente promueve la orden a `ready` en vez de
+dejarla clavada en "En cocina". Guard: si la orden no tiene items
+consumibles (p. ej. todos cancelados) NO se promueve — un set vacío no
+significa "todo listo". Se invoca siempre fuera de la txn de la mutación.
+
 ---
 
 ## Cross-references

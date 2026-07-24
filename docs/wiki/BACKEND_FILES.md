@@ -667,7 +667,7 @@ Cálculo de `total`: siempre server-side desde el menú activo (línea 144 de `O
 
 `OrderController@tables` devuelve las mesas con cuenta abierta: filtra `order_type='table'` y `status` en `pending|in_kitchen|ready`. Consumido por `/orders/tables`.
 
-`OrderController@appendItems` agrega ítems a una orden de mesa abierta (rechaza estados terminales). Lee precios del menú activo en DB y suma al `total` existente. Issue #89.
+`OrderController@appendItems` agrega ítems a una orden de mesa abierta (rechaza estados terminales). Lee precios del menú activo en DB y suma al `total` existente. Issue #89. **Regresión operativa auditada**: si la orden ya estaba `ready` ("Para entrega"), los ítems nuevos la regresan a `in_kitchen` (excepción deliberada al forward-only del kanban — cocina volvió a tener trabajo pendiente; audit `order.status_changed` con `reason=items_appended`, sin re-consumo de inventario ni SMS; `ready` no es estado revenue ni terminal).
 
 **Notificaciones SMS al cliente (#275)** — Al mover una orden con `client_phone` a un estado relevante (`in_kitchen`, `ready`, `in_transit`, `completed`; lista en `config/order_notifications.php`, nunca hardcodeada) se envía **un** SMS vía Amazon SNS con nombre comercial + código corto de orden + estado.
 
@@ -1293,7 +1293,7 @@ Reglas comunes:
 | `BusinessHoursService` | Resuelve apertura/cierre considerando excepciones; estado en tiempo real | `config/business-hours.php` |
 | `CashRegisterService` | `openSession`, `closeSession`, `activeSession`, `requireActiveSession`, `liveSummary`, `computeExpectedCash`, `recordExpense`. Atomicidad con `lockForUpdate`. Calcula expected = opening + cash_gross + cash_tips − cash_refunds_originados_en_cash − expenses. Propinas por receipt (`payment_data.tip_amount`), no `orders.tip_amount` vía JOIN — el JOIN multiplicaba la propina por cada receipt cash (pagos divididos) inflando `expected_cash` (fix v1.30.3). Sesión por sede (#117) | `config/cash_register.php` |
 | `CouponService` | Validar, aplicar, redimir cupón; generar códigos; `bestAutoApplyForCart` selecciona cupón happy hour (#125) | `config/coupons.php` |
-| `DeliveryService` | Asignar, reasignar, completar; cálculo de duración; métricas | `config/delivery.php` |
+| `DeliveryService` | Asignar, reasignar, completar; cálculo de duración; métricas. `rejectDelivery` cancela la orden Y cierra sus items abiertos vía `OrderItem::cancelOpenItems` (mismo cierre que `OrderController::cancel`) para no dejar filas de cocina huérfanas | `config/delivery.php` |
 | `DeliveryNotificationService` | Notificaciones WhatsApp al asignar/completar (no bloquea si falla) | — |
 | `MenuSchedulerService` | Activar menú según día de la semana | — |
 | `MetricsService` | KPIs, heatmaps, top items, abandono — con caché por dominio | `config/metrics.php` |
