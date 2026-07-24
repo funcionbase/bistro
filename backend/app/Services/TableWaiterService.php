@@ -43,6 +43,7 @@ class TableWaiterService
         private readonly AuditService $audit,
         private readonly TableSessionService $sessions,
         private readonly OrderTotalCalculator $totals,
+        private readonly KdsTicketService $kdsTickets,
     ) {}
 
     /**
@@ -221,7 +222,7 @@ class TableWaiterService
     ): OrderItem {
         $reason = $reason !== null ? mb_substr(trim($reason), 0, 500) : null;
 
-        return DB::transaction(function () use ($item, $session, $reason, $actor, $request) {
+        $cancelled = DB::transaction(function () use ($item, $session, $reason, $actor, $request) {
             /** @var OrderItem $locked */
             $locked = OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
 
@@ -261,6 +262,13 @@ class TableWaiterService
 
             return $locked;
         });
+
+        // La cancelación puede desbloquear la promoción de la orden (todos los
+        // platos restantes listos ⇒ "Para entrega"). Fuera de la txn, igual
+        // que en el flujo del KDS.
+        $this->kdsTickets->maybePromoteOrderStatus($cancelled->order_id, $actor);
+
+        return $cancelled;
     }
 
     /**
@@ -279,7 +287,7 @@ class TableWaiterService
             throw new InvalidArgumentException('Es obligatorio explicar el motivo de la cancelación.');
         }
 
-        return DB::transaction(function () use ($item, $session, $reason, $actor, $request) {
+        $cancelled = DB::transaction(function () use ($item, $session, $reason, $actor, $request) {
             /** @var OrderItem $locked */
             $locked = OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
 
@@ -316,6 +324,12 @@ class TableWaiterService
 
             return $locked;
         });
+
+        // Igual que rejectItem: cancelar un plato en cocina puede dejar el
+        // resto listo ⇒ re-evaluar la promoción de la orden fuera de la txn.
+        $this->kdsTickets->maybePromoteOrderStatus($cancelled->order_id, $actor);
+
+        return $cancelled;
     }
 
     /**
@@ -373,7 +387,7 @@ class TableWaiterService
             throw new InvalidArgumentException('Decisión inválida.');
         }
 
-        return DB::transaction(function () use ($cr, $decision, $reasonOverride, $actor, $request) {
+        $resolved = DB::transaction(function () use ($cr, $decision, $reasonOverride, $actor, $request) {
             /** @var CancellationRequest $locked */
             $locked = CancellationRequest::query()->whereKey($cr->id)->lockForUpdate()->firstOrFail();
 
@@ -419,6 +433,17 @@ class TableWaiterService
 
             return $locked;
         });
+
+        // Si se aprobó la cancelación, el plato salió de cocina y el resto
+        // puede haber quedado listo ⇒ re-evaluar la promoción fuera de la txn.
+        if ($resolved->status === 'approved') {
+            $orderId = OrderItem::query()->whereKey($resolved->order_item_id)->value('order_id');
+            if ($orderId !== null) {
+                $this->kdsTickets->maybePromoteOrderStatus((string) $orderId, $actor);
+            }
+        }
+
+        return $resolved;
     }
 
     /**

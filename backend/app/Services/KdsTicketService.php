@@ -198,13 +198,19 @@ class KdsTicketService
      * promueve la orden a `ready`. Esto sirve para que el mesero/caja vean
      * que la mesa ya tiene todo listo.
      *
+     * Público porque también debe correr cuando una CANCELACIÓN de item
+     * desbloquea la condición (TableWaiterService): cancelar el último plato
+     * pendiente dejaba la orden clavada en "En cocina" en el tablero aunque
+     * el KDS mostrara todo "Listo". Llamar SIEMPRE fuera de la txn de la
+     * mutación, como hacen markInKitchen/markReady.
+     *
      * El SMS de cambio de estado (#275) se dispara fuera de este lock, ya
      * commiteado: el KDS es el camino dominante por el que una orden llega
      * a `in_kitchen`/`ready`, así que sin este dispatch el cliente nunca
      * recibía esas dos notificaciones (solo las disparadas por el drag
      * manual del kanban en `OrderController::updateStatus`).
      */
-    private function maybePromoteOrderStatus(string $orderId, User $actor): void
+    public function maybePromoteOrderStatus(string $orderId, User $actor): void
     {
         /** @var Order $order */
         $order = Order::query()->whereKey($orderId)->lockForUpdate()->first();
@@ -217,6 +223,16 @@ class KdsTicketService
         }
 
         $consumableStatuses = config('orders.item_statuses.consumable');
+
+        // Sin items consumibles (p. ej. todos cancelados) no hay nada que
+        // promover — un set vacío NO significa "todo listo".
+        $hasConsumable = OrderItem::query()
+            ->where('order_id', $order->id)
+            ->whereIn('status', $consumableStatuses)
+            ->exists();
+        if (! $hasConsumable) {
+            return;
+        }
 
         $remaining = OrderItem::query()
             ->where('order_id', $order->id)
