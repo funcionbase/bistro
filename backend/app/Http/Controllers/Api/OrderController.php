@@ -1364,6 +1364,12 @@ class OrderController extends Controller
             if ($newRemaining <= 0) {
                 $order->status = 'refunded';
                 $order->save();
+
+                // Terminal: los items que sigan abiertos en cocina se cancelan
+                // con reason=refunded — no se entregaron y la orden ya no
+                // avanza. Los `served` quedan intactos (la venta ocurrió; el
+                // asiento negativo del receipt ya compensa el ingreso).
+                OrderItem::cancelOpenItems($order->id, 'refunded');
             }
 
             return [$order, $amountToRefund, $newRemaining];
