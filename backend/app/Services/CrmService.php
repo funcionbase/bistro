@@ -154,14 +154,31 @@ class CrmService
                 ->limit(50)
                 ->get(['id', 'branch_id', 'status', 'order_type', 'total', 'discount_amount', 'items', 'ordered_at']);
 
-            $chats = $contact->phone !== null && $contact->phone !== ''
-                ? Chat::withoutBranchScope()
+            // Chats del cliente por CUALQUIER canal. El match debe ser por
+            // variantes de teléfono: el chat de WhatsApp guarda `client_phone` en
+            // E.164 (`+57XXXXXXXXXX`) mientras que el de SMS/CRM usa el formato
+            // del contacto — un match exacto contra `contact.phone` dejaba fuera
+            // el hilo de WhatsApp. Se incluye la forma `+`-prefijada además de las
+            // usadas para órdenes.
+            $chats = collect();
+            if ($contact->phone !== null && $contact->phone !== '') {
+                $normalized = self::normalizePhone($contact->phone);
+                $alt = str_starts_with($normalized, '57') ? substr($normalized, 2) : '57'.$normalized;
+                $chatVariants = array_values(array_unique(array_filter([
+                    $contact->phone,
+                    $normalized,
+                    $alt,
+                    '+'.$normalized,
+                    '+'.$alt,
+                ])));
+
+                $chats = Chat::withoutBranchScope()
                     ->where('company_nit', $companyNit)
-                    ->where('client_phone', $contact->phone)
+                    ->whereIn('client_phone', $chatVariants)
                     ->orderByDesc('last_message_at')
                     ->limit(20)
-                    ->get(['id', 'branch_id', 'source', 'status', 'last_message_at'])
-                : collect();
+                    ->get(['id', 'branch_id', 'source', 'status', 'last_message_at']);
+            }
 
             $notes = ClientNote::forContact($companyNit, $contact->id)
                 ->with('author:id,name,email')
