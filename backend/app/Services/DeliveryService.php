@@ -7,6 +7,7 @@ use App\Models\CompanyUser;
 use App\Models\Delivery;
 use App\Models\DeliveryStatusLog;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PaymentReceipt;
 use App\Models\Scopes\BranchScope;
 use App\Models\User;
@@ -313,6 +314,11 @@ class DeliveryService
             ]);
 
             $delivery->order->update(['status' => 'cancelled']);
+
+            // Cerrar los items que sigan abiertos en cocina — sin esto quedaban
+            // filas approved/in_kitchen/ready huérfanas de una orden cancelada
+            // (mismo cierre que OrderController::cancel).
+            OrderItem::cancelOpenItems($delivery->order_id);
 
             $this->logStatusChange($delivery, $fromStatus, 'cancelled', self::REASON_PEDIDO_RECHAZADO, $actor);
 

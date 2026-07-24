@@ -183,4 +183,23 @@ class OrderItem extends Model
     {
         return $query->whereNull('paid_at');
     }
+
+    /**
+     * Cancela en bloque los items que sigan abiertos (todo lo que no esté
+     * `served` ni `cancelled`) cuando la orden muere (cancelación de orden,
+     * rechazo de domicilio). Los saca del KDS y deja `order_items`
+     * consistente con la orden terminal. `cancellation_reason='system'`
+     * porque no fue decisión de mesero/comensal.
+     */
+    public static function cancelOpenItems(string $orderId): void
+    {
+        static::query()
+            ->where('order_id', $orderId)
+            ->whereNotIn('status', ['served', 'cancelled'])
+            ->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => 'system',
+                'cancelled_at' => now(),
+            ]);
+    }
 }

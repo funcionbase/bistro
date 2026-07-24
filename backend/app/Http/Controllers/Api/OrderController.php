@@ -1207,14 +1207,7 @@ class OrderController extends Controller
 
             // Cerrar ítems que quedaron abiertos (operational + pending_approval)
             // para que salgan del KDS y el estado quede consistente.
-            OrderItem::query()
-                ->where('order_id', $order->id)
-                ->whereNotIn('status', ['served', 'cancelled'])
-                ->update([
-                    'status' => 'cancelled',
-                    'cancellation_reason' => 'system',
-                    'cancelled_at' => now(),
-                ]);
+            OrderItem::cancelOpenItems($order->id);
 
             return $order;
         });
