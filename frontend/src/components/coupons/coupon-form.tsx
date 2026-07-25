@@ -112,9 +112,19 @@ export function CouponForm({ coupon, onSubmit, onCancel, submitting = false, err
         setTimeout(() => codeInputRef.current?.focus(), 0);
     }
 
+    // Valor: porcentaje 1-100, monto fijo > 0. Espeja la validación del backend
+    // y evita enviar cupones con descuento inválido (0, negativo o >100%).
+    const valueNum = Number(form.value);
+    const valueError =
+        form.value === '' || !Number.isFinite(valueNum) || valueNum <= 0
+            ? 'Ingresa un valor mayor a 0.'
+            : form.type === 'percentage' && valueNum > 100
+              ? 'El porcentaje no puede superar 100.'
+              : null;
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        if (dateError || hoursError) return;
+        if (dateError || hoursError || valueError) return;
 
         if (!isEditing) {
             const codeErr = validateCouponCode(form.code);
@@ -149,7 +159,7 @@ export function CouponForm({ coupon, onSubmit, onCancel, submitting = false, err
         return errors[field]?.[0];
     }
 
-    const hasBlockingError = !!dateError || !!hoursError;
+    const hasBlockingError = !!dateError || !!hoursError || !!valueError;
 
     return (
         <Dialog open onOpenChange={(o) => !o && onCancel()}>
@@ -210,13 +220,17 @@ export function CouponForm({ coupon, onSubmit, onCancel, submitting = false, err
                                 id="value"
                                 type="number"
                                 min="1"
+                                max={form.type === 'percentage' ? 100 : undefined}
                                 step="1"
                                 value={form.value}
                                 onChange={(e) => handleChange('value', e.target.value)}
                                 placeholder={form.type === 'percentage' ? '10' : '5000'}
+                                className={cn(valueError && form.value !== '' && 'border-destructive focus-visible:ring-destructive/40')}
                                 disabled={submitting}
                             />
-                            {fieldError('value') && <p className="text-destructive text-xs">{fieldError('value')}</p>}
+                            {(fieldError('value') || (valueError && form.value !== '')) && (
+                                <p className="text-destructive text-xs">{fieldError('value') ?? valueError}</p>
+                            )}
                         </div>
                     </div>
 

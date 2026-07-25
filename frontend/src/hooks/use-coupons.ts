@@ -14,9 +14,12 @@ interface UseCouponsReturn {
     fetchCouponRedemptions: (couponId: string, page?: number) => Promise<PaginatedResponse<CouponRedemption>>;
 }
 
-export function useCoupons(token: string | null): UseCouponsReturn {
+export function useCoupons(token: string | null, options: { list?: boolean } = {}): UseCouponsReturn {
+    // `list: false` para vistas que solo usan las mutaciones (ej. detalle de
+    // cupón): evita traer el listado completo que no se renderiza.
+    const { list = true } = options;
     const [coupons, setCoupons] = useState<Coupon[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(list);
     const [error, setError] = useState<string | null>(null);
     const isMounted = useRef(true);
 
@@ -41,11 +44,11 @@ export function useCoupons(token: string | null): UseCouponsReturn {
 
     useEffect(() => {
         isMounted.current = true;
-        fetchCoupons();
+        if (list) fetchCoupons();
         return () => {
             isMounted.current = false;
         };
-    }, [fetchCoupons]);
+    }, [fetchCoupons, list]);
 
     const createCoupon = useCallback(async (data: Partial<CouponFormData>): Promise<Coupon> => {
         const res = await apiFetch('/api/v1/coupons', {
