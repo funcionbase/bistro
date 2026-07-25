@@ -413,10 +413,19 @@ export default function OrderShow() {
     );
     const addItems = useAddItems({ token, appendItems: appendItemsDirect });
 
-    // Abierta = admite ítems nuevos. El buffer pending_approval de sesiones QR
-    // queda fuera: sus ítems entran por el flujo de aprobación del comensal.
+    // Abierta = admite ítems nuevos. F5: también delivery/pickup (el cajero
+    // agrega lo que el cliente pide por chat) — salvo domicilio ya despachado
+    // (in_transit, el pedido va en la calle). El buffer pending_approval de
+    // sesiones QR de MESA queda fuera: sus ítems entran por el flujo de
+    // aprobación del comensal; para delivery/pickup sí se permite (el cajero
+    // edita el pedido del chat antes de aprobarlo).
     const canAddItems =
-        order?.order_type === 'table' && !isTerminal && order.status !== 'pending_approval' && !sessionClosed;
+        !!order &&
+        !isTerminal &&
+        !sessionClosed &&
+        (order.order_type === 'table'
+            ? order.status !== 'pending_approval'
+            : ['delivery', 'pickup'].includes(order.order_type ?? '') && order.status !== 'in_transit');
 
     const {
         paymentState,

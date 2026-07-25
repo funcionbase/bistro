@@ -149,6 +149,7 @@ export default function ChatsPage() {
         sendReceipt,
         rejectProof,
         approveOrder,
+        refreshSelected,
         loading,
         error,
     } = useChats(token, {
@@ -534,6 +535,27 @@ export default function ChatsPage() {
         }
     };
 
+    // Cambio de tipo en caliente (F5): PATCH /orders/{id}/order-type. El total
+    // se recalcula server-side (fee de domicilio entra/sale como línea).
+    const changeOrderType = async (
+        order: { id: string },
+        to: 'pickup' | 'delivery',
+        address?: string,
+    ): Promise<void> => {
+        const res = await apiFetch(`/api/v1/orders/${order.id}/order-type`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_type: to, delivery_address: to === 'delivery' ? (address ?? null) : null }),
+        });
+        if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            const body = json as { message?: string; errors?: Record<string, string[]> };
+            const detail = body.errors ? Object.values(body.errors).flat()[0] : undefined;
+            throw new Error(detail ?? body.message ?? 'No se pudo cambiar el tipo del pedido.');
+        }
+        await refreshSelected();
+    };
+
     const createOrderForChat = () => {
         if (!selectedChat) return;
         // Reutiliza el flujo de caja (no reimplementa creación de pedido): navega
@@ -867,6 +889,7 @@ export default function ChatsPage() {
                                         onSendReceipt={(order) => sendReceipt(order.id, order.total)}
                                         onRejectProof={(order) => rejectProof(order.id)}
                                         onApprove={(order) => approveOrder(order.id, order.total)}
+                                        onChangeOrderType={changeOrderType}
                                         onResendMenuLink={async () => {
                                             const url = await requestMenuLink();
                                             if (url) await sendMessage(`¡Hola! Aquí está nuestra carta 📋 ${url}`);

@@ -2797,6 +2797,21 @@ Payload: type (pickup|delivery), customer_name, customer_phone,
   envía aviso estándar; la orden sigue `pending_approval`. Audit
   `chat.payment_proof.rejected`.
 
+#### Cajero edita la orden del chat (F5)
+
+- **Append staff extendido**: `POST /orders/{id}/items` acepta
+  `table|delivery|pickup` (antes solo mesa). Rechaza delivery en `in_transit`
+  (ya despachado). "Agregar productos" en `orders/show.tsx` habilitado para
+  delivery/pickup no despachados (incluye `pending_approval` del chat).
+- **Cambio de tipo en caliente**: `PATCH /orders/{id}/order-type`
+  (`orders.update`) alterna pickup↔delivery mientras no sea terminal ni
+  `in_transit`. A delivery exige dirección e inserta la línea Domicilio (fee
+  de la sede, sin doble fee bajo lock); a pickup la cancela
+  (`cancellation_reason='system'`). Recalcula con `recalculateAndSave`; el
+  recibo queda stale → el panel sugiere reenviar. Acción en el panel del chat
+  (botón "Pasar a domicilio/para llevar" con dirección inline). Audit
+  `order.type_changed`.
+
 ### 9.13 Resumen de los 18 endpoints de menú
 
 | Método | URL | Permission | Notas |

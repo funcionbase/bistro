@@ -799,7 +799,8 @@ class OrderController extends Controller
      * y se cierra al final (avanzando status a completed/successful via updateStatus).
      *
      * Reglas:
-     *  - La orden debe ser order_type='table' y estar en un estado abierto (no completed/successful/cancelled/abandoned).
+     *  - Aplica a table|delivery|pickup en estado abierto (no terminal). Un
+     *    delivery en `in_transit` NO admite cambios (ya fue despachado).
      *  - Los precios se leen del menú activo en DB; nunca se confía en lo enviado por el cliente.
      *  - Recalcula `total` sumando los nuevos ítems al total existente.
      */
@@ -839,9 +840,18 @@ class OrderController extends Controller
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
 
-            if ($order->order_type !== 'table') {
+            // F5: append habilitado para mesa, domicilio y para llevar (el
+            // cajero agrega lo que el cliente pidió por chat). Un domicilio ya
+            // despachado no admite cambios — el pedido va en la calle.
+            if (! in_array($order->order_type, ['table', 'delivery', 'pickup'], true)) {
                 throw ValidationException::withMessages([
-                    'order' => 'Solo se pueden agregar ítems a órdenes de mesa.',
+                    'order' => 'Este tipo de orden no admite agregar ítems.',
+                ]);
+            }
+
+            if ($order->order_type === 'delivery' && $order->status === 'in_transit') {
+                throw ValidationException::withMessages([
+                    'order' => 'El domicilio ya fue despachado: no se pueden agregar ítems.',
                 ]);
             }
 
@@ -989,6 +999,118 @@ class OrderController extends Controller
                 'items' => $order->items,
                 'total' => (float) $order->total,
                 'added_total' => $addedTotal,
+            ],
+        ]);
+    }
+
+    /**
+     * Cambio de tipo en caliente pickup↔delivery (F5, caso borde del chat):
+     * "era para llevar pero mejor mándalo a domicilio". Inserta o cancela la
+     * línea sintética de domicilio y recalcula el total bajo lock. El recibo
+     * térmico queda stale (total cambió) → el panel del chat sugiere reenviar.
+     */
+    public function updateOrderType(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'orders', 'update');
+
+        $validated = $request->validate([
+            'order_type' => ['required', Rule::in(['pickup', 'delivery'])],
+            'delivery_address' => ['required_if:order_type,delivery', 'nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
+        ]);
+
+        $companyNit = $this->activeCompanyNit($request);
+        $actor = $this->actingUser($request);
+
+        [$order, $from] = DB::transaction(function () use ($id, $companyNit, $validated) {
+            /** @var Order $order */
+            $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
+
+            if (! in_array($order->order_type, ['pickup', 'delivery'], true)) {
+                throw ValidationException::withMessages([
+                    'order' => 'Solo se puede cambiar el tipo entre "para llevar" y "domicilio".',
+                ]);
+            }
+
+            $closedStatuses = array_merge(config('orders.terminal_success'), config('orders.terminal_failure'));
+            if (in_array($order->status, $closedStatuses, true) || $order->status === 'in_transit') {
+                throw ValidationException::withMessages([
+                    'order' => 'La orden ya no admite cambio de tipo.',
+                ]);
+            }
+
+            $from = (string) $order->order_type;
+            $to = (string) $validated['order_type'];
+
+            if ($from === $to) {
+                return [$order, $from];
+            }
+
+            if ($to === 'delivery') {
+                $order->delivery_address = (string) $validated['delivery_address'];
+
+                // Línea de domicilio si la sede la tiene configurada y la orden
+                // aún no la trae (verificación bajo el lock → sin doble fee).
+                $fee = round((float) ($this->branchSettings->get((string) $order->branch_id, 'delivery_fee') ?? 0), 2);
+                $hasFeeRow = OrderItem::query()
+                    ->where('order_id', $order->id)
+                    ->where('menu_item_id', Order::DELIVERY_FEE_ITEM_ID)
+                    ->where('status', '!=', 'cancelled')
+                    ->exists();
+
+                if ($fee > 0 && ! $hasFeeRow) {
+                    $now = Carbon::now();
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'menu_item_id' => Order::DELIVERY_FEE_ITEM_ID,
+                        'name' => 'Domicilio',
+                        'unit_price' => number_format($fee, 2, '.', ''),
+                        'tax_rate' => 0.0,
+                        'quantity' => 1,
+                        'category' => 'domicilio',
+                        'status' => 'served',
+                        'submitted_at' => $now,
+                        'approved_at' => $now,
+                        'served_at' => $now,
+                    ]);
+                }
+            } else {
+                // A pickup: la línea de domicilio se cancela (asiento nuevo, no
+                // delete — el invariante excluye canceladas del total).
+                $order->delivery_address = null;
+                OrderItem::query()
+                    ->where('order_id', $order->id)
+                    ->where('menu_item_id', Order::DELIVERY_FEE_ITEM_ID)
+                    ->where('status', '!=', 'cancelled')
+                    ->update([
+                        'status' => 'cancelled',
+                        'cancellation_reason' => 'system',
+                        'cancelled_at' => Carbon::now(),
+                    ]);
+            }
+
+            $order->order_type = $to;
+            $order->save();
+
+            $this->orderTotals->recalculateAndSave($order->refresh());
+
+            return [$order, $from];
+        });
+
+        if ($from !== $order->order_type) {
+            $this->auditService->log('order.type_changed', $actor, $order, [
+                'order_id' => $order->id,
+                'from' => $from,
+                'to' => $order->order_type,
+                'new_total' => (float) $order->total,
+            ]);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $order->id,
+                'order_type' => $order->order_type,
+                'delivery_address' => $order->delivery_address,
+                'total' => (float) $order->total,
             ],
         ]);
     }

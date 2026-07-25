@@ -1048,6 +1048,11 @@ Route::prefix('v1')->group(function () {
                 Route::post('orders/{id}/items', [OrderController::class, 'appendItems'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.appendItems');
+                // Cambio de tipo en caliente pickup↔delivery (F5): inserta o
+                // cancela la línea de domicilio y recalcula bajo lock.
+                Route::patch('orders/{id}/order-type', [OrderController::class, 'updateOrderType'])
+                    ->middleware('permission:orders.update,update')
+                    ->name('api.orders.updateOrderType');
                 Route::post('orders/{id}/close-with-payment', [OrderController::class, 'closeWithPayment'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.closeWithPayment');

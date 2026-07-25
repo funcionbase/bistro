@@ -150,6 +150,8 @@ interface UseChatsReturn {
     loading: boolean;
     error: string | null;
     refresh: () => Promise<void>;
+    /** Refetch inmediato del chat seleccionado (para acciones externas al hook). */
+    refreshSelected: () => Promise<void>;
 }
 
 const POLL_INTERVAL_MS = 30_000;
@@ -453,5 +455,8 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
         loading,
         error,
         refresh: fetchChats,
+        refreshSelected: async () => {
+            if (selectedChatId) await fetchChatDetail(selectedChatId);
+        },
     };
 }

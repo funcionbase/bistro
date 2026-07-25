@@ -67,7 +67,8 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `order.closed_with_payment` | `OrderController::closeWithPayment` | `order_id`, `method`, `amount`, `tip_amount`, `reference`, `change_returned` | `orders.update` |
 | `order.refunded` | `OrderController::refund` | `order_id`, `original_method`, `total_refunded`, `is_partial`, `remaining_refundable`, `reference`, `reason` | `orders.update` |
 | `order.cancelled` | `OrderController::cancel` | `order_id`, `reason` | `orders.update` |
-| `order.append_items` | `OrderController::appendItems` | `items_added`, `delta_total` | `orders.update` |
+| `order.append_items` | `OrderController::appendItems` (F5: aplica a table\|delivery\|pickup; delivery in_transit rechazado) | `items_added`, `delta_total` | `orders.update` |
+| `order.type_changed` | `OrderController::updateOrderType` (cambio pickup↔delivery en caliente, F5) | `order_id`, `from`, `to`, `new_total` | `orders.update` |
 | `order.status_changed` | `OrderController::updateStatus` | `order_id`, `from`, `to`, `inventory_consumed` | `orders.update` |
 | `order.sms_sent` | `SendOrderStatusSmsJob::handle` (#275) | `order_id`, `to_status`, `phone` (enmascarado), `provider`, `provider_message_id`, `segments` | Efecto colateral de `orders.update` — sin permiso propio. Sin actor (system action — job de cola). |
 | `order.sms_failed` | `SendOrderStatusSmsJob::handle` (#275) | `order_id`, `to_status`, `phone` (enmascarado), `provider`, `error` | Efecto colateral de `orders.update` — sin permiso propio. Sin actor (system action — job de cola). |

@@ -1,20 +1,24 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ReasonTooltip } from '@/components/ui/field-hint';
 import type { ChatCartFlow, ChatCartFlowOrder } from '@/hooks/use-chats';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
-import { CheckCircle2, Receipt, XCircle } from 'lucide-react';
+import { sanitizePlainText } from '@/lib/input-sanitize';
+import { ArrowLeftRight, CheckCircle2, Receipt, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
     cartFlow: ChatCartFlow;
     /** chats.update — enviar recibo / rechazar comprobante / reenviar carta. */
     canUpdate: boolean;
-    /** orders.update — aprobar pedido. */
+    /** orders.update — aprobar pedido / cambiar tipo. */
     canApprove: boolean;
     onSendReceipt: (order: ChatCartFlowOrder) => Promise<void>;
     onRejectProof: (order: ChatCartFlowOrder) => Promise<void>;
     onApprove: (order: ChatCartFlowOrder) => Promise<void>;
+    /** Cambio de tipo en caliente (F5). `address` requerido al pasar a domicilio. */
+    onChangeOrderType: (order: ChatCartFlowOrder, to: 'pickup' | 'delivery', address?: string) => Promise<void>;
     onResendMenuLink: () => Promise<void>;
     onOpenOrder: (orderId: string) => void;
 }
@@ -44,12 +48,16 @@ export function ChatCartActions({
     onSendReceipt,
     onRejectProof,
     onApprove,
+    onChangeOrderType,
     onResendMenuLink,
     onOpenOrder,
 }: Props) {
     const formatCurrency = useCurrencyFormatter();
     const [busy, setBusy] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
+    // Cambio a domicilio: pide la dirección inline antes de confirmar.
+    const [addressFor, setAddressFor] = useState<string | null>(null);
+    const [addressDraft, setAddressDraft] = useState('');
 
     const run = async (key: string, fn: () => Promise<void>) => {
         if (busy) return;
@@ -202,7 +210,51 @@ export function ChatCartActions({
                                     </Button>
                                 </ReasonTooltip>
                             )}
+                            {/* Cambio de tipo en caliente (F5): pickup↔delivery, nunca in_transit. */}
+                            {['pickup', 'delivery'].includes(order.order_type) && order.status !== 'in_transit' && canApprove && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-xs"
+                                    disabled={busy !== null}
+                                    onClick={() => {
+                                        if (order.order_type === 'delivery') {
+                                            void run(`type-${order.id}`, () => onChangeOrderType(order, 'pickup'));
+                                        } else {
+                                            setAddressFor(addressFor === order.id ? null : order.id);
+                                            setAddressDraft(order.delivery_address ?? '');
+                                        }
+                                    }}
+                                >
+                                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                                    {order.order_type === 'delivery' ? 'Pasar a para llevar' : 'Pasar a domicilio'}
+                                </Button>
+                            )}
                         </div>
+                        {addressFor === order.id && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                                <Input
+                                    value={addressDraft}
+                                    onChange={(e) => setAddressDraft(sanitizePlainText(e.target.value, 500, true, false))}
+                                    maxLength={500}
+                                    placeholder="Dirección de entrega"
+                                    className="h-7 text-xs"
+                                />
+                                <Button
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    disabled={busy !== null || addressDraft.trim().length < 5}
+                                    onClick={() =>
+                                        void run(`type-${order.id}`, async () => {
+                                            await onChangeOrderType(order, 'delivery', addressDraft.trim());
+                                            setAddressFor(null);
+                                        })
+                                    }
+                                >
+                                    Confirmar
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 );
             })}
