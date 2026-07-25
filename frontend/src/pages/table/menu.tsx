@@ -276,15 +276,28 @@ function TableMenuView({ context }: { context: TableMenuContext }) {
     const liveSessionStatus = state?.session?.status ?? session.status;
     const isTerminal = TERMINAL_SESSION_STATUSES.includes(liveSessionStatus as (typeof TERMINAL_SESSION_STATUSES)[number]);
 
-    // Polling automático cada 5s mientras la sesión esté activa.
+    // Polling automático cada 5s mientras la sesión esté activa. Con la
+    // pestaña oculta no se gasta backend; al volver a ser visible se refresca
+    // de inmediato para no esperar al siguiente tick.
     const pollingRef = useRef<number | null>(null);
     useEffect(() => {
         if (session.status === 'closed' || session.status === 'expired') return;
-        pollingRef.current = window.setInterval(() => void refreshState(), 5000);
+        pollingRef.current = window.setInterval(() => {
+            if (document.hidden) return;
+            void refreshState();
+        }, 5000);
         return () => {
             if (pollingRef.current !== null) window.clearInterval(pollingRef.current);
         };
     }, [refreshState, session.status]);
+
+    useEffect(() => {
+        const refetchOnVisible = () => {
+            if (document.visibilityState === 'visible') void refreshState();
+        };
+        document.addEventListener('visibilitychange', refetchOnVisible);
+        return () => document.removeEventListener('visibilitychange', refetchOnVisible);
+    }, [refreshState]);
 
     // Cuando el poll detecta sesión terminal, detener el intervalo y redirigir:
     //  - closed → join page para abrir una nueva sesión en la misma mesa.
