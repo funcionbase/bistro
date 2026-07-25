@@ -388,15 +388,23 @@ export default function KanbanBoard() {
 
     const handleAssign = async (courierId: string) => {
         if (!assignOrderId) return;
+        // Si assignCourier falla, el throw sube al modal (muestra el error ahí
+        // y permite reintentar el assign sin efectos previos).
+        await assignCourier(assignOrderId, courierId);
         try {
-            await assignCourier(assignOrderId, courierId);
             await updateStatus(assignOrderId, 'in_transit');
+        } catch {
+            // Assign OK pero el avance a tránsito falló: cerrar el modal para
+            // que el retry NO re-asigne (duplicaría el assign); updateStatus ya
+            // refetcheó el tablero al revertir el optimista.
             setAssignOrderId(null);
             setSelectedOrder(null);
-            void refresh();
-        } catch (err) {
-            setAssignError(err instanceof Error ? err.message : 'Error al asignar repartidor.');
+            setAssignError('Repartidor asignado; no se pudo pasar a tránsito — reintenta desde la card.');
+            return;
         }
+        setAssignOrderId(null);
+        setSelectedOrder(null);
+        void refresh();
     };
 
     const handleAssignFromDetail = (orderId: string) => {
@@ -488,6 +496,9 @@ export default function KanbanBoard() {
             })
             .catch((err) => {
                 setAssignError(err instanceof Error ? err.message : 'Error al actualizar estado.');
+                // Auto-limpiar como los demás errores del tablero — antes quedaba
+                // pegado hasta la próxima acción.
+                window.setTimeout(() => setAssignError(null), 4000);
             });
     };
 

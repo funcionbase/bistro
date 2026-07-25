@@ -182,11 +182,19 @@ export function useOrders(token: string | null): UseOrdersReturn {
             mutationEpoch.current += 1;
             setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
 
-            const res = await apiFetch(`/api/v1/orders/${orderId}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status }),
-            });
+            let res: Response;
+            try {
+                res = await apiFetch(`/api/v1/orders/${orderId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status }),
+                });
+            } catch (err) {
+                // apiFetch lanzó (red caída): revertir el optimista con la verdad
+                // del server y re-lanzar para que el caller muestre el error.
+                await fetchOrders();
+                throw err;
+            }
 
             if (!res.ok) {
                 // Revertir en error
