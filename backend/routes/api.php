@@ -97,6 +97,7 @@ use App\Http\Controllers\Enrollment\InvitedEnrollmentController;
 use App\Http\Controllers\Enrollment\UserEnrollmentController;
 use App\Http\Controllers\Menu\MenuController;
 use App\Http\Controllers\Public\BranchOrderController;
+use App\Http\Controllers\Public\CartSessionController;
 use App\Http\Controllers\Public\TableJoinController;
 use App\Http\Controllers\Public\TableMenuController;
 use App\Http\Controllers\Public\TableOrderController;
@@ -1734,6 +1735,20 @@ Route::prefix('v1')->group(function () {
         ->where(['token' => '[0-9a-fA-F-]{36}'])
         ->middleware('throttle:menu-scan-public')
         ->name('api.public.cart.resolve');
+
+    // Sesión de carta (F3): actividad, estado de órdenes y append del cliente.
+    // Bearer = token UUID de la sesión; throttle dedicado cart-public.
+    Route::middleware('throttle:cart-public')
+        ->whereUuid('token')
+        ->group(function () {
+            Route::post('public/cart/{token}/activity', [CartSessionController::class, 'activity'])
+                ->name('api.public.cart.activity');
+            Route::get('public/cart/{token}/orders', [CartSessionController::class, 'orders'])
+                ->name('api.public.cart.orders');
+            Route::post('public/cart/{token}/orders/{order}/items', [CartSessionController::class, 'appendItems'])
+                ->whereUuid('order')
+                ->name('api.public.cart.orders.append');
+        });
 
     // Pedido público sin mesa (para llevar / domicilio) desde el QR de sede.
     // Nace pending_approval y cae a caja para aprobación manual. Precios del

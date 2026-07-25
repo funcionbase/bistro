@@ -194,6 +194,12 @@ class Order extends Model
         return $this->hasMany(PaymentReceipt::class);
     }
 
+    /** @return BelongsTo<CartSession, $this> — sesión de carta que originó la orden (F3). */
+    public function cartSession(): BelongsTo
+    {
+        return $this->belongsTo(CartSession::class);
+    }
+
     /** @return HasOne<Delivery, $this> */
     public function delivery(): HasOne
     {

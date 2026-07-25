@@ -1,4 +1,5 @@
 import MenuItemDetailDialog, { type MenuItemDetailDialogItem } from '@/components/menu/menu-item-detail-dialog';
+import { PublicOrderStatus, type PublicCartOrder } from '@/components/menu/public-order-status';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditorialEmpty } from '@/components/ui/editorial-empty';
@@ -156,7 +157,12 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
     const [custNotes, setCustNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const [placedOrder, setPlacedOrder] = useState<{ order_id: string; total: string; order_type: string } | null>(null);
+    const [placedOrder, setPlacedOrder] = useState<{ order_id: string; total: string; order_type: string; appended?: boolean } | null>(null);
+    // Órdenes de la sesión de carta (F3): alimentadas por el poll de
+    // PublicOrderStatus. Si hay una pending_approval, los items nuevos se
+    // agregan a esa orden en lugar de crear otra.
+    const [cartOrders, setCartOrders] = useState<PublicCartOrder[]>([]);
+    const lastActivityPingRef = useRef(0);
 
     const canOrder = !!effectiveBranchToken && !!effectiveBranchId && !tableStatus && state.kind === 'menu';
     const cartLines = Object.values(cart);
@@ -165,7 +171,25 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
     const deliveryFee = orderType === 'delivery' ? (restaurant?.delivery_fee ?? 0) : 0;
     const cartTotal = cartItemsTotal + deliveryFee;
 
+    // Ping de actividad (F3): el chat muestra "está armando el pedido".
+    // Fire-and-forget con throttle local de 30s — mismo patrón del scan.
+    const pingActivity = () => {
+        if (!activeCartToken) return;
+        const now = Date.now();
+        if (now - lastActivityPingRef.current < 30_000) return;
+        lastActivityPingRef.current = now;
+        fetch(resolveBackendUrl(`/api/v1/public/cart/${encodeURIComponent(activeCartToken)}/activity`), {
+            method: 'POST',
+            headers: { Accept: 'application/json' },
+            credentials: 'omit',
+            keepalive: true,
+        }).catch(() => {
+            // Telemetría — nunca rompe la carta.
+        });
+    };
+
     const addToCart = (item: { id: string; name: string; price: number }) => {
+        pingActivity();
         setCart((prev) => {
             const current = prev[item.id]?.quantity ?? 0;
             return { ...prev, [item.id]: { id: item.id, name: item.name, price: item.price, quantity: Math.min(99, current + 1) } };
@@ -173,6 +197,7 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
     };
 
     const changeQuantity = (id: string, delta: number) => {
+        pingActivity();
         setCart((prev) => {
             const line = prev[id];
             if (!line) return prev;
@@ -202,6 +227,49 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
         phoneValid &&
         paymentValid &&
         (orderType === 'pickup' || (custAddress.trim().length >= 5 && custNeighborhood.trim().length >= 2));
+
+    // Orden aún editable por el cliente: los items nuevos se agregan a ella
+    // (multi-orden F3). Aprobada → el flujo cae al checkout normal.
+    const pendingOrder = activeCartToken ? (cartOrders.find((o) => o.status === 'pending_approval') ?? null) : null;
+
+    /** Append de items a la orden pending_approval. 409 → checkout normal (orden nueva). */
+    const appendToOrder = async () => {
+        if (!activeCartToken || !pendingOrder || cartLines.length === 0 || submitting) return;
+        setSubmitting(true);
+        setSubmitError(null);
+        try {
+            const res = await fetch(
+                resolveBackendUrl(`/api/v1/public/cart/${encodeURIComponent(activeCartToken)}/orders/${encodeURIComponent(pendingOrder.id)}/items`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    credentials: 'omit',
+                    body: JSON.stringify({ items: cartLines.map((l) => ({ id: l.id, quantity: l.quantity })) }),
+                },
+            );
+            const json = (await res.json().catch(() => null)) as
+                | { data?: { order_id: string; total: string }; message?: string; code?: string }
+                | null;
+            if (res.status === 409 && json?.code === 'ORDER_ALREADY_APPROVED') {
+                // El cajero aprobó mientras tanto: estos items van en un pedido nuevo.
+                setCartOrders((prev) => prev.map((o) => (o.id === pendingOrder.id ? { ...o, status: 'pending' } : o)));
+                setCheckoutOpen(true);
+                return;
+            }
+            if (!res.ok || !json?.data) {
+                setSubmitError(json?.message ?? 'No pudimos agregar los productos. Intenta de nuevo.');
+                setCheckoutOpen(true);
+                return;
+            }
+            setPlacedOrder({ order_id: json.data.order_id, total: json.data.total, order_type: pendingOrder.order_type, appended: true });
+            setCart({});
+        } catch {
+            setSubmitError('No pudimos agregar los productos. Revisa tu conexión e intenta de nuevo.');
+            setCheckoutOpen(true);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const submitOrder = async () => {
         if (!effectiveBranchToken || !checkoutValid || submitting) return;
@@ -717,6 +785,8 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
 
                 {/* MENU: contenido denso en columna estrecha. */}
                 <main className="mx-auto w-full max-w-3xl px-4 pt-6 pb-10 md:px-8">
+                    {/* Estado de los pedidos de la sesión de carta (CA6, F3). */}
+                    {activeCartToken && <PublicOrderStatus cartToken={activeCartToken} onOrders={setCartOrders} />}
                     {state.kind === 'loading' && <SkeletonMenu />}
                     {state.kind === 'closed' && <ClosedNotice reason={state.reason} nextOpening={state.nextOpening} message={state.message} />}
                     {state.kind === 'no-menu' && (
@@ -772,12 +842,19 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                 </StickyActionBar>
             )}
 
-            {/* Carrito del pedido sin mesa (QR de sede): aparece al agregar el primer plato. */}
+            {/* Carrito del pedido sin mesa (QR de sede): aparece al agregar el primer plato.
+                Con una orden pending_approval de la misma carta, los items se AGREGAN a ella. */}
             {showCartBar && (
                 <StickyActionBar>
-                    <Button className="flex w-full items-center justify-center gap-2 shadow-lg" size="lg" onClick={() => setCheckoutOpen(true)}>
+                    <Button
+                        className="flex w-full items-center justify-center gap-2 shadow-lg"
+                        size="lg"
+                        disabled={submitting}
+                        onClick={() => (pendingOrder ? void appendToOrder() : setCheckoutOpen(true))}
+                    >
                         <ShoppingBag className="h-4 w-4" />
-                        Realizar pedido · {cartCount} {cartCount === 1 ? 'ítem' : 'ítems'} · {formatCurrency(cartItemsTotal)}
+                        {pendingOrder ? 'Agregar al pedido' : 'Realizar pedido'} · {cartCount} {cartCount === 1 ? 'ítem' : 'ítems'} ·{' '}
+                        {formatCurrency(cartItemsTotal)}
                     </Button>
                 </StickyActionBar>
             )}
@@ -1017,12 +1094,14 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
             <Dialog open={placedOrder !== null} onOpenChange={(o) => !o && setPlacedOrder(null)}>
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>¡Pedido enviado!</DialogTitle>
+                        <DialogTitle>{placedOrder?.appended ? '¡Productos agregados!' : '¡Pedido enviado!'}</DialogTitle>
                         <DialogDescription>
-                            {placedOrder?.order_type === 'delivery'
-                                ? `El restaurante confirmará tu domicilio en breve. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`
-                                : `El restaurante confirmará tu pedido en breve para que pases a recogerlo. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`}
-                            {activeCartToken ? ' Te escribimos por WhatsApp con las novedades de tu pedido.' : ''}
+                            {placedOrder?.appended
+                                ? `Se agregaron a tu pedido en revisión. Nuevo total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`
+                                : placedOrder?.order_type === 'delivery'
+                                  ? `El restaurante confirmará tu domicilio en breve. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`
+                                  : `El restaurante confirmará tu pedido en breve para que pases a recogerlo. Total: ${formatCurrency(Number(placedOrder?.total ?? 0))}.`}
+                            {activeCartToken && !placedOrder?.appended ? ' Te escribimos por WhatsApp con las novedades de tu pedido.' : ''}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

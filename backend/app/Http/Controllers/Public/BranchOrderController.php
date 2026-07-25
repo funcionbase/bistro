@@ -275,11 +275,13 @@ class BranchOrderController extends Controller
 
         try {
             // Escape del BranchScope: contexto público sin JWT. company_nit
-            // ancla la sesión a la empresa de la sede del pedido.
+            // ancla la sesión a la empresa de la sede del pedido. `converted`
+            // también aplica (F3): el mismo link puede producir varias órdenes
+            // (la anterior fue aprobada → el cliente pide de nuevo).
             $session = CartSession::withoutGlobalScopes()
                 ->where('jwt_jti', $token)
                 ->where('company_nit', $companyNit)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'converted'])
                 ->where('expired_at', '>', now())
                 ->first();
 
@@ -289,7 +291,13 @@ class BranchOrderController extends Controller
 
             $session->status = 'converted';
             $session->order_id = $order->id;
+            $session->last_activity_at = now();
             $session->save();
+
+            // Multi-orden: la relación completa vive en orders.cart_session_id
+            // (cart_sessions.order_id solo conserva la última convertida).
+            $order->cart_session_id = $session->id;
+            $order->save();
 
             if ($session->chat_id === null) {
                 return;

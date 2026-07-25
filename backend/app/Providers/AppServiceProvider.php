@@ -147,6 +147,15 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->ip().':'.$token);
         });
 
+        // Sesión de carta pública (/menus?cart={uuid}): pings de actividad,
+        // estado de órdenes (polling ~12s) y append de items. 30/min por
+        // IP+token cubre el polling legítimo sin invitar enumeración.
+        RateLimiter::for('cart-public', function (Request $request) {
+            $token = $request->route('token') ?? 'unknown';
+
+            return Limit::perMinute(30)->by($request->ip().':'.$token);
+        });
+
         // KDS device-token (#115): tablets de cocina con polling cada 2s
         // pueden hacer hasta ~30 req/min en lectura + acciones manuales del
         // cocinero. 60/min per token da margen sin invitar abuso. La key es

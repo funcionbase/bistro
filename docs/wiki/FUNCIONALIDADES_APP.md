@@ -2752,6 +2752,25 @@ Payload: type (pickup|delivery), customer_name, customer_phone,
 - Cliente vinculado al CRM por phone (upsert de `Contact` con nombre).
 - Auditoría: `order.created_by_customer` (sin actor) y `order.approved`.
 
+#### Sesión de carta: tracking, multi-orden y append del cliente (F3)
+
+- **Tracking**: `cart_sessions.viewed_at` se marca en el primer open del link
+  (`cart-resolve`); `last_activity_at` se refresca con pings del cliente
+  (`POST /api/v1/public/cart/{token}/activity`, throttle `cart-public` 30/min,
+  siempre 204). El chat los muestra por el polling de 30s existente.
+- **Multi-orden**: `orders.cart_session_id` liga cada orden a su sesión de
+  carta; `linkCartSession` acepta sesiones `active|converted` (el mismo link
+  produce la 2ª+ orden tras aprobarse la primera).
+- **Estado público (CA6)**: `GET /api/v1/public/cart/{token}/orders` devuelve
+  todas las órdenes con label derivado (`pending_approval` + preferencia
+  transferencia → "Esperando comprobante"; si no → "En revisión"). El
+  componente `public-order-status.tsx` lo pinta sobre la carta (poll 12s).
+- **Append del cliente**: `POST /api/v1/public/cart/{token}/orders/{order}/items`
+  agrega items mientras la orden siga `pending_approval` (re-chequeo bajo
+  lock; si caja aprobó en paralelo → 409 `ORDER_ALREADY_APPROVED` y el
+  frontend cae a checkout de orden nueva). Precios del menú activo en BD;
+  audit `order.items_appended_by_customer`; ChatMessage bot al hilo del chat.
+
 ### 9.13 Resumen de los 18 endpoints de menú
 
 | Método | URL | Permission | Notas |

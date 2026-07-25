@@ -46,6 +46,8 @@ class CartSession extends Model
         'expired_at',
         'chat_id',
         'order_id',
+        'viewed_at',
+        'last_activity_at',
     ];
 
     protected function casts(): array
@@ -53,6 +55,8 @@ class CartSession extends Model
         return [
             'expired_at' => 'datetime',
             'created_at' => 'datetime',
+            'viewed_at' => 'datetime',
+            'last_activity_at' => 'datetime',
         ];
     }
 
@@ -78,6 +82,17 @@ class CartSession extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Todas las órdenes creadas desde esta sesión de carta (multi-orden F3).
+     * `order_id` conserva solo la última convertida.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function scopeActive(Builder $query): Builder

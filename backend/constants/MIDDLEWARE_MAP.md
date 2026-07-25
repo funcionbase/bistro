@@ -57,6 +57,16 @@ table.guest      → ResolveTableGuest        (sesión de invitado en flujo de m
 
 Fuente: `bootstrap/app.php:86-97`.
 
+### Rate limiters públicos (`AppServiceProvider::boot`)
+
+| Limiter | Límite | Rutas |
+|---|---|---|
+| `menu-scan-public` | 30/min IP+nit | menú público, scan, resolves |
+| `loyalty-public` | 10/min IP+nit | fidelización pública |
+| `branch-order-public` | 5/min IP+token | POST pedido público sin mesa |
+| `cart-public` | 30/min IP+token | sesión de carta (F3): activity, orders, append |
+| `table-public` | 30/IP + 200/QR | flujo mesa QR `/t/{qr_token}` |
+
 ### Orden típico en una ruta API protegida
 
 ```php

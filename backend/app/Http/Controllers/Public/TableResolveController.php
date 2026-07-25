@@ -92,6 +92,14 @@ class TableResolveController extends Controller
 
         $expired = $session->status !== 'active' || $session->expired_at->isPast();
 
+        // Tracking (F3): primer open marca viewed_at — el chat muestra "abrió
+        // la carta". Idempotente, sin audit (telemetría, no operación).
+        if ($session->viewed_at === null) {
+            $session->viewed_at = now();
+            $session->last_activity_at = now();
+            $session->save();
+        }
+
         $contact = Contact::withoutBranchScope()
             ->where('company_nit', $session->company_nit)
             ->where('phone', $session->client_phone)
