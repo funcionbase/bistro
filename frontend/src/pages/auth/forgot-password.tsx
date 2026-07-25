@@ -20,6 +20,7 @@ export default function ForgotPassword() {
 
     const [email, setEmail] = useState('');
     const [captcha, setCaptcha] = useState('');
+    const [captchaReset, setCaptchaReset] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [sent, setSent] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,10 @@ export default function ForgotPassword() {
             setSent(res.message ?? 'Si el correo existe, te enviamos instrucciones para restablecer la contraseña.');
         } catch (e) {
             setError(e instanceof ApiError && e.message ? e.message : 'No pudimos procesar la solicitud. Intenta de nuevo.');
+            // El token del captcha es de un solo uso: resetear el widget y
+            // esperar uno nuevo antes de habilitar el siguiente submit.
+            setCaptcha('');
+            setCaptchaReset((n) => n + 1);
         } finally {
             setSubmitting(false);
         }
@@ -76,7 +81,7 @@ export default function ForgotPassword() {
                             />
                         </div>
 
-                        <Turnstile onVerify={setCaptcha} />
+                        <Turnstile onVerify={setCaptcha} resetSignal={captchaReset} />
 
                         {error && (
                             <Alert variant="destructive">

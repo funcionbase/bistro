@@ -1,5 +1,6 @@
-﻿import { useApiForm } from '@/hooks/use-api-form';
-import { FormEventHandler, useRef, useState } from 'react';
+import { useApiForm } from '@/hooks/use-api-form';
+import { apiClient } from '@/lib/api-client';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -16,11 +17,32 @@ import { BottomSheetDialog } from '@/components/ui/bottom-sheet-dialog';
  * Migrado a tokens DS (`destructive`) y a `BottomSheetDialog`
  * (Sheet inferior en mobile, Dialog en desktop) para que en celular
  * no se sienta como un modal centrado pequeño.
+ *
+ * Confirmación según tipo de cuenta (mismo contrato que el backend
+ * `AccountController::destroy`): con contraseña → `password`; cuentas
+ * Google-only (`has_password=false` en `/api/v1/me`, misma fuente que
+ * settings/password.tsx) → `confirm_email` con el correo exacto.
  */
 export default function DeleteUser() {
     const [open, setOpen] = useState(false);
-    const passwordInput = useRef<HTMLInputElement>(null);
-    const { data, setData, post, processing, reset, errors, clearErrors } = useApiForm({ password: '' });
+    const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+    const confirmInput = useRef<HTMLInputElement>(null);
+    const { data, setData, post, processing, reset, errors, clearErrors } = useApiForm({ password: '', confirm_email: '' });
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await apiClient.get<{ user: { has_password?: boolean } }>('/api/v1/me');
+                if (!cancelled) setHasPassword(!!res.user.has_password);
+            } catch {
+                if (!cancelled) setHasPassword(true); // fallback conservador: pide contraseña
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const closeModal = () => {
         clearErrors();
@@ -36,10 +58,12 @@ export default function DeleteUser() {
                 closeModal();
                 window.location.assign('/');
             },
-            onError: () => passwordInput.current?.focus(),
+            onError: () => confirmInput.current?.focus(),
             onFinish: () => reset(),
         });
     };
+
+    const googleOnly = hasPassword === false;
 
     return (
         <div className="space-y-6">
@@ -57,31 +81,55 @@ export default function DeleteUser() {
 
             <BottomSheetDialog isOpen={open} onClose={closeModal} title="¿Eliminar tu cuenta?">
                 <p className="text-muted-foreground text-sm">
-                    Al eliminar tu cuenta, todos sus recursos y datos se borrarán permanentemente. Ingresa tu contraseña para confirmar.
+                    {googleOnly
+                        ? 'Al eliminar tu cuenta, todos sus recursos y datos se borrarán permanentemente. Escribe el correo de tu cuenta para confirmar.'
+                        : 'Al eliminar tu cuenta, todos sus recursos y datos se borrarán permanentemente. Ingresa tu contraseña para confirmar.'}
                 </p>
                 <form noValidate className="mt-4 space-y-4" onSubmit={deleteUser}>
-                    <div className="grid gap-2">
-                        <Label htmlFor="password" className="sr-only">
-                            Contraseña
-                        </Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            name="password"
-                            ref={passwordInput}
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Contraseña"
-                            autoComplete="current-password"
-                        />
-                        <InputError message={errors.password} />
-                    </div>
+                    {googleOnly ? (
+                        <div className="grid gap-2">
+                            <Label htmlFor="confirm_email" className="sr-only">
+                                Correo de tu cuenta
+                            </Label>
+                            <Input
+                                id="confirm_email"
+                                type="email"
+                                name="confirm_email"
+                                ref={confirmInput}
+                                value={data.confirm_email}
+                                onChange={(e) => setData('confirm_email', e.target.value)}
+                                placeholder="Correo de tu cuenta"
+                                autoComplete="email"
+                                maxLength={255}
+                            />
+                            <InputError message={errors.confirm_email} />
+                        </div>
+                    ) : (
+                        <div className="grid gap-2">
+                            <Label htmlFor="password" className="sr-only">
+                                Contraseña
+                            </Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                name="password"
+                                ref={confirmInput}
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                placeholder="Contraseña"
+                                autoComplete="current-password"
+                            />
+                            <InputError message={errors.password} />
+                        </div>
+                    )}
+
+                    <InputError message={errors.general} />
 
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <Button type="button" variant="secondary" onClick={closeModal}>
                             Cancelar
                         </Button>
-                        <Button type="submit" variant="destructive" disabled={processing}>
+                        <Button type="submit" variant="destructive" disabled={processing || hasPassword === null}>
                             Eliminar cuenta
                         </Button>
                     </div>

@@ -7,11 +7,13 @@ import { OnboardingPageSkeleton } from '@/components/ui/onboarding-page-skeleton
 import { SelectableTile } from '@/components/ui/selectable-tile';
 import { useBootstrap } from '@/hooks/use-bootstrap';
 import { apiClient, ApiError } from '@/lib/api-client';
+import { reloadContext } from '@/lib/navigate-compat';
+import { queryClient } from '@/lib/query-client';
 import { route } from '@/lib/route-compat';
 import { type Branch } from '@/types';
 import { AlertCircle, MapPin, ShieldCheck, Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '@/lib/use-document-title';
 
 interface BranchCardProps {
@@ -63,6 +65,7 @@ export default function BranchSelectorRoute() {
     useDocumentTitle('Seleccionar sede');
 
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const bootstrap = useBootstrap();
     const [selecting, setSelecting] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -94,6 +97,14 @@ export default function BranchSelectorRoute() {
                 localStorage.setItem(`${LAST_BRANCH_KEY}:${activeCompanyNit}`, branchId);
             }
             const target = data.default_route && data.default_route !== '' ? data.default_route : 'dashboard';
+            // El switch reemplaza la cookie JWT con el nuevo `active_branch_id`.
+            // Mismo flujo que BranchSwitcher: refrescar primero bootstrap +
+            // business-context y después eliminar las queries branch-scoped
+            // para no servir datos de la sede anterior dentro del staleTime.
+            await reloadContext();
+            queryClient.removeQueries({
+                predicate: (q) => q.queryKey[0] !== 'bootstrap' && q.queryKey[0] !== 'business-context',
+            });
             navigate(route(target));
         } catch (e) {
             setError(e instanceof ApiError ? e.message || 'No se pudo seleccionar la sede.' : 'Error de conexión. Intenta de nuevo.');
@@ -101,9 +112,12 @@ export default function BranchSelectorRoute() {
         }
     }
 
-    // Auto-seleccionar última sede usada si sigue siendo accesible.
+    // Auto-seleccionar última sede usada SOLO con `?auto=1` (flujo post-login).
+    // Sin el flag, la pantalla siempre permite elegir — antes el auto-select
+    // incondicional hacía imposible cambiar de sede desde esta ruta.
+    const autoRequested = searchParams.get('auto') === '1';
     useEffect(() => {
-        if (bootstrap.isLoading || autoSelected || branches.length === 0 || selecting !== null) {
+        if (!autoRequested || bootstrap.isLoading || autoSelected || branches.length === 0 || selecting !== null) {
             return;
         }
         setAutoSelected(true);
@@ -112,7 +126,7 @@ export default function BranchSelectorRoute() {
             void handleSelect(lastId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bootstrap.isLoading, branches, autoSelected, selecting, activeCompanyNit]);
+    }, [autoRequested, bootstrap.isLoading, branches, autoSelected, selecting, activeCompanyNit]);
 
     if (bootstrap.isLoading || selecting !== null) {
         return <OnboardingPageSkeleton layout="tiles" tiles={Math.max(2, Math.min(branches.length || 3, 6))} />;
@@ -204,7 +218,7 @@ export default function BranchSelectorRoute() {
                                 </div>
                                 <div className="flex items-start gap-2.5 leading-relaxed opacity-90">
                                     <Star className="mt-0.5 h-4 w-4 shrink-0" />
-                                    <span>Recordamos tu última sede — la próxima vez entrás directo sin elegir.</span>
+                                    <span>Recordamos tu última sede — la próxima vez entras directo sin elegir.</span>
                                 </div>
                             </div>
                         }

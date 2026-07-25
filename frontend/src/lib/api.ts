@@ -87,7 +87,10 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
             const msg = (data?.message ?? '').toString().toLowerCase();
             // Cualquier 401 de auth (revocada, token ausente, token inválido o expirado)
             // significa que la sesión local se perdió → limpiar y volver al login.
+            // Detección primaria por `code` (ValidateJwt) con fallback a substrings
+            // para respuestas que aún no lo incluyen.
             const isAuthFailure =
+                data?.code === 'auth_failed' ||
                 msg.includes('revoc') ||
                 msg.includes('token no proporcionado') ||
                 msg.includes('token inválido') ||
@@ -96,7 +99,15 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
             if (isAuthFailure) {
                 clearToken();
-                if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+                // Rutas auth-aware manejan el 401 por su cuenta (ej. /verify-email
+                // usa el 401 para entrar en modo sin-sesión post-registro);
+                // redirigir acá las rebotaría al landing.
+                const authAwarePaths = ['/verify-email'];
+                if (
+                    typeof window !== 'undefined' &&
+                    window.location.pathname !== '/' &&
+                    !authAwarePaths.includes(window.location.pathname)
+                ) {
                     window.location.assign('/');
                 }
                 return response;

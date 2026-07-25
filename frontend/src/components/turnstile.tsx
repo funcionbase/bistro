@@ -44,6 +44,12 @@ function loadScript(): Promise<void> {
 interface TurnstileProps {
     /** Token válido → habilita el submit. Vacío en expiración/error → lo bloquea. */
     onVerify: (token: string) => void;
+    /**
+     * Contador que el form incrementa tras un submit fallido para forzar
+     * `turnstile.reset()` — el token es de un solo uso y el widget no se
+     * regenera solo. El form debe limpiar también su estado de captcha.
+     */
+    resetSignal?: number;
 }
 
 /**
@@ -52,11 +58,20 @@ interface TurnstileProps {
  * key no está configurado, no renderiza nada — el form debe tratar el token
  * como no-requerido.
  */
-export function Turnstile({ onVerify }: TurnstileProps) {
+export function Turnstile({ onVerify, resetSignal = 0 }: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
     const onVerifyRef = useRef(onVerify);
     onVerifyRef.current = onVerify;
+
+    useEffect(() => {
+        if (resetSignal === 0 || !widgetIdRef.current || !window.turnstile) return;
+        try {
+            window.turnstile.reset(widgetIdRef.current);
+        } catch {
+            // widget ya removido — ignorar
+        }
+    }, [resetSignal]);
 
     useEffect(() => {
         if (!turnstileEnabled) return;

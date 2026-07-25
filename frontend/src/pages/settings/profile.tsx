@@ -1,5 +1,5 @@
 ﻿import { Transition } from '@headlessui/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -29,6 +29,20 @@ export default function Profile() {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         void patch('/api/v1/account/profile');
+    };
+
+    // Reenvío del correo de verificación (endpoint real: verification/resend,
+    // el anterior verification-notification no existe en routes/api.php).
+    const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+    const resendVerification = async () => {
+        if (resendStatus === 'sending') return;
+        setResendStatus('sending');
+        try {
+            await apiClient.post('/api/v1/auth/verification/resend');
+            setResendStatus('sent');
+        } catch {
+            setResendStatus('error');
+        }
     };
 
     return (
@@ -114,12 +128,19 @@ export default function Profile() {
                                     Tu correo aún no está verificado.{' '}
                                     <button
                                         type="button"
-                                        onClick={() => void apiClient.post('/api/v1/auth/verification-notification')}
-                                        className="text-primary hover:text-primary/80 focus-visible:ring-ring rounded-sm underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        disabled={resendStatus === 'sending'}
+                                        onClick={() => void resendVerification()}
+                                        className="text-primary hover:text-primary/80 focus-visible:ring-ring rounded-sm underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
                                     >
-                                        Reenviar correo de verificación
+                                        {resendStatus === 'sending' ? 'Enviando…' : 'Reenviar correo de verificación'}
                                     </button>
                                 </p>
+                                {resendStatus === 'sent' && (
+                                    <p className="text-muted-foreground text-sm">Te enviamos un nuevo enlace de verificación. Revisa tu correo.</p>
+                                )}
+                                {resendStatus === 'error' && (
+                                    <p className="text-destructive text-sm">No pudimos reenviar el correo. Intenta de nuevo.</p>
+                                )}
                             </div>
                         )}
 

@@ -28,6 +28,7 @@ export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [captcha, setCaptcha] = useState('');
+    const [captchaReset, setCaptchaReset] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +55,10 @@ export default function Login() {
             window.location.href = res.redirect || '/dashboard';
         } catch (e) {
             setError(e instanceof ApiError && e.message ? e.message : 'No pudimos iniciar sesión. Intenta de nuevo.');
+            // El token del captcha es de un solo uso: resetear el widget y
+            // esperar uno nuevo antes de habilitar el siguiente submit.
+            setCaptcha('');
+            setCaptchaReset((n) => n + 1);
             setSubmitting(false);
         }
     };
@@ -106,7 +111,7 @@ export default function Login() {
                         />
                     </div>
 
-                    <Turnstile onVerify={setCaptcha} />
+                    <Turnstile onVerify={setCaptcha} resetSignal={captchaReset} />
 
                     {error && (
                         <Alert variant="destructive">
