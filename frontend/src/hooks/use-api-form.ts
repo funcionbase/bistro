@@ -1,5 +1,5 @@
 import { ApiError, apiClient } from '@/lib/api-client';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type FormErrors = Record<string, string>;
 
@@ -18,7 +18,8 @@ interface SubmitOptions {
  * contra la API del backend.
  *
  * Los errores de validación 422 (FormRequest) se aplanan a
- * `Record<campo, primer-mensaje>`.
+ * `Record<campo, primer-mensaje>`. Los errores no-422 (red, 500, 403) se
+ * exponen en `errors.general`.
  */
 export function useApiForm<T extends Record<string, unknown>>(initialData: T) {
     const initialRef = useRef<T>(initialData);
@@ -26,6 +27,16 @@ export function useApiForm<T extends Record<string, unknown>>(initialData: T) {
     const [errors, setErrors] = useState<FormErrors>({});
     const [processing, setProcessing] = useState(false);
     const [recentlySuccessful, setRecentlySuccessful] = useState(false);
+    const successTimeoutRef = useRef<number>(undefined);
+
+    // Si el caller carga datos async y pasa una referencia nueva, reset()
+    // debe volver a los últimos datos cargados, no a los del primer render.
+    useEffect(() => {
+        initialRef.current = initialData;
+    }, [initialData]);
+
+    // Evita el setState sobre componente desmontado del timeout de éxito.
+    useEffect(() => () => window.clearTimeout(successTimeoutRef.current), []);
 
     const setData = useCallback((keyOrValues: keyof T | Partial<T>, value?: unknown) => {
         if (typeof keyOrValues === 'string') {
@@ -61,7 +72,8 @@ export function useApiForm<T extends Record<string, unknown>>(initialData: T) {
                     await apiClient[method](url, data);
                 }
                 setRecentlySuccessful(true);
-                window.setTimeout(() => setRecentlySuccessful(false), 2000);
+                window.clearTimeout(successTimeoutRef.current);
+                successTimeoutRef.current = window.setTimeout(() => setRecentlySuccessful(false), 2000);
                 options?.onSuccess?.();
             } catch (e) {
                 if (e instanceof ApiError && e.errors) {
@@ -72,7 +84,13 @@ export function useApiForm<T extends Record<string, unknown>>(initialData: T) {
                     setErrors(flat);
                     options?.onError?.(flat);
                 } else {
-                    options?.onError?.({});
+                    // Error no-422 (red, 500, 403): antes se tragaba en silencio y
+                    // el form quedaba sin feedback. Se expone en `errors.general`.
+                    const flat: FormErrors = {
+                        general: e instanceof ApiError ? e.message : 'Error de conexión. Intenta de nuevo.',
+                    };
+                    setErrors(flat);
+                    options?.onError?.(flat);
                 }
             } finally {
                 setProcessing(false);

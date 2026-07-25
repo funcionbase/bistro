@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { sanitizePlainText } from '@/lib/input-sanitize';
+import { sanitizePlainText, syncDomValue } from '@/lib/input-sanitize';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -84,7 +84,17 @@ export function NotesEditor({
                     'border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[72px] w-full resize-y rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
                 )}
                 value={internal}
-                onChange={(e) => emit(e.target.value)}
+                onChange={(e) => {
+                    const raw = e.target.value;
+                    const sanitized = sanitizePlainText(raw, maxLength, true, false);
+                    if (sanitized !== raw) {
+                        // Evita el bail-out de React (DOM con crudo) y el salto
+                        // del cursor al final — ver syncDomValue.
+                        syncDomValue(e.target, raw, sanitized);
+                    }
+                    setInternal(sanitized);
+                    onChange(sanitized);
+                }}
                 placeholder={placeholder}
                 maxLength={maxLength}
                 disabled={disabled}

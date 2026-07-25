@@ -27,8 +27,10 @@ const CONTROL_CHARS_ALLOW_WHITESPACE = new RegExp('[\\u0000-\\u0008\\u000B\\u000
  * - Remueve tags HTML (`<...>`).
  * - Normaliza Unicode a NFC.
  * - Bloquea control characters y bidi overrides.
- * - Aplica límite por código de unidad (no por bytes — esa es la
- *   responsabilidad del backend con `SafePlainText::sanitize`).
+ * - Aplica límite por BYTES UTF-8 (`maxLength` = maxBytes, espejo del
+ *   `SafePlainText(maxBytes:)` del backend), respetando fronteras de code
+ *   point para no partir surrogate pairs. Antes recortaba por code units y
+ *   el backend igual rechazaba textos con emojis/acentos por exceso de bytes.
  *
  * @param allowWhitespace si es `true`, preserva `\n` y `\t`; si es
  *   `false`, colapsa cualquier whitespace a un único espacio.
@@ -64,11 +66,42 @@ export function sanitizePlainText(value: string, maxLength: number, allowWhitesp
         cleaned = cleaned.trim();
     }
 
-    if (cleaned.length > maxLength) {
-        cleaned = cleaned.slice(0, maxLength);
-    }
+    cleaned = truncateUtf8Bytes(cleaned, maxLength);
 
     return cleaned;
+}
+
+const UTF8_ENCODER = new TextEncoder();
+
+/** Recorta a `maxBytes` UTF-8 sin partir code points (surrogate pairs intactos). */
+function truncateUtf8Bytes(value: string, maxBytes: number): string {
+    if (UTF8_ENCODER.encode(value).length <= maxBytes) {
+        return value;
+    }
+    let bytes = 0;
+    let out = '';
+    for (const cp of value) {
+        bytes += UTF8_ENCODER.encode(cp).length;
+        if (bytes > maxBytes) {
+            break;
+        }
+        out += cp;
+    }
+    return out;
+}
+
+/**
+ * Sincroniza el DOM de un input/textarea con el valor saneado, preservando el
+ * caret. Necesario porque con inputs controlados: (a) si el valor saneado es
+ * igual al estado previo, React hace bail-out y el DOM queda mostrando el
+ * crudo; (b) si difiere, asignar `.value` manda el cursor al final. Asume que
+ * lo removido estaba antes/en el caret (tipeo y paste insertan ahí).
+ */
+export function syncDomValue(el: HTMLInputElement | HTMLTextAreaElement, raw: string, next: string): void {
+    const caret = (el.selectionStart ?? next.length) - (raw.length - next.length);
+    el.value = next;
+    const pos = Math.max(0, Math.min(caret, next.length));
+    el.setSelectionRange(pos, pos);
 }
 
 /**
