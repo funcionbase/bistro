@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { PageShell } from '@/components/page-shell';
 import { DocumentStatusBadge } from '@/components/dian/document-status-badge';
@@ -23,24 +24,45 @@ import {
     type DianElectronicDocument,
 } from '@/types/dian';
 
+interface PageMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
 /**
  * Listado de documentos electrónicos DIAN — vista operativa.
  *
  * Responsive: tabla desktop (md+) y cards apiladas en mobile (<md).
- * Filtros: status, tipo de documento, fecha desde/hasta + búsqueda libre
- * sobre full_number (client-side por simplicidad — backend devuelve hasta
- * 25 por página).
+ * Filtros: status, tipo de documento, fecha desde/hasta + búsqueda
+ * server-side (número/CUFE/track). Paginación server-side vía `meta`
+ * (mismo patrón que DocumentsExplorer).
  */
 export default function DianDocumentsPage() {
     const hasDianFeature = useHasPlanFeature('dian');
     const [docs, setDocs] = useState<DianElectronicDocument[]>([]);
+    const [meta, setMeta] = useState<PageMeta | null>(null);
+    const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [status, setStatus] = useState<string>('all');
     const [type, setType] = useState<string>('all');
     const [from, setFrom] = useState<string>('');
     const [to, setTo] = useState<string>('');
+
+    // Debounce del buscador — evita un request por tecla.
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    // Cambiar cualquier filtro reinicia a la página 1.
+    useEffect(() => {
+        setPage(1);
+    }, [status, type, from, to, debouncedSearch]);
 
     const fetchDocs = () => {
         setLoading(true);
@@ -49,9 +71,14 @@ export default function DianDocumentsPage() {
             document_type: type === 'all' ? undefined : type,
             from: from || undefined,
             to: to || undefined,
-            per_page: 50,
+            q: debouncedSearch || undefined,
+            page,
+            per_page: 25,
         })
-            .then(({ data }) => setDocs(data ?? []))
+            .then((res) => {
+                setDocs(res.data ?? []);
+                setMeta(res.meta ?? null);
+            })
             .catch((err) => setError(err instanceof Error ? err.message : 'Error cargando documentos'))
             .finally(() => setLoading(false));
     };
@@ -65,18 +92,7 @@ export default function DianDocumentsPage() {
         }
         fetchDocs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasDianFeature, status, type, from, to]);
-
-    const filtered = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        if (!q) return docs;
-        return docs.filter(
-            (d) =>
-                d.full_number.toLowerCase().includes(q) ||
-                d.unique_code.toLowerCase().includes(q) ||
-                (d.provider_track_id ?? '').toLowerCase().includes(q),
-        );
-    }, [docs, search]);
+    }, [hasDianFeature, status, type, from, to, debouncedSearch, page]);
 
     if (!hasDianFeature) {
         return (
@@ -154,7 +170,7 @@ export default function DianDocumentsPage() {
                             <Skeleton key={i} className="h-14 w-full" />
                         ))}
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : docs.length === 0 ? (
                     <EmptyState
                         title="Sin documentos"
                         description="No hay documentos DIAN emitidos con esos filtros."
@@ -177,7 +193,7 @@ export default function DianDocumentsPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filtered.map((doc) => (
+                                        {docs.map((doc) => (
                                             <DocumentTableRow key={doc.id} doc={doc} onRetry={fetchDocs} />
                                         ))}
                                     </tbody>
@@ -187,10 +203,39 @@ export default function DianDocumentsPage() {
 
                         {/* Mobile cards */}
                         <div className="space-y-2 sm:hidden">
-                            {filtered.map((doc) => (
+                            {docs.map((doc) => (
                                 <DocumentCard key={doc.id} doc={doc} onRetry={fetchDocs} />
                             ))}
                         </div>
+
+                        {/* Paginación server-side (patrón DocumentsExplorer). */}
+                        {meta && meta.last_page > 1 && (
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-muted-foreground text-xs">
+                                    Página {meta.current_page} de {meta.last_page} · {meta.total} documento{meta.total === 1 ? '' : 's'}
+                                </p>
+                                <div className="flex gap-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={page <= 1 || loading}
+                                        onClick={() => setPage((p) => p - 1)}
+                                        aria-label="Página anterior"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={page >= meta.last_page || loading}
+                                        onClick={() => setPage((p) => p + 1)}
+                                        aria-label="Página siguiente"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

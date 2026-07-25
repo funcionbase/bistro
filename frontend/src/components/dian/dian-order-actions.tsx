@@ -87,9 +87,11 @@ export function DianOrderActions({ orderId, orderStatus, defaultDocumentType = '
     }
 
     // Última emisión activa (no nota crédito) para decidir el contexto.
+    // Ordenada por fecha real (issued_at, o created_at si aún no se emitió):
+    // ordenar por UUID no dice nada del orden de emisión.
     const active = documents
         .filter((d) => d.document_type === 'pos_equivalent' || d.document_type === 'invoice')
-        .sort((a, b) => (b.id ?? '').localeCompare(a.id ?? ''))[0];
+        .sort((a, b) => (b.issued_at ?? b.created_at ?? '').localeCompare(a.issued_at ?? a.created_at ?? ''))[0];
 
     // ¿Ya hay nota crédito viva apuntando al documento activo? Guard de
     // idempotencia visual — refleja la regla backend que bloquea duplicados.

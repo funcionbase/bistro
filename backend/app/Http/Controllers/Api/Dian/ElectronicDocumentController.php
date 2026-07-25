@@ -83,7 +83,8 @@ class ElectronicDocumentController extends Controller
             $query->where('issued_at', '>=', $from);
         }
         if ($to = $request->date('to')) {
-            $query->where('issued_at', '<=', $to);
+            // endOfDay: `to=2026-07-24` debe incluir todo el día, no solo la medianoche.
+            $query->where('issued_at', '<=', $to->endOfDay());
         }
         if ($orderId = $request->string('order_id')->toString()) {
             $query->where('order_id', $orderId);
