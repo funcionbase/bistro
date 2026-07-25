@@ -517,6 +517,15 @@ class OrderController extends Controller
     public function materializeOrderItems(Order $order, array $lines): void
     {
         $now = Carbon::now();
+
+        // Orden aún en el buffer de aprobación (pedido público del chat que
+        // caja edita ANTES de aprobar, F5): los items nuevos nacen
+        // `pending_approval` como el resto. Nacer `approved` los colaba al
+        // KDS (que filtra por status de ITEM y no oculta órdenes
+        // pending_approval) y cocina producía platos de un pedido sin aprobar.
+        // `approve()` los promueve todos juntos.
+        $isBuffer = $order->status === 'pending_approval';
+
         foreach ($lines as $line) {
             // La línea "Domicilio" NO es un plato: nace `served` (consumable —
             // sigue contando al total) para no aparecer como ticket cocinable
@@ -536,9 +545,9 @@ class OrderController extends Controller
                 'quantity' => (int) $line['quantity'],
                 'category' => $line['category'] ?? null,
                 'notes' => $line['notes'] ?? null,
-                'status' => $isFee ? 'served' : 'approved',
+                'status' => $isFee ? 'served' : ($isBuffer ? 'pending_approval' : 'approved'),
                 'submitted_at' => $now,
-                'approved_at' => $now,
+                'approved_at' => $isFee || ! $isBuffer ? $now : null,
                 'served_at' => $isFee ? $now : null,
             ]);
         }

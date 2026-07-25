@@ -72,7 +72,7 @@ class ChatController extends Controller
      * otra empresa, que es justo lo que el aislamiento tiene que ocultar. El 403
      * queda reservado para la falta de permiso, que no revela nada.
      *
-     * @param  list<string>  $with
+     * @param  array<int|string, mixed>  $with  relaciones (acepta closures de constraint)
      */
     private function findChatOrDeny(Request $request, string $companyNit, string $id, array $with = []): Chat
     {
@@ -360,7 +360,14 @@ class ChatController extends Controller
 
         $companyNit = $request->attributes->get('active_company_nit');
 
-        $chat = $this->findChatOrDeny($request, $companyNit, $id, ['messages.sentBy:id,name', 'contact', 'whatsappAccount']);
+        // Contacto SIN BranchScope: puede vivir en otra sede que el chat
+        // (mismo criterio que index() — sin esto el nombre canónico y el flag
+        // de fraude aparecían en el listado pero no en el detalle).
+        $chat = $this->findChatOrDeny($request, $companyNit, $id, [
+            'messages.sentBy:id,name',
+            'whatsappAccount',
+            'contact' => fn ($q) => $q->withoutGlobalScope(BranchScope::class),
+        ]);
 
         // Presencia liviana (§5.7): quien mas tiene abierta esta conversacion.
         // Sobre la cache que ya existe, sin tabla ni WebSocket. El objetivo real
@@ -641,8 +648,10 @@ class ChatController extends Controller
             dedupeKey: $chat->id,
         );
 
+        // Sin BranchScope (mismo criterio que index): el contacto puede estar
+        // en otra sede que el chat. El anclaje de empresa se conserva.
         $contact = $chat->contact_id
-            ? Contact::forCompany($companyNit)->find($chat->contact_id)
+            ? Contact::withoutBranchScope()->where('company_nit', $companyNit)->find($chat->contact_id)
             : null;
 
         $orders = Order::forCompany($companyNit)
@@ -1046,7 +1055,9 @@ class ChatController extends Controller
         ]);
 
         $companyNit = (string) $request->attributes->get('active_company_nit');
-        $chat = $this->findChatOrDeny($request, $companyNit, $id, ['contact']);
+        $chat = $this->findChatOrDeny($request, $companyNit, $id, [
+            'contact' => fn ($q) => $q->withoutGlobalScope(BranchScope::class),
+        ]);
         $order = $this->findChatOrderOrDeny($request, $chat, $companyNit, $orderId);
 
         $company = Company::query()->where('nit', $companyNit)->firstOrFail();
@@ -1208,8 +1219,10 @@ class ChatController extends Controller
         $companyNit = (string) $request->attributes->get('active_company_nit');
         $chat = $this->findChatOrDeny($request, $companyNit, $id, ['contact']);
 
+        // Sin BranchScope: el contacto puede estar en otra sede que el chat
+        // (con el scope, el unflag de un contacto cross-sede devolvía 404).
         $contact = $chat->contact_id
-            ? Contact::forCompany($companyNit)->find($chat->contact_id)
+            ? Contact::withoutBranchScope()->where('company_nit', $companyNit)->find($chat->contact_id)
             : null;
 
         if ($contact === null) {
