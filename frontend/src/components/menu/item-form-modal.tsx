@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/toast';
 import { apiFetch } from '@/lib/api';
 import { sanitizePlainText } from '@/lib/input-sanitize';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ interface ItemFormModalProps {
 
 export default function ItemFormModal({ menuId, categoryId, item, onClose, onSaved }: ItemFormModalProps) {
     const isEditing = !!item;
+    const { showToast } = useToast();
     const [name, setName] = useState(item?.name ?? '');
     const [description, setDescription] = useState(item?.description ?? '');
     const [price, setPrice] = useState(item ? String(item.price) : '');
@@ -95,9 +97,15 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                 });
 
                 if (!imageRes.ok) {
-                    const imageData = await imageRes.json();
-                    setErrors(imageData.errors ?? { image: [imageData.message ?? 'Error al subir imagen.'] });
-                    setSubmitting(false);
+                    // El ítem YA quedó guardado: si dejamos el modal en modo crear,
+                    // el reintento duplicaría el ítem. Cerramos vía onSaved y
+                    // reportamos el fallo de imagen como toast aparte.
+                    const imageData = await imageRes.json().catch(() => ({}));
+                    showToast(
+                        'error',
+                        imageData.errors?.image?.[0] ?? imageData.message ?? 'El ítem se guardó, pero no se pudo subir la imagen. Edítalo para reintentar.',
+                    );
+                    onSaved(savedItem);
                     return;
                 }
 
@@ -214,7 +222,8 @@ export default function ItemFormModal({ menuId, categoryId, item, onClose, onSav
                         <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={submitting}>
+                        {/* Guard cliente: precio > 0 (espeja `price: numeric|min:1` del backend; evita NaN→null). */}
+                        <Button type="submit" disabled={submitting || !(Number(price) > 0)}>
                             {submitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear ítem'}
                         </Button>
                     </DialogFooter>

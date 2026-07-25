@@ -17,13 +17,15 @@ interface DishCardProps {
 
 export default function DishCard({ menuId, categoryId, dish, onEdit, onDelete, onAvailabilityToggle }: DishCardProps) {
     const formatPrice = useCurrencyFormatter();
+    // Patrón menu-item-row: thumbnail liviano primero, original como fallback.
+    const thumbSrc = (dish as MenuItem & { thumbnail_url?: string | null }).thumbnail_url ?? dish.image_url;
 
     return (
         <Card className="rounded-lg shadow-sm transition-shadow hover:shadow-md">
             <CardContent className="flex gap-4 p-4">
                 <div className="bg-muted h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-                    {dish.image_url ? (
-                        <img src={dish.image_url} alt={dish.name} className="h-full w-full object-cover" />
+                    {thumbSrc ? (
+                        <img src={thumbSrc} alt={dish.name} className="h-full w-full object-cover" loading="lazy" />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center">
                             <UtensilsCrossed className="text-muted-foreground/50 h-8 w-8" />

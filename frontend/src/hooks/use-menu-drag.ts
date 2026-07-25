@@ -11,8 +11,11 @@ import { useCallback, useRef } from 'react';
  * último PUT (pérdida de datos). El Map keyed-by-id garantiza que cada entidad
  * conserve su propio PUT.
  */
-export function useMenuDrag(menuId: string) {
+export function useMenuDrag(menuId: string, onError?: () => void) {
     const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    // Ref para no invalidar los useCallback cuando el caller pasa una arrow inline.
+    const onErrorRef = useRef(onError);
+    onErrorRef.current = onError;
 
     const scheduleUpdate = useCallback((key: string, run: () => void) => {
         const timers = timersRef.current;
@@ -34,9 +37,14 @@ export function useMenuDrag(menuId: string) {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ order: newOrder }),
-                }).catch((err) => {
-                    console.error('Failed to update category order:', err);
-                });
+                })
+                    .then((res) => {
+                        if (!res.ok) onErrorRef.current?.();
+                    })
+                    .catch((err) => {
+                        console.error('Failed to update category order:', err);
+                        onErrorRef.current?.();
+                    });
             });
         },
         [menuId, scheduleUpdate],
@@ -49,16 +57,22 @@ export function useMenuDrag(menuId: string) {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ order: newOrder }),
-                }).catch((err) => {
-                    console.error('Failed to update item order:', err);
-                });
+                })
+                    .then((res) => {
+                        if (!res.ok) onErrorRef.current?.();
+                    })
+                    .catch((err) => {
+                        console.error('Failed to update item order:', err);
+                        onErrorRef.current?.();
+                    });
             });
         },
         [menuId, scheduleUpdate],
     );
 
-    // Nota: no se cancelan los timers pendientes en unmount. El callback solo
-    // hace `apiFetch` (sin `setState`), así que dejar que un PUT pendiente
+    // Nota: no se cancelan los timers pendientes en unmount. El callback hace
+    // `apiFetch` y, ante fallo, `onError` (toast a nivel de provider + refetch
+    // guardado con isMounted en el caller), así que dejar que un PUT pendiente
     // dispare tras desmontar es inocuo y evita perder un reordenamiento si el
     // usuario navega dentro de la ventana de 300ms.
 

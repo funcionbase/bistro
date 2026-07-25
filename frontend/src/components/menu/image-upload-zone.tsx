@@ -33,8 +33,11 @@ export default function ImageUploadZone({ onImageSelected, initialImage }: Image
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             const file = files[0];
-            handleImageSelect(file);
-            onImageSelected(file);
+            // Solo entregamos el file al padre si pasó la validación de tipo/tamaño:
+            // antes se enviaba igual y el submit subía un archivo inválido.
+            if (handleImageSelect(file)) {
+                onImageSelected(file);
+            }
         }
     };
 
@@ -42,8 +45,9 @@ export default function ImageUploadZone({ onImageSelected, initialImage }: Image
         const files = e.currentTarget.files;
         if (files && files.length > 0) {
             const file = files[0];
-            handleImageSelect(file);
-            onImageSelected(file);
+            if (handleImageSelect(file)) {
+                onImageSelected(file);
+            }
         }
     };
 

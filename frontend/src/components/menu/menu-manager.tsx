@@ -19,6 +19,11 @@ interface MenuManagerProps {
     onEditCategory: (category: MenuCategory) => void;
     onAddItem: (categoryId: string) => void;
     onEditItem: (categoryId: string, item: MenuItem) => void;
+    /** Optimistic update: el padre persiste el orden nuevo en su estado (los PUT van aparte). */
+    onCategoriesReordered: (categories: MenuCategory[]) => void;
+    onItemsReordered: (categoryId: string, items: MenuItem[]) => void;
+    /** Algún PUT de orden falló: el padre avisa (toast) y refetchea. */
+    onOrderError: () => void;
     canCreate: boolean;
     canUpdate: boolean;
     canDelete: boolean;
@@ -35,6 +40,9 @@ export default function MenuManager({
     onEditCategory,
     onAddItem,
     onEditItem,
+    onCategoriesReordered,
+    onItemsReordered,
+    onOrderError,
     canCreate,
     canUpdate,
     canDelete,
@@ -43,7 +51,7 @@ export default function MenuManager({
         menu.structure.categories.length > 0 ? menu.structure.categories[0].id : null,
     );
     const [droppedId, setDroppedId] = useState<string | null>(null);
-    const { updateCategoryOrder, updateItemOrder } = useMenuDrag(menu.id);
+    const { updateCategoryOrder, updateItemOrder } = useMenuDrag(menu.id, onOrderError);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -88,6 +96,10 @@ export default function MenuManager({
                     }
                 });
 
+                // Optimistic: sin esto el estado del padre no cambia, la lista
+                // rebota y un segundo drag persiste un orden corrupto.
+                onCategoriesReordered(newCategories.map((cat, index) => ({ ...cat, order: index + 1 })));
+
                 flashDropped(String(active.id));
                 return;
             }
@@ -107,11 +119,16 @@ export default function MenuManager({
                         }
                     });
 
+                    onItemsReordered(
+                        selectedCategory.id,
+                        newItems.map((item, index) => ({ ...item, order: index + 1 })),
+                    );
+
                     flashDropped(String(active.id));
                 }
             }
         },
-        [menu, selectedCategory, updateCategoryOrder, updateItemOrder, flashDropped],
+        [menu, selectedCategory, updateCategoryOrder, updateItemOrder, onCategoriesReordered, onItemsReordered, flashDropped],
     );
 
     return (

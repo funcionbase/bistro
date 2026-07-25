@@ -37,6 +37,8 @@ export default function ItemCard({
     const showActions = canUpdate || canDelete;
     const [showRecipe, setShowRecipe] = useState(false);
     const [showDetail, setShowDetail] = useState(false);
+    // Patrón menu-item-row: thumbnail liviano primero, original como fallback.
+    const thumbSrc = (item as MenuItem & { thumbnail_url?: string | null }).thumbnail_url ?? item.image_url;
 
     return (
         <Card className="rounded-lg shadow-sm transition-shadow hover:shadow-md">
@@ -47,8 +49,8 @@ export default function ItemCard({
                     aria-label={`Ver detalle de ${item.name}`}
                     className="bg-muted focus:ring-ring h-20 w-20 shrink-0 overflow-hidden rounded-lg transition-transform hover:scale-[1.02] focus:ring-2 focus:outline-none"
                 >
-                    {item.image_url ? (
-                        <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                    {thumbSrc ? (
+                        <img src={thumbSrc} alt={item.name} className="h-full w-full object-cover" loading="lazy" />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center">
                             <UtensilsCrossed className="text-muted-foreground/50 h-8 w-8" />
