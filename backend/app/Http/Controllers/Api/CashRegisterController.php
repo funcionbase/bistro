@@ -402,6 +402,7 @@ class CashRegisterController extends Controller
             'payment_method' => $expense->payment_method,
             'description' => $expense->description,
             'cash_session_id' => $expense->cash_session_id,
+            'courier_user_id' => $expense->courier_user_id,
         ]);
 
         return response()->json([
@@ -447,6 +448,8 @@ class CashRegisterController extends Controller
             'category' => $e->category,
             'payment_method' => $e->payment_method,
             'description' => $e->description,
+            // F6: repartidor vinculado al pago de tarifas (cruce del cierre).
+            'courier_user_id' => $e->courier_user_id,
             'created_at' => $e->created_at?->toIso8601String(),
             'created_by' => $e->createdBy ? ['id' => $e->createdBy->id, 'name' => $e->createdBy->name] : null,
         ];

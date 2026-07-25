@@ -890,7 +890,10 @@ class CashRegisterService
             ->keyBy('courier_user_id');
 
         // Tarifas adeudadas: líneas "Domicilio" de entregas completadas por el
-        // courier durante el turno, en la sede de la caja.
+        // courier durante el turno, en la sede de la caja. La ventana se corta
+        // en closed_at para sesiones cerradas (informe histórico): sin el tope,
+        // entregas del turno siguiente se contaban también en el cerrado.
+        $windowEnd = $session->closed_at ?? now();
         $feeRows = DB::table('order_items as oi')
             ->join('orders as o', 'o.id', '=', 'oi.order_id')
             ->join('deliveries as d', 'd.order_id', '=', 'o.id')
@@ -899,7 +902,7 @@ class CashRegisterService
             ->where('oi.menu_item_id', Order::DELIVERY_FEE_ITEM_ID)
             ->where('oi.status', '!=', 'cancelled')
             ->where('d.status', 'completed')
-            ->whereBetween('d.delivered_at', [$session->opened_at, now()])
+            ->whereBetween('d.delivered_at', [$session->opened_at, $windowEnd])
             ->selectRaw('d.user_id AS courier_user_id, SUM(oi.unit_price * oi.quantity) AS fees_owed, COUNT(DISTINCT d.id) AS completed_deliveries')
             ->groupBy('d.user_id')
             ->get()
