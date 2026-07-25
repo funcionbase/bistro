@@ -1452,8 +1452,8 @@ Página: `resources/js/pages/orders/tables/index.tsx`. Breadcrumb: `Dashboard �
 
 ### Versionamiento fv/bv (backend v1.30.2 / frontend v1.42.0)
 - `GET /api/v1/bootstrap` expone `versions.backend` (composer.json leído en runtime, memoizado por worker PHP) — el footer `bv` refleja el backend realmente desplegado, no el horneado en el build del frontend (`__BACKEND_VERSION__` queda solo como fallback para backends viejos).
-- `components/pwa-update-banner.tsx` (montado en `AppSidebarLayout`): escucha `pwa:update-available` y muestra barra fija "Nueva versión disponible — Actualizar" con reload. Cierra el gap de tabletas 24/7 que nunca rotaban de versión.
-- `.github/workflows/version-guard.yml`: en push a `main`, falla si cambió código desplegable sin bump de version, y autosincroniza los badges del README (commit `[skip-badge-sync]`).
+- `components/pwa/update-available-toast.tsx` (montado en `spa-app-layout`): escucha `pwa:update-available` (emitido por `spa/main.tsx` en el evento `controlling` con pestaña visible) y muestra un toast "Nueva versión · recarga en Ns" con countdown de 30s y auto-recarga; "Ahora" recarga ya, "×" cancela. Con pestaña oculta la recarga es silenciosa (respeta `isAnyDirty()`). Cierra el gap de tabletas 24/7 que nunca rotaban de versión.
+- `.github/workflows/ci.yml`: caller que delega en el reusable `version-guard.yml` (repo de ops). En push a `main` falla si cambió código desplegable sin bump de version y autosincroniza los badges del README.
 
 ### Restricciones backend
 - `appendItems` valida que la orden sea `order_type='table'` y no esté en estado terminal (`completed|successful|cancelled|abandoned`).
@@ -7084,8 +7084,8 @@ La app es instalable como PWA en Android, iOS y desktop. La Fase 2 (modo offline
 
 ### Actualizaciones
 
-- `app.tsx` escucha el evento `waiting` del Workbox y emite el evento custom `pwa:update-available`.
-- `UpdateAvailableToast` (montado en dashboard) muestra una notificación con botón "Recargar" cuando hay un bundle nuevo precacheado.
+- `spa/main.tsx` escucha el evento `controlling` del Workbox (el SW nuevo tomó control) y, con pestaña visible, emite el evento custom `pwa:update-available`; con pestaña oculta y sin formularios sucios recarga en silencio. `reg.update()` corre cada 5 min y al volver a `visible`.
+- `UpdateAvailableToast` (montado en `spa-app-layout`) muestra un toast con countdown de 30s y auto-recarga cuando llega el evento.
 
 ### Limitaciones conocidas
 

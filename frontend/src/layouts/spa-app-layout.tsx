@@ -1,6 +1,7 @@
 import { ConsentBanner } from '@/components/consent-banner';
 import { ErrorScreen } from '@/components/error-screen';
 import { GlobalShortcuts } from '@/components/global-shortcuts';
+import UpdateAvailableToast from '@/components/pwa/update-available-toast';
 import { RouteSkeleton } from '@/components/route-skeleton';
 import { Button } from '@/components/ui/button';
 import { RouteProgress } from '@/components/ui/route-progress';
@@ -80,6 +81,7 @@ export function SpaAppLayout() {
     return (
         <SpaSharedDataBridge bootstrap={bootstrap.data}>
             <ConsentBanner />
+            <UpdateAvailableToast />
             <BusinessProvider>
                 <PageTitleProvider>
                     <AppSidebarLayout>
