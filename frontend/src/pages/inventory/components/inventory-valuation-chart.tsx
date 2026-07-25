@@ -97,9 +97,15 @@ export function InventoryValuationChart({ warehouses, selectedWarehouseId }: Pro
         return Array.from(names);
     }, [series]);
 
-    const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+    // Tokens categóricos del DS (css/app.css) — se adaptan a light/dark, cero hex hardcoded.
+    const palette = [
+        'var(--color-category-violet)',
+        'var(--color-category-cyan)',
+        'var(--color-category-pink)',
+        'var(--color-category-amber)',
+        'var(--color-category-green)',
+    ];
 
-    
 
     return (
         <Card>

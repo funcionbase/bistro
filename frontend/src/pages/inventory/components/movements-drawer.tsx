@@ -7,6 +7,7 @@ import type { Ingredient, IngredientMovement } from '@/types/inventory';
 import { ArrowRight, History, Warehouse as WarehouseIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { formatDateTimeShort } from '@/lib/datetime';
+import { formatCurrency } from '@/lib/formatters';
 
 interface Props {
     open: boolean;
@@ -118,7 +119,7 @@ export function MovementsDrawer({ open, onClose, ingredient, fetchMovements }: P
                                         </span>
                                         {m.unit_cost !== null && (
                                             <span className="text-muted-foreground text-xs tabular-nums">
-                                                @ ${Number(m.unit_cost).toLocaleString('es-CO')}
+                                                @ {formatCurrency(Number(m.unit_cost))}
                                             </span>
                                         )}
                                     </div>

@@ -163,6 +163,12 @@ export function PurchaseOrderEditor({
         return { subtotal, tax, total: subtotal + tax };
     }, [lines]);
 
+    // Línea completa = insumo elegido y cantidad > 0 (mismo criterio del payload).
+    // Antes el submit filtraba las incompletas pero los totales las sumaban:
+    // totales en pantalla ≠ payload. Ahora se bloquea el submit.
+    const lineIncomplete = (l: LineDraft) => !l.ingredient_id || !(Number(l.quantity) > 0);
+    const hasIncompleteLines = lines.some(lineIncomplete);
+
     function updateLine(idx: number, patch: Partial<LineDraft>) {
         setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
     }
@@ -250,7 +256,7 @@ export function PurchaseOrderEditor({
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        if (!supplierId) return;
+        if (!supplierId || hasIncompleteLines) return;
 
         const payloadItems: PurchaseOrderItemPayload[] = lines
             .filter((l) => l.ingredient_id && Number(l.quantity) > 0)
@@ -414,6 +420,11 @@ export function PurchaseOrderEditor({
                                                 </Button>
                                             </div>
                                         </div>
+                                        {lineIncomplete(l) && (
+                                            <p className="text-destructive text-xs">
+                                                {!l.ingredient_id ? 'Línea sin insumo.' : 'Cantidad debe ser mayor a 0.'}
+                                            </p>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -447,7 +458,7 @@ export function PurchaseOrderEditor({
                             <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                                 Cancelar
                             </Button>
-                            <Button type="submit" disabled={submitting}>
+                            <Button type="submit" disabled={submitting || hasIncompleteLines}>
                                 {submitting && <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />}
                                 {editing ? 'Guardar borrador' : 'Crear borrador'}
                             </Button>

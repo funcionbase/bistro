@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Ingredient, IngredientStock, TransferPayload, Warehouse } from '@/types/inventory';
 import { AlertCircle, ArrowRight, LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useMemo, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
 interface Props {
     open: boolean;
@@ -41,6 +42,20 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
     // `fieldErrors` = error de un input puntual → se muestra debajo de ese input.
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    // El modal vive siempre montado (patrón RecordEntryModal/IngredientFormModal):
+    // al abrir se resetea el estado y se aplican los initial* vigentes.
+    useEffect(() => {
+        if (open) {
+            setFromWarehouseId(initialFromWarehouseId ?? activeWarehouses[0]?.id ?? '');
+            setToWarehouseId(activeWarehouses[1]?.id ?? '');
+            setIngredientId(initialIngredientId ?? '');
+            setQuantity('');
+            setReference('');
+            setError(null);
+            setFieldErrors({});
+        }
+    }, [open, initialIngredientId, initialFromWarehouseId, activeWarehouses]);
 
     const selectedIngredient = useMemo(() => ingredients.find((i) => i.id === ingredientId), [ingredients, ingredientId]);
 
@@ -200,7 +215,7 @@ export function TransferStockModal({ open, onClose, warehouses, ingredients, ini
                         <Input
                             id="transfer_ref"
                             value={reference}
-                            onChange={(e) => setReference(e.target.value)}
+                            onChange={(e) => setReference(sanitizePlainText(e.target.value, 255, false, false))}
                             placeholder="Motivo o lote"
                             maxLength={255}
                         />

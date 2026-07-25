@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Supplier, SupplierDocumentType, SupplierFormPayload } from '@/types/suppliers';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -76,7 +77,13 @@ export function SupplierFormModal({ open, onClose, onSubmit, editing, submitting
                 <form noValidate onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="name">Nombre / Razón social</Label>
-                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={150} />
+                        <Input
+                            id="name"
+                            value={name}
+                            onChange={(e) => setName(sanitizePlainText(e.target.value, 150, false, false))}
+                            required
+                            maxLength={150}
+                        />
                         {err('name') && <p className="text-destructive text-xs">{err('name')}</p>}
                     </div>
 
@@ -99,7 +106,12 @@ export function SupplierFormModal({ open, onClose, onSubmit, editing, submitting
                         </div>
                         <div className="space-y-1.5 sm:col-span-2">
                             <Label htmlFor="document_number">Número documento</Label>
-                            <Input id="document_number" value={docNumber} onChange={(e) => setDocNumber(e.target.value)} maxLength={32} />
+                            <Input
+                                id="document_number"
+                                value={docNumber}
+                                onChange={(e) => setDocNumber(sanitizePlainText(e.target.value, 32, false, false))}
+                                maxLength={32}
+                            />
                             {err('document_number') && <p className="text-destructive text-xs">{err('document_number')}</p>}
                         </div>
                     </div>
@@ -107,18 +119,34 @@ export function SupplierFormModal({ open, onClose, onSubmit, editing, submitting
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1.5">
                             <Label htmlFor="contact_name">Persona de contacto</Label>
-                            <Input id="contact_name" value={contactName} onChange={(e) => setContactName(e.target.value)} maxLength={120} />
+                            <Input
+                                id="contact_name"
+                                value={contactName}
+                                onChange={(e) => setContactName(sanitizePlainText(e.target.value, 120, false, false))}
+                                maxLength={120}
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="phone">Teléfono</Label>
-                            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={32} />
+                            <Input
+                                id="phone"
+                                value={phone}
+                                onChange={(e) => setPhone(sanitizePlainText(e.target.value, 32, false, false))}
+                                maxLength={32}
+                            />
                         </div>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1.5">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={150} />
+                            <Input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(sanitizePlainText(e.target.value, 150, false, false))}
+                                maxLength={150}
+                            />
                             {err('email') && <p className="text-destructive text-xs">{err('email')}</p>}
                         </div>
                         <div className="space-y-1.5">
@@ -129,7 +157,12 @@ export function SupplierFormModal({ open, onClose, onSubmit, editing, submitting
 
                     <div className="space-y-1.5">
                         <Label htmlFor="address">Dirección</Label>
-                        <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} maxLength={255} />
+                        <Input
+                            id="address"
+                            value={address}
+                            onChange={(e) => setAddress(sanitizePlainText(e.target.value, 255, false, false))}
+                            maxLength={255}
+                        />
                     </div>
 
                     <div className="space-y-1.5">
@@ -137,8 +170,9 @@ export function SupplierFormModal({ open, onClose, onSubmit, editing, submitting
                         <textarea
                             id="notes"
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            onChange={(e) => setNotes(sanitizePlainText(e.target.value, 2000, true, false))}
                             rows={3}
+                            maxLength={2000}
                             className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm shadow-sm"
                         />
                     </div>

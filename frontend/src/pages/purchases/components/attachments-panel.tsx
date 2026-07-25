@@ -16,6 +16,9 @@ interface Props {
 
 const TYPES = ['invoice', 'delivery_note', 'payment_proof', 'other'] as const;
 
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // espeja el límite del backend (10 MB)
+const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png'];
+
 export function AttachmentsPanel({ po, onUpload, onDelete, getUrl, onChange }: Props) {
     const { showToast } = useToast();
     const fileRef = useRef<HTMLInputElement>(null);
@@ -108,7 +111,24 @@ export function AttachmentsPanel({ po, onUpload, onDelete, getUrl, onChange }: P
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     className="sr-only"
-                    onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+                    onChange={(e) => {
+                        // Validación cliente inmediata (tipo y 10 MB) antes de habilitar "Subir";
+                        // el backend revalida.
+                        const file = e.target.files?.[0] ?? null;
+                        if (file && !ALLOWED_MIME.includes(file.type)) {
+                            showToast('error', 'Solo se permiten archivos PDF, JPG o PNG.');
+                            e.target.value = '';
+                            setFileName(null);
+                            return;
+                        }
+                        if (file && file.size > MAX_ATTACHMENT_BYTES) {
+                            showToast('error', 'El archivo supera el máximo de 10 MB.');
+                            e.target.value = '';
+                            setFileName(null);
+                            return;
+                        }
+                        setFileName(file?.name ?? null);
+                    }}
                 />
                 <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
                     <Paperclip className="mr-1 h-3.5 w-3.5" /> Elegir archivo

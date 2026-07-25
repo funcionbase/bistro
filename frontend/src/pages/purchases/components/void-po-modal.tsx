@@ -1,6 +1,7 @@
 ﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -52,7 +53,7 @@ export function ReasonPromptModal({
                         <textarea
                             id="reason"
                             value={reason}
-                            onChange={(e) => setReason(e.target.value)}
+                            onChange={(e) => setReason(sanitizePlainText(e.target.value, 500, true, false))}
                             rows={4}
                             required
                             minLength={minLength}
