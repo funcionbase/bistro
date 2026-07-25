@@ -126,19 +126,21 @@ export function KdsTicketCard({ ticket, onMarkInKitchen, onMarkReady, onMarkServ
 
             {!compact && (
                 <div className="border-border mt-auto flex items-center justify-end gap-2 border-t pt-2">
+                    {/* min-h-[44px]: target táctil mínimo — pantalla de cocina se
+                        opera con dedos, a veces apurados/engrasados. */}
                     {ticket.status === 'approved' && (
-                        <Button type="button" size="sm" onClick={onMarkInKitchen} disabled={disabled}>
+                        <Button type="button" size="sm" className="min-h-[44px]" onClick={onMarkInKitchen} disabled={disabled}>
                             <Flame className="mr-1 h-3.5 w-3.5" /> Entró a cocina
                         </Button>
                     )}
                     {ticket.status === 'in_kitchen' && (
-                        <Button type="button" size="sm" onClick={onMarkReady} disabled={disabled}>
+                        <Button type="button" size="sm" className="min-h-[44px]" onClick={onMarkReady} disabled={disabled}>
                             <Check className="mr-1 h-3.5 w-3.5" /> Listo
                         </Button>
                     )}
                     {ticket.status === 'ready' &&
                         (onMarkServed ? (
-                            <Button type="button" size="sm" variant="outline" onClick={onMarkServed} disabled={disabled}>
+                            <Button type="button" size="sm" variant="outline" className="min-h-[44px]" onClick={onMarkServed} disabled={disabled}>
                                 <Check className="mr-1 h-3.5 w-3.5" /> Marcar entregado
                             </Button>
                         ) : (
@@ -153,7 +155,7 @@ export function KdsTicketCard({ ticket, onMarkInKitchen, onMarkReady, onMarkServ
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-7 w-full px-2 text-xs"
+                        className="min-h-[44px] w-full px-2 text-xs"
                         onClick={onMarkServed}
                         disabled={disabled}
                     >
