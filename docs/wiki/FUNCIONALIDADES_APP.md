@@ -1889,6 +1889,8 @@ Punto de venta para crear pedidos manualmente. Breadcrumb: `Dashboard › Órden
 | **Domicilio** (`delivery`) | Dirección |
 | **Para llevar** (`pickup`) | (ninguno) |
 
+Las órdenes **Domicilio** creadas desde caja incluyen automáticamente el costo de envío de la sede (`branch_settings.delivery_fee`) como línea sintética "Domicilio" (`menu_item_id='delivery_fee'`, tax 0, nace `served`), en paridad con el pedido público. El fee entra antes del prorrateo de cupón (idéntico a `OrderTotalCalculator::recalculateAndSave`); el frontend (`new-order-sheet.tsx`) lo muestra en totales tomándolo de `activeBranch.delivery_fee` (bootstrap).
+
 ### 7.2 Selección de items
 
 - Lista del menú activo del día actual.

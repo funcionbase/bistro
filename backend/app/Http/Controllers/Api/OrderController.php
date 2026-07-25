@@ -19,6 +19,7 @@ use App\Models\TableSessionGuest;
 use App\Models\User;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
+use App\Services\BranchSettingsService;
 use App\Services\CashRegisterService;
 use App\Services\CouponService;
 use App\Services\CrmService;
@@ -60,6 +61,7 @@ class OrderController extends Controller
         private readonly RecipeCostService $recipeCostService,
         private readonly OrderStatusSmsDispatcher $smsDispatcher,
         private readonly OrderTotalCalculator $orderTotals,
+        private readonly BranchSettingsService $branchSettings,
     ) {}
 
     /**
@@ -199,6 +201,34 @@ class OrderController extends Controller
         $catalog = $this->buildMenuCatalog($menu);
         $company = Company::where('nit', $companyNit)->firstOrFail();
         $items = $this->buildOrderLines($validated['items'], $catalog, $company, $this->activeBranchId($request));
+
+        // Domicilio (#whatsapp F1): la caja también aplica el costo de envío por
+        // sede como una línea sintética "Domicilio" (tax 0), igual que el pedido
+        // público (BranchOrderController). Se anexa ANTES del aggregate para que
+        // el prorrateo de cupón la incluya idéntico a
+        // OrderTotalCalculator::recalculateAndSave. La línea imita la forma de
+        // buildOrderLines (subtotal/tax/total) para que aggregate() la sume. El
+        // id `delivery_fee` no existe en el menú, así que un cliente no puede
+        // colarlo (buildOrderLines lo rechazaría) — solo el backend lo inyecta.
+        if ($validated['order_type'] === 'delivery') {
+            $fee = round((float) ($this->branchSettings->get((string) $branchId, 'delivery_fee') ?? 0), 2);
+            if ($fee > 0) {
+                $feeBreakdown = $this->taxCalculator->calculateLine($fee, 1, 0.0, (bool) $company->tax_included_in_price);
+                $items[] = [
+                    'id' => Order::DELIVERY_FEE_ITEM_ID,
+                    'name' => 'Domicilio',
+                    'price' => $fee,
+                    'cost' => null,
+                    'quantity' => 1,
+                    'category' => 'domicilio',
+                    'notes' => null,
+                    'tax_rate' => $feeBreakdown['tax_rate'],
+                    'subtotal' => $feeBreakdown['subtotal'],
+                    'tax_amount' => $feeBreakdown['tax_amount'],
+                    'total' => $feeBreakdown['total'],
+                ];
+            }
+        }
 
         $aggregate = $this->taxCalculator->aggregate($items);
 
@@ -470,6 +500,10 @@ class OrderController extends Controller
     {
         $now = Carbon::now();
         foreach ($lines as $line) {
+            // La línea de domicilio no es un plato: nace `served` (paridad con
+            // BranchOrderController) para no salir como ticket cocinable en el
+            // KDS ni bloquear la promoción de la orden a `ready`.
+            $isDeliveryFee = (string) $line['id'] === Order::DELIVERY_FEE_ITEM_ID;
             OrderItem::create([
                 'order_id' => $order->id,
                 'menu_item_id' => (string) $line['id'],
@@ -483,9 +517,10 @@ class OrderController extends Controller
                 'quantity' => (int) $line['quantity'],
                 'category' => $line['category'] ?? null,
                 'notes' => $line['notes'] ?? null,
-                'status' => 'approved',
+                'status' => $isDeliveryFee ? 'served' : 'approved',
                 'submitted_at' => $now,
                 'approved_at' => $now,
+                'served_at' => $isDeliveryFee ? $now : null,
             ]);
         }
     }

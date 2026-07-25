@@ -197,10 +197,15 @@ export function NewOrderSheet({ isOpen, onClose, initialTableNumber = '', onSucc
         [cartLines, taxRate, taxIncluded],
     );
 
+    // Costo de domicilio de la sede activa (bootstrap). Solo aplica a delivery.
+    // El backend lo inyecta como línea "Domicilio"; acá lo sumamos al bruto para
+    // que el total mostrado y el prorrateo de cupón coincidan con la orden creada.
+    const deliveryFee = orderType === 'delivery' ? (sharedData.activeBranch?.delivery_fee ?? 0) : 0;
+    const grossTotal = taxBreakdown.total + deliveryFee;
     const discountAmount =
-        appliedCoupon?.valid && typeof appliedCoupon.discount_amount === 'number' ? Math.min(appliedCoupon.discount_amount, taxBreakdown.total) : 0;
-    const total = Math.max(0, taxBreakdown.total - discountAmount);
-    const activeAutoApply = useActiveAutoApply(appliedCoupon?.valid ? 0 : taxBreakdown.total, clientPhone || undefined);
+        appliedCoupon?.valid && typeof appliedCoupon.discount_amount === 'number' ? Math.min(appliedCoupon.discount_amount, grossTotal) : 0;
+    const total = Math.max(0, grossTotal - discountAmount);
+    const activeAutoApply = useActiveAutoApply(appliedCoupon?.valid ? 0 : grossTotal, clientPhone || undefined);
     const tableCount = tables.length;
 
     const handleSubmit = async () => {
@@ -505,7 +510,7 @@ export function NewOrderSheet({ isOpen, onClose, initialTableNumber = '', onSucc
                                                 variant="outline"
                                                 className="h-7 text-xs"
                                                 disabled={submitting || validatingCoupon || cartLines.length === 0 || couponInput.trim().length === 0}
-                                                onClick={() => void validateCoupon(couponInput.trim(), taxBreakdown.total, clientPhone.trim() || undefined)}
+                                                onClick={() => void validateCoupon(couponInput.trim(), grossTotal, clientPhone.trim() || undefined)}
                                             >
                                                 {validatingCoupon ? '…' : 'Aplicar'}
                                             </Button>
@@ -513,6 +518,13 @@ export function NewOrderSheet({ isOpen, onClose, initialTableNumber = '', onSucc
                                     )}
                                     {couponError && !appliedCoupon?.valid && <div className="text-destructive">{couponError}</div>}
                                 </div>
+
+                                {orderType === 'delivery' && deliveryFee > 0 && (
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground">Domicilio</span>
+                                        <span className="tabular-nums">{formatCurrency(deliveryFee)}</span>
+                                    </div>
+                                )}
 
                                 <div className="flex items-center justify-between border-t pt-2">
                                     <span className="text-sm font-semibold">Total</span>

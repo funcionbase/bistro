@@ -26,6 +26,7 @@ class BootstrapService
         private readonly JwtService $jwtService,
         private readonly FeaturePermissionService $featurePermissions,
         private readonly BillingService $billing,
+        private readonly BranchSettingsService $branchSettings,
     ) {}
 
     /**
@@ -123,6 +124,9 @@ class BootstrapService
                     'name' => $payload['active_branch_name'] ?? null,
                     'slug' => $payload['active_branch_slug'] ?? null,
                 ];
+            // #whatsapp F1: costo de domicilio de la sede activa para que la caja
+            // muestre y sume la línea "Domicilio" (paridad con el menú público).
+            $activeBranch['delivery_fee'] = round((float) ($this->branchSettings->get((string) $activeBranchId, 'delivery_fee') ?? 0), 2);
         }
 
         if ($activeCompanyNit !== null) {

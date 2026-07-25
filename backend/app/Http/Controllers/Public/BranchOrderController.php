@@ -40,8 +40,8 @@ use Illuminate\Support\Facades\Log;
  */
 class BranchOrderController extends Controller
 {
-    /** menu_item_id sintético de la línea de domicilio (no existe en el menú). */
-    public const DELIVERY_FEE_ITEM_ID = 'delivery_fee';
+    /** menu_item_id sintético de la línea de domicilio (no existe en el menú). Alias del canónico en Order. */
+    public const DELIVERY_FEE_ITEM_ID = Order::DELIVERY_FEE_ITEM_ID;
 
     public function __construct(
         private readonly AuditService $audit,
