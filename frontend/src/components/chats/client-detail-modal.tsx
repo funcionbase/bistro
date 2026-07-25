@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useOrderStatuses } from '@/hooks/use-order-statuses';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { statusBadgeClass, statusLabel } from '@/lib/order-status';
 import { MapPin, Phone, Plus, ShoppingBag, StickyNote, UserRound } from 'lucide-react';
 import { useState } from 'react';
@@ -121,7 +122,8 @@ export function ClientDetailModal({ isOpen, onClose, detail, loading, error, onS
                             <div className="mb-2 flex gap-2">
                                 <input
                                     value={noteDraft}
-                                    onChange={(e) => setNoteDraft(e.target.value.slice(0, 1000))}
+                                    onChange={(e) => setNoteDraft(sanitizePlainText(e.target.value, 2000, true, false))}
+                                    maxLength={2000}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') void submitNote();
                                     }}

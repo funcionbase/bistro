@@ -121,10 +121,16 @@ interface UseChatsOptions {
     channelId?: string | null;
     /** Filtro por plataforma: 'whatsapp' | 'sms'. null = sin filtrar. */
     source?: string | null;
+    /**
+     * Auto-seleccionar el primer chat en la primera carga (default true).
+     * En móvil va en false: seleccionar salta la bandeja directo al detalle
+     * y marca el chat como leído sin que el operador lo haya abierto.
+     */
+    autoSelectFirst?: boolean;
 }
 
 export function useChats(token: string | null, options: UseChatsOptions = {}): UseChatsReturn {
-    const { search = '', filter = 'all', channelId = null, source = null } = options;
+    const { search = '', filter = 'all', channelId = null, source = null, autoSelectFirst = true } = options;
     const [chats, setChats] = useState<ChatSummary[]>([]);
     const [channels, setChannels] = useState<ChatChannel[]>([]);
     const [pendingCount, setPendingCount] = useState(0);
@@ -174,7 +180,7 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
             setPendingCount(body.meta?.pending_count ?? 0);
             setError(null);
 
-            if (!hasAutoSelectedRef.current && selectedChatId === null && list.length > 0) {
+            if (autoSelectFirst && !hasAutoSelectedRef.current && selectedChatId === null && list.length > 0) {
                 hasAutoSelectedRef.current = true;
                 setSelectedChatId(list[0].id);
             }
@@ -183,7 +189,7 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
         } finally {
             if (isMounted.current) setLoading(false);
         }
-    }, [token, selectedChatId, search, filter, channelId, source]);
+    }, [token, selectedChatId, search, filter, channelId, source, autoSelectFirst]);
 
     const fetchChatDetail = useCallback(
         async (id: string): Promise<void> => {

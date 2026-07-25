@@ -1,6 +1,7 @@
 import { MunicipalityCombobox } from '@/components/clients/municipality-combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 
 /**
  * Dirección estructurada del contacto, reutilizable en el diálogo de cliente
@@ -37,7 +38,7 @@ export function AddressFields({ value, onChange, idPrefix = 'addr' }: { value: A
                     <Input
                         id={`${idPrefix}-hood`}
                         value={value.neighborhood ?? ''}
-                        onChange={(e) => onChange({ ...value, neighborhood: e.target.value || null })}
+                        onChange={(e) => onChange({ ...value, neighborhood: sanitizePlainText(e.target.value, 120, true, false) || null })}
                         placeholder="Ej. El Poblado"
                         maxLength={120}
                     />
@@ -47,7 +48,7 @@ export function AddressFields({ value, onChange, idPrefix = 'addr' }: { value: A
                     <Input
                         id={`${idPrefix}-addr`}
                         value={value.address ?? ''}
-                        onChange={(e) => onChange({ ...value, address: e.target.value || null })}
+                        onChange={(e) => onChange({ ...value, address: sanitizePlainText(e.target.value, 200, true, false) || null })}
                         placeholder="Calle 12 # 3-45, apto 201"
                         maxLength={200}
                     />

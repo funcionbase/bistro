@@ -451,9 +451,6 @@ function LocationBlock({ body, payload }: { body: string; payload?: ChatMediaPay
     }
 
     const mapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
-    // Static map preview vía OpenStreetMap (sin API key, sin tracking).
-    // Tile size 280x140 con un marker centrado en la coordenada.
-    const previewUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=280x140&markers=${lat},${lng},red-pushpin`;
 
     return (
         <a
@@ -463,23 +460,13 @@ function LocationBlock({ body, payload }: { body: string; payload?: ChatMediaPay
             className="group bg-background flex w-[280px] max-w-full flex-col overflow-hidden rounded-md border"
             title="Abrir en Google Maps (nueva pestaña)"
         >
-            <div className="relative">
-                <img
-                    src={previewUrl}
-                    alt="Vista previa de la ubicación"
-                    loading="lazy"
-                    className="bg-muted h-[140px] w-full object-cover"
-                    onError={(e) => {
-                        // Si OSM no responde (raro), oculta la imagen y deja el bloque
-                        // de texto debajo como fallback.
-                        e.currentTarget.style.display = 'none';
-                    }}
-                />
-                {/* Pin grande sobre el mapa para que se entienda que es la ubicacion compartida */}
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="rounded-full bg-red-500 p-1.5 shadow-md ring-2 ring-white">
-                        <MapPin className="h-4 w-4 fill-white text-white" />
-                    </div>
+            {/* Placeholder estático propio (sin tile de terceros): el preview
+                anterior mandaba las coordenadas del cliente a un host externo
+                inestable (staticmap.openstreetmap.de). El pin identifica la
+                tarjeta como ubicación; el mapa real se abre en Google Maps. */}
+            <div className="from-muted via-muted/60 to-muted flex h-[140px] w-full items-center justify-center bg-gradient-to-br">
+                <div className="rounded-full bg-[color:var(--color-status-critical)] p-1.5 shadow-md ring-2 ring-background">
+                    <MapPin className="fill-background text-background h-4 w-4" />
                 </div>
             </div>
             <div className="flex flex-col gap-1.5 p-2">

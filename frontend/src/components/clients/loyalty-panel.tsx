@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLoyalty } from '@/hooks/use-loyalty';
 import { formatCurrency, formatDate } from '@/lib/coupon-helpers';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { cn } from '@/lib/utils';
 import { AlertCircle, Award, CheckCircle2, HelpCircle, Sparkles, Wallet } from 'lucide-react';
 import { useState } from 'react';
@@ -337,9 +338,10 @@ function AdjustModal({
                         <label className="mb-1 block text-xs font-medium">Motivo</label>
                         <textarea
                             value={reason}
-                            onChange={(e) => setReason(e.target.value)}
+                            onChange={(e) => setReason(sanitizePlainText(e.target.value, 255, true, false))}
                             placeholder="Ej: Compensación por queja, evento de campaña, etc."
                             rows={3}
+                            maxLength={255}
                             className="border-input bg-background ring-offset-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                         />
                     </div>
