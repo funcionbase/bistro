@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\CompanyUser;
+use App\Models\Contact;
 use App\Models\Delivery;
 use App\Models\DeliveryStatusLog;
 use App\Models\Order;
@@ -432,8 +433,49 @@ class DeliveryService
                 'deliverer_id' => $delivery->user_id,
             ]);
 
+            // Flag de fraude INFORMATIVO (F7): marca el teléfono del cliente.
+            // Punto único de incremento — ambos caminos de no-show (cancel
+            // category y refund→no-show) terminan acá. Sin enforcement en el
+            // checkout público (decisión de producto: el cajero decide).
+            $this->flagContactNoShow($delivery->order, $actor);
+
             return $delivery->refresh();
         });
+    }
+
+    /**
+     * Incrementa `contacts.no_show_count` y setea `fraud_flagged_at` (si es
+     * el primero) para el teléfono de la orden. Best-effort: sin contacto o
+     * sin teléfono, no hace nada.
+     */
+    private function flagContactNoShow(?Order $order, User $actor): void
+    {
+        $phone = (string) ($order?->client_phone ?? '');
+        if ($order === null || $phone === '') {
+            return;
+        }
+
+        $alt = str_starts_with($phone, '57') ? substr($phone, 2) : '57'.$phone;
+        $contact = Contact::withoutBranchScope()
+            ->where('company_nit', $order->company_nit)
+            ->whereIn('phone', [$phone, $alt])
+            ->first();
+
+        if ($contact === null) {
+            return;
+        }
+
+        $firstFlag = $contact->fraud_flagged_at === null;
+        $contact->no_show_count = (int) $contact->no_show_count + 1;
+        $contact->fraud_flagged_at ??= now();
+        $contact->save();
+
+        if ($firstFlag) {
+            $this->auditService->log('contact.fraud_flagged', $actor, $contact, [
+                'order_id' => $order->id,
+                'no_show_count' => $contact->no_show_count,
+            ]);
+        }
     }
 
     public function cancelDelivery(Delivery $delivery, string $reason, User $cancelledBy): Delivery

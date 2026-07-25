@@ -674,6 +674,9 @@ class ChatController extends Controller
                     'neighborhood' => $contact?->neighborhood,
                     'municipality_dane_code' => $contact?->municipality_dane_code,
                     'municipality_label' => $municipalityLabel,
+                    // Flag de fraude informativo (F7).
+                    'no_show_count' => (int) ($contact?->no_show_count ?? 0),
+                    'fraud_flagged_at' => $contact?->fraud_flagged_at?->toIso8601String(),
                 ],
                 'notes' => $notes->map(fn (ClientNote $n) => [
                     'id' => $n->id,
@@ -1189,6 +1192,47 @@ class ChatController extends Controller
         return response()->json([
             'data' => new ChatMessageResource($message),
         ], 201);
+    }
+
+    /**
+     * Limpieza MANUAL del flag de fraude (F7): el cajero decide que el
+     * historial de no-shows del cliente ya no aplica. Resetea contador y
+     * flag; queda auditado.
+     */
+    public function unflagFraud(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'update');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $chat = $this->findChatOrDeny($request, $companyNit, $id, ['contact']);
+
+        $contact = $chat->contact_id
+            ? Contact::forCompany($companyNit)->find($chat->contact_id)
+            : null;
+
+        if ($contact === null) {
+            return response()->json(['message' => 'El chat no tiene un contacto vinculado.'], 404);
+        }
+
+        $previousCount = (int) $contact->no_show_count;
+        $contact->no_show_count = 0;
+        $contact->fraud_flagged_at = null;
+        $contact->save();
+
+        $this->auditLogger->log(
+            action: 'contact.fraud_unflagged',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'contact_id' => $contact->id,
+                'company_nit' => $companyNit,
+                'previous_no_show_count' => $previousCount,
+            ],
+            request: $request,
+        );
+
+        return response()->json(['data' => ['no_show_count' => 0, 'fraud_flagged_at' => null]]);
     }
 
     public function updateBot(UpdateChatBotRequest $request, string $id): JsonResponse

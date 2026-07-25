@@ -35,6 +35,9 @@ export interface ClientDetail {
         neighborhood: string | null;
         municipality_dane_code: string | null;
         municipality_label: string | null;
+        /** F7: historial de pedidos no recibidos (flag informativo). */
+        no_show_count?: number;
+        fraud_flagged_at?: string | null;
     };
     notes: ClientDetailNote[];
     orders: ClientHistoryOrder[];
@@ -49,6 +52,8 @@ interface Props {
     onSelectOrder: (orderId: string) => void;
     /** Agrega una nota privada (client_notes). Devuelve al padre para refrescar. */
     onAddNote?: (contactId: string, note: string) => Promise<void>;
+    /** F7: limpia el flag de fraude (chats.update). Oculto sin permiso. */
+    onUnflagFraud?: () => Promise<void>;
 }
 
 function formatDate(iso: string | null): string {
@@ -56,13 +61,14 @@ function formatDate(iso: string | null): string {
     return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(iso));
 }
 
-export function ClientDetailModal({ isOpen, onClose, detail, loading, error, onSelectOrder, onAddNote }: Props) {
+export function ClientDetailModal({ isOpen, onClose, detail, loading, error, onSelectOrder, onAddNote, onUnflagFraud }: Props) {
     const formatCurrency = useCurrencyFormatter();
     const orderStatuses = useOrderStatuses();
     const title = detail?.contact?.name?.trim() || detail?.contact?.phone || 'Cliente';
 
     const [noteDraft, setNoteDraft] = useState('');
     const [savingNote, setSavingNote] = useState(false);
+    const [unflagging, setUnflagging] = useState(false);
 
     const contactId = detail?.contact.id ?? null;
     const address = detail ? [detail.contact.address, detail.contact.neighborhood, detail.contact.municipality_label].filter(Boolean).join(', ') : '';
@@ -90,6 +96,31 @@ export function ClientDetailModal({ isOpen, onClose, detail, loading, error, onS
                 <p className="text-sm text-[color:var(--color-status-critical)]">{error}</p>
             ) : detail ? (
                 <div className="space-y-4">
+                    {/* F7: alerta informativa de fraude — el cajero decide cómo operar
+                        (p. ej. exigir transferencia anticipada). Limpieza manual auditada. */}
+                    {detail.contact.fraud_flagged_at && (
+                        <div className="flex items-start justify-between gap-2 rounded-lg border border-[color:var(--color-status-critical)]/30 bg-[color:var(--color-status-critical)]/10 p-3 text-sm">
+                            <div className="text-[color:var(--color-status-critical)]">
+                                <p className="font-semibold">⚠️ Historial de pedidos no recibidos ({detail.contact.no_show_count ?? 0})</p>
+                                <p className="text-xs">
+                                    Sugerencia: pedir transferencia anticipada antes de aprobar sus pedidos a domicilio.
+                                </p>
+                            </div>
+                            {onUnflagFraud && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={unflagging}
+                                    onClick={() => {
+                                        setUnflagging(true);
+                                        void onUnflagFraud().finally(() => setUnflagging(false));
+                                    }}
+                                >
+                                    Quitar alerta
+                                </Button>
+                            )}
+                        </div>
+                    )}
                     <section className="space-y-1.5 text-sm">
                         <div className="flex items-center gap-2">
                             <Phone className="text-muted-foreground h-4 w-4" />

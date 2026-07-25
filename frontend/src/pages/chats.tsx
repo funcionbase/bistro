@@ -792,6 +792,15 @@ export default function ChatsPage() {
                                             </span>
                                         )}
                                         {selectedChat && <ChatSourceBadge source={selectedChat.source} />}
+                                        {/* F7: alerta informativa de fraude en el header del chat. */}
+                                        {selectedChat?.contact_fraud_flagged_at && (
+                                            <span
+                                                className="rounded bg-[color:var(--color-status-critical)]/15 px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-status-critical)]"
+                                                title="El cajero decide: por ejemplo, exigir transferencia anticipada antes de aprobar."
+                                            >
+                                                ⚠️ Historial de pedidos no recibidos ({selectedChat.contact_no_show_count ?? 0})
+                                            </span>
+                                        )}
                                         {selectedChat?.latest_order && (
                                             <OrderBadge
                                                 order={selectedChat.latest_order}
@@ -1002,6 +1011,17 @@ export default function ChatsPage() {
                           }
                         : undefined
                 }
+                onUnflagFraud={
+                    canUpdate && clientDetailChatId
+                        ? async () => {
+                              const res = await apiFetch(`/api/v1/chats/${clientDetailChatId}/fraud-unflag`, { method: 'POST' });
+                              if (res.ok) {
+                                  await openClientDetail(clientDetailChatId);
+                                  await refreshSelected();
+                              }
+                          }
+                        : undefined
+                }
             />
 
             <OrderDetailModal order={orderDetail} isOpen={!!orderDetail} onClose={() => setOrderDetail(null)} />
@@ -1095,6 +1115,15 @@ function ChatListItem({
                             title="Bot solicitó intervención humana"
                             className="ml-1 inline-block h-2 w-2 rounded-full bg-[color:var(--color-status-warning)]"
                         />
+                    )}
+                    {/* F7: flag informativo de fraude — el cajero decide cómo operar. */}
+                    {chat.contact_fraud_flagged_at && (
+                        <span
+                            title={`Historial de pedidos no recibidos (${chat.contact_no_show_count ?? 0})`}
+                            className="rounded bg-[color:var(--color-status-critical)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[color:var(--color-status-critical)]"
+                        >
+                            ⚠️ No recibe pedidos
+                        </span>
                     )}
                     {chat.latest_order && (
                         <OrderBadge

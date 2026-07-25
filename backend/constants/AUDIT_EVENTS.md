@@ -69,6 +69,8 @@ Tabla mantenida append-only. Cada vez que se agregue un evento auditado nuevo, s
 | `order.cancelled` | `OrderController::cancel` | `order_id`, `reason`, `category` (`no_show` → delivery pasa a `failed`), `final_status` | `orders.update` |
 | `order.courier_advance` | `OrderController::courierAdvance` (abono del domiciliario al despachar, F6) | `order_id`, `receipt_id`, `courier_user_id`, `cash_session_id`, `amount` | `orders.update` |
 | `delivery.no_show` | `DeliveryService::markNoShow` (entrega fallida, F6/CA5) | `order_id`, `deliverer_id` | `deliveries.update` |
+| `contact.fraud_flagged` | `DeliveryService::flagContactNoShow` (primer no-show del teléfono, F7 — informativo, sin enforcement) | `order_id`, `no_show_count` | efecto colateral del no-show |
+| `contact.fraud_unflagged` | `ChatController::unflagFraud` (limpieza manual del flag) | `chat_id`, `contact_id`, `previous_no_show_count` | `chats.update` |
 | `order.append_items` | `OrderController::appendItems` (F5: aplica a table\|delivery\|pickup; delivery in_transit rechazado) | `items_added`, `delta_total` | `orders.update` |
 | `order.type_changed` | `OrderController::updateOrderType` (cambio pickup↔delivery en caliente, F5) | `order_id`, `from`, `to`, `new_total` | `orders.update` |
 | `order.status_changed` | `OrderController::updateStatus` | `order_id`, `from`, `to`, `inventory_consumed` | `orders.update` |

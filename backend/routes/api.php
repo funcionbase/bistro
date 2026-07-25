@@ -1629,6 +1629,10 @@ Route::prefix('v1')->group(function () {
                 Route::post('chats/{id}/orders/{orderId}/reject-proof', [ChatController::class, 'rejectProof'])
                     ->middleware(['permission:chats.update,update', 'throttle:20,1'])
                     ->name('api.chats.orders.reject-proof');
+                // Limpieza manual del flag de fraude del contacto (F7).
+                Route::post('chats/{id}/fraud-unflag', [ChatController::class, 'unflagFraud'])
+                    ->middleware('permission:chats.update,update')
+                    ->name('api.chats.fraud-unflag');
                 // Reintento de un saliente fallido (§8.4b punto 4). Reintenta el
                 // MISMO registro: crear uno nuevo dejaria dos burbujas por un
                 // mensaje que el cliente ve una sola vez.

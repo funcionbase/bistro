@@ -68,6 +68,9 @@ export interface ChatSummary {
     contact_address?: string | null;
     contact_neighborhood?: string | null;
     contact_municipality_dane_code?: string | null;
+    /** F7: historial de pedidos no recibidos (flag informativo de fraude). */
+    contact_no_show_count?: number;
+    contact_fraud_flagged_at?: string | null;
     status: 'open' | 'closed';
     source: ChatSource;
     bot_paused: boolean;

@@ -2837,6 +2837,19 @@ Payload: type (pickup|delivery), customer_name, customer_phone,
   al repartidor (`cash_register_expenses.courier_user_id`, selector en el
   modal de egresos).
 
+#### Flag de fraude informativo (F7)
+
+- `contacts.no_show_count` + `fraud_flagged_at`: cada no-show
+  (`DeliveryService::markNoShow`, punto único de ambos caminos) incrementa el
+  contador y setea el flag la primera vez (audit `contact.fraud_flagged`).
+- **Solo informativo** (decisión de producto): etiqueta roja "⚠️ Historial de
+  pedidos no recibidos (N)" en el header del chat, el listado y
+  `ClientDetailModal` — SIN enforcement en el checkout público. El cajero
+  decide (p. ej. exigir transferencia anticipada por chat antes de aprobar).
+- Limpieza manual: botón "Quitar alerta" en `ClientDetailModal`
+  (`POST /chats/{id}/fraud-unflag`, `chats.update`, audit
+  `contact.fraud_unflagged`).
+
 ### 9.13 Resumen de los 18 endpoints de menú
 
 | Método | URL | Permission | Notas |

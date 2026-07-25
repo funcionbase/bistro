@@ -31,6 +31,9 @@ class ChatResource extends JsonResource
                 : $this->client_name,
             'contact_id' => $this->contact_id,
             'contact_notes' => $this->whenLoaded('contact', fn () => $this->contact?->notes),
+            // Flag de fraude informativo (F7): historial de pedidos no recibidos.
+            'contact_no_show_count' => $this->whenLoaded('contact', fn () => (int) ($this->contact?->no_show_count ?? 0)),
+            'contact_fraud_flagged_at' => $this->whenLoaded('contact', fn () => $this->contact?->fraud_flagged_at?->toIso8601String()),
             // Dirección del contacto para prellenar el editor de "editar Contacto".
             'contact_address' => $this->whenLoaded('contact', fn () => $this->contact?->address),
             'contact_neighborhood' => $this->whenLoaded('contact', fn () => $this->contact?->neighborhood),

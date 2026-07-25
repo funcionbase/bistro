@@ -76,6 +76,8 @@ class Contact extends Model
         'municipality_dane_code',
         'fiscal_responsibilities',
         'dian_profile_completed_at',
+        'no_show_count',
+        'fraud_flagged_at',
     ];
 
     protected function casts(): array
@@ -83,6 +85,8 @@ class Contact extends Model
         return [
             'fiscal_responsibilities' => 'array',
             'dian_profile_completed_at' => 'datetime',
+            'no_show_count' => 'integer',
+            'fraud_flagged_at' => 'datetime',
         ];
     }
 
