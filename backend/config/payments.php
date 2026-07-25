@@ -42,4 +42,16 @@ return [
     // Métodos para los que `reference` es obligatoria (#119 + constants/PAYMENT_METHODS.md).
     // Efectivo se documenta con quién autorizó (actor_id del JWT en AuditLog).
     'requires_reference' => ['card', 'transfer', 'nequi', 'daviplata'],
+
+    // Mapa slugs de empresa (company_settings.payment_methods, en español —
+    // legado de /company/preferences) → slug canónico de `methods`. Conecta la
+    // config de preferencias con el checkout público: el cliente ve solo los
+    // métodos habilitados y su `orders.payment_preference` guarda el canónico.
+    'company_aliases' => [
+        'efectivo' => 'cash',
+        'tarjeta' => 'card',
+        'transferencia' => 'transfer',
+        'nequi' => 'nequi',
+        'daviplata' => 'daviplata',
+    ],
 ];

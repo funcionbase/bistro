@@ -869,6 +869,10 @@ class MenuController extends Controller
             'card_style' => 'default',
             'show_branding' => true,
             'delivery_fee' => null,
+            // Métodos de pago habilitados en /company/preferences, mapeados al
+            // slug canónico de config('payments'). `account` (número de cuenta /
+            // Nequi / Daviplata) se muestra al cliente al elegir transferencia.
+            'payment_methods' => $this->buildPublicPaymentMethods($company->nit),
         ];
 
         if ($branchId !== null) {
@@ -890,6 +894,38 @@ class MenuController extends Controller
         }
 
         return $payload;
+    }
+
+    /**
+     * Métodos de pago habilitados por la empresa para el checkout público.
+     * Fuente: company_settings.payment_methods (slugs en español, legado) →
+     * canónicos vía config('payments.company_aliases'). Slugs desconocidos se
+     * omiten en silencio (config corrupta no rompe el menú).
+     *
+     * @return array<int, array{slug: string, label: string, account: string|null}>
+     */
+    private function buildPublicPaymentMethods(string $companyNit): array
+    {
+        $enabled = (array) $this->companySettings->get($companyNit, 'payment_methods', ['efectivo', 'transferencia']);
+        $accounts = (array) $this->companySettings->get($companyNit, 'payment_method_accounts', []);
+        $aliases = (array) config('payments.company_aliases', []);
+        $labels = (array) config('payments.labels', []);
+
+        $methods = [];
+        foreach ($enabled as $spanishSlug) {
+            $canonical = $aliases[$spanishSlug] ?? null;
+            if ($canonical === null) {
+                continue;
+            }
+            $account = trim((string) ($accounts[$spanishSlug] ?? ''));
+            $methods[] = [
+                'slug' => $canonical,
+                'label' => (string) ($labels[$canonical] ?? ucfirst($spanishSlug)),
+                'account' => $account !== '' ? $account : null,
+            ];
+        }
+
+        return $methods;
     }
 
     /**

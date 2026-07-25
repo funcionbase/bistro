@@ -1079,7 +1079,12 @@ class OrderController extends Controller
             }
 
             $total = (float) $order->total;
-            $tip = round((float) ($validated['tip_amount'] ?? 0), 2);
+            // Propina: si caja no la reenvía, se CONSERVA la que dejó el cliente
+            // en el checkout público (F2) — antes un cobro sin tip_amount la
+            // pisaba con 0. Enviar 0 explícito sigue anulándola.
+            $tip = array_key_exists('tip_amount', $validated) && $validated['tip_amount'] !== null
+                ? round((float) $validated['tip_amount'], 2)
+                : round((float) $order->tip_amount, 2);
             // Lo que el cliente debe entregar = total + propina. La propina NO se
             // suma al revenue ni al payment_receipts.amount.
             $expectedTotal = round($total + $tip, 2);

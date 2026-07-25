@@ -2719,8 +2719,20 @@ carrito local y envía un pedido **para llevar o domicilio** sin mesa:
 POST /api/v1/public/branch/{menu_qr_token}/orders
 Throttle: branch-order-public (5/min por IP+token). Sin auth.
 Payload: type (pickup|delivery), customer_name, customer_phone,
-         address + neighborhood (solo delivery), items[{id, quantity, notes?}]
+         address + neighborhood (solo delivery), items[{id, quantity, notes?}],
+         payment_preference?, cash_pays_with?, tip_amount?, customer_notes?
 ```
+
+- **Checkout enriquecido (F2)**: el cliente elige medio de pago (solo los
+  habilitados en `/company/preferences` → `company_settings.payment_methods`,
+  mapeados vía `config('payments.company_aliases')`; el payload público expone
+  `restaurant.payment_methods[{slug,label,account}]` con el número de cuenta
+  para transferencia/Nequi/Daviplata), dice con cuánto paga si es efectivo
+  (`orders.cash_pays_with`, validado ≥ total+propina contra BD), deja propina
+  voluntaria sugerida 10% (→ `orders.tip_amount`, fuera del total;
+  `closeWithPayment` la conserva si caja no la reenvía) y notas de entrega
+  (`orders.customer_notes`, sanitizadas, 500 bytes). Todo INFORMATIVO: el pago
+  real lo registra caja.
 
 - Mismas puertas que el menú público: empresa activa, horario abierto, caja abierta.
 - La orden nace `status=pending_approval` (items `pending_approval` + `submitted_at`)

@@ -112,7 +112,8 @@ y `TaxCalculator` debe migrarse al helper.
 | `simple_no_iva` | — | Régimen Simple (RST). NO factura IVA. |
 
 - Hoy `orders.total` es precio final sin desglose. Al implementar IVA/INC: migración con `tax_amount`, `tax_rate`, `tax_regime`.
-- **Propina**: voluntaria 10% sugerida. Columna separada `tip_amount`. NO suma a `total` ni a base gravable.
+- **Propina**: voluntaria 10% sugerida. Columna separada `tip_amount`. NO suma a `total` ni a base gravable. La puede dejar el cliente en el checkout público (F2); `closeWithPayment` la CONSERVA si el request no manda `tip_amount` (null ≠ 0: enviar 0 explícito la anula).
+- **Columnas informativas del checkout público (F2)**: `orders.payment_preference` (slug canónico elegido por el cliente), `orders.cash_pays_with` ("¿con cuánto pagas?", solo efectivo) y `orders.customer_notes` (indicaciones de entrega). NINGUNA participa en `total`, base gravable ni `payment_receipts` — el pago real siempre lo registra caja.
 
 ### Facturación electrónica DIAN
 

@@ -56,6 +56,30 @@ Esto preserva la lista DIAN cerrada (4 valores) sin perder la distinción Nequi/
 Fuente: `bistro/backend/config/payments.php` → `'methods'` vs `'receipt_methods'`.
 Fuente narrativa: `CLAUDE.md` §12 "Convención de signos en payment_receipts".
 
+### Aliases de empresa (`company_settings.payment_methods`) — checkout público F2
+
+`/company/preferences` guarda los métodos habilitados con slugs en **español**
+(legado). `config('payments.company_aliases')` los mapea al canónico para el
+checkout público:
+
+| Slug empresa | Canónico |
+|---|---|
+| `efectivo` | `cash` |
+| `tarjeta` | `card` |
+| `transferencia` | `transfer` |
+| `nequi` | `nequi` |
+| `daviplata` | `daviplata` |
+
+- `MenuController::buildPublicPaymentMethods` expone al menú público
+  `restaurant.payment_methods[{slug, label, account}]` (account =
+  `company_settings.payment_method_accounts[slug español]`).
+- El cliente elige y `orders.payment_preference` guarda el slug **canónico**.
+  Es **INFORMATIVO**: no crea receipt ni toca total. El pago real lo registra
+  caja (`closeWithPayment`), que normaliza nequi/daviplata → `transfer`.
+- `orders.cash_pays_with` (decimal 12,2) = "¿con cuánto vas a pagar?" del
+  cliente (solo efectivo, validado ≥ total+propina en el controller).
+  Informativo — las devueltas reales se calculan al cobrar.
+
 ---
 
 ## Convenciones críticas

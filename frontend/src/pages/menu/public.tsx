@@ -44,6 +44,8 @@ interface RestaurantBranding {
     show_branding?: boolean;
     /** Precio del envío a domicilio (COP) configurado por la sede. */
     delivery_fee?: number | null;
+    /** Métodos de pago habilitados por la empresa (checkout público, F2). */
+    payment_methods?: { slug: string; label: string; account: string | null }[];
 }
 
 interface CartLine {
@@ -146,6 +148,12 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
     const [custPhone, setCustPhone] = useState('');
     const [custAddress, setCustAddress] = useState('');
     const [custNeighborhood, setCustNeighborhood] = useState('');
+    // Checkout enriquecido (F2): medio de pago, "¿con cuánto pagas?", propina y notas.
+    const [paymentPref, setPaymentPref] = useState<string | null>(null);
+    const [paysWith, setPaysWith] = useState('');
+    const [tipEnabled, setTipEnabled] = useState(false);
+    const [tipAmount, setTipAmount] = useState('');
+    const [custNotes, setCustNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [placedOrder, setPlacedOrder] = useState<{ order_id: string; total: string; order_type: string } | null>(null);
@@ -179,10 +187,20 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
     };
 
     const phoneValid = /^3\d{9}$/.test(custPhone.trim());
+    const paymentMethods = restaurant?.payment_methods ?? [];
+    const selectedMethod = paymentMethods.find((m) => m.slug === paymentPref) ?? null;
+    const tipValue = tipEnabled ? Math.max(0, Number(tipAmount) || 0) : 0;
+    const totalToPay = cartTotal + tipValue;
+    const paysWithValue = Number(paysWith) || 0;
+    const changePreview = paymentPref === 'cash' && paysWithValue >= totalToPay ? paysWithValue - totalToPay : null;
+    const paymentValid =
+        paymentMethods.length === 0 ||
+        (paymentPref !== null && (paymentPref !== 'cash' || paysWithValue >= totalToPay));
     const checkoutValid =
         cartLines.length > 0 &&
         custName.trim().length >= 2 &&
         phoneValid &&
+        paymentValid &&
         (orderType === 'pickup' || (custAddress.trim().length >= 5 && custNeighborhood.trim().length >= 2));
 
     const submitOrder = async () => {
@@ -202,6 +220,10 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                     neighborhood: orderType === 'delivery' ? custNeighborhood.trim() : null,
                     items: cartLines.map((l) => ({ id: l.id, quantity: l.quantity })),
                     cart_token: activeCartToken,
+                    payment_preference: paymentPref,
+                    cash_pays_with: paymentPref === 'cash' && paysWithValue > 0 ? paysWithValue : null,
+                    tip_amount: tipValue > 0 ? tipValue : null,
+                    customer_notes: custNotes.trim() || null,
                 }),
             });
             const json = (await res.json().catch(() => null)) as
@@ -859,6 +881,94 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                             </>
                         )}
 
+                        {/* Notas de la orden / indicaciones de entrega (CA8) */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="order-notes">
+                                Notas de la orden / Indicaciones de entrega <span className="text-muted-foreground text-xs">(opcional)</span>
+                            </Label>
+                            <textarea
+                                id="order-notes"
+                                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-16 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-1 focus-visible:outline-none"
+                                placeholder="Ej: Torre 2 apto 501, dejar en portería"
+                                maxLength={500}
+                                value={custNotes}
+                                onChange={(e) => setCustNotes(sanitizePlainText(e.target.value, 500, true, false))}
+                            />
+                        </div>
+
+                        {/* Medio de pago (CA1/CA7) — solo los habilitados por la empresa */}
+                        {paymentMethods.length > 0 && (
+                            <div className="space-y-1.5">
+                                <Label>¿Cómo vas a pagar?</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {paymentMethods.map((m) => (
+                                        <Button
+                                            key={m.slug}
+                                            type="button"
+                                            variant={paymentPref === m.slug ? 'default' : 'outline'}
+                                            onClick={() => setPaymentPref(m.slug)}
+                                        >
+                                            {m.label}
+                                        </Button>
+                                    ))}
+                                </div>
+                                {selectedMethod?.account && (
+                                    <p className="text-muted-foreground text-xs">
+                                        Envía tu pago a: <span className="text-foreground font-medium">{selectedMethod.account}</span>. Luego
+                                        comparte el comprobante por WhatsApp.
+                                    </p>
+                                )}
+                                {paymentPref === 'cash' && (
+                                    <div className="space-y-1.5 pt-1">
+                                        <Label htmlFor="order-pays-with">¿Con cuánto vas a pagar?</Label>
+                                        <Input
+                                            id="order-pays-with"
+                                            inputMode="numeric"
+                                            placeholder={`Mínimo ${formatCurrency(totalToPay)}`}
+                                            maxLength={10}
+                                            value={paysWith}
+                                            onChange={(e) => setPaysWith(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                        />
+                                        {paysWith !== '' && paysWithValue < totalToPay && (
+                                            <p className="text-destructive text-xs">Debe ser al menos {formatCurrency(totalToPay)}.</p>
+                                        )}
+                                        {changePreview !== null && changePreview > 0 && (
+                                            <p className="text-muted-foreground text-xs">
+                                                Devueltas: <span className="text-foreground font-medium tabular-nums">{formatCurrency(changePreview)}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Propina voluntaria (CA9 — ley 10%, editable y deseleccionable) */}
+                        <div className="space-y-1.5">
+                            <label className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    className="accent-primary h-4 w-4"
+                                    checked={tipEnabled}
+                                    onChange={(e) => {
+                                        setTipEnabled(e.target.checked);
+                                        if (e.target.checked && tipAmount === '') {
+                                            setTipAmount(String(Math.round(cartTotal * 0.1)));
+                                        }
+                                    }}
+                                />
+                                Agregar propina voluntaria (sugerida 10%)
+                            </label>
+                            {tipEnabled && (
+                                <Input
+                                    inputMode="numeric"
+                                    aria-label="Valor de la propina"
+                                    maxLength={9}
+                                    value={tipAmount}
+                                    onChange={(e) => setTipAmount(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                                />
+                            )}
+                        </div>
+
                         {/* Totales */}
                         <div className="border-border space-y-1 border-t pt-3 text-sm">
                             <div className="text-muted-foreground flex justify-between">
@@ -875,6 +985,18 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                                 <span>Total</span>
                                 <span className="tabular-nums">{formatCurrency(cartTotal)}</span>
                             </div>
+                            {tipValue > 0 && (
+                                <>
+                                    <div className="text-muted-foreground flex justify-between">
+                                        <span>Propina voluntaria</span>
+                                        <span className="tabular-nums">{formatCurrency(tipValue)}</span>
+                                    </div>
+                                    <div className="text-foreground flex justify-between font-semibold">
+                                        <span>Total a pagar</span>
+                                        <span className="tabular-nums">{formatCurrency(totalToPay)}</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {submitError && <p className="text-destructive text-sm">{submitError}</p>}

@@ -20,6 +20,7 @@ use App\Services\AuditService;
 use App\Services\BranchSettingsService;
 use App\Services\BusinessHoursService;
 use App\Services\CashRegisterService;
+use App\Services\CompanySettingsService;
 use App\Services\TableSessionService;
 use App\Support\OrderTotalCalculator;
 use Illuminate\Http\JsonResponse;
@@ -106,14 +107,39 @@ class BranchOrderController extends Controller
             ? round((float) ($this->branchSettings->get((string) $branch->id, 'delivery_fee') ?? 0), 2)
             : 0.0;
 
+        // Medio de pago elegido: además del Rule::in canónico del FormRequest,
+        // debe estar habilitado por la empresa (company_settings.payment_methods,
+        // slugs en español → canónico vía config('payments.company_aliases')).
+        $paymentPreference = $validated['payment_preference'] ?? null;
+        if ($paymentPreference !== null) {
+            $enabledSpanish = (array) app(CompanySettingsService::class)->get($company->nit, 'payment_methods', ['efectivo', 'transferencia']);
+            $aliases = (array) config('payments.company_aliases', []);
+            $enabledCanonical = array_values(array_filter(array_map(
+                fn (string $slug): ?string => $aliases[$slug] ?? null,
+                $enabledSpanish,
+            )));
+            if (! in_array($paymentPreference, $enabledCanonical, true)) {
+                return response()->json([
+                    'message' => 'El medio de pago elegido no está disponible.',
+                    'errors' => ['payment_preference' => ['El medio de pago elegido no está disponible.']],
+                ], 422);
+            }
+        }
+
         try {
-            $order = DB::transaction(function () use ($validated, $branch, $company, $menu, $phone, $isDelivery, $deliveryFee, $request) {
+            $order = DB::transaction(function () use ($validated, $branch, $company, $menu, $phone, $isDelivery, $deliveryFee, $paymentPreference, $request) {
                 $order = new Order;
                 $order->company_nit = $company->nit;
                 $order->branch_id = $branch->id;
                 $order->status = 'pending_approval';
                 $order->order_type = $validated['type'];
                 $order->client_phone = $phone;
+                // Preferencias del checkout (F2) — informativas, fuera del total
+                // y de receipts. La propina va a tip_amount (misma columna que
+                // setea caja; closeWithPayment la conserva si no la reenvía).
+                $order->payment_preference = $paymentPreference;
+                $order->customer_notes = $validated['customer_notes'] ?? null;
+                $order->tip_amount = round((float) ($validated['tip_amount'] ?? 0), 2);
                 // La ciudad del domicilio es la de la sede (regla del negocio: una
                 // sede solo entrega en su ciudad). Se anexa a la dirección para que
                 // quede completa sin pedírsela al cliente.
@@ -179,6 +205,18 @@ class BranchOrderController extends Controller
 
                 $this->totals->recalculateAndSave($order->refresh());
 
+                // "¿Con cuánto vas a pagar?" — validación real contra el total
+                // calculado en BD (+ propina). Solo aplica a efectivo.
+                if ($paymentPreference === 'cash') {
+                    $paysWith = round((float) ($validated['cash_pays_with'] ?? 0), 2);
+                    $expected = round((float) $order->total + (float) $order->tip_amount, 2);
+                    if ($paysWith + 0.0001 < $expected) {
+                        throw new \InvalidArgumentException('El valor con el que vas a pagar es menor al total del pedido.');
+                    }
+                    $order->cash_pays_with = number_format($paysWith, 2, '.', '');
+                    $order->save();
+                }
+
                 $this->upsertContact($company->nit, (string) $branch->id, $validated['customer_name'], $phone);
 
                 $this->audit->log('order.created_by_customer', user: null, auditable: $order, data: [
@@ -189,6 +227,8 @@ class BranchOrderController extends Controller
                     'items_count' => count($validated['items']),
                     'delivery_fee' => $deliveryFee,
                     'total' => (string) $order->total,
+                    'payment_preference' => $paymentPreference,
+                    'tip_amount' => (string) $order->tip_amount,
                 ], request: $request);
 
                 // Push a staff con orders.update — mismo evento del flujo QR de mesa.

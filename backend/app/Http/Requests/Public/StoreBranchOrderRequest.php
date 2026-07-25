@@ -7,6 +7,7 @@ namespace App\Http\Requests\Public;
 use App\Http\Requests\Concerns\SanitizesInput;
 use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Validación del pedido público sin mesa desde el QR de menú de sede
@@ -25,6 +26,7 @@ class StoreBranchOrderRequest extends FormRequest
         'customer_name' => 'plain_text_short',
         'address' => 'plain_text_short',
         'neighborhood' => 'plain_text_short',
+        'customer_notes' => 'plain_text_long',
     ];
 
     public function authorize(): bool
@@ -58,6 +60,18 @@ class StoreBranchOrderRequest extends FormRequest
             // Token de la sesión de carta enviada desde /chats (/menus?cart=).
             // Opcional: liga el pedido al chat que envió la carta.
             'cart_token' => ['nullable', 'uuid'],
+            // Medio de pago elegido por el cliente (slug canónico). INFORMATIVO:
+            // el pago real lo registra caja. El controller valida además que
+            // esté habilitado por la empresa (company_settings.payment_methods).
+            'payment_preference' => ['nullable', 'string', Rule::in((array) config('payments.methods'))],
+            // "¿Con cuánto vas a pagar?" — obligatorio si eligió efectivo. La
+            // validación real (>= total + propina) es del controller contra el
+            // total calculado en BD.
+            'cash_pays_with' => ['required_if:payment_preference,cash', 'nullable', 'numeric', 'min:0', 'max:99999999'],
+            // Propina voluntaria (ley CO 10% sugerido, editable). Fuera del total.
+            'tip_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            // Notas de la orden / indicaciones de entrega (torre, apto, portería…).
+            'customer_notes' => ['nullable', 'string', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
         ];
     }
 
