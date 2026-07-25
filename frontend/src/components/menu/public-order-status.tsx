@@ -32,16 +32,20 @@ export function PublicOrderStatus({ cartToken, onOrders }: Props) {
     const [orders, setOrders] = useState<PublicCartOrder[]>([]);
     const onOrdersRef = useRef(onOrders);
     onOrdersRef.current = onOrders;
+    // Secuencia anti-stale: una respuesta vieja del poll no debe pisar el
+    // estado fresco (p. ej. el parche local tras un 409 del append).
+    const reqSeqRef = useRef(0);
 
     const fetchOrders = useCallback(async () => {
+        const seq = ++reqSeqRef.current;
         try {
             const res = await fetch(resolveBackendUrl(`/api/v1/public/cart/${encodeURIComponent(cartToken)}/orders`), {
                 headers: { Accept: 'application/json' },
                 credentials: 'omit',
             });
-            if (!res.ok) return;
+            if (!res.ok || seq !== reqSeqRef.current) return;
             const json = (await res.json().catch(() => null)) as { data?: PublicCartOrder[] } | null;
-            if (json?.data) {
+            if (json?.data && seq === reqSeqRef.current) {
                 setOrders(json.data);
                 onOrdersRef.current?.(json.data);
             }

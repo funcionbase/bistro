@@ -12,6 +12,7 @@ use App\Models\CashRegister;
 use App\Models\CashRegisterExpense;
 use App\Models\CashRegisterIncome;
 use App\Models\CashRegisterSession;
+use App\Models\CompanyUser;
 use App\Models\RestaurantMenu;
 use App\Rules\SafePlainText;
 use App\Services\AuditService;
@@ -381,6 +382,17 @@ class CashRegisterController extends Controller
             $branchId,
             $validated['cash_session_id'] ?? null,
         );
+
+        // El courier vinculado debe ser miembro de la empresa: sin este check,
+        // cualquier UUID de users pasaba el FK y el cruce del cierre atribuía
+        // el pago (y exponía el nombre en el PDF) a un usuario ajeno.
+        $courierUserId = $validated['courier_user_id'] ?? null;
+        if ($courierUserId !== null && ! CompanyUser::where('company_nit', $companyNit)->where('user_id', $courierUserId)->exists()) {
+            return response()->json([
+                'message' => 'El domiciliario indicado no pertenece a la empresa.',
+                'errors' => ['courier_user_id' => ['El domiciliario indicado no pertenece a la empresa.']],
+            ], 422);
+        }
 
         // El bloqueo de egresos en efectivo que dejarían la caja negativa se
         // valida DENTRO de recordExpense (bajo lock de la sesión) para que dos

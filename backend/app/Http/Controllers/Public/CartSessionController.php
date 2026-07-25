@@ -168,8 +168,9 @@ class CartSessionController extends Controller
                     $item->tax_rate = isset($menuItem['tax_rate']) && $menuItem['tax_rate'] !== null ? (float) $menuItem['tax_rate'] : null;
                     $item->quantity = (int) $line['quantity'];
                     $item->category = isset($menuItem['category']) ? (string) $menuItem['category'] : null;
+                    // Tope 200 = maxBytes de la rule (antes 500, inconsistente).
                     $item->notes = isset($line['notes']) && trim((string) $line['notes']) !== ''
-                        ? mb_substr(trim(strip_tags((string) $line['notes'])), 0, 500)
+                        ? mb_substr(trim(strip_tags((string) $line['notes'])), 0, 200)
                         : null;
                     $item->status = 'pending_approval';
                     $item->submitted_at = $now;

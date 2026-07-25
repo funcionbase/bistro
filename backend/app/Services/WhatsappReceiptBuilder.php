@@ -95,6 +95,12 @@ class WhatsappReceiptBuilder
         $total = (float) $order->total;
         $tip = (float) $order->tip_amount;
 
+        // Cupón: las líneas de arriba van a precio BRUTO y el total es neto —
+        // sin esta línea el recibo "no sumaba" para el cliente.
+        if ((float) $order->discount_amount > 0) {
+            $lines[] = $this->kv('DESCUENTO', '-'.$this->money((float) $order->discount_amount));
+        }
+
         if ($tip > 0) {
             $lines[] = $this->kv('TOTAL SIN PROPINA', $this->money($total));
             $lines[] = $this->kv('PROPINA VOLUNTARIA', $this->money($tip));

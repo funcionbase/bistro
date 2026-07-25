@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesActiveContext;
 use App\Http\Controllers\Concerns\ResolvesJwtActor;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Orders\UpdateOrderTypeRequest;
 use App\Models\Chat;
 use App\Models\Company;
 use App\Models\Contact;
@@ -1038,14 +1039,11 @@ class OrderController extends Controller
      * línea sintética de domicilio y recalcula el total bajo lock. El recibo
      * térmico queda stale (total cambió) → el panel del chat sugiere reenviar.
      */
-    public function updateOrderType(Request $request, string $id): JsonResponse
+    public function updateOrderType(UpdateOrderTypeRequest $request, string $id): JsonResponse
     {
         $this->permissionService->assertPermission($request, 'orders', 'update');
 
-        $validated = $request->validate([
-            'order_type' => ['required', Rule::in(['pickup', 'delivery'])],
-            'delivery_address' => ['required_if:order_type,delivery', 'nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
-        ]);
+        $validated = $request->validated();
 
         $companyNit = $this->activeCompanyNit($request);
         $actor = $this->actingUser($request);

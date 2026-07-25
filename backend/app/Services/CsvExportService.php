@@ -21,6 +21,21 @@ class CsvExportService
     private const BOM = "\xEF\xBB\xBF";
 
     /**
+     * Neutraliza CSV formula injection (OWASP): un valor de usuario que
+     * empiece por `=`, `+`, `-`, `@` se ejecutaría como fórmula al abrir el
+     * export en Excel (`delivery_address`/nombres son texto libre). Prefijo
+     * `'` SOLO en strings — los números (totales, negativos) pasan intactos.
+     */
+    private function safeCell(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '' && in_array($value[0], ['=', '+', '-', '@'], true)) {
+            return "'".$value;
+        }
+
+        return $value;
+    }
+
+    /**
      * @param  array<string, mixed>  $filters
      */
     public function exportOrders(string $companyNit, array $filters): StreamedResponse
@@ -71,9 +86,9 @@ class CsvExportService
                         optional($order->ordered_at)->format('Y-m-d H:i:s'),
                         $order->status,
                         $order->order_type,
-                        $order->client_name ?? '',
-                        $order->client_phone ?? '',
-                        $order->delivery_address ?? '',
+                        $this->safeCell($order->client_name ?? ''),
+                        $this->safeCell($order->client_phone ?? ''),
+                        $this->safeCell($order->delivery_address ?? ''),
                         $order->total,
                         $order->cost,
                         $order->discount_amount,

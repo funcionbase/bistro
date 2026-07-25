@@ -257,15 +257,16 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                 return;
             }
             if (!res.ok || !json?.data) {
+                // NO caer al checkout de orden nueva: si el append sí commiteó
+                // pero la respuesta se perdió, reintentar como orden nueva
+                // duplicaba los items. El único fallback a checkout es el 409.
                 setSubmitError(json?.message ?? 'No pudimos agregar los productos. Intenta de nuevo.');
-                setCheckoutOpen(true);
                 return;
             }
             setPlacedOrder({ order_id: json.data.order_id, total: json.data.total, order_type: pendingOrder.order_type, appended: true });
             setCart({});
         } catch {
             setSubmitError('No pudimos agregar los productos. Revisa tu conexión e intenta de nuevo.');
-            setCheckoutOpen(true);
         } finally {
             setSubmitting(false);
         }
@@ -853,16 +854,22 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
                 Con una orden pending_approval de la misma carta, los items se AGREGAN a ella. */}
             {showCartBar && (
                 <StickyActionBar>
-                    <Button
-                        className="flex w-full items-center justify-center gap-2 shadow-lg"
-                        size="lg"
-                        disabled={submitting}
-                        onClick={() => (pendingOrder ? void appendToOrder() : setCheckoutOpen(true))}
-                    >
-                        <ShoppingBag className="h-4 w-4" />
-                        {pendingOrder ? 'Agregar al pedido' : 'Realizar pedido'} · {cartCount} {cartCount === 1 ? 'ítem' : 'ítems'} ·{' '}
-                        {formatCurrency(cartItemsTotal)}
-                    </Button>
+                    <div className="w-full space-y-1.5">
+                        {/* Error del append fuera del diálogo (el checkout puede estar cerrado). */}
+                        {submitError && !checkoutOpen && (
+                            <p className="bg-background/95 text-destructive rounded-md px-3 py-1.5 text-center text-xs shadow">{submitError}</p>
+                        )}
+                        <Button
+                            className="flex w-full items-center justify-center gap-2 shadow-lg"
+                            size="lg"
+                            disabled={submitting}
+                            onClick={() => (pendingOrder ? void appendToOrder() : setCheckoutOpen(true))}
+                        >
+                            <ShoppingBag className="h-4 w-4" />
+                            {pendingOrder ? 'Agregar al pedido' : 'Realizar pedido'} · {cartCount} {cartCount === 1 ? 'ítem' : 'ítems'} ·{' '}
+                            {formatCurrency(cartItemsTotal)}
+                        </Button>
+                    </div>
                 </StickyActionBar>
             )}
 

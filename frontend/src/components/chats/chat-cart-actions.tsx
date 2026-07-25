@@ -123,7 +123,9 @@ export function ChatCartActions({
                 const totalToPay = order.total + order.tip_amount;
                 const change = order.cash_pays_with !== null ? order.cash_pays_with - totalToPay : null;
                 const receiptCurrent = order.receipt_sent_at !== null && !order.receipt_stale;
-                const showReceipt = isPending || order.receipt_stale;
+                // Con recibo vigente el backend responde 409 sí o sí: se
+                // muestra "Recibo enviado ✓" en lugar de un botón que falla.
+                const showReceipt = (isPending && !receiptCurrent) || order.receipt_stale;
 
                 return (
                     <div key={order.id} className="py-1.5">

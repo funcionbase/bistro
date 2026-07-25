@@ -112,6 +112,37 @@ class DeliveryService
             ->exists();
     }
 
+    /**
+     * ¿La orden tiene receipts DISTINTOS del abono del domiciliario (F6)?
+     *
+     * El abono se registra al DESPACHAR, no al entregar: revertir un
+     * `completed` marcado por error no lo invalida (la plata sigue en caja y
+     * el receipt sigue siendo el pago de la orden). Solo los cobros reales
+     * post-entrega bloquean el revert.
+     */
+    private function orderHasNonAdvanceReceipt(string $orderId): bool
+    {
+        return PaymentReceipt::withoutBranchScope()
+            ->where('order_id', $orderId)
+            ->whereRaw("NOT COALESCE((payment_data->>'courier_advance')::boolean, false)")
+            ->exists();
+    }
+
+    /**
+     * ¿La orden tiene un abono de domiciliario vigente (receipt positivo con
+     * `payment_data.courier_advance`)? Bloquea la reasignación: el efectivo
+     * que adelantó el courier A no tiene asiento que lo traslade a B — hay
+     * que resolver primero (completar la entrega, o refund + no-show).
+     */
+    private function orderHasCourierAdvance(string $orderId): bool
+    {
+        return PaymentReceipt::withoutBranchScope()
+            ->where('order_id', $orderId)
+            ->where('amount', '>', 0)
+            ->whereRaw("COALESCE((payment_data->>'courier_advance')::boolean, false)")
+            ->exists();
+    }
+
     public function assignDeliverer(
         Order $order,
         User $deliverer,
@@ -298,7 +329,11 @@ class DeliveryService
             );
         }
 
-        if ($this->orderHasPaymentReceipt($delivery->order_id)) {
+        // Solo bloquean los cobros REALES (post-entrega). El abono del
+        // domiciliario (F6) se registró al despachar: revertir el completed
+        // erróneo no lo invalida — sin este matiz, todo domicilio en efectivo
+        // con abono quedaba irreversible ante un "entregado" por error.
+        if ($this->orderHasNonAdvanceReceipt($delivery->order_id)) {
             throw new HttpResponseException(
                 response()->json([
                     'message' => 'Esta entrega ya tiene un cobro registrado. Pedile a un admin que haga la devolución antes de revertirla.',
@@ -502,6 +537,20 @@ class DeliveryService
         User $reassignedBy,
         ?string $reason = null
     ): Delivery {
+        // Abono vigente (F6): el efectivo que adelantó el courier actual no
+        // tiene asiento que lo traslade al nuevo (receipts inmutables, y el
+        // refund dejaría la orden `refunded` terminal). Sin este guard, el
+        // cruce del cierre quedaba descuadrado entre dos domiciliarios: el
+        // que abonó sin entregas y el que entregó sin abono.
+        if ($this->orderHasCourierAdvance($currentDelivery->order_id)) {
+            throw new HttpResponseException(
+                response()->json([
+                    'message' => 'El domiciliario actual ya abonó el pedido a caja. Debe completar la entrega él mismo, o registrar la devolución del abono y marcar no-show antes de reasignar.',
+                    'code' => 'COURIER_ADVANCE_REGISTERED',
+                ], 409)
+            );
+        }
+
         $this->assertCourierCapacity($newDeliverer, $currentDelivery->company_nit);
 
         return DB::transaction(function () use ($currentDelivery, $newDeliverer, $reassignedBy, $reason) {

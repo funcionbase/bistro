@@ -182,6 +182,12 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
     // petición más reciente. Evita que un poll viejo (30s) pise el detalle
     // fresco que devolvió el refetch tras enviar un mensaje (F14).
     const detailReqSeq = useRef(0);
+    // Chat seleccionado AHORA (no el capturado en el closure): el refetch que
+    // disparan las acciones (approve/recibo/mensaje) apunta al chat donde se
+    // ejecutaron; si el operador ya cambió de chat, aplicar esa respuesta
+    // dejaría en pantalla el hilo de A con el compositor enviando a B.
+    const selectedChatIdRef = useRef<string | null>(null);
+    selectedChatIdRef.current = selectedChatId;
     // Auto-select solo en la PRIMERA carga. Si el usuario despues vuelve al
     // listado (botón atras en mobile o selectChat(null)), no queremos que el
     // polling re-seleccione el primer chat y devuelva al usuario al detalle.
@@ -240,6 +246,10 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
                 // retorno ya se disparó otra petición (ej. el refetch tras
                 // enviar un mensaje), no pisamos el detalle fresco con el viejo.
                 if (seq !== detailReqSeq.current) return;
+                // Descarta respuestas de un chat que ya NO es el seleccionado
+                // (refetch post-acción sobre el chat anterior): sin esto el
+                // detalle de A pisaba al de B recién seleccionado.
+                if (selectedChatIdRef.current !== id) return;
                 // 404: el chat dejo de existir (re-seed, soft-delete, etc.). Limpiamos
                 // la seleccion para parar el polling sobre un id muerto y mostrar la
                 // lista nuevamente.

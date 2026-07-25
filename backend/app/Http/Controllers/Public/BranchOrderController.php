@@ -205,6 +205,14 @@ class BranchOrderController extends Controller
 
                 $this->totals->recalculateAndSave($order->refresh());
 
+                // Tope de propina contra el total REAL en BD (sugerida 10%,
+                // máximo 50%): sin esto un anónimo inflaba el reporte de
+                // propinas del cierre con un tip_amount arbitrario que caja
+                // hereda (closeWithPayment conserva la propina del cliente).
+                if ((float) $order->tip_amount > round((float) $order->total * 0.5, 2)) {
+                    throw new \InvalidArgumentException('La propina supera el máximo permitido para este pedido.');
+                }
+
                 // "¿Con cuánto vas a pagar?" — validación real contra el total
                 // calculado en BD (+ propina). Solo aplica a efectivo.
                 if ($paymentPreference === 'cash') {

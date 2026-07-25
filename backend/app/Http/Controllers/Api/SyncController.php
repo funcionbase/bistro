@@ -379,7 +379,12 @@ class SyncController extends Controller
             }
 
             $total = (float) $order->total;
-            $tip = round((float) ($payload['tip_amount'] ?? 0), 2);
+            // Paridad con closeWithPayment (F2): si el dispositivo no manda
+            // tip_amount, se CONSERVA la propina que dejó el cliente en el
+            // checkout público — el replay offline la pisaba con 0.
+            $tip = array_key_exists('tip_amount', $payload) && $payload['tip_amount'] !== null
+                ? round((float) $payload['tip_amount'], 2)
+                : round((float) $order->tip_amount, 2);
             $expectedTotal = round($total + $tip, 2);
             $paidAt = isset($payload['paid_at']) ? Carbon::parse($payload['paid_at']) : now();
             $occurredAtClient = isset($payload['occurred_at_client']) ? Carbon::parse($payload['occurred_at_client']) : $paidAt;
