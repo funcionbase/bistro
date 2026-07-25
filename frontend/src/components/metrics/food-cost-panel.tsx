@@ -257,7 +257,7 @@ export default function FoodCostPanel({ period, dateFrom, dateTo, formatCurrency
                                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCurrency(v)} />
                                     <Tooltip formatter={(v) => formatCurrency(Number(v))} />
-                                    <Line type="monotone" dataKey="cost" stroke="#FF6B35" strokeWidth={2} dot={{ r: 3 }} />
+                                    <Line type="monotone" dataKey="cost" stroke="var(--color-status-critical)" strokeWidth={2} dot={{ r: 3 }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>

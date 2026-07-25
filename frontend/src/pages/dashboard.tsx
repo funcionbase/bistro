@@ -12,7 +12,6 @@ import KpiCard from '@/components/metrics/kpi-card';
 import { PageShell } from '@/components/page-shell';
 import InstallPwaPrompt from '@/components/pwa/install-pwa-prompt';
 import IosInstallHint from '@/components/pwa/ios-install-hint';
-import UpdateAvailableToast from '@/components/pwa/update-available-toast';
 import { SetupGuide } from '@/components/setup-guide/setup-guide';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -88,7 +87,9 @@ export default function Dashboard() {
     const deliveries = data?.deliveries;
     const lowStockInventory = data?.lowStockInventory;
     const needsProfileCompletion = data?.needsProfileCompletion ?? false;
-    const periodLoading = dashboardQuery.isFetching;
+    // Solo "loading" cuando NO hay datos: un refetch en vuelo con datos ya
+    // montados no debe desmontar las gráficas (skeleton flicker en cada poll).
+    const periodLoading = dashboardQuery.isFetching && !data;
     const lastUpdated = dashboardQuery.dataUpdatedAt ? new Date(dashboardQuery.dataUpdatedAt) : undefined;
 
     // Toggle de refresco en vivo a 30s (intervalo canónico del frontend).
@@ -144,7 +145,6 @@ export default function Dashboard() {
     if (noBranchAssigned) {
         return (
             <PageShell title="Dashboard">
-                <UpdateAvailableToast />
                 <div className="space-y-6 p-4 sm:p-6 md:p-8">
                     <PageHeader eyebrow="DASHBOARD" title="Dashboard" />
                     <Alert variant="warning" role="alert" aria-live="polite">
@@ -165,7 +165,6 @@ export default function Dashboard() {
 
     return (
         <PageShell title="Dashboard">
-            <UpdateAvailableToast />
             <InstallPwaPrompt />
             <IosInstallHint />
 

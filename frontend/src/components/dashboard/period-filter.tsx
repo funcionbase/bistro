@@ -35,7 +35,7 @@ export default function PeriodFilter({ value, onChange, disabled = false }: Peri
     }
 
     return (
-        <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-body)] p-0.5">
+        <div className="border-border bg-muted flex items-center gap-1 rounded-lg border p-0.5">
             {PERIODS.map((p) => (
                 <button
                     key={p.value}
@@ -43,8 +43,8 @@ export default function PeriodFilter({ value, onChange, disabled = false }: Peri
                     disabled={disabled}
                     className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                         value === p.value
-                            ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                            : 'text-[var(--color-text-default)] hover:bg-[var(--color-border-light)]'
+                            ? 'bg-[var(--color-primary)] text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-background'
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                     {p.label}
