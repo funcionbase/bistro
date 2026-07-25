@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Ingredient } from '@/types/inventory';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -73,7 +74,7 @@ export function RecordWasteModal({ open, onClose, onSubmit, ingredient, submitti
                         <Input
                             id="waste_ref"
                             value={reference}
-                            onChange={(e) => setReference(e.target.value)}
+                            onChange={(e) => setReference(sanitizePlainText(e.target.value, 255, false, false))}
                             placeholder="Vencimiento, contaminación, derrame…"
                             required
                             minLength={3}
@@ -86,7 +87,12 @@ export function RecordWasteModal({ open, onClose, onSubmit, ingredient, submitti
                         <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" variant="destructive" disabled={submitting}>
+                        {/* Guard cliente: cantidad > 0 y motivo min 3 (espeja el FormRequest; el form es noValidate). */}
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            disabled={submitting || !(Number(quantity) > 0) || reference.trim().length < 3}
+                        >
                             {submitting && <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />}
                             Registrar merma
                         </Button>

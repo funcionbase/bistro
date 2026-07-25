@@ -29,7 +29,9 @@ const WEEKDAYS_MONDAY = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const WEEKDAYS_SUNDAY = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function fmtDate(d: Date): string {
-    return d.toISOString().slice(0, 10);
+    // Componentes locales, NO toISOString(): las celdas son fechas locales y el
+    // paso por UTC corría el día (en Bogotá UTC-5 la medianoche cae en el día anterior).
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function startOfWeek(d: Date, weekStartsOn: 'monday' | 'sunday'): Date {

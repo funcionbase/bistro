@@ -36,6 +36,9 @@ class Order extends Model
 
     use HasUuids;
 
+    /** menu_item_id sintético de la línea de domicilio (no existe en el menú). */
+    public const DELIVERY_FEE_ITEM_ID = 'delivery_fee';
+
     /**
      * menu_item_id sintético de la línea "Domicilio" (no existe en el menú).
      * La inyecta el backend al crear órdenes delivery (caja y flujo público);

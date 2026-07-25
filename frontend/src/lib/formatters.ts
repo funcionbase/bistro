@@ -16,13 +16,23 @@ function parseIsoDateUtc(isoDate: string): Date {
     return new Date(isoDate.slice(0, 10) + 'T00:00:00Z');
 }
 
+// Instancias Intl cacheadas a nivel de módulo: construir un NumberFormat por
+// llamada es caro y estos formatters corren por celda en tablas grandes.
+const COP_NUMBER_FORMAT = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+});
+const COP_CURRENCY_FORMAT = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+});
+
 export function formatCOP(amount: number): string {
     // §13: facturación CO se muestra sin decimales TRUNCANDO a peso (decisión de
     // presentación). `Intl` redondea, así que truncamos antes de formatear.
-    return new Intl.NumberFormat('es-CO', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(Math.trunc(amount));
+    return COP_NUMBER_FORMAT.format(Math.trunc(amount));
 }
 
 /**
@@ -34,12 +44,7 @@ export function formatCurrency(value: number): string {
     if (!Number.isFinite(value)) {
         value = 0;
     }
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(Math.trunc(value));
+    return COP_CURRENCY_FORMAT.format(Math.trunc(value));
 }
 
 export function formatMonthYear(isoDate: string): string {

@@ -2,6 +2,7 @@ import { CourierAvatar } from '@/components/deliveries/courier-avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { shortOrderCode } from '@/lib/order-code';
 import type { Courier } from '@/types';
 import { AlertCircle, Loader2, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -49,7 +50,7 @@ export function AssignCourierModal({ orderId, isOpen, onClose, onAssign, courier
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Truck className="h-5 w-5" />
-                        Asignar Repartidor — Orden #{orderId}
+                        Asignar Repartidor — Orden #{shortOrderCode(orderId)}
                     </DialogTitle>
                 </DialogHeader>
 

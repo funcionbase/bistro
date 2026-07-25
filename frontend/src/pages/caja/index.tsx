@@ -16,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useActiveAutoApply } from '@/hooks/use-active-auto-apply';
 import { useActiveBranch } from '@/hooks/use-active-branch';
-import { useCashRegister } from '@/hooks/use-cash-register';
 import { useCouponValidation } from '@/hooks/use-coupon-validation';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useToken } from '@/hooks/use-token';
@@ -39,7 +38,6 @@ interface CartLine {
 export default function CajaPage() {
     const token = useToken();
     const formatCurrency = useCurrencyFormatter();
-    const { selectedRegister } = useCashRegister(token);
     const sharedData = useSharedData();
     const activeCompany = sharedData.activeCompany;
     const { activeBranch } = useActiveBranch();
@@ -400,9 +398,10 @@ export default function CajaPage() {
                     <CashierSkeleton />
                 ) : (
                     <CashRegisterPanel>
+                        {(selectedRegister) => (<>
                         <div className="mb-4 space-y-3">
                             <PendingApprovalsBanner />
-                            {/* Mesas con cuentas pendientes de cobro. Polling 12s para
+                            {/* Mesas con cuentas pendientes de cobro. Polling 30s para
                             que el cajero vea aparecer mesas a medida que el mesero
                             aprueba tandas. Cada item enlaza a /caja/table-session/{id}
                             donde se hace el cobro (todo de una o por comensal). */}
@@ -767,6 +766,7 @@ export default function CajaPage() {
                                 </Card>
                             </div>
                         </div>
+                        </>)}
                     </CashRegisterPanel>
                 )}
             </div>

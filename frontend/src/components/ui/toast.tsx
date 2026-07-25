@@ -18,10 +18,12 @@ const ToastContext = createContext<ToastContextValue>({ showToast: () => {} });
 export function ToastProvider({ children }: { children: React.ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const showToast = useCallback((type: ToastType, message: string, duration = 3500) => {
+    const showToast = useCallback((type: ToastType, message: string, duration?: number) => {
         const id = crypto.randomUUID();
+        // Duración proporcional al largo del mensaje (~lectura), acotada 3.5–8s.
+        const ms = duration ?? Math.min(8000, Math.max(3500, 3500 + message.length * 30));
         setToasts((prev) => [...prev.slice(-2), { id, type, message }]);
-        setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), duration);
+        setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), ms);
     }, []);
 
     const dismiss = useCallback((id: string) => setToasts((prev) => prev.filter((t) => t.id !== id)), []);
@@ -38,29 +40,32 @@ export function useToast() {
     return useContext(ToastContext);
 }
 
+// Fondo sólido: tinte de status mezclado sobre --card (antes el /10 dejaba
+// pasar el contenido de atrás). Texto con los tokens -text (AA sobre el tinte).
 const typeConfig = {
     success: {
         Icon: CheckCircle,
-        wrapper: 'bg-[color:var(--color-status-success)]/10 border-[color:var(--color-status-success)]/30',
-        text: 'text-[color:var(--color-status-success)]',
+        wrapper: 'bg-[color-mix(in_srgb,var(--color-status-success)_12%,var(--card))] border-[color:var(--color-status-success)]/30',
+        text: 'text-[color:var(--color-status-success-text)]',
         iconClass: 'text-[color:var(--color-status-success)]',
     },
     error: {
         Icon: XCircle,
-        wrapper: 'bg-[color:var(--color-status-critical)]/10 border-[color:var(--color-status-critical)]/30',
-        text: 'text-[color:var(--color-status-critical)]',
+        wrapper: 'bg-[color-mix(in_srgb,var(--color-status-critical)_12%,var(--card))] border-[color:var(--color-status-critical)]/30',
+        text: 'text-[color:var(--color-status-critical-text)]',
         iconClass: 'text-[color:var(--color-status-critical)]',
     },
     info: {
         Icon: Info,
-        wrapper: 'bg-[color:var(--color-status-info)]/10 border-[color:var(--color-status-info)]/30',
-        text: 'text-[color:var(--color-status-info)]',
+        wrapper: 'bg-[color-mix(in_srgb,var(--color-status-info)_12%,var(--card))] border-[color:var(--color-status-info)]/30',
+        text: 'text-[color:var(--color-status-info-text)]',
         iconClass: 'text-[color:var(--color-status-info)]',
     },
 } as const;
 
 function Toaster({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: string) => void }) {
-    if (toasts.length === 0) return null;
+    // La región aria-live va SIEMPRE montada: si aparece junto con el toast,
+    // los screen readers no anuncian el primer mensaje.
     return (
         <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-2" role="status" aria-live="polite">
             {toasts.map((toast) => {
@@ -74,7 +79,7 @@ function Toaster({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: strin
                         <p className={`flex-1 text-sm font-medium ${text}`}>{toast.message}</p>
                         <button
                             onClick={() => onDismiss(toast.id)}
-                            className={`rounded p-0.5 opacity-60 hover:opacity-100 ${text}`}
+                            className={`-my-3 -mr-3 flex h-11 w-11 shrink-0 items-center justify-center rounded opacity-60 hover:opacity-100 ${text}`}
                             aria-label="Cerrar"
                         >
                             <X className="h-3.5 w-3.5" />

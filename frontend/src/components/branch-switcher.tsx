@@ -1,6 +1,7 @@
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
+import { useToast } from '@/components/ui/toast';
 import { useActiveBranch } from '@/hooks/use-active-branch';
 import { useIsAnyDirty } from '@/hooks/use-dirty-state';
 import { apiFetch } from '@/lib/api';
@@ -32,6 +33,7 @@ type SwitchBlocker = { kind: 'cash_open'; openSessionId: string | null; branchId
  */
 export function BranchSwitcher() {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const { activeBranch, branches } = useActiveBranch();
     const { permissions = [], activeCompany } = useSharedData();
     const [switching, setSwitching] = useState(false);
@@ -106,6 +108,12 @@ export function BranchSwitcher() {
                     // respuesta no-JSON, dejar caer.
                 }
             }
+
+            // Cualquier otro fallo (403, 500, 422 sin code) era silencioso:
+            // el usuario quedaba en la sede anterior sin explicación.
+            showToast('error', 'No se pudo cambiar de sede. Intenta de nuevo.');
+        } catch {
+            showToast('error', 'Error de conexión al cambiar de sede. Intenta de nuevo.');
         } finally {
             setSwitching(false);
         }
@@ -160,7 +168,7 @@ export function BranchSwitcher() {
                 <MapPin className="text-muted-foreground size-4 shrink-0" />
             )}
             <span className={cn('flex-1 truncate font-medium', fade)}>{activeBranch.name}</span>
-            {activeBranch.is_default && <Star className={cn('size-3 shrink-0 fill-amber-500 text-amber-500', fade)} />}
+            {activeBranch.is_default && <Star className={cn('size-3 shrink-0 fill-[color:var(--color-category-amber)] text-[color:var(--color-category-amber)]', fade)} />}
             {hasMultiple && <ChevronDown className={cn('text-muted-foreground size-3 shrink-0', fade)} />}
         </div>
     );
@@ -209,7 +217,7 @@ export function BranchSwitcher() {
                                 >
                                     <MapPin className="text-muted-foreground size-4 shrink-0" />
                                     <span className="flex-1 truncate">{branch.name}</span>
-                                    {branch.is_default && <Star className="size-3 shrink-0 fill-amber-500 text-amber-500" />}
+                                    {branch.is_default && <Star className="size-3 shrink-0 fill-[color:var(--color-category-amber)] text-[color:var(--color-category-amber)]" />}
                                     {branch.id === activeBranch.id && <span className="text-muted-foreground text-xs">activa</span>}
                                 </DropdownMenuItem>
                             ))}

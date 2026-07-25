@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Ingredient } from '@/types/inventory';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -90,7 +91,7 @@ export function AdjustStockModal({ open, onClose, onSubmit, ingredient, submitti
                         <Input
                             id="adj_ref"
                             value={reference}
-                            onChange={(e) => setReference(e.target.value)}
+                            onChange={(e) => setReference(sanitizePlainText(e.target.value, 255, false, false))}
                             placeholder="Conteo físico, conciliación, error de captura…"
                             required
                             minLength={3}

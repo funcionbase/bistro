@@ -95,8 +95,8 @@ Los tokens viven en `resources/css/app.css`. La app usa el sistema de variables 
 --muted-foreground: #6B7280;
 --border:           #E5E5E5;
 
-/* Sidebar (tono cálido editorial) */
---sidebar-background: #F6F5F3;
+/* Sidebar */
+--sidebar-background: #F0F0F0;   /* mismo neutro que --background (valor real en app.css) */
 --sidebar-accent:     #EEF3FF;
 --sidebar-accent-foreground: #0052FF;
 ```
@@ -131,6 +131,24 @@ Para estados operativos (stock, turno activo, sincronización, cuadre de caja). 
 --color-status-warning:  #F39C12;   /* dark: #FBBF24 */
 --color-status-critical: #D9402A;   /* dark: #F0876B · unificado con --destructive (terracota editorial) */
 ```
+
+#### Tokens de texto sobre fills de status (`--color-status-*-text`)
+
+El color de status a secas no llega a AA como **texto** sobre su propio tinte `/10`–`/15` en light mode. Para eso existen los tokens `-text` (stop 800), que usan `Badge`, `Alert` y `Toast` en sus variants con fill:
+
+```css
+/* Light (stop 800) */
+--color-status-safe-text:     #065F46;
+--color-status-warning-text:  #92400E;
+--color-status-critical-text: #991B1B;
+--color-status-info-text:     #075985;
+--color-status-success-text:  #065F46;
+
+/* Dark: apuntan al status base, que ya contrasta sobre tinte oscuro */
+--color-status-safe-text:     var(--color-status-safe);   /* etc. */
+```
+
+Uso: fill con el status base (`bg-[color:var(--color-status-safe)]/15`), texto con el `-text` (`text-[color:var(--color-status-safe-text)]`). Íconos y dots siguen con el status base (requisito gráfico 3:1, no 4.5:1).
 
 **Convención de uso por dominio:**
 
@@ -394,15 +412,15 @@ Tracking en modo editorial: `tracking-[-0.02em]`. Leading: `leading-[1.05]` para
 
 ### Reglas
 
-- **H1 de página (denso)** — listings, forms, tablas, settings: `text-2xl md:text-3xl font-semibold text-foreground tracking-tight`. Sin `font-brand`.
-- **H1 de página (editorial)** — dashboard, reportes, KPI hero, pantallas de logro: `text-3xl md:text-4xl lg:text-5xl font-semibold text-foreground tracking-[-0.02em] leading-[1.05]`. Sin `font-brand`. Alineado a la izquierda.
+- **H1 de página (denso)** — listings, forms, tablas, settings: `text-2xl md:text-3xl font-medium text-foreground tracking-tight`. `PageHeader` aplica `font-brand` al H1 — decisión vigente (antes esta guía decía "sin font-brand"; el código gana).
+- **H1 de página (editorial)** — dashboard, reportes, KPI hero, pantallas de logro: `text-3xl md:text-4xl lg:text-5xl font-medium text-foreground tracking-[-0.02em] leading-[1.05]`. `PageHeader` aplica `font-brand` también aquí (decisión vigente). Alineado a la izquierda.
 - **Hero de auth/welcome** — momento de marca puro: `font-brand text-4xl md:text-5xl lg:text-6xl font-medium leading-[1.05] tracking-[-0.02em]`. Aquí sí va `FlexyFont`.
 - **Eyebrow / pill encima del H1** — opcional pero recomendado en páginas editoriales: chip uppercase `tracking-[0.18em]` con `bg-accent text-accent-foreground` (modo "logro") o `bg-secondary text-secondary-foreground` (modo neutro). Patrón idéntico al "nuestros servicios" del landing.
 - **Body**: `text-base` con `leading-relaxed` (1.625). Para descripciones extensas, `text-sm text-muted-foreground`. En hero editorial el sub-hero usa `text-lg md:text-xl text-muted-foreground max-w-2xl`.
 - **Labels de form**: `text-sm font-medium`. Siempre asociar al input vía `<Label htmlFor>`.
 - **Chips uppercase**: `text-[11px] uppercase tracking-[0.15em] font-semibold` (default) o `tracking-[0.18em]` (pill editorial). Usar para etiquetas de sección (`COLABORADORES`, `CAJA`, `REPORTES`).
 - **Números financieros**: `tabular-nums` siempre — alinea decimales en tablas y totales.
-- **Números KPI grandes (editorial)**: `font-brand` permitido como excepción cuando el número es el "héroe" del bloque (ej. `font-brand text-4xl md:text-6xl tabular-nums` en KpiHero / stats lime). Para KPIs estándar dentro de cards densas, sigue `tabular-nums` con `Instrument Sans` `font-semibold`.
+- **Números KPI grandes (editorial)**: `font-brand` permitido como excepción cuando el número es el "héroe" del bloque (ej. `font-brand text-4xl md:text-6xl tabular-nums` en KpiHero / stats lime). `KpiCell` también aplica `font-brand` al valor (`font-brand text-base md:text-lg font-semibold tabular-nums`) — decisión vigente.
 - **Headings nunca centrados** en páginas operativas. Centrado se reserva para modales pequeños, empty states y CTAFinal-style.
 
 ---
@@ -424,7 +442,7 @@ La app se monta con `AppShell` → `AppSidebar` + `AppContent`. No es un landing
 └─────────────┴────────────────────────────────────┘
 ```
 
-- **Sidebar**: `Sidebar` de shadcn (`components/ui/sidebar.tsx`). Background `--sidebar-background` (`#F6F5F3` light / `#1E232E` dark). Colapsable en desktop, drawer en mobile.
+- **Sidebar**: `Sidebar` de shadcn (`components/ui/sidebar.tsx`). Background `--sidebar-background` (`#F0F0F0` light / `#1E232E` dark). Colapsable en desktop, drawer en mobile.
 - **Container de página**: `max-w-7xl mx-auto px-4 md:px-6`. Para reportes y tablas anchas, `max-w-screen-2xl`.
 
 ### Spacing dual (denso vs editorial)

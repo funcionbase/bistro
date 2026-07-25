@@ -1,7 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAlerts, type AlertEvent, type AlertSeverity } from '@/hooks/use-alerts';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { route } from '@/lib/route-compat';
 import { AlertCircle, AlertTriangle, ChevronRight, Info, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
@@ -32,6 +36,11 @@ const SEVERITY_META: Record<AlertSeverity, { label: string; color: string; icon:
 export function AlertsFeed() {
     const { alerts, loading, error, dismiss, action } = useAlerts('active');
     const [busy, setBusy] = useState<string | null>(null);
+    // Dialog "Marcar revisado": reemplaza al window.prompt (bloqueante, sin
+    // estilo del DS y sin sanitización). Guarda el id de la alerta objetivo.
+    const [actionTarget, setActionTarget] = useState<string | null>(null);
+    const [actionNote, setActionNote] = useState('');
+    const [actionError, setActionError] = useState<string | null>(null);
 
     if (loading && alerts.length === 0) {
         return (
@@ -66,31 +75,70 @@ export function AlertsFeed() {
         }
     };
 
-    const handleAction = async (id: string) => {
-        const note = window.prompt('Nota opcional sobre la acción tomada:') ?? undefined;
-        setBusy(id);
+    const handleAction = (id: string) => {
+        setActionTarget(id);
+        setActionNote('');
+        setActionError(null);
+    };
+
+    const confirmAction = async () => {
+        if (!actionTarget) return;
+        setBusy(actionTarget);
+        setActionError(null);
         try {
-            await action(id, note ?? undefined);
+            await action(actionTarget, actionNote.trim() || undefined);
+            setActionTarget(null);
+        } catch (err) {
+            setActionError(err instanceof Error ? err.message : 'No se pudo marcar la alerta como revisada.');
         } finally {
             setBusy(null);
         }
     };
 
     return (
-        <Card className="rounded-2xl shadow-sm">
-            <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                    <AlertTriangle className="h-4 w-4" />
-                    Alertas activas
-                    <Badge variant="outline">{alerts.length}</Badge>
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                {alerts.map((alert) => (
-                    <AlertRow key={alert.id} alert={alert} busy={busy === alert.id} onDismiss={handleDismiss} onAction={handleAction} />
-                ))}
-            </CardContent>
-        </Card>
+        <>
+            <Card className="rounded-2xl shadow-sm">
+                <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <AlertTriangle className="h-4 w-4" />
+                        Alertas activas
+                        <Badge variant="outline">{alerts.length}</Badge>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {alerts.map((alert) => (
+                        <AlertRow key={alert.id} alert={alert} busy={busy === alert.id} onDismiss={handleDismiss} onAction={handleAction} />
+                    ))}
+                </CardContent>
+            </Card>
+
+            <Dialog open={actionTarget !== null} onOpenChange={(o) => !o && setActionTarget(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Marcar alerta como revisada</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="alert-action-note">Nota opcional sobre la acción tomada</Label>
+                        <Input
+                            id="alert-action-note"
+                            value={actionNote}
+                            onChange={(e) => setActionNote(sanitizePlainText(e.target.value, 500, true, false))}
+                            maxLength={500}
+                            placeholder="Ej: se ajustó el precio del plato"
+                        />
+                    </div>
+                    {actionError && <p className="text-destructive text-sm">{actionError}</p>}
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setActionTarget(null)} disabled={busy !== null}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={() => void confirmAction()} disabled={busy !== null}>
+                            {busy !== null ? 'Guardando…' : 'Confirmar'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

@@ -206,10 +206,11 @@ class OrderController extends Controller
         $company = Company::where('nit', $companyNit)->firstOrFail();
         $items = $this->buildOrderLines($validated['items'], $catalog, $company, $this->activeBranchId($request));
 
-        // Paridad con el flujo público (BranchOrderController): las órdenes
-        // delivery cargan el costo de domicilio configurado por sede como línea
-        // sintética ANTES del aggregate, para que el prorrateo del cupón y el
-        // invariante `total = SUM(líneas)` queden idénticos.
+        // Domicilio (#whatsapp F1): la caja también aplica el costo de envío
+        // por sede como línea sintética "Domicilio" (tax 0), igual que el
+        // pedido público, ANTES del aggregate para que el prorrateo del cupón
+        // quede idéntico a recalculateAndSave. Helper compartido con el replay
+        // offline (SyncController) — sin él la orden sincronizada perdía el fee.
         if ($validated['order_type'] === 'delivery') {
             $items = $this->appendDeliveryFeeLine($items, $branchId, $company);
         }

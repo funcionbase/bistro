@@ -34,13 +34,13 @@ class ValidateJwt
         $token = $this->jwtService->extractTokenFromRequest($request);
 
         if ($token === null) {
-            return response()->json(['message' => 'Token no proporcionado.'], 401);
+            return response()->json(['message' => 'Token no proporcionado.', 'code' => 'auth_failed'], 401);
         }
 
         try {
             $payload = $this->jwtService->verify($token);
         } catch (RuntimeException) {
-            return response()->json(['message' => 'Token inválido o expirado.'], 401);
+            return response()->json(['message' => 'Token inválido o expirado.', 'code' => 'auth_failed'], 401);
         }
 
         $request->attributes->set('jwt_token', $token);

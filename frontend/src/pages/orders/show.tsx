@@ -30,6 +30,9 @@ import type { ClosePaymentInput, TableOrder } from '@/hooks/use-tables';
 import { usePaymentMethods } from '@/hooks/use-payment-methods';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
+import { sumMoney } from '@/lib/money';
+import { isTerminal as isTerminalStatus } from '@/lib/order-status';
+import { useOrderStatuses } from '@/hooks/use-order-statuses';
 import { formatOrderTypeLabel } from '@/lib/order-type';
 import { shortOrderCode } from '@/lib/order-code';
 import { useSharedData } from '@/lib/shared-data';
@@ -180,8 +183,6 @@ const ADVANCE_STATUSES = [
     { key: 'completed', label: 'Completado', rank: 5 },
 ] as const;
 
-const TERMINAL_STATUSES = new Set(['completed', 'cancelled', 'refunded']);
-
 function rankOf(status: string): number {
     return ADVANCE_STATUSES.find((e) => e.key === status)?.rank ?? 0;
 }
@@ -195,6 +196,7 @@ export default function OrderShow() {
     const { session: cashSession, selectedRegister } = useCashRegister(token);
     const { auth } = useSharedData();
     const paymentCatalog = usePaymentMethods();
+    const orderStatuses = useOrderStatuses();
     const cashierName = auth.user.first_name
         ? `${auth.user.first_name} ${auth.user.last_name ?? ''}`.trim()
         : auth.user.name;
@@ -344,13 +346,13 @@ export default function OrderShow() {
     useEffect(() => {
         if (!orderStatus) return;
         const sessionDone = !orderSessionId || sessionStatus === 'closed' || sessionStatus === 'expired';
-        if (TERMINAL_STATUSES.has(orderStatus) && sessionDone) return;
+        if (isTerminalStatus(orderStatuses, orderStatus) && sessionDone) return;
         const interval = window.setInterval(() => {
             if (document.hidden) return; // pestaña oculta: no gastar backend
             void fetchAll();
         }, 10_000);
         return () => window.clearInterval(interval);
-    }, [orderStatus, orderSessionId, sessionStatus, fetchAll]);
+    }, [orderStatus, orderSessionId, sessionStatus, orderStatuses, fetchAll]);
 
     // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -362,7 +364,9 @@ export default function OrderShow() {
         return map;
     }, [sessionDetail]);
 
-    const isTerminal = TERMINAL_STATUSES.has(order?.status ?? '');
+    // Cubre TODOS los terminales (completed/failed/cancelled/refunded/abandoned)
+    // vía la config canónica — el set local anterior omitía failed/abandoned.
+    const isTerminal = isTerminalStatus(orderStatuses, order?.status ?? '');
     const isQrSession = Boolean(order?.table_session_id);
     const sessionClosed = cashierState?.session.status === 'closed';
 
@@ -587,9 +591,11 @@ export default function OrderShow() {
             setActionError('Selecciona al menos un item para cobrar.');
             return;
         }
-        const subtotal = guest.items
-            .filter((i) => itemIds.includes(i.id))
-            .reduce((acc, i) => acc + Number.parseFloat(i.subtotal), 0);
+        // Suma monetaria con redondeo bancario (espejo backend); toFixed queda
+        // solo como formato final del string enviado.
+        const subtotal = sumMoney(
+            guest.items.filter((i) => itemIds.includes(i.id)).map((i) => Number.parseFloat(i.subtotal)),
+        );
         setPaySheet({ kind: 'partial', guestId: guest.id, itemIds, amount: subtotal.toFixed(2) });
     };
 
@@ -1627,54 +1633,78 @@ export default function OrderShow() {
                         loading={busy}
                     />
 
-                    <ConfirmDialog
-                        open={!!refundItem}
+                    {/* Refund por ítem: UN solo diálogo con método + referencia +
+                        confirmar. El panel fijo z-40 anterior quedaba debajo del
+                        overlay z-50 del ConfirmDialog (Radix modal bloquea
+                        pointer-events) y era inoperable. */}
+                    <BottomSheetDialog
+                        isOpen={!!refundItem}
+                        onClose={() => setRefundItem(null)}
                         title={`Devolver "${refundItem?.name ?? ''}"`}
-                        message={`Se creará un comprobante de devolución por ${refundItem ? formatCurrency(Number.parseFloat(refundItem.amount)) : ''}. El item quedará marcado como devuelto; la venta original se conserva. Esta acción no es reversible.`}
-                        confirmLabel="Devolver"
-                        onConfirm={() => void submitRefund()}
-                        onCancel={() => setRefundItem(null)}
-                        loading={busy}
-                    />
-
-                    {refundItem && (
-                        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md space-y-2 px-4 pt-4 pb-safe-1">
-                            <div className="bg-card border-border rounded-2xl border p-3 shadow-lg">
-                                <p className="text-foreground mb-2 text-xs font-semibold">Detalles del refund</p>
-                                <div
-                                    className="grid gap-2"
-                                    style={{
-                                        gridTemplateColumns: `repeat(${paymentCatalog.methods.length}, minmax(0, 1fr))`,
-                                    }}
+                        className="max-w-md"
+                    >
+                        <div className="space-y-3 p-4">
+                            <p className="text-muted-foreground text-sm">
+                                Se creará un comprobante de devolución por{' '}
+                                {refundItem ? formatCurrency(Number.parseFloat(refundItem.amount)) : ''}. El item
+                                quedará marcado como devuelto; la venta original se conserva. Esta acción no es
+                                reversible.
+                            </p>
+                            <div
+                                className="grid gap-2"
+                                style={{
+                                    gridTemplateColumns: `repeat(${paymentCatalog.methods.length}, minmax(0, 1fr))`,
+                                }}
+                            >
+                                {paymentCatalog.methods.map((m) => (
+                                    <Button
+                                        key={m}
+                                        type="button"
+                                        size="sm"
+                                        variant={refundMethod === m ? 'default' : 'outline'}
+                                        onClick={() => setRefundMethod(m)}
+                                    >
+                                        {paymentCatalog.labels[m]}
+                                    </Button>
+                                ))}
+                            </div>
+                            {/* El backend exige referencia SIEMPRE en refund-item
+                                (TableCashierController::refundItem), sin importar el método. */}
+                            <div>
+                                <Label htmlFor="refund-ref" className="text-xs">
+                                    Referencia comprobante de devolución (obligatorio)
+                                </Label>
+                                <Input
+                                    id="refund-ref"
+                                    value={refundReference}
+                                    onChange={(e) => setRefundReference(sanitizePlainText(e.target.value, 120, false, false))}
+                                    maxLength={120}
+                                    placeholder="Ej: voucher reverso 8732"
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setRefundItem(null)}
+                                    disabled={busy}
                                 >
-                                    {paymentCatalog.methods.map((m) => (
-                                        <Button
-                                            key={m}
-                                            type="button"
-                                            size="sm"
-                                            variant={refundMethod === m ? 'default' : 'outline'}
-                                            onClick={() => setRefundMethod(m)}
-                                        >
-                                            {paymentCatalog.labels[m]}
-                                        </Button>
-                                    ))}
-                                </div>
-                                <div className="mt-2">
-                                    <Label htmlFor="refund-ref" className="text-xs">
-                                        Referencia comprobante de devolución (obligatorio)
-                                    </Label>
-                                    <Input
-                                        id="refund-ref"
-                                        value={refundReference}
-                                        onChange={(e) => setRefundReference(sanitizePlainText(e.target.value, 120, false, false))}
-                                        maxLength={120}
-                                        placeholder="Ej: voucher reverso 8732"
-                                        className="mt-1"
-                                    />
-                                </div>
+                                    <X className="mr-1 h-3.5 w-3.5" /> Cancelar
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => void submitRefund()}
+                                    disabled={busy || refundReference.trim() === ''}
+                                >
+                                    {busy ? 'Devolviendo…' : 'Devolver'}
+                                </Button>
                             </div>
                         </div>
-                    )}
+                    </BottomSheetDialog>
                 </>
             )}
 

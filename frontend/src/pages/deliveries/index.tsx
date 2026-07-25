@@ -85,7 +85,7 @@ export default function DaySalesIndex() {
         return () => clearTimeout(t);
     }, [draftDateFrom, draftDateTo, draftSearch, draftMinAmount, draftMaxAmount, statusFilters, syncUrl]);
 
-    const { orders, summary, period, loading, error, refresh, lastUpdated } = useDaySales(token, applied);
+    const { orders, summary, period, loading, error, refresh, lastUpdated, truncated } = useDaySales(token, applied);
 
     const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
     const [cancelling, setCancelling] = useState(false);
@@ -105,11 +105,13 @@ export default function DaySalesIndex() {
     const filteredOrders = statusFilters.length > 0 ? orders.filter((o) => statusFilters.includes(o.status)) : orders;
 
     // KPIs siempre derivados de filteredOrders para que coincidan con la tabla.
-    // total_refunded es aproximado (orders.total, no receipts) pero consistente.
     const displaySummary = useMemo((): DaySalesSummaryData | null => {
         if (!summary) return null;
         const gross = filteredOrders.filter((o) => o.status === 'completed').reduce((s, o) => s + Number(o.total), 0);
-        const refunds = filteredOrders.filter((o) => o.status === 'refunded').reduce((s, o) => s + Number(o.total), 0);
+        // "Devuelto" = suma de lo efectivamente devuelto (receipts acumulados en
+        // refund.total_refunded_all) sobre TODAS las órdenes — cubre refunds
+        // parciales de órdenes que siguen en `completed`, no solo status refunded.
+        const refunds = filteredOrders.reduce((s, o) => s + (o.refund?.total_refunded_all ?? 0), 0);
         return {
             total_orders: filteredOrders.length,
             completed: filteredOrders.filter((o) => o.status === 'completed').length,
@@ -290,6 +292,15 @@ export default function DaySalesIndex() {
                             }
                         />
 
+                        {truncated && (
+                            <Alert variant="warning">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>
+                                    El período tiene más órdenes de las que se pueden listar (tope de 1000). La tabla
+                                    y los KPIs están incompletos: acota el rango de fechas.
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <DaySalesSummary summary={displaySummary} formatCurrency={formatCurrency} />
 
                         {/* Filtros */}

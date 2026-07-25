@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { cn } from '@/lib/utils';
 import type { PurchasePaymentMethod } from '@/types/purchases';
 import { PAYMENT_LABELS } from '@/types/purchases';
@@ -70,7 +71,7 @@ export function MarkPaidModal({ open, onClose, onConfirm, submitting, errors }: 
                         <Input
                             id="reference"
                             value={reference}
-                            onChange={(e) => setReference(e.target.value)}
+                            onChange={(e) => setReference(sanitizePlainText(e.target.value, 120, false, false))}
                             required={requiresRef}
                             maxLength={120}
                             placeholder={requiresRef ? 'N° comprobante / autorización' : ''}

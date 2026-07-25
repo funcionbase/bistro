@@ -49,7 +49,7 @@ export function ActiveBranchBadge({ className, force = false }: ActiveBranchBadg
         >
             <MapPin className="size-3 text-muted-foreground" aria-hidden="true" />
             <span className="truncate max-w-[160px]">{activeBranch.name}</span>
-            {activeBranch.is_default && <Star className="size-3 fill-amber-500 text-amber-500" aria-hidden="true" />}
+            {activeBranch.is_default && <Star className="size-3 fill-[color:var(--color-category-amber)] text-[color:var(--color-category-amber)]" aria-hidden="true" />}
         </span>
     );
 }

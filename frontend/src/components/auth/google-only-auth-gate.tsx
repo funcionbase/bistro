@@ -54,7 +54,7 @@ const VARIANT_COPY: Record<
         eyebrow: 'Sin contraseñas',
         title: 'No hay nada que recuperar.',
         description:
-            'En bistro no hay contraseñas: entrás con Google y listo. Si perdiste el acceso a tu cuenta de Google, recuperalo desde Google directamente.',
+            'En bistro no hay contraseñas: entras con Google y listo. Si perdiste el acceso a tu cuenta de Google, recupéralo desde Google directamente.',
         documentTitle: 'Recuperar acceso',
     },
     'reset-password': {
@@ -68,7 +68,7 @@ const VARIANT_COPY: Record<
         eyebrow: 'Verificación',
         title: 'Tu correo se verifica con Google.',
         description:
-            'Cuando entras con Google, tu correo ya queda verificado. No necesitás abrir ningún enlace.',
+            'Cuando entras con Google, tu correo ya queda verificado. No necesitas abrir ningún enlace.',
         documentTitle: 'Verificar correo',
     },
     'confirm-password': {
@@ -213,12 +213,12 @@ export default function GoogleOnlyAuthGate({ variant = 'login', manualOnly = fal
 
                 {(cancelled || !autoRedirectEnabled) && (
                     <p className="text-muted-foreground text-xs">
-                        Pulsá <span className="font-medium">Continuar con Google</span> cuando estés listo.
+                        Pulsa <span className="font-medium">Continuar con Google</span> cuando estés listo.
                     </p>
                 )}
 
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                    Al continuar aceptás los Términos y la Política de privacidad de flexyflow. Tu sesión queda asociada a la cuenta de Google con la que entres.
+                    Al continuar aceptas los Términos y la Política de privacidad de flexyflow. Tu sesión queda asociada a la cuenta de Google con la que entres.
                 </p>
             </div>
         </AuthHeroLayout>

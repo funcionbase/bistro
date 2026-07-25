@@ -7,10 +7,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDirtyState } from '@/hooks/use-dirty-state';
 import { apiFetch } from '@/lib/api';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { CompanyRole, CompanyRolePermission, Feature } from '@/types';
 import { AlertCircle, LoaderCircle, X } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 
 interface RoleEditorProps {
     role: CompanyRole | null;
@@ -50,6 +52,15 @@ export default function RoleEditor({ role, features, existingRoles = [], onClose
     const [processing, setProcessing] = useState(false);
 
     const isEditing = role !== null;
+
+    // Dirty tracking (#192): snapshot del estado editable en el primer render;
+    // cualquier diferencia registra el ticket global (BranchSwitcher lo consulta).
+    const editableSnapshot = useMemo(() => JSON.stringify({ name, description, color, permissions }), [name, description, color, permissions]);
+    const initialSnapshotRef = useRef<string | null>(null);
+    if (initialSnapshotRef.current === null) {
+        initialSnapshotRef.current = editableSnapshot;
+    }
+    useDirtyState(editableSnapshot !== initialSnapshotRef.current, 'role-editor');
 
     const cloneableRoles = useMemo(() => existingRoles.filter((r) => r.id !== role?.id), [existingRoles, role?.id]);
 
@@ -170,7 +181,8 @@ export default function RoleEditor({ role, features, existingRoles = [], onClose
                                     id="role-name"
                                     required
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => setName(sanitizePlainText(e.target.value, 64, false, false))}
+                                    maxLength={64}
                                     placeholder="Ej: Cajero"
                                     aria-invalid={duplicateName || !!errors.name}
                                 />
@@ -185,7 +197,8 @@ export default function RoleEditor({ role, features, existingRoles = [], onClose
                                 <Input
                                     id="role-desc"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) => setDescription(sanitizePlainText(e.target.value, 255, true, false))}
+                                    maxLength={255}
                                     placeholder="Para qué sirve este rol"
                                 />
                                 <InputError message={errors.description} className="text-xs" />

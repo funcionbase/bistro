@@ -225,13 +225,20 @@ export default function RecipeEditorModal({ open, onClose, menuId, itemId, itemN
         if (pendingCostSync === null || !savedRecipe) return;
         setSaving(true);
         try {
-            await apiFetch(`/api/v1/menus/${menuId}/items/${itemId}`, {
+            // Se envía el costo tal como lo entregó el backend (string decimal),
+            // sin redondeo local que pueda desalinear el valor persistido.
+            const res = await apiFetch(`/api/v1/menus/${menuId}/items/${itemId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cost: Math.round(pendingCostSync * 100) / 100 }),
+                body: JSON.stringify({ cost: savedRecipe.total_cost }),
             });
+            if (!res.ok) {
+                showToast('error', 'No se pudo actualizar el costo del ítem.');
+                return;
+            }
         } catch {
             showToast('error', 'No se pudo actualizar el costo del ítem.');
+            return;
         } finally {
             setSaving(false);
         }

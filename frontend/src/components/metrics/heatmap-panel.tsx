@@ -36,7 +36,9 @@ export default function HeatmapPanel({ data, loading = false, error = false, ret
                     data={data?.hours ?? []}
                     peakHour={data?.peak_hour ?? null}
                     currentHour={data?.current_hour}
-                    loading={loading || !data}
+                    // Skeleton solo sin datos: con datos y refetch en vuelo la
+                    // gráfica queda montada (evita flicker en cada poll).
+                    loading={!data}
                 />
             )}
         </DashboardPanel>

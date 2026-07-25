@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/toast';
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 import { todayInBogota } from '@/lib/datetime';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import { useSharedData } from '@/lib/shared-data';
 import { cn } from '@/lib/utils';
 
@@ -63,7 +64,23 @@ function addDays(d: Date, n: number): Date {
 }
 
 function fmtDate(d: Date): string {
-    return d.toISOString().slice(0, 10);
+    // Componentes locales (no toISOString, que convierte a UTC y corre la fecha
+    // un día en zonas con offset negativo como América/Bogotá).
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+// Filas de fecha del form: id estable para el key de React (evita que al
+// borrar una fila intermedia se reutilice el input equivocado).
+let dateRowSeq = 0;
+interface DateRow {
+    id: string;
+    value: string;
+}
+function newDateRow(value: string): DateRow {
+    return { id: `d${dateRowSeq++}`, value };
 }
 
 function fmtDayLabel(d: Date): string {
@@ -126,7 +143,7 @@ export default function Planner() {
     const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
     const [justCreatedShiftId, setJustCreatedShiftId] = useState<string | null>(null);
     const [formEmployeeId, setFormEmployeeId] = useState('');
-    const [formDates, setFormDates] = useState<string[]>([fmtDate(weekStart)]);
+    const [formDates, setFormDates] = useState<DateRow[]>(() => [newDateRow(fmtDate(weekStart))]);
     const [formStart, setFormStart] = useState('09:00');
     const [formEnd, setFormEnd] = useState('17:00');
     const [createSkipped, setCreateSkipped] = useState<string[]>([]);
@@ -140,7 +157,7 @@ export default function Planner() {
     // ── Week computed ────────────────────────────────────────────────────────
     const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
     const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
-    const selectedDateCount = useMemo(() => new Set(formDates.filter(Boolean)).size, [formDates]);
+    const selectedDateCount = useMemo(() => new Set(formDates.map((r) => r.value).filter(Boolean)).size, [formDates]);
 
     const shiftsByEmployeeDay = useMemo(() => {
         const map = new Map<string, Shift[]>();
@@ -210,7 +227,7 @@ export default function Planner() {
 
     const monthHasShifts = useMemo(() => {
         for (const s of monthShifts) {
-            const d = new Date(s.starts_at.slice(0, 10));
+            const d = new Date(`${s.starts_at.slice(0, 10)}T00:00:00`);
             if (d.getMonth() === anchor.getMonth() && d.getFullYear() === anchor.getFullYear()) return true;
         }
         return false;
@@ -287,7 +304,7 @@ export default function Planner() {
         setCreateErrors({});
         setCreateSkipped([]);
         setFormEmployeeId('');
-        setFormDates([fmtDate(weekStart)]);
+        setFormDates([newDateRow(fmtDate(weekStart))]);
         setFormStart('09:00');
         setFormEnd('17:00');
         setCreateOpen(true);
@@ -295,15 +312,18 @@ export default function Planner() {
 
     const addDateRow = () => {
         setFormDates((prev) => {
-            const valid = prev.filter(Boolean).sort();
+            const valid = prev
+                .map((r) => r.value)
+                .filter(Boolean)
+                .sort();
             const base = valid.length > 0 ? valid[valid.length - 1] : fmtDate(weekStart);
             const next = fmtDate(addDays(new Date(`${base}T00:00:00`), 1));
-            return [...prev, next];
+            return [...prev, newDateRow(next)];
         });
     };
 
     const updateDateRow = (idx: number, value: string) => {
-        setFormDates((prev) => prev.map((d, i) => (i === idx ? value : d)));
+        setFormDates((prev) => prev.map((r, i) => (i === idx ? { ...r, value } : r)));
     };
 
     const removeDateRow = (idx: number) => {
@@ -322,7 +342,7 @@ export default function Planner() {
     const createShift = async () => {
         setCreateErrors({});
         setCreateSkipped([]);
-        const uniqueDates = Array.from(new Set(formDates.filter(Boolean)));
+        const uniqueDates = Array.from(new Set(formDates.map((r) => r.value).filter(Boolean)));
         const errs: Record<string, string> = {};
         if (!formEmployeeId) errs.employee_id = 'Selecciona un colaborador.';
         if (uniqueDates.length === 0) errs.date = 'Agrega al menos una fecha.';
@@ -762,11 +782,11 @@ export default function Planner() {
                         <div className="grid gap-2">
                             <Label>Fechas *</Label>
                             <div className="space-y-2">
-                                {formDates.map((d, idx) => (
-                                    <div key={idx} className="flex items-center gap-2">
+                                {formDates.map((row, idx) => (
+                                    <div key={row.id} className="flex items-center gap-2">
                                         <Input
                                             type="date"
-                                            value={d}
+                                            value={row.value}
                                             onChange={(e) => updateDateRow(idx, e.target.value)}
                                             aria-label={`Fecha ${idx + 1}`}
                                         />
@@ -852,7 +872,8 @@ export default function Planner() {
                             <textarea
                                 id="cancel-note"
                                 value={cancelNote}
-                                onChange={(e) => setCancelNote(e.target.value)}
+                                onChange={(e) => setCancelNote(sanitizePlainText(e.target.value, 500, true, false))}
+                                maxLength={500}
                                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-1 focus-visible:outline-hidden"
                                 rows={3}
                                 placeholder="Detalles para el registro"

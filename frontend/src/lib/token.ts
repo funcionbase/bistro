@@ -47,28 +47,14 @@ export function getToken(): string | null {
 }
 
 /**
- * Registra una sesión activa.
- * - Si `value` parece JWT real (formato 3-partes), lo guarda como token legacy
- *   transitorio en memoria + localStorage para enviar Bearer hasta que el backend
- *   migre a cookie.
- * - Si `value` es un marker corto ('present', '__authenticated__'), sólo activa
- *   el flag de autenticación.
+ * Registra una sesión activa. Recibe un marker ('present', '__authenticated__')
+ * y activa el flag de autenticación. Ya NO acepta ni persiste JWTs — el token
+ * vive solo en la cookie HttpOnly; el único JWT legacy admitido es el que
+ * carga el bootstrap desde localStorage (migración transitoria, abajo).
  */
 export function setToken(value: string | null | undefined): void {
     stripTokenFromUrl();
     if (!value) return;
-
-    if (looksLikeJwt(value)) {
-        _legacyToken = value;
-        _authenticated = true;
-        try {
-            localStorage.setItem('token', value);
-        } catch {
-            // localStorage indisponible — ignorar
-        }
-        listeners.forEach((l) => l(value));
-        return;
-    }
 
     if (_authenticated) return;
     _authenticated = true;

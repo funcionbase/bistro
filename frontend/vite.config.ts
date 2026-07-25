@@ -57,7 +57,9 @@ const obfuscatorOptions: ObfuscatorOptions = {
     stringArrayWrappersCount: 2,
     stringArrayWrappersParametersMaxCount: 4,
     stringArrayWrappersType: 'function',
-    stringArrayThreshold: 0.75,
+    // 0.3 (antes 0.75): ofuscar el 75% de strings inflaba el bundle y el costo
+    // de decodificación base64 en runtime sin sumar protección real.
+    stringArrayThreshold: 0.3,
     transformObjectKeys: false,
     unicodeEscapeSequence: false,
 };
@@ -93,6 +95,12 @@ export default defineConfig(({ mode }) => {
                     // `html` incluido para precachear `index.html` y servir el
                     // app-shell del SPA offline vía NavigationRoute (sw.ts).
                     globPatterns: ['**/*.{js,css,woff2,html}'],
+                    // Chunks pesados exclusivos del panel autenticado (nombres
+                    // definidos en codeSplitting.groups abajo): fuera del
+                    // precache — un comensal que abre la carta QR no debe
+                    // descargar recharts/markdown/dnd-kit. El runtime cache
+                    // los guarda bajo demanda cuando el panel los importa.
+                    globIgnores: ['**/vendor-charts-*.js', '**/vendor-markdown-*.js', '**/vendor-dnd-*.js'],
                     // ponytail: 5MB para que chunks obfuscados queden en precache
                     maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
                 },

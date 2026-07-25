@@ -40,6 +40,7 @@ export default function Register() {
         website: '',
     });
     const [captcha, setCaptcha] = useState('');
+    const [captchaReset, setCaptchaReset] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<RegisterErrors>({});
     const [error, setError] = useState<string | null>(null);
@@ -73,10 +74,15 @@ export default function Register() {
             });
             // El registro ya NO auto-loguea (anti-enumeración: sin cookie, la
             // respuesta es idéntica exista o no el correo). Pasamos el email a
-            // la pantalla de verificación para poder reenviar el enlace sin
-            // sesión. Tras verificar, el usuario entra por /login y continúa.
-            const target = res.redirect || '/verify-email';
-            window.location.href = `${target}?email=${encodeURIComponent(res.email ?? email)}`;
+            // la pantalla de verificación vía sessionStorage (no query param:
+            // PII en URL termina en historial, logs y referrers). El query
+            // `?email=` queda solo para el flujo de enlaces de correo.
+            try {
+                sessionStorage.setItem('flexyflow.pending_verification_email', res.email ?? email);
+            } catch {
+                // sessionStorage indisponible — verify-email pedirá reintentar.
+            }
+            window.location.href = res.redirect || '/verify-email';
         } catch (e) {
             if (e instanceof ApiError && e.errors) {
                 const flat: RegisterErrors = {};
@@ -87,6 +93,10 @@ export default function Register() {
             } else {
                 setError('No pudimos crear la cuenta. Intenta de nuevo.');
             }
+            // El token del captcha es de un solo uso: resetear el widget y
+            // esperar uno nuevo antes de habilitar el siguiente submit.
+            setCaptcha('');
+            setCaptchaReset((n) => n + 1);
             setSubmitting(false);
         }
     };
@@ -196,7 +206,7 @@ export default function Register() {
                         />
                     </div>
 
-                    <Turnstile onVerify={setCaptcha} />
+                    <Turnstile onVerify={setCaptcha} resetSignal={captchaReset} />
 
                     {error && (
                         <Alert variant="destructive">

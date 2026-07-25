@@ -47,9 +47,11 @@ interface SalaryRevealProps {
 export function SalaryReveal({ endpoint, payType, revealLabel = 'Revelar (queda auditado)', readOnly = false, onLoaded }: SalaryRevealProps) {
     const [salary, setSalary] = useState<SalaryData | null>(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const reveal = async () => {
         setLoading(true);
+        setError(null);
         try {
             const res = await apiFetch(endpoint);
             if (res.ok) {
@@ -60,7 +62,11 @@ export function SalaryReveal({ endpoint, payType, revealLabel = 'Revelar (queda 
                 };
                 setSalary(next);
                 onLoaded?.(next);
+            } else {
+                setError('No se pudo cargar el salario. Intenta de nuevo.');
             }
+        } catch {
+            setError('Error de conexión al cargar el salario. Intenta de nuevo.');
         } finally {
             setLoading(false);
         }
@@ -83,6 +89,7 @@ export function SalaryReveal({ endpoint, payType, revealLabel = 'Revelar (queda 
                     {loading ? <LoaderCircle className="mr-1.5 h-4 w-4 animate-spin" /> : <Eye className="mr-1.5 h-4 w-4" />}
                     {revealLabel}
                 </Button>
+                {error && <span className="text-[color:var(--color-status-critical)] text-xs" role="alert">{error}</span>}
             </div>
         );
     }

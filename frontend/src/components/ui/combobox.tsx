@@ -68,7 +68,7 @@ interface MultiComboboxProps extends BaseComboboxProps {
 
 export type ComboboxProps = SingleComboboxProps | MultiComboboxProps;
 
-const ITEM_HEIGHT = 36;
+const ITEM_HEIGHT = 36; // ponytail: 36px denso desktop; subir a 44 si móvil lo pide
 const LIST_MAX_HEIGHT = 240;
 const OVERSCAN = 6;
 
@@ -356,7 +356,7 @@ export function Combobox(props: ComboboxProps) {
                 aria-expanded={open}
                 onClick={() => setOpen((o) => !o)}
                 className={cn(
-                    'border-input bg-background flex h-9 w-full items-center rounded-md border py-1 pl-3 text-left text-sm shadow-sm',
+                    'border-input bg-background flex h-9 max-sm:min-h-11 w-full items-center rounded-md border py-1 pl-3 text-left text-sm shadow-sm',
                     showClear ? 'pr-14' : 'pr-9',
                     'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden',
                     'disabled:cursor-not-allowed disabled:opacity-60',
@@ -423,7 +423,7 @@ export function Combobox(props: ComboboxProps) {
                                     style={{ height: ITEM_HEIGHT }}
                                     className={cn(
                                         'flex w-full items-center gap-2 px-3 text-left text-sm',
-                                        activeIndex === 0 ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground',
+                                        activeIndex === 0 ? 'bg-muted text-foreground' : 'hover:bg-muted hover:text-foreground',
                                     )}
                                 >
                                     <Plus className="h-4 w-4 shrink-0" />
@@ -461,9 +461,9 @@ export function Combobox(props: ComboboxProps) {
                                                     isDisabled
                                                         ? 'cursor-not-allowed opacity-50'
                                                         : isActive
-                                                          ? 'bg-accent text-accent-foreground'
-                                                          : 'hover:bg-accent hover:text-accent-foreground',
-                                                    isSelected && !isActive && !isDisabled && 'bg-accent/50',
+                                                          ? 'bg-muted text-foreground'
+                                                          : 'hover:bg-muted hover:text-foreground',
+                                                    isSelected && !isActive && !isDisabled && 'bg-muted/50',
                                                 )}
                                             >
                                                 {renderOption ? (

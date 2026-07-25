@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Input } from '@/components/ui/input';
-import { sanitizePlainText } from '@/lib/input-sanitize';
+import { sanitizePlainText, syncDomValue } from '@/lib/input-sanitize';
 
 interface SanitizedInputProps extends Omit<React.ComponentProps<'input'>, 'onChange' | 'value'> {
     value: string;
@@ -43,12 +43,24 @@ export const SanitizedInput = React.forwardRef<HTMLInputElement, SanitizedInputP
                     // `trim: false` mientras se escribe — si recortáramos en cada
                     // tecla, el espacio final desaparecería y no se podría tipear
                     // un valor multi-palabra (ej. "Juan Pérez").
-                    const next = sanitizePlainText(event.target.value, maxLength, allowWhitespace, false);
+                    const raw = event.target.value;
+                    const next = sanitizePlainText(raw, maxLength, allowWhitespace, false);
+                    if (next !== raw) {
+                        // Sincroniza el DOM a mano: si `next` === estado previo,
+                        // React hace bail-out y el DOM se quedaría con el crudo;
+                        // y asignar .value manda el cursor al final, así que lo
+                        // restauramos descontando lo removido antes del caret.
+                        syncDomValue(event.target, raw, next);
+                    }
                     onChange(next);
                 }}
                 onBlur={(event) => {
                     // Al salir del campo sí recortamos (estado final limpio).
-                    onChange(sanitizePlainText(event.target.value, maxLength, allowWhitespace, true));
+                    const next = sanitizePlainText(event.target.value, maxLength, allowWhitespace, true);
+                    if (next !== event.target.value) {
+                        event.target.value = next;
+                    }
+                    onChange(next);
                     onBlur?.(event);
                 }}
                 maxLength={maxLength}

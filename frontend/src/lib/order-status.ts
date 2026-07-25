@@ -24,17 +24,20 @@ export const ORDER_STATUS_FALLBACK: OrderStatusesConfig = {
         refunded: 'Devolución',
         abandoned: 'Abandonado',
     },
+    // Clases token-based dark-aware (tokens de app.css). Divergen a propósito
+    // de `config/orders.php`: las clases del backend son light-only porque
+    // alimentan PDFs; la presentación web la define este mapa.
     badges: {
-        pending_approval: 'bg-slate-100 text-slate-700',
-        pending: 'bg-yellow-100 text-yellow-800',
-        in_kitchen: 'bg-orange-100 text-orange-800',
-        ready: 'bg-blue-100 text-blue-800',
-        in_transit: 'bg-purple-100 text-purple-800',
-        completed: 'bg-green-100 text-green-800',
-        failed: 'bg-rose-100 text-rose-700',
-        cancelled: 'bg-red-100 text-red-700',
-        refunded: 'bg-pink-100 text-pink-700',
-        abandoned: 'bg-amber-100 text-amber-700',
+        pending_approval: 'bg-[color:var(--color-status-warning)]/15 text-[color:var(--color-status-warning-text)]',
+        pending: 'bg-[color:var(--color-status-warning)]/15 text-[color:var(--color-status-warning-text)]',
+        in_kitchen: 'bg-[color:var(--color-category-amber)]/15 text-[color:var(--color-status-warning-text)]',
+        ready: 'bg-[color:var(--color-status-info)]/15 text-[color:var(--color-status-info-text)]',
+        in_transit: 'bg-[color:var(--color-category-violet)]/15 text-[color:var(--color-category-violet)]',
+        completed: 'bg-[color:var(--color-status-safe)]/15 text-[color:var(--color-status-safe-text)]',
+        failed: 'bg-[color:var(--color-status-critical)]/15 text-[color:var(--color-status-critical-text)]',
+        cancelled: 'bg-[color:var(--color-status-critical)]/15 text-[color:var(--color-status-critical-text)]',
+        refunded: 'bg-[color:var(--color-status-critical)]/15 text-[color:var(--color-status-critical-text)]',
+        abandoned: 'bg-muted text-muted-foreground',
     },
     category: {
         pending_approval: 'pre_operational',
@@ -57,7 +60,13 @@ export function statusLabel(config: OrderStatusesConfig | undefined, status: str
 
 export function statusBadgeClass(config: OrderStatusesConfig | undefined, status: string): string {
     const cfg = config ?? ORDER_STATUS_FALLBACK;
-    return (cfg.badges as Record<string, string>)[status] ?? 'bg-gray-100 text-gray-800';
+    // El mapa local manda: las clases que llegan del backend son light-only
+    // (alimentan PDFs). El cfg solo cubre estados que el frontend no conozca.
+    return (
+        (ORDER_STATUS_FALLBACK.badges as Record<string, string>)[status] ??
+        (cfg.badges as Record<string, string>)[status] ??
+        'bg-muted text-muted-foreground'
+    );
 }
 
 export function isOperational(config: OrderStatusesConfig | undefined, status: string): boolean {

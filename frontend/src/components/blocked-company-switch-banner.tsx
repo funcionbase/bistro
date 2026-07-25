@@ -74,7 +74,7 @@ export function BlockedCompanySwitchBanner() {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-status-warning)]" />
                 <div className="flex-1 leading-snug">
                     <p className="font-medium">Esta empresa está suspendida.</p>
-                    <p className="text-muted-foreground mt-0.5">Cambiá a otra empresa activa para seguir operando.</p>
+                    <p className="text-muted-foreground mt-0.5">Cambia a otra empresa activa para seguir operando.</p>
                 </div>
             </div>
             <Button

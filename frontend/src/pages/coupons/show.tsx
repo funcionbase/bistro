@@ -26,7 +26,8 @@ export default function CouponsShow() {
     const navigate = useNavigate();
     const token = useToken();
     const { showToast } = useToast();
-    const { updateCoupon, updateCouponStatus, deleteCoupon, fetchCouponRedemptions } = useCoupons(token);
+    // list:false — el detalle solo usa mutaciones; no necesita el listado completo.
+    const { updateCoupon, updateCouponStatus, deleteCoupon, fetchCouponRedemptions } = useCoupons(token, { list: false });
 
     const [coupon, setCoupon] = useState<Coupon | null>(null);
     const [loading, setLoading] = useState(true);

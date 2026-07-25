@@ -1452,8 +1452,8 @@ Página: `resources/js/pages/orders/tables/index.tsx`. Breadcrumb: `Dashboard �
 
 ### Versionamiento fv/bv (backend v1.30.2 / frontend v1.42.0)
 - `GET /api/v1/bootstrap` expone `versions.backend` (composer.json leído en runtime, memoizado por worker PHP) — el footer `bv` refleja el backend realmente desplegado, no el horneado en el build del frontend (`__BACKEND_VERSION__` queda solo como fallback para backends viejos).
-- `components/pwa-update-banner.tsx` (montado en `AppSidebarLayout`): escucha `pwa:update-available` y muestra barra fija "Nueva versión disponible — Actualizar" con reload. Cierra el gap de tabletas 24/7 que nunca rotaban de versión.
-- `.github/workflows/version-guard.yml`: en push a `main`, falla si cambió código desplegable sin bump de version, y autosincroniza los badges del README (commit `[skip-badge-sync]`).
+- `components/pwa/update-available-toast.tsx` (montado en `spa-app-layout`): escucha `pwa:update-available` (emitido por `spa/main.tsx` en el evento `controlling` con pestaña visible) y muestra un toast "Nueva versión · recarga en Ns" con countdown de 30s y auto-recarga; "Ahora" recarga ya, "×" cancela. Con pestaña oculta la recarga es silenciosa (respeta `isAnyDirty()`). Cierra el gap de tabletas 24/7 que nunca rotaban de versión.
+- `.github/workflows/ci.yml`: caller que delega en el reusable `version-guard.yml` (repo de ops). En push a `main` falla si cambió código desplegable sin bump de version y autosincroniza los badges del README.
 
 ### Restricciones backend
 - `appendItems` valida que la orden sea `order_type='table'` y no esté en estado terminal (`completed|successful|cancelled|abandoned`).
@@ -1888,6 +1888,8 @@ Punto de venta para crear pedidos manualmente. Breadcrumb: `Dashboard › Órden
 | **En sitio** (`table`) | Número de mesa |
 | **Domicilio** (`delivery`) | Dirección |
 | **Para llevar** (`pickup`) | (ninguno) |
+
+Las órdenes **Domicilio** creadas desde caja incluyen automáticamente el costo de envío de la sede (`branch_settings.delivery_fee`) como línea sintética "Domicilio" (`menu_item_id='delivery_fee'`, tax 0, nace `served`), en paridad con el pedido público. El fee entra antes del prorrateo de cupón (idéntico a `OrderTotalCalculator::recalculateAndSave`); el frontend (`new-order-sheet.tsx`) lo muestra en totales tomándolo de `activeBranch.delivery_fee` (bootstrap).
 
 ### 7.2 Selección de items
 
@@ -4081,6 +4083,7 @@ Convierte el food cost y los datos de costos/stock en señales accionables: el d
 - `app/Services/Alerts/AlertSeedService.php` — `ensureDefaults($nit)` crea las 4 reglas si no existen (margen 30%, incremento 10% / 7d, low volume 14d, low stock 1d). Idempotente.
 - `app/Console/Commands/EvaluateAlertRulesCommand.php` — `alerts:evaluate [--company={nit}]`. Schedule diario 05:00 (después de food cost snapshot).
 - Dedup: el engine usa `lockForUpdate` sobre el evento del día (si existe) y actualiza payload/severity. Cero duplicados aunque el cron corra N veces.
+- Snooze por revisión: si el mismo `(rule, target)` tiene un evento marcado como revisado (`actioned_at`) hace menos de 5 días (`AlertEngine::ACTIONED_SNOOZE_DAYS`), el engine no emite un evento nuevo — la alerta revisada no reaparece en el dashboard hasta pasados 5 días. Descartar (`dismiss`) NO snoozea: la condición re-alerta al día siguiente.
 
 ### 12.quater.4 Endpoints API
 | Method | Path | Permiso | Notas |
@@ -7195,8 +7198,8 @@ La app es instalable como PWA en Android, iOS y desktop. La Fase 2 (modo offline
 
 ### Actualizaciones
 
-- `app.tsx` escucha el evento `waiting` del Workbox y emite el evento custom `pwa:update-available`.
-- `UpdateAvailableToast` (montado en dashboard) muestra una notificación con botón "Recargar" cuando hay un bundle nuevo precacheado.
+- `spa/main.tsx` escucha el evento `controlling` del Workbox (el SW nuevo tomó control) y, con pestaña visible, emite el evento custom `pwa:update-available`; con pestaña oculta y sin formularios sucios recarga en silencio. `reg.update()` corre cada 5 min y al volver a `visible`.
+- `UpdateAvailableToast` (montado en `spa-app-layout`) muestra un toast con countdown de 30s y auto-recarga cuando llega el evento.
 
 ### Limitaciones conocidas
 

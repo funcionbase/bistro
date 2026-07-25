@@ -160,6 +160,15 @@ body {
     --color-status-info: #0284c7; /* azul cyan-celeste — información del sistema (v3.3) */
     --color-status-success: #059669; /* verde menta — UI feedback de confirmación, distinto de safe (v3.3) */
 
+    /* Texto sobre fills tenues de status (stop 800): el color de status a secas
+       no llega a AA sobre su tinte /10–/15 en light. En dark los status ya
+       contrastan sobre tinte oscuro, así que ahí -text apunta al status base. */
+    --color-status-safe-text: #065f46;
+    --color-status-warning-text: #92400e;
+    --color-status-critical-text: #991b1b;
+    --color-status-info-text: #075985;
+    --color-status-success-text: #065f46;
+
     /* Category colors (paleta categórica para avatares, BCG matrix, tipos de invoice — v3.3) */
     --color-category-violet: #7c3aed;
     --color-category-cyan: #0891b2;
@@ -258,7 +267,7 @@ body {
     --accent-foreground: #1e232e;
 
     --destructive: #f0876b; /* terracota cálido — dark variant */
-    --destructive-foreground: #ffffff;
+    --destructive-foreground: #1e232e; /* oscuro: blanco sobre #f0876b no llega a AA */
 
     --border: #2a303c;
     --input: #2a303c;
@@ -285,6 +294,13 @@ body {
     --color-status-critical: #f0876b; /* unificado con --destructive dark (terracota cálido) */
     --color-status-info: #38bdf8; /* azul cyan dark (v3.3) */
     --color-status-success: #34d399; /* verde menta dark (v3.3) */
+
+    /* Texto sobre fills de status — en dark el status base ya contrasta. */
+    --color-status-safe-text: var(--color-status-safe);
+    --color-status-warning-text: var(--color-status-warning);
+    --color-status-critical-text: var(--color-status-critical);
+    --color-status-info-text: var(--color-status-info);
+    --color-status-success-text: var(--color-status-success);
 
     /* Category colors — dark mode (v3.3) */
     --color-category-violet: #a78bfa;

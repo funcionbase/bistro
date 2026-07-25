@@ -1,7 +1,6 @@
 import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 import { reloadContext } from '@/lib/navigate-compat';
-import { setToken } from '@/lib/token';
 import { type CompanyDetail } from '@/types';
 import { type FormEventHandler, useEffect, useRef, useState } from 'react';
 
@@ -122,8 +121,7 @@ export function useCompanySettings(): UseCompanySettingsReturn {
     const [tokenReady, setTokenReady] = useState(false);
 
     useEffect(() => {
-        // Espera un ciclo para que useToken() lo detecte (el ?token= legacy
-        // ya lo consumió spa/main.tsx vía setToken()).
+        // Espera un ciclo para que useToken() detecte la sesión activa.
         setTimeout(() => setTokenReady(true), 0);
     }, [activeToken]);
 
@@ -287,12 +285,10 @@ export function useCompanySettings(): UseCompanySettingsReturn {
             setSaved(true);
             setTimeout(() => setSaved(false), 4000);
 
-            // Aplicar el JWT reemitido (con commercial_name actualizado en active_company_name)
-            // y refrescar las shared props para que el sidebar muestre el nombre nuevo.
-            if (data.token) {
-                setToken(data.token);
-                reloadContext();
-            }
+            // El backend reemite el JWT (commercial_name actualizado) vía cookie
+            // HttpOnly en esta misma respuesta — NO persistir `data.token` en el
+            // cliente. Solo refrescar las shared props para el sidebar.
+            void reloadContext();
         } catch {
             setErrors({ general: 'Error de conexión. Intenta de nuevo.' });
         } finally {

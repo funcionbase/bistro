@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Ingredient, IngredientFormPayload, IngredientUnit } from '@/types/inventory';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -113,7 +114,13 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                 <form noValidate onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="name">Nombre</Label>
-                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={150} />
+                        <Input
+                            id="name"
+                            value={name}
+                            onChange={(e) => setName(sanitizePlainText(e.target.value, 150, false, false))}
+                            required
+                            maxLength={150}
+                        />
                         {err('name') && <p className="text-destructive text-xs">{err('name')}</p>}
                     </div>
 
@@ -123,7 +130,7 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
                             <Input
                                 id="category"
                                 value={category}
-                                onChange={(e) => setCategory(e.target.value)}
+                                onChange={(e) => setCategory(sanitizePlainText(e.target.value, 64, false, false))}
                                 placeholder="Carnes, Verduras, Lácteos…"
                                 maxLength={64}
                             />

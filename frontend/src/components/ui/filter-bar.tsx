@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,24 @@ export function FilterBar({
     children,
     className,
 }: FilterBarProps) {
+    // Debounce interno (~300ms): el input responde tecla a tecla pero
+    // onSearchChange (que suele disparar fetch/filtrado) se emite una vez que
+    // el usuario deja de tipear. Ningún caller cambia.
+    const [localValue, setLocalValue] = useState(searchValue);
+
+    // Sincroniza cambios externos (reset de filtros desde el padre).
+    useEffect(() => {
+        setLocalValue(searchValue);
+    }, [searchValue]);
+
+    useEffect(() => {
+        if (localValue === searchValue) {
+            return;
+        }
+        const t = setTimeout(() => onSearchChange(localValue), 300);
+        return () => clearTimeout(t);
+    }, [localValue, searchValue, onSearchChange]);
+
     return (
         <div
             className={cn(
@@ -46,8 +64,8 @@ export function FilterBar({
                 <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                     type="text"
-                    value={searchValue}
-                    onChange={(e) => onSearchChange(e.target.value)}
+                    value={localValue}
+                    onChange={(e) => setLocalValue(e.target.value)}
                     placeholder={searchPlaceholder}
                     className="pl-9"
                 />

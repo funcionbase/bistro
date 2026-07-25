@@ -56,7 +56,9 @@ export default function SalesHeatmap({ data, currentHour, loading = false }: Sal
                             fill={
                                 entry.hour === currentHour
                                     ? 'var(--color-secondary)'
-                                    : `rgba(var(--color-primary-rgb, 79 70 229) / ${Math.max(0.2, entry.intensity)})`
+                                    : // color-mix sobre el token real (patrón de heatmap-chart.tsx):
+                                      // --color-primary-rgb no existe y el rgba() caía siempre al indigo.
+                                      `color-mix(in oklch, var(--color-primary) ${Math.round(Math.max(0.2, entry.intensity) * 100)}%, transparent)`
                             }
                         />
                     ))}

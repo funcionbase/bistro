@@ -10,12 +10,14 @@ interface ActiveOrdersPanelProps {
     refreshedAt?: string;
 }
 
-// Color del puntito por estado — paleta visual del panel (no aplica clases de badge).
+// Color del puntito por estado — tokens del DS (theme-aware, sin paleta cruda):
+// pending espera atención (warning), in_kitchen en preparación (category-amber),
+// ready listo (safe), in_transit en camino (info).
 const STATUS_COLOR: Record<string, string> = {
-    pending: 'bg-amber-400',
-    in_kitchen: 'bg-orange-400',
-    ready: 'bg-green-400',
-    in_transit: 'bg-blue-400',
+    pending: 'bg-[color:var(--color-status-warning)]',
+    in_kitchen: 'bg-[color:var(--color-category-amber)]',
+    ready: 'bg-[color:var(--color-status-safe)]',
+    in_transit: 'bg-[color:var(--color-status-info)]',
 };
 
 const STATUS_KEYS: (keyof MetricActiveOrders)[] = ['pending', 'in_kitchen', 'ready', 'in_transit'];

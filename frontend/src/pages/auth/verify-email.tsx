@@ -23,7 +23,17 @@ import { MailCheck } from 'lucide-react';
 export default function VerifyEmail() {
     useDocumentTitle('Verifica tu correo');
     const [searchParams] = useSearchParams();
-    const emailFromUrl = searchParams.get('email');
+    // El email post-registro llega por sessionStorage (sin PII en la URL);
+    // `?email=` queda como fallback para el flujo de enlaces de correo.
+    const emailFromUrl =
+        searchParams.get('email') ??
+        (() => {
+            try {
+                return sessionStorage.getItem('flexyflow.pending_verification_email');
+            } catch {
+                return null;
+            }
+        })();
 
     // null = aún no sabemos; true = hay sesión; false = sin sesión (post-registro).
     const [hasSession, setHasSession] = useState<boolean | null>(null);

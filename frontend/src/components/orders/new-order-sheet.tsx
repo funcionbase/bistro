@@ -197,8 +197,9 @@ export function NewOrderSheet({ isOpen, onClose, initialTableNumber = '', onSucc
         [cartLines, taxRate, taxIncluded],
     );
 
-    // El backend inyecta la línea "Domicilio" al persistir órdenes delivery;
-    // acá solo se refleja para que el total mostrado coincida con el real.
+    // Costo de domicilio de la sede activa (bootstrap). Solo aplica a delivery.
+    // El backend lo inyecta como línea "Domicilio"; acá lo sumamos al bruto para
+    // que el total mostrado y el prorrateo de cupón coincidan con la orden creada.
     const deliveryFee = orderType === 'delivery' ? (sharedData.activeBranch?.delivery_fee ?? 0) : 0;
     const grossTotal = taxBreakdown.total + deliveryFee;
     const discountAmount =
@@ -518,7 +519,7 @@ export function NewOrderSheet({ isOpen, onClose, initialTableNumber = '', onSucc
                                     {couponError && !appliedCoupon?.valid && <div className="text-destructive">{couponError}</div>}
                                 </div>
 
-                                {deliveryFee > 0 && (
+                                {orderType === 'delivery' && deliveryFee > 0 && (
                                     <div className="flex items-center justify-between text-xs">
                                         <span className="text-muted-foreground">Domicilio</span>
                                         <span className="tabular-nums">{formatCurrency(deliveryFee)}</span>

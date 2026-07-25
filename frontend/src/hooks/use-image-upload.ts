@@ -15,19 +15,24 @@ export function useImageUpload() {
         };
     }, []);
 
-    const handleImageSelect = useCallback((file: File) => {
+    /**
+     * Valida y prepara el preview. Devuelve `true` solo si el archivo pasó la
+     * validación (tipo/tamaño) — el caller NO debe entregar el file si es `false`.
+     * Whitelist espejo del backend `UploadDishImageRequest` (jpg/jpeg/png/webp).
+     */
+    const handleImageSelect = useCallback((file: File): boolean => {
         setError(null);
 
         // Validate file type
-        if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-            setError('Solo se permiten archivos JPG y PNG');
-            return;
+        if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+            setError('Solo se permiten archivos JPG, PNG y WEBP');
+            return false;
         }
 
         // Validate file size
         if (file.size > MAX_FILE_SIZE) {
             setError('La imagen no debe superar 2 MB');
-            return;
+            return false;
         }
 
         // Create preview. La lectura es asíncrona: si el componente se
@@ -44,6 +49,7 @@ export function useImageUpload() {
             setError('No se pudo leer la imagen. Intenta con otro archivo.');
         };
         reader.readAsDataURL(file);
+        return true;
     }, []);
 
     const clearImage = useCallback(() => {

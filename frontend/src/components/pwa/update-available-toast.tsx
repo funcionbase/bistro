@@ -3,15 +3,16 @@ import { RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 /**
- * Toast que aparece cuando el Service Worker detecta un bundle nuevo
- * (`pwa:update-available`, emitido en `main.tsx` al evento `controlling`).
+ * Aviso de nueva versión de la PWA.
  *
- * Muestra un countdown de 30s y recarga automáticamente. El usuario puede
- * recargar antes ("Ahora") o descartar (cancela el countdown; la página
- * seguirá con el JS viejo hasta el próximo reload natural, pero el SW nuevo
- * ya controla los assets).
+ * Escucha el CustomEvent `pwa:update-available` que emite `spa/main.tsx` cuando
+ * el SW nuevo toma control (`controlling`) con la pantalla visible. Muestra un
+ * countdown de 30s y recarga automáticamente al llegar a 0; el usuario puede
+ * recargar ya ("Ahora") o descartar ("×", cancela el countdown — el JS viejo
+ * sigue en memoria hasta el próximo reload natural).
  *
- * Funciona tanto en browser como en PWA instalada (standalone).
+ * En background la recarga es silenciosa (la decide `main.tsx`); este toast solo
+ * aparece con el usuario activo.
  */
 export default function UpdateAvailableToast() {
     const [remaining, setRemaining] = useState<number | null>(null);
@@ -35,12 +36,10 @@ export default function UpdateAvailableToast() {
     if (remaining === null) return null;
 
     return (
-        <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-safe-1 sm:top-4">
+        <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3 sm:top-4">
             <div className="bg-card flex items-center gap-3 rounded-full border border-[color:var(--color-status-warning)]/30 px-4 py-2 shadow-lg">
                 <RefreshCw className="h-4 w-4 text-[color:var(--color-status-warning)]" />
-                <span className="text-sm">
-                    Nueva versión disponible · recarga en {remaining}s
-                </span>
+                <span className="text-sm">Nueva versión · recarga en {remaining}s</span>
                 <Button size="sm" onClick={() => window.location.reload()}>
                     Ahora
                 </Button>

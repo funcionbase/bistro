@@ -10,9 +10,9 @@ const alertVariants = cva(
             variant: {
                 default: 'bg-background text-foreground',
                 destructive: 'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
-                safe: 'border-[color:var(--color-status-safe)]/30 bg-[color:var(--color-status-safe)]/10 text-[color:var(--color-status-safe)] [&>svg]:text-[color:var(--color-status-safe)]',
-                warning: 'border-[color:var(--color-status-warning)]/30 bg-[color:var(--color-status-warning)]/10 text-[color:var(--color-status-warning)] [&>svg]:text-[color:var(--color-status-warning)]',
-                critical: 'border-[color:var(--color-status-critical)]/30 bg-[color:var(--color-status-critical)]/10 text-[color:var(--color-status-critical)] [&>svg]:text-[color:var(--color-status-critical)]',
+                safe: 'border-[color:var(--color-status-safe)]/30 bg-[color:var(--color-status-safe)]/10 text-[color:var(--color-status-safe-text)] [&>svg]:text-[color:var(--color-status-safe)]',
+                warning: 'border-[color:var(--color-status-warning)]/30 bg-[color:var(--color-status-warning)]/10 text-[color:var(--color-status-warning-text)] [&>svg]:text-[color:var(--color-status-warning)]',
+                critical: 'border-[color:var(--color-status-critical)]/30 bg-[color:var(--color-status-critical)]/10 text-[color:var(--color-status-critical-text)] [&>svg]:text-[color:var(--color-status-critical)]',
                 accent: 'border-accent/40 bg-accent/30 text-accent-foreground [&>svg]:text-accent-foreground',
             },
         },

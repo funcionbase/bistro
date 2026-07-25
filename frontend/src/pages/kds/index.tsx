@@ -45,15 +45,17 @@ type StatusFilter = (typeof statusFilters)[number]['key'];
  * Kitchen Display System — pantalla de cocina (#191 Fase 5).
  *
  * Grid responsive de KdsTicketCard ordenado por antigüedad. Filtros por
- * estado y polling agresivo (2s) para reflejar nuevas aprobaciones del
- * mesero en tiempo casi real.
+ * estado y polling cada 30s (+ refetch al recuperar foco/visibilidad) para
+ * reflejar nuevas aprobaciones del mesero.
  */
 export default function KdsPage() {
     const { activeCompany } = useSharedData();
     const [tickets, setTickets] = useState<KdsTicket[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
+    // busyId (no boolean global): solo se deshabilita el ticket en vuelo, los
+    // demás siguen operables (patrón deliveries/mine.tsx).
+    const [busyId, setBusyId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [filter, setFilter] = useState<StatusFilter>('all');
 
@@ -92,11 +94,11 @@ export default function KdsPage() {
 
     const polling = useLivePolling({ intervalMs: 30_000, onTick: fetchTickets });
 
-    const mutate = async (path: string) => {
-        setBusy(true);
+    const mutate = async (ticketId: string, action: 'mark-in-kitchen' | 'mark-ready' | 'mark-served') => {
+        setBusyId(ticketId);
         setActionError(null);
         try {
-            const resp = await apiFetch(`/api/v1/${path}`, { method: 'PATCH' });
+            const resp = await apiFetch(`/api/v1/kds/tickets/${ticketId}/${action}`, { method: 'PATCH' });
             if (!resp.ok) {
                 const data = (await resp.json().catch(() => ({}))) as { message?: string };
                 throw new Error(data.message ?? 'Acción rechazada.');
@@ -105,7 +107,7 @@ export default function KdsPage() {
         } catch (err) {
             setActionError(err instanceof Error ? err.message : 'Acción fallida.');
         } finally {
-            setBusy(false);
+            setBusyId(null);
         }
     };
 
@@ -228,9 +230,9 @@ export default function KdsPage() {
                                             <KdsTicketCard
                                                 key={t.id}
                                                 ticket={t}
-                                                onMarkInKitchen={() => void mutate(`kds/tickets/${t.id}/mark-in-kitchen`)}
-                                                onMarkReady={() => void mutate(`kds/tickets/${t.id}/mark-ready`)}
-                                                disabled={busy}
+                                                onMarkInKitchen={() => void mutate(t.id, 'mark-in-kitchen')}
+                                                onMarkReady={() => void mutate(t.id, 'mark-ready')}
+                                                disabled={busyId === t.id}
                                             />
                                         ))}
                                     </section>
@@ -246,10 +248,10 @@ export default function KdsPage() {
                                                 <KdsTicketCard
                                                     key={t.id}
                                                     ticket={t}
-                                                    onMarkInKitchen={() => void mutate(`kds/tickets/${t.id}/mark-in-kitchen`)}
-                                                    onMarkReady={() => void mutate(`kds/tickets/${t.id}/mark-ready`)}
-                                                    onMarkServed={() => void mutate(`kds/tickets/${t.id}/mark-served`)}
-                                                    disabled={busy}
+                                                    onMarkInKitchen={() => void mutate(t.id, 'mark-in-kitchen')}
+                                                    onMarkReady={() => void mutate(t.id, 'mark-ready')}
+                                                    onMarkServed={() => void mutate(t.id, 'mark-served')}
+                                                    disabled={busyId === t.id}
                                                     compact
                                                 />
                                             ))}

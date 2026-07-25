@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { Ingredient } from '@/types/inventory';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -87,7 +88,12 @@ export function RecordEntryModal({ open, onClose, onSubmit, ingredient, submitti
 
                     <div className="space-y-1.5">
                         <Label htmlFor="entry_ref">Referencia (proveedor, factura)</Label>
-                        <Input id="entry_ref" value={reference} onChange={(e) => setReference(e.target.value)} maxLength={255} />
+                        <Input
+                            id="entry_ref"
+                            value={reference}
+                            onChange={(e) => setReference(sanitizePlainText(e.target.value, 255, false, false))}
+                            maxLength={255}
+                        />
                         {err('reference') && <p className="text-destructive text-xs">{err('reference')}</p>}
                     </div>
 
@@ -97,7 +103,8 @@ export function RecordEntryModal({ open, onClose, onSubmit, ingredient, submitti
                         <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={submitting}>
+                        {/* Guard cliente: cantidad > 0 y costo >= 0 (espeja el FormRequest; evita NaN). */}
+                        <Button type="submit" disabled={submitting || !(Number(quantity) > 0) || unitCost === '' || !(Number(unitCost) >= 0)}>
                             {submitting && <LoaderCircle className="mr-1 h-4 w-4 animate-spin" />}
                             Registrar entrada
                         </Button>

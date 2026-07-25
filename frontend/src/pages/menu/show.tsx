@@ -172,6 +172,23 @@ export default function MenuShow() {
         setEditingItemCategoryId(null);
     }
 
+    function handleCategoriesReordered(categories: MenuCategory[]) {
+        setMenu((prev) => (prev ? { ...prev, structure: { ...prev.structure, categories } } : prev));
+    }
+
+    function handleItemsReordered(categoryId: string, items: MenuItem[]) {
+        setMenu((prev) => {
+            if (!prev) return prev;
+            const categories = prev.structure.categories.map((cat) => (cat.id === categoryId ? { ...cat, items } : cat));
+            return { ...prev, structure: { ...prev.structure, categories } };
+        });
+    }
+
+    function handleOrderError() {
+        showToast('error', 'No se pudo guardar el orden.');
+        void fetchMenu();
+    }
+
     function handleAvailabilityToggle(categoryId: string, itemId: string, available: boolean) {
         setMenu((prev) => {
             if (!prev) return prev;
@@ -266,6 +283,9 @@ export default function MenuShow() {
                                         setEditingItemCategoryId(categoryId);
                                         setShowItemModal(true);
                                     }}
+                                    onCategoriesReordered={handleCategoriesReordered}
+                                    onItemsReordered={handleItemsReordered}
+                                    onOrderError={handleOrderError}
                                     canCreate={canCreate}
                                     canUpdate={canUpdate}
                                     canDelete={canDelete}

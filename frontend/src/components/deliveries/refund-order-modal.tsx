@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import type { KanbanOrder } from '@/hooks/use-orders';
+import { usePaymentMethods, paymentRequiresReference } from '@/hooks/use-payment-methods';
 import { apiFetch } from '@/lib/api';
+import { shortOrderCode } from '@/lib/order-code';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { sanitizePlainText } from '@/lib/input-sanitize';
@@ -24,8 +26,10 @@ interface RefundOrderModalProps {
  */
 export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderModalProps) {
     const formatCurrency = useCurrencyFormatter();
+    const catalog = usePaymentMethods();
     const method = order.payment?.method ?? null;
-    const requiresReference = method === 'card' || method === 'transfer';
+    // Catálogo canónico: nequi/daviplata también exigen referencia, no solo card/transfer.
+    const requiresReference = method !== null && paymentRequiresReference(catalog, method);
     // Sin pago registrado no hay nada que devolver: el backend lo rechaza. Se
     // bloquea el confirm y se guía a cancelar, en vez de dejar que falle.
     const hasPayment = !!order.payment;
@@ -77,13 +81,17 @@ export function RefundOrderModal({ order, onClose, onConfirmed }: RefundOrderMod
                 return;
             }
             onConfirmed();
+        } catch {
+            // fetch lanzó (red caída/timeout): el server pudo haber procesado el
+            // refund igual — advertir antes de que el cajero reintente a ciegas.
+            setError('Error de conexión. Verifica si la devolución se procesó antes de reintentar.');
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <BottomSheetDialog isOpen={true} onClose={onClose} title={`Devolver orden #${order.id}`}>
+        <BottomSheetDialog isOpen={true} onClose={onClose} title={`Devolver orden #${shortOrderCode(order.id)}`}>
             <div className="flex flex-col gap-4 p-1">
                 <RefundSummaryCard
                     total={order.total}

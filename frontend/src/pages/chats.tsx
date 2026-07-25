@@ -158,6 +158,9 @@ export default function ChatsPage() {
         // El filtro por número solo aplica dentro de WhatsApp.
         channelId: sourceFilter === 'whatsapp' ? channelFilter : null,
         source: sourceFilter,
+        // En móvil NO auto-seleccionar: saltaría la bandeja al detalle y
+        // marcaría el chat como leído sin que el operador lo abriera.
+        autoSelectFirst: !isMobile,
     });
 
     // Default por plataforma: WhatsApp si hay canal configurado, si no SMS. Se
@@ -218,9 +221,16 @@ export default function ChatsPage() {
             // hasta que el browser termina de calcular el flex.
             requestAnimationFrame(() => end.scrollIntoView({ behavior: 'auto', block: 'end' }));
         } else if (messagesGrew) {
-            // Cada mensaje nuevo (entrante o saliente) lleva al operador al fondo
-            // de la conversacion. Smooth para que se vea de donde aparece.
-            requestAnimationFrame(() => end.scrollIntoView({ behavior: 'smooth', block: 'end' }));
+            // Scroll al fondo SOLO si el operador ya estaba mirando el final
+            // (umbral de 80px) o si el mensaje nuevo es saliente propio. Si
+            // scrolleo arriba para leer historial, el poll no lo arrastra.
+            const container = messagesContainerRef.current;
+            const atBottom = container ? container.scrollHeight - container.scrollTop - container.clientHeight < 80 : false;
+            const lastMessage = selectedChat.messages[messageCount - 1];
+            const ownOutgoing = lastMessage?.sender === 'operator';
+            if (atBottom || ownOutgoing) {
+                requestAnimationFrame(() => end.scrollIntoView({ behavior: 'smooth', block: 'end' }));
+            }
         }
 
         lastChatIdRef.current = selectedChat.id;
@@ -1058,8 +1068,9 @@ export default function ChatsPage() {
                             <Input
                                 id="contact-phone"
                                 value={contactPhone}
-                                onChange={(e) => setContactPhone(e.target.value)}
+                                onChange={(e) => setContactPhone(e.target.value.replace(/[^0-9+\-\s]/g, ''))}
                                 placeholder="573001234567"
+                                maxLength={30}
                             />
                         </div>
                         {/* Dirección estructurada (misma que /clients). Las notas

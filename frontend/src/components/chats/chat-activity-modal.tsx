@@ -49,7 +49,7 @@ function formatWhen(iso: string | null): string {
 
 function ActorIcon({ entry }: { entry: ChatAuditEntry }) {
     if (entry.action === 'chat.access.denied') {
-        return <ShieldAlert className="size-4 text-[color:var(--color-status-danger)]" aria-hidden />;
+        return <ShieldAlert className="size-4 text-[color:var(--color-status-critical)]" aria-hidden />;
     }
     // Sin actor = lo hizo el bot o el sistema. Se rotula explícito en vez de
     // dejar un vacío que se lee como dato faltante.
@@ -76,7 +76,7 @@ export function ChatActivityModal({ isOpen, onClose, entries, loading, error }: 
                 )}
 
                 {error && (
-                    <p role="alert" className="text-[color:var(--color-status-danger)] text-sm">
+                    <p role="alert" className="text-[color:var(--color-status-critical)] text-sm">
                         {error}
                     </p>
                 )}

@@ -144,7 +144,7 @@ export function useKeyboardShortcut(definition: ShortcutDefinition): void {
 
     useEffect(() => {
         if (isReserved(keys)) {
-            if (typeof console !== 'undefined') {
+            if (import.meta.env.DEV) {
                 console.warn(`[useKeyboardShortcut] Combinación "${normalizeKeys(keys)}" reservada por el navegador/SO — atajo NO registrado.`);
             }
             return;

@@ -36,7 +36,7 @@ const PLACEHOLDER_STATION = (slug: string): StationProp => ({
 /**
  * #115 — Pantalla del KDS por estación (standalone, kiosk-mode).
  *
- * Layout sin sidebar (kds-standalone-layout). Polling cada 2s con
+ * Layout sin sidebar (kds-standalone-layout). Polling cada 30s con
  * `useAutoPolling`. Items agrupados por orden con SLA visual server-side.
  *
  * Grid responsive:
@@ -63,7 +63,9 @@ export default function KdsStationPage() {
     const [tickets, setTickets] = useState<KdsStationTicketGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
+    // busyId por item (no boolean global): solo se deshabilita el ticket cuyo
+    // item está en vuelo, los demás siguen operables (patrón deliveries/mine.tsx).
+    const [busyId, setBusyId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [stationInfo, setStationInfo] = useState<StationProp>(() => PLACEHOLDER_STATION(stationSlug));
 
@@ -93,7 +95,7 @@ export default function KdsStationPage() {
     useAutoPolling({ intervalMs: 30_000, onTick: fetchTickets });
 
     const mutate = async (itemId: string, action: 'mark-in-kitchen' | 'mark-ready') => {
-        setBusy(true);
+        setBusyId(itemId);
         setActionError(null);
         try {
             const resp = await apiFetch(`/api/v1/kds/${encodeURIComponent(stationSlug)}/items/${itemId}/${action}${deviceQ}`, {
@@ -107,7 +109,7 @@ export default function KdsStationPage() {
         } catch (err) {
             setActionError(err instanceof Error ? err.message : 'Acción fallida.');
         } finally {
-            setBusy(false);
+            setBusyId(null);
         }
     };
 
@@ -207,7 +209,7 @@ export default function KdsStationPage() {
                                             ticket={ticket}
                                             onMarkInKitchen={(itemId) => void mutate(itemId, 'mark-in-kitchen')}
                                             onMarkReady={(itemId) => void mutate(itemId, 'mark-ready')}
-                                            busy={busy}
+                                            busy={busyId !== null && ticket.items.some((i) => i.id === busyId)}
                                         />
                                     ))}
                                 </div>
@@ -227,7 +229,7 @@ export default function KdsStationPage() {
                                             ticket={ticket}
                                             onMarkInKitchen={(itemId) => void mutate(itemId, 'mark-in-kitchen')}
                                             onMarkReady={(itemId) => void mutate(itemId, 'mark-ready')}
-                                            busy={busy}
+                                            busy={busyId !== null && ticket.items.some((i) => i.id === busyId)}
                                             compact
                                         />
                                     ))}

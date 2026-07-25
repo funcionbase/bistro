@@ -391,8 +391,7 @@ Sin lógica de auth ni permisos. Todas presentacionales, accesibles (Radix donde
 |---------|-------|
 | `install-pwa-prompt.tsx` | Captura `beforeinstallprompt`, muestra prompt diferido al alcanzar 2da visita. Dismiss persistente en `localStorage['pwa.install.dismissed_at']` |
 | `ios-install-hint.tsx` | Hint específico para Safari iOS (sin `beforeinstallprompt`). Tutorial inline "Compartir → Agregar a inicio" |
-| `update-available-toast.tsx` | Toast con CTA "Actualizar" cuando el SW detecta una nueva versión. Llama `skipWaiting()` + `window.location.reload()` |
-| `pwa-update-banner.tsx` | Barra fija inferior al detectar deploy nuevo con pestaña visible (`pwa:update-available`). No recarga sola — el staff decide con el botón "Actualizar" (evita perder un cobro a medio llenar). Montada en `app-sidebar-layout` |
+| `update-available-toast.tsx` | Toast superior al detectar deploy nuevo con pestaña visible (`pwa:update-available`, emitido por `spa/main.tsx` en el evento `controlling`). Countdown de 30s con auto-recarga; botón "Ahora" recarga ya, "×" cancela. Montado una vez en `spa-app-layout`. Con pestaña oculta la recarga es silenciosa (la decide `main.tsx`, respetando `isAnyDirty()` para no perder un formulario a medias). |
 | `app-footer-meta.tsx` | Footer con link al manual y versiones `fv`/`bv`. `fv` viene horneada en build (Vite `define`); `bv` la reporta el backend en runtime vía `/api/v1/bootstrap` → `versions.backend` (fallback al valor de build para backends < 1.30.2) |
 
 #### `components/offline/` (~3, issue #140)
@@ -1028,12 +1027,13 @@ Cuando agregues una página, componente o hook reutilizable, actualiza este arch
 |---|---|
 | `install-pwa-prompt.tsx` | Banner sticky en `/dashboard` que captura `beforeinstallprompt` y dispara `prompt()`. Se oculta en `display-mode: standalone`. Dismiss persiste 14 días en `localStorage` (`pwa_install_dismissed_at`). |
 | `ios-install-hint.tsx` | Modal-banner solo para iOS Safari (sin `beforeinstallprompt`). Muestra instrucciones "Compartir → Añadir a pantalla de inicio". Dismiss persiste 14 días (`pwa_ios_hint_dismissed_at`). |
-| `update-available-toast.tsx` | Toast superior con botón "Recargar" cuando se detecta `pwa:update-available` (emitido por `app.tsx` cuando Workbox detecta un SW en `waiting`). |
+| `update-available-toast.tsx` | Toast superior con countdown de 30s y auto-recarga cuando se detecta `pwa:update-available` (emitido por `spa/main.tsx` en el evento `controlling`). Montado en `spa-app-layout`. |
 
 ### Registro del Service Worker
 
-- `resources/js/app.tsx` importa `workbox-window` perezosamente y registra `/sw.js` solo en `import.meta.env.PROD`.
-- Listener `waiting` emite `window.dispatchEvent(new CustomEvent('pwa:update-available'))`. El toast lo escucha en cualquier página donde esté montado.
+- `spa/main.tsx` importa `workbox-window` perezosamente y registra `/sw.js` solo en `import.meta.env.PROD`.
+- Como `sw.ts` llama `skipWaiting()` incondicional, el SW nuevo nunca queda en `waiting`: el evento confiable es `controlling`. Con pestaña visible emite `pwa:update-available` (→ toast); con pestaña oculta y sin formularios sucios (`isAnyDirty()`) recarga en silencio.
+- `reg.update()` corre cada 5 min y al volver a `visible`, para que una tableta 24/7 detecte el deploy en ≤5 min.
 
 ### Build / Vite
 

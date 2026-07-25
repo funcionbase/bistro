@@ -48,13 +48,14 @@ function AbandonmentRing({ rate, color }: { rate: number; color: string }) {
 
 interface AbandonmentPanelProps {
     data: MetricCartAbandonment | null;
+    /** Aceptado por compatibilidad; el skeleton se decide solo por `data`. */
     loading?: boolean;
     error?: boolean;
     retryFn?: () => void;
     formatCurrency: (v: number) => string;
 }
 
-export default function AbandonmentPanel({ data, loading = false, error = false, retryFn, formatCurrency }: AbandonmentPanelProps) {
+export default function AbandonmentPanel({ data, error = false, retryFn, formatCurrency }: AbandonmentPanelProps) {
     const abandonmentRate = data ? Math.round((100 - data.conversion_rate) * 100) / 100 : 0;
     const color = getAbandonmentColor(abandonmentRate);
 
@@ -62,7 +63,9 @@ export default function AbandonmentPanel({ data, loading = false, error = false,
         <DashboardPanel title="Abandono de carrito">
             {error && retryFn ? (
                 <WidgetErrorState onRetry={retryFn} />
-            ) : loading || !data ? (
+            ) : /* Skeleton solo sin datos: con datos y refetch en vuelo la
+                   gráfica queda montada (evita flicker en cada poll). */
+            !data ? (
                 <div className="space-y-3">
                     <Skeleton className="mx-auto h-28 w-28 rounded-full" />
                     <Skeleton className="h-10 w-full" />

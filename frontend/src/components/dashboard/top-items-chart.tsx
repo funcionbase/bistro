@@ -16,7 +16,7 @@ function ItemTooltip({ active, payload, formatCurrency }: TooltipProps) {
     if (!active || !payload?.length) return null;
     const { name, count, revenue } = payload[0].payload;
     return (
-        <div className="rounded-lg border bg-white px-3 py-2 shadow-md">
+        <div className="bg-popover text-popover-foreground rounded-lg border px-3 py-2 shadow-md">
             <p className="max-w-[180px] truncate text-sm font-semibold">{name}</p>
             <p className="text-xs">{count} veces pedido</p>
             <p className="text-muted-foreground text-xs">{formatCurrency(revenue)}</p>
@@ -75,7 +75,7 @@ export default function TopItemsChart({ data, loading = false, formatCurrency }:
                             position="right"
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             formatter={(v: any) => `${v}×`}
-                            style={{ fontSize: 12, fill: 'var(--color-body-dark)' }}
+                            style={{ fontSize: 12, fill: 'var(--color-foreground)' }}
                         />
                     </Bar>
                 </BarChart>

@@ -451,8 +451,16 @@ export default function Reports() {
                                                     idx < orderedOrders.length - 1 ? (orderedOrders[idx + 1].table_session_id ?? null) : null;
                                                 const isGroupStart = isLinked && sid !== prevSid;
                                                 const isGroupEnd = isLinked && sid !== nextSid;
+                                                // Posición sobre el grupo ORDENADO cronológicamente (el
+                                                // mismo sort de la vista): sessionGroup viene en el orden
+                                                // del backend (desc) y el findIndex directo invertía el
+                                                // contador "pedido X de Y".
                                                 const positionInGroup =
-                                                    isLinked && sessionGroup ? sessionGroup.findIndex((o) => o.id === order.id) + 1 : 0;
+                                                    isLinked && sessionGroup
+                                                        ? [...sessionGroup]
+                                                              .sort((a, b) => a.ordered_at.localeCompare(b.ordered_at))
+                                                              .findIndex((o) => o.id === order.id) + 1
+                                                        : 0;
                                                 const borderColor = isLinked && sid !== null ? sessionBorderClass(sid) : '';
                                                 const groupTotal = sessionGroup?.reduce((acc, o) => acc + Number(o.total), 0) ?? 0;
 

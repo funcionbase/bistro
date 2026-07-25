@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api';
 import type { CouponValidationResponse } from '@/types/coupon';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 interface UseCouponValidationReturn {
     validating: boolean;
@@ -14,8 +14,13 @@ export function useCouponValidation(): UseCouponValidationReturn {
     const [validating, setValidating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [appliedCoupon, setAppliedCoupon] = useState<CouponValidationResponse | null>(null);
+    // Token de secuencia: cada validación incrementa el contador; una respuesta
+    // cuyo token ya no es el vigente es de una llamada previa (el usuario tipeó
+    // otro código) y se descarta para no pisar el estado con datos viejos.
+    const seqRef = useRef(0);
 
     const validateCoupon = useCallback(async (code: string, total: number, phone?: string) => {
+        const seq = ++seqRef.current;
         setValidating(true);
         setError(null);
 
@@ -31,7 +36,17 @@ export function useCouponValidation(): UseCouponValidationReturn {
             });
 
             clearTimeout(timeoutId);
+            // Respuesta vieja: llegó tarde, ya hay otra validación en curso.
+            if (seq !== seqRef.current) return;
+
+            if (!res.ok) {
+                setAppliedCoupon(null);
+                setError('No se pudo validar el cupón. Intenta de nuevo.');
+                return;
+            }
+
             const json: CouponValidationResponse = await res.json();
+            if (seq !== seqRef.current) return;
 
             if (json.valid) {
                 setAppliedCoupon(json);
@@ -42,13 +57,14 @@ export function useCouponValidation(): UseCouponValidationReturn {
             }
         } catch (e) {
             clearTimeout(timeoutId);
+            if (seq !== seqRef.current) return;
             if (e instanceof Error && e.name === 'AbortError') {
                 setError('La solicitud tardó demasiado. Intenta de nuevo.');
             } else {
                 setError('Error de conexión.');
             }
         } finally {
-            setValidating(false);
+            if (seq === seqRef.current) setValidating(false);
         }
     }, []);
 

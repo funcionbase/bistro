@@ -125,8 +125,9 @@ class BootstrapService
                     'slug' => $payload['active_branch_slug'] ?? null,
                 ];
 
-            // Fee de domicilio de la sede activa: caja lo necesita para mostrar
-            // el total real de órdenes delivery (el backend lo inyecta como línea).
+            // #whatsapp F1: costo de domicilio de la sede activa para que la
+            // caja muestre y sume la línea "Domicilio" (paridad con el menú
+            // público). null = sin configurar (distinto de fee 0 explícito).
             $rawFee = $this->branchSettings->get((string) $activeBranchId, 'delivery_fee');
             $activeBranch['delivery_fee'] = $rawFee !== null && $rawFee !== ''
                 ? round((float) $rawFee, 2)
