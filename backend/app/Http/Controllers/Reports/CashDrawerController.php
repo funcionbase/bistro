@@ -226,6 +226,97 @@ class CashDrawerController extends Controller
             'cash_incomes_total' => round($cashIncomesTotal, 2),
             'cash_incomes_by_category' => $cashIncomesByCategory,
             'orders_count' => $orderCount,
+            'couriers' => $this->buildCourierLedger($companyNit, $fromDb, $toDb, $branchId),
         ];
+    }
+
+    /**
+     * Cruce por domiciliario del período (F6): abonos entregados a caja
+     * (receipts cash `payment_data.courier_advance`), reversiones (refunds de
+     * esas órdenes), tarifas de domicilio adeudadas (líneas "Domicilio" de sus
+     * entregas completadas) y pagos registrados (egresos con
+     * `courier_user_id`). Espejo por rango de fechas de
+     * `CashRegisterService::courierLedgerForSession`.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildCourierLedger(string $companyNit, Carbon $fromDb, Carbon $toDb, ?string $branchId): array
+    {
+        $advanceRows = PaymentReceipt::where('company_nit', $companyNit)
+            ->whereBetween('paid_at', [$fromDb, $toDb])
+            ->where('payment_method', 'cash')
+            ->where('amount', '>', 0)
+            ->whereRaw("COALESCE((payment_data->>'courier_advance')::boolean, false)")
+            ->selectRaw("payment_data->>'courier_user_id' AS courier_user_id, SUM(amount) AS advances, COUNT(*) AS advances_count")
+            ->groupBy(DB::raw("payment_data->>'courier_user_id'"))
+            ->get()
+            ->keyBy('courier_user_id');
+
+        $reversalRows = DB::table('payment_receipts as ref')
+            ->join('payment_receipts as adv', 'adv.order_id', '=', 'ref.order_id')
+            ->where('ref.company_nit', $companyNit)
+            ->when($branchId !== null, fn ($q) => $q->where('ref.branch_id', $branchId))
+            ->whereBetween('ref.paid_at', [$fromDb, $toDb])
+            ->where('ref.payment_method', 'refund')
+            ->whereRaw("COALESCE((adv.payment_data->>'courier_advance')::boolean, false)")
+            ->selectRaw("adv.payment_data->>'courier_user_id' AS courier_user_id, SUM(-ref.amount) AS reversals")
+            ->groupBy(DB::raw("adv.payment_data->>'courier_user_id'"))
+            ->get()
+            ->keyBy('courier_user_id');
+
+        $feeRows = DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->join('deliveries as d', 'd.order_id', '=', 'o.id')
+            ->where('o.company_nit', $companyNit)
+            ->when($branchId !== null, fn ($q) => $q->where('o.branch_id', $branchId))
+            ->where('oi.menu_item_id', Order::DELIVERY_FEE_ITEM_ID)
+            ->where('oi.status', '!=', 'cancelled')
+            ->where('d.status', 'completed')
+            ->whereBetween('d.delivered_at', [$fromDb, $toDb])
+            ->selectRaw('d.user_id AS courier_user_id, SUM(oi.unit_price * oi.quantity) AS fees_owed, COUNT(DISTINCT d.id) AS completed_deliveries')
+            ->groupBy('d.user_id')
+            ->get()
+            ->keyBy(fn ($r) => (string) $r->courier_user_id);
+
+        $paidRows = DB::table('cash_register_expenses')
+            ->where('company_nit', $companyNit)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->whereBetween('created_at', [$fromDb, $toDb])
+            ->whereNotNull('courier_user_id')
+            ->selectRaw('courier_user_id, SUM(amount) AS fees_paid')
+            ->groupBy('courier_user_id')
+            ->get()
+            ->keyBy(fn ($r) => (string) $r->courier_user_id);
+
+        $courierIds = collect($advanceRows->keys())
+            ->merge($reversalRows->keys())
+            ->merge($feeRows->keys())
+            ->merge($paidRows->keys())
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($courierIds->isEmpty()) {
+            return [];
+        }
+
+        $names = DB::table('users')->whereIn('id', $courierIds->all())->pluck('name', 'id');
+
+        return $courierIds->map(function (string $courierId) use ($advanceRows, $reversalRows, $feeRows, $paidRows, $names): array {
+            $feesOwed = (float) ($feeRows->get($courierId)->fees_owed ?? 0);
+            $feesPaid = (float) ($paidRows->get($courierId)->fees_paid ?? 0);
+
+            return [
+                'user_id' => $courierId,
+                'name' => (string) ($names[$courierId] ?? 'Domiciliario'),
+                'advances' => round((float) ($advanceRows->get($courierId)->advances ?? 0), 2),
+                'advances_count' => (int) ($advanceRows->get($courierId)->advances_count ?? 0),
+                'reversals' => round((float) ($reversalRows->get($courierId)->reversals ?? 0), 2),
+                'completed_deliveries' => (int) ($feeRows->get($courierId)->completed_deliveries ?? 0),
+                'fees_owed' => round($feesOwed, 2),
+                'fees_paid' => round($feesPaid, 2),
+                'fees_pending' => round($feesOwed - $feesPaid, 2),
+            ];
+        })->values()->all();
     }
 }

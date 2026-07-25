@@ -38,6 +38,9 @@ class DeliveryService
 
     public const REASON_REASSIGNED = 'reassigned';
 
+    /** Entrega fallida / nadie recibe (F6, CA5). */
+    public const REASON_NO_SHOW = 'no_show';
+
     public function __construct(
         private readonly DeliveryNotificationService $notificationService,
         private readonly AuditService $auditService,
@@ -383,6 +386,51 @@ class DeliveryService
             // El cliente recibe notificación porque su orden se canceló —
             // el mismo canal que cancelDelivery (admin → cliente).
             $this->notificationService->notifyClientReassignment($delivery->order, $delivery);
+
+            return $delivery->refresh();
+        });
+    }
+
+    /**
+     * Entrega fallida / no-show (F6, CA5). A diferencia de reject/revert, NO
+     * bloquea por receipt: el flujo exige resolver el dinero primero — la
+     * orden debe estar en terminal_failure (refund del abono → `refunded`, o
+     * cancel category no_show sin abono → `failed`). Acá solo se cierra el
+     * delivery con la razón estructurada `no_show`.
+     *
+     * @throws HttpResponseException 409 si la orden no está en terminal_failure.
+     */
+    public function markNoShow(Delivery $delivery, User $actor): Delivery
+    {
+        $orderStatus = (string) $delivery->order?->status;
+        if (! in_array($orderStatus, config('orders.terminal_failure'), true)) {
+            throw new HttpResponseException(
+                response()->json([
+                    'message' => 'Primero resuelve la orden (devolución del abono o cancelación por no-show).',
+                    'code' => 'ORDER_NOT_RESOLVED',
+                ], 409)
+            );
+        }
+
+        if ($delivery->status === 'cancelled') {
+            return $delivery;
+        }
+
+        return DB::transaction(function () use ($delivery, $actor) {
+            $fromStatus = (string) $delivery->status;
+
+            $delivery->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => 'Entrega fallida / no show',
+                'status_change_reason' => self::REASON_NO_SHOW,
+            ]);
+
+            $this->logStatusChange($delivery, $fromStatus, 'cancelled', self::REASON_NO_SHOW, $actor);
+
+            $this->auditService->log('delivery.no_show', $actor, $delivery, [
+                'order_id' => $delivery->order_id,
+                'deliverer_id' => $delivery->user_id,
+            ]);
 
             return $delivery->refresh();
         });

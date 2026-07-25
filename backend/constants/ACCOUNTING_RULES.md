@@ -114,6 +114,7 @@ y `TaxCalculator` debe migrarse al helper.
 - Hoy `orders.total` es precio final sin desglose. Al implementar IVA/INC: migración con `tax_amount`, `tax_rate`, `tax_regime`.
 - **Propina**: voluntaria 10% sugerida. Columna separada `tip_amount`. NO suma a `total` ni a base gravable. La puede dejar el cliente en el checkout público (F2); `closeWithPayment` la CONSERVA si el request no manda `tip_amount` (null ≠ 0: enviar 0 explícito la anula).
 - **Columnas informativas del checkout público (F2)**: `orders.payment_preference` (slug canónico elegido por el cliente), `orders.cash_pays_with` ("¿con cuánto pagas?", solo efectivo) y `orders.customer_notes` (indicaciones de entrega). NINGUNA participa en `total`, base gravable ni `payment_receipts` — el pago real siempre lo registra caja.
+- **Abono del domiciliario (F6)**: ES el pago de la orden, modelado como `PaymentReceipt` cash normal con `payment_data.courier_advance=true` + `courier_user_id` (ver `PAYMENT_METHODS.md`). El arqueo cuadra sin lógica nueva; la reversión por entrega fallida es el `refund` existente (asiento negativo, orden → `refunded`). `revenue` sigue siendo solo `completed` — el receipt en `in_transit` no altera reportes de ingreso. Guard 409 `ORDER_ALREADY_PAID` en `closeWithPayment` evita doble cobro. Sin abono previo, la cancelación `category=no_show` activa el estado `failed`.
 
 ### Facturación electrónica DIAN
 

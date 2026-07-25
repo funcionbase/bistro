@@ -36,6 +36,10 @@ interface OrderDetailModalProps {
     onCancelOrder?: (orderId: string) => void;
     /** Devuelve una orden pagada. Si el método fue card/transfer pide comprobante de la devolución. */
     onRefundOrder?: (orderId: string) => void;
+    /** F6: abono del domiciliario al despachar (delivery in_transit sin pago). */
+    onCourierAdvance?: (orderId: string) => void;
+    /** F6/CA5: entrega fallida / no show. La página decide el camino (cancel category o cierre del delivery). */
+    onNoShow?: (orderId: string, deliveryId: string | null) => void;
     /** Info del pago registrado (si existe). Permite al modal mostrar método y referencia. */
     payment?: {
         method: PaymentMethod | null;
@@ -62,6 +66,8 @@ export function OrderDetailModal({
     advanceOptions,
     onCancelOrder,
     onRefundOrder,
+    onCourierAdvance,
+    onNoShow,
     payment,
     refund,
 }: OrderDetailModalProps) {
@@ -450,6 +456,45 @@ export function OrderDetailModal({
                                             >
                                                 <UserCheck className="mr-2 h-4 w-4" />
                                                 Reasignar repartidor
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                {/* F6: abono del domiciliario — entrega el total en efectivo a
+                                    caja al despachar. Solo in_transit con delivery y sin pago. */}
+                                {onCourierAdvance &&
+                                    order.delivery &&
+                                    order.delivery.status === 'pending' &&
+                                    effectiveStatus === 'in_transit' &&
+                                    !payment && (
+                                        <div className="pt-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => onCourierAdvance(order.id)}
+                                                data-testid="courier-advance-from-detail"
+                                            >
+                                                Registrar abono del domiciliario
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                {/* F6/CA5: entrega fallida / no show. En tránsito sin pago →
+                                    cancela con categoría no_show; tras un refund del abono
+                                    (orden refunded) → solo cierra el delivery. */}
+                                {onNoShow &&
+                                    order.delivery &&
+                                    ((effectiveStatus === 'in_transit' && !payment) ||
+                                        (['refunded', 'failed'].includes(effectiveStatus) && order.delivery.status === 'pending')) && (
+                                        <div className="pt-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="destructive"
+                                                onClick={() => onNoShow(order.id, order.delivery?.id ?? null)}
+                                                data-testid="no-show-from-detail"
+                                            >
+                                                Entrega fallida / No show
                                             </Button>
                                         </div>
                                     )}

@@ -42,6 +42,7 @@ class CashRegisterExpense extends Model
         'payment_method',
         'description',
         'created_by_user_id',
+        'courier_user_id',
         'created_at',
         'occurred_at_client',
     ];

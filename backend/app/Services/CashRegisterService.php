@@ -412,6 +412,7 @@ class CashRegisterService
         ?string $clientUuid = null,
         ?Carbon $occurredAtClient = null,
         bool $enforceNonNegativeCash = false,
+        ?string $courierUserId = null,
     ): CashRegisterExpense {
         $categories = array_keys(config('cash_register.expense_categories', []));
         $methods = config('cash_register.expense_payment_methods', ['cash', 'card', 'transfer']);
@@ -434,7 +435,7 @@ class CashRegisterService
             ]);
         }
 
-        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod, $clientUuid, $occurredAtClient, $enforceNonNegativeCash) {
+        return DB::transaction(function () use ($session, $createdBy, $amount, $category, $description, $paymentMethod, $clientUuid, $occurredAtClient, $enforceNonNegativeCash, $courierUserId) {
             // Idempotencia offline: egreso ya aplicado (client_uuid) → devolverlo.
             if ($clientUuid !== null) {
                 $byClient = CashRegisterExpense::query()->where('client_uuid', $clientUuid)->lockForUpdate()->first();
@@ -478,6 +479,9 @@ class CashRegisterService
                 'payment_method' => $paymentMethod,
                 'description' => $description,
                 'created_by_user_id' => $createdBy->id,
+                // F6: vincula el pago de tarifas (`domiciliario_pago`) con el
+                // repartidor para el cruce por courier del cierre.
+                'courier_user_id' => $courierUserId,
                 'created_at' => now(),
                 'occurred_at_client' => $occurredAtClient,
             ]);
@@ -846,6 +850,97 @@ class CashRegisterService
                 'by_method' => array_map(fn ($v) => round($v, 2), $incomesByMethod),
                 'by_category' => array_map(fn ($v) => round($v, 2), $incomesByCategory),
             ],
+            'couriers' => $this->courierLedgerForSession($session),
         ];
+    }
+
+    /**
+     * Cruce por domiciliario para el cierre (F6): abonos entregados a caja
+     * (receipts cash con `payment_data.courier_advance`), reversiones por
+     * entrega fallida (refunds de esas mismas órdenes en la sesión), tarifas
+     * de domicilio adeudadas por el restaurante (SUM de líneas "Domicilio" de
+     * sus entregas `completed` durante el turno) y pagos ya registrados con el
+     * egreso `domiciliario_pago` vinculado (`courier_user_id`).
+     *
+     * Todo en SQL — nada se recalcula en PHP más allá del merge por courier.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function courierLedgerForSession(CashRegisterSession $session): array
+    {
+        $advanceRows = PaymentReceipt::where('cash_session_id', $session->id)
+            ->where('payment_method', 'cash')
+            ->where('amount', '>', 0)
+            ->whereRaw("COALESCE((payment_data->>'courier_advance')::boolean, false)")
+            ->selectRaw("payment_data->>'courier_user_id' AS courier_user_id, SUM(amount) AS advances, COUNT(*) AS advances_count")
+            ->groupBy(DB::raw("payment_data->>'courier_user_id'"))
+            ->get()
+            ->keyBy('courier_user_id');
+
+        // Reversiones: refunds (en esta sesión) de órdenes cuyo abono fue de
+        // este courier. whereExists-free: join directo abono↔refund por orden.
+        $reversalRows = DB::table('payment_receipts as ref')
+            ->join('payment_receipts as adv', 'adv.order_id', '=', 'ref.order_id')
+            ->where('ref.cash_session_id', $session->id)
+            ->where('ref.payment_method', 'refund')
+            ->whereRaw("COALESCE((adv.payment_data->>'courier_advance')::boolean, false)")
+            ->selectRaw("adv.payment_data->>'courier_user_id' AS courier_user_id, SUM(-ref.amount) AS reversals")
+            ->groupBy(DB::raw("adv.payment_data->>'courier_user_id'"))
+            ->get()
+            ->keyBy('courier_user_id');
+
+        // Tarifas adeudadas: líneas "Domicilio" de entregas completadas por el
+        // courier durante el turno, en la sede de la caja.
+        $feeRows = DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->join('deliveries as d', 'd.order_id', '=', 'o.id')
+            ->where('o.company_nit', $session->company_nit)
+            ->where('o.branch_id', $session->branch_id)
+            ->where('oi.menu_item_id', Order::DELIVERY_FEE_ITEM_ID)
+            ->where('oi.status', '!=', 'cancelled')
+            ->where('d.status', 'completed')
+            ->whereBetween('d.delivered_at', [$session->opened_at, now()])
+            ->selectRaw('d.user_id AS courier_user_id, SUM(oi.unit_price * oi.quantity) AS fees_owed, COUNT(DISTINCT d.id) AS completed_deliveries')
+            ->groupBy('d.user_id')
+            ->get()
+            ->keyBy(fn ($r) => (string) $r->courier_user_id);
+
+        $paidRows = CashRegisterExpense::forSession($session->id)
+            ->whereNotNull('courier_user_id')
+            ->selectRaw('courier_user_id, SUM(amount) AS fees_paid')
+            ->groupBy('courier_user_id')
+            ->get()
+            ->keyBy(fn ($r) => (string) $r->courier_user_id);
+
+        $courierIds = collect($advanceRows->keys())
+            ->merge($reversalRows->keys())
+            ->merge($feeRows->keys())
+            ->merge($paidRows->keys())
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($courierIds->isEmpty()) {
+            return [];
+        }
+
+        $names = User::query()->whereIn('id', $courierIds->all())->pluck('name', 'id');
+
+        return $courierIds->map(function (string $courierId) use ($advanceRows, $reversalRows, $feeRows, $paidRows, $names): array {
+            $feesOwed = (float) ($feeRows->get($courierId)->fees_owed ?? 0);
+            $feesPaid = (float) ($paidRows->get($courierId)->fees_paid ?? 0);
+
+            return [
+                'user_id' => $courierId,
+                'name' => (string) ($names[$courierId] ?? 'Domiciliario'),
+                'advances' => round((float) ($advanceRows->get($courierId)->advances ?? 0), 2),
+                'advances_count' => (int) ($advanceRows->get($courierId)->advances_count ?? 0),
+                'reversals' => round((float) ($reversalRows->get($courierId)->reversals ?? 0), 2),
+                'completed_deliveries' => (int) ($feeRows->get($courierId)->completed_deliveries ?? 0),
+                'fees_owed' => round($feesOwed, 2),
+                'fees_paid' => round($feesPaid, 2),
+                'fees_pending' => round($feesOwed - $feesPaid, 2),
+            ];
+        })->values()->all();
     }
 }

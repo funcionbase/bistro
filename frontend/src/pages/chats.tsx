@@ -890,6 +890,11 @@ export default function ChatsPage() {
                                         onRejectProof={(order) => rejectProof(order.id)}
                                         onApprove={(order) => approveOrder(order.id, order.total)}
                                         onChangeOrderType={changeOrderType}
+                                        onSendCancellationNotice={async (order) => {
+                                            await sendMessage(
+                                                `Lo sentimos 😔 tu pedido #${order.short_code} fue cancelado porque no pudimos completar la entrega. Escríbenos si quieres volver a pedir o resolver cualquier duda.`,
+                                            );
+                                        }}
                                         onResendMenuLink={async () => {
                                             const url = await requestMenuLink();
                                             if (url) await sendMessage(`¡Hola! Aquí está nuestra carta 📋 ${url}`);

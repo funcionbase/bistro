@@ -53,11 +53,13 @@ Lista cerrada. Aplica a dos columnas:
 | `error_usuario` | Domiciliario marcó `completed` por error y revirtió | ✅ sí | ✅ sí |
 | `pedido_rechazado` | El cliente rechazó la entrega al recibirla | ✅ sí | ✅ sí |
 | `reassigned` | La entrega se asignó a otro domiciliario | ❌ no (la `Delivery` original queda con `reason=NULL` o no aplica) | ✅ sí |
+| `no_show` (F6, CA5) | Entrega fallida: nadie recibe / dirección no existe. `DeliveryService::markNoShow` (`PUT /deliveries/{id}/no-show`) — NO bloquea por receipt, pero exige orden en terminal_failure (refund del abono → `refunded`, o `cancel category=no_show` → `failed`) | ✅ sí | ✅ sí |
 
 Fuente:
-- `app/Services/DeliveryService.php:33-37` (constantes `REASON_ERROR_USUARIO`, `REASON_PEDIDO_RECHAZADO`, `REASON_REASSIGNED`).
-- Migración `2026_05_18_143902_add_status_change_reason_to_deliveries.php:35` (CHECK constraint de `deliveries.status_change_reason` — solo `error_usuario|pedido_rechazado`).
-- Migración `2026_05_18_143903_create_delivery_status_logs_table.php:55` (CHECK constraint de `delivery_status_logs.reason` — `error_usuario|pedido_rechazado|reassigned`).
+- `app/Services/DeliveryService.php` (constantes `REASON_ERROR_USUARIO`, `REASON_PEDIDO_RECHAZADO`, `REASON_REASSIGNED`, `REASON_NO_SHOW`).
+- Migración `2026_05_18_143902_add_status_change_reason_to_deliveries.php:35` (CHECK constraint de `deliveries.status_change_reason`).
+- Migración `2026_05_18_143903_create_delivery_status_logs_table.php:55` (CHECK constraint de `delivery_status_logs.reason`).
+- Migración `2026_07_24_000007_add_courier_ledger_support.php` (agrega `no_show` a ambos CHECK).
 
 ### Por qué `reassigned` no está en `deliveries.status_change_reason`
 

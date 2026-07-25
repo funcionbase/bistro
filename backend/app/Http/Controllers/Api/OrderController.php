@@ -9,6 +9,7 @@ use App\Models\Chat;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Coupon;
+use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderNote;
@@ -23,6 +24,7 @@ use App\Services\BranchSettingsService;
 use App\Services\CashRegisterService;
 use App\Services\CouponService;
 use App\Services\CrmService;
+use App\Services\DeliveryService;
 use App\Services\FeaturePermissionService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyService;
@@ -1201,6 +1203,21 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Guard doble cobro (F6): si la orden ya está cubierta por receipts
+            // positivos (p. ej. el abono del domiciliario), cobrar de nuevo
+            // duplicaría el ingreso. 409 para que la UI muestre el motivo.
+            $alreadyPaid = (float) PaymentReceipt::withoutBranchScope()
+                ->where('order_id', $order->id)
+                ->where('amount', '>', 0)
+                ->sum('amount');
+
+            if ($alreadyPaid + 0.009 >= (float) $order->total && (float) $order->total > 0) {
+                throw new HttpResponseException(response()->json([
+                    'message' => 'La orden ya está pagada (abono del domiciliario u otro cobro registrado).',
+                    'code' => 'ORDER_ALREADY_PAID',
+                ], 409));
+            }
+
             $total = (float) $order->total;
             // Propina: si caja no la reenvía, se CONSERVA la que dejó el cliente
             // en el checkout público (F2) — antes un cobro sin tip_amount la
@@ -1332,6 +1349,111 @@ class OrderController extends Controller
     }
 
     /**
+     * Abono del domiciliario (F6, CA4 condición operativa): al despachar, el
+     * repartidor entrega a caja el valor total del pedido en efectivo. Se
+     * modela como PaymentReceipt NORMAL (cash + payment_data.courier_advance)
+     * — así `computeExpectedCash` y el arqueo cuadran sin lógica nueva, y la
+     * reversión por entrega fallida es el `refund` existente (asiento negativo).
+     *
+     * La propina NO entra al abono (es del repartidor, la recibe del cliente).
+     */
+    public function courierAdvance(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'orders', 'update');
+
+        $validated = $request->validate([
+            'cash_session_id' => ['nullable', 'uuid'],
+        ]);
+
+        $companyNit = $this->activeCompanyNit($request);
+        $branchId = $this->activeBranchId($request);
+        $session = $this->cashRegister->resolveSessionForCharge($companyNit, $branchId, $validated['cash_session_id'] ?? null);
+        $actor = $this->actingUser($request);
+
+        [$order, $receipt, $courierUserId] = DB::transaction(function () use ($id, $companyNit, $session) {
+            /** @var Order $order */
+            $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
+
+            if ($order->order_type !== 'delivery' || $order->status !== 'in_transit') {
+                throw ValidationException::withMessages([
+                    'order' => 'El abono solo aplica a domicilios despachados (en tránsito).',
+                ]);
+            }
+
+            $delivery = Delivery::withoutBranchScope()
+                ->where('order_id', $order->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($delivery === null) {
+                throw ValidationException::withMessages([
+                    'order' => 'La orden no tiene un domiciliario asignado.',
+                ]);
+            }
+
+            $alreadyPaid = (float) PaymentReceipt::withoutBranchScope()
+                ->where('order_id', $order->id)
+                ->where('amount', '>', 0)
+                ->sum('amount');
+
+            if ($alreadyPaid > 0) {
+                throw new HttpResponseException(response()->json([
+                    'message' => 'Esta orden ya tiene un pago o abono registrado.',
+                    'code' => 'ORDER_ALREADY_PAID',
+                ], 409));
+            }
+
+            $paidAt = now();
+            $total = (float) $order->total;
+
+            $receipt = PaymentReceipt::create([
+                'order_id' => $order->id,
+                'company_nit' => $companyNit,
+                'branch_id' => $order->branch_id,
+                'file_path' => null,
+                'payment_method' => 'cash',
+                'amount' => $total,
+                'reference' => null,
+                'paid_at' => $paidAt,
+                'cash_session_id' => $session->id,
+                'payment_data' => [
+                    'method' => 'cash',
+                    'total' => $total,
+                    // Propina fuera del abono: la cobra el repartidor al cliente.
+                    'tip_amount' => 0.0,
+                    'expected_total' => $total,
+                    'paid_at' => $paidAt->toIso8601String(),
+                    'courier_advance' => true,
+                    'courier_user_id' => (string) $delivery->user_id,
+                ],
+            ]);
+
+            // El abono cubre el total: items pagados (evita re-cobro en flujos
+            // de mesa/cierre) — mismo tratamiento que closeWithPayment.
+            $this->markOrderItemsPaid($order, $receipt->id, $paidAt);
+
+            return [$order, $receipt, (string) $delivery->user_id];
+        });
+
+        $this->auditService->log('order.courier_advance', $actor, $order, [
+            'order_id' => $order->id,
+            'receipt_id' => $receipt->id,
+            'courier_user_id' => $courierUserId,
+            'cash_session_id' => $session->id,
+            'amount' => (float) $receipt->amount,
+        ]);
+
+        return response()->json([
+            'data' => [
+                'order_id' => $order->id,
+                'receipt_id' => $receipt->id,
+                'amount' => (float) $receipt->amount,
+                'courier_user_id' => $courierUserId,
+            ],
+        ], 201);
+    }
+
+    /**
      * Cancela una orden no pagada (sin PaymentReceipt) y la marca como `cancelled`.
      * Las órdenes pagadas o completadas deben usar el flujo de devolución (`refund`).
      */
@@ -1341,12 +1463,16 @@ class OrderController extends Controller
 
         $validated = $request->validate([
             'reason' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],
+            // F6/CA5: categoría estructurada. `no_show` en un delivery activa
+            // el estado `failed` (entrega fallida) en lugar de `cancelled`.
+            'category' => ['nullable', Rule::in(['no_show'])],
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
         $blocked = array_merge(config('orders.terminal_success'), config('orders.terminal_failure'));
+        $isNoShow = ($validated['category'] ?? null) === 'no_show';
 
-        $order = DB::transaction(function () use ($id, $companyNit, $blocked) {
+        $order = DB::transaction(function () use ($id, $companyNit, $blocked, $isNoShow) {
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
 
@@ -1370,7 +1496,10 @@ class OrderController extends Controller
                 ]);
             }
 
-            $order->status = 'cancelled';
+            // No-show en domicilio (CA5): estado `failed` (entrega fallida) en
+            // vez de `cancelled` — distingue "nadie recibió" de "se canceló
+            // antes de despachar" en reportes. Ninguno es revenue.
+            $order->status = $isNoShow && $order->order_type === 'delivery' ? 'failed' : 'cancelled';
             $order->save();
 
             // Cerrar ítems que quedaron abiertos (operational + pending_approval)
@@ -1383,7 +1512,21 @@ class OrderController extends Controller
         $this->auditService->log('order.cancelled', $this->actingUser($request), $order, [
             'order_id' => $order->id,
             'reason' => $validated['reason'] ?? null,
+            'category' => $validated['category'] ?? null,
+            'final_status' => $order->status,
         ]);
+
+        // Delivery activo → cancelarlo con razón estructurada no_show (F6). La
+        // orden ya quedó terminal; el service registra el log y la auditoría.
+        if ($isNoShow && $order->order_type === 'delivery') {
+            $delivery = Delivery::withoutBranchScope()
+                ->where('order_id', $order->id)
+                ->whereIn('status', ['pending', 'completed'])
+                ->first();
+            if ($delivery !== null) {
+                app(DeliveryService::class)->markNoShow($delivery, $this->actingUser($request));
+            }
+        }
 
         return response()->json([
             'data' => ['id' => $order->id, 'status' => $order->status],

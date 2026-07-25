@@ -155,6 +155,42 @@
         </tbody>
     </table>
 
+    {{-- Cruce de domiciliarios (F6): abonos entregados a caja al despachar,
+         reversiones por entrega fallida y tarifas de domicilio por pagar. --}}
+    @if (!empty($summary['couriers']))
+        <h2>Domiciliarios — abonos y tarifas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Domiciliario</th>
+                    <th class="text-right">Abonos</th>
+                    <th class="text-right">Reversiones</th>
+                    <th class="text-right">Entregas</th>
+                    <th class="text-right">Tarifas</th>
+                    <th class="text-right">Pagado</th>
+                    <th class="text-right">Por pagar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($summary['couriers'] as $courier)
+                    <tr>
+                        <td>{{ $courier['name'] }}</td>
+                        <td class="text-right">$ {{ number_format($courier['advances'], 0, ',', '.') }}</td>
+                        <td class="text-right">$ {{ number_format($courier['reversals'], 0, ',', '.') }}</td>
+                        <td class="text-right">{{ $courier['completed_deliveries'] }}</td>
+                        <td class="text-right">$ {{ number_format($courier['fees_owed'], 0, ',', '.') }}</td>
+                        <td class="text-right">$ {{ number_format($courier['fees_paid'], 0, ',', '.') }}</td>
+                        <td class="text-right">$ {{ number_format($courier['fees_pending'], 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        <p class="text-muted" style="font-size: 8pt; margin-top: 4px;">
+            Abonos: efectivo que el domiciliario entregó a caja al despachar. Tarifas: domicilios de sus
+            entregas completadas — se pagan con el egreso "Pago domiciliario" vinculado al repartidor.
+        </p>
+    @endif
+
     <p class="text-muted" style="font-size: 8pt; margin-top: 8px;">
         Las propinas son del personal y NO forman parte del ingreso del restaurante.
         Total de órdenes operadas en el período: <strong>{{ $summary['orders_count'] }}</strong>.

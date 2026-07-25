@@ -563,6 +563,45 @@ function CloseSessionDialog({
                                 )}
                             </div>
                         )}
+                        {/* Cruce de domiciliarios (F6): abonos entregados a caja,
+                            reversiones y tarifas de domicilio por pagar. */}
+                        {(session.live.couriers?.length ?? 0) > 0 && (
+                            <div className="text-muted-foreground border-border border-t pt-1 text-xs">
+                                <span className="font-semibold">Domiciliarios</span>
+                                <ul className="mt-1 space-y-1">
+                                    {session.live.couriers!.map((c) => (
+                                        <li key={c.user_id}>
+                                            <div className="text-foreground flex justify-between font-medium">
+                                                <span>{c.name}</span>
+                                                <span className="tabular-nums">
+                                                    {c.completed_deliveries} entrega{c.completed_deliveries === 1 ? '' : 's'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Abonos a caja</span>
+                                                <span className="tabular-nums">+{formatCurrency(c.advances)}</span>
+                                            </div>
+                                            {c.reversals > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span>Reversiones (entrega fallida)</span>
+                                                    <span className="tabular-nums">−{formatCurrency(c.reversals)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span>Tarifas por pagar</span>
+                                                <span className="tabular-nums">
+                                                    {formatCurrency(c.fees_pending)}
+                                                    {c.fees_paid > 0 ? ` (pagado ${formatCurrency(c.fees_paid)})` : ''}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="mt-1">
+                                    Las tarifas se pagan con el egreso «Pago a domiciliario» seleccionando al repartidor.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {pendingOrders > 0 && (

@@ -341,6 +341,7 @@ class CashRegisterController extends Controller
                 'by_method' => $live['by_method'],
                 'expenses' => $live['expenses'],
                 'incomes' => $live['incomes'],
+                'couriers' => $live['couriers'],
             ],
         ]);
     }
@@ -363,6 +364,9 @@ class CashRegisterController extends Controller
             'description' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
             // Multi-caja (#117): contra qué caja se carga el egreso.
             'cash_session_id' => ['nullable', 'uuid'],
+            // F6: pago de tarifas a domiciliario — vincula el egreso al
+            // repartidor para el cruce por courier del cierre.
+            'courier_user_id' => ['nullable', 'uuid'],
         ]);
 
         $companyNit = $this->activeCompanyNit($request);
@@ -389,6 +393,7 @@ class CashRegisterController extends Controller
             description: $validated['description'] ?? null,
             paymentMethod: $validated['payment_method'] ?? 'cash',
             enforceNonNegativeCash: true,
+            courierUserId: $validated['courier_user_id'] ?? null,
         );
 
         $this->auditService->log('cash.expense.recorded', $user, $expense, [

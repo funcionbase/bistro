@@ -36,6 +36,18 @@ export interface CashSessionLiveSummary {
         by_method: Record<PaymentMethod, number>;
         by_category: Record<string, number>;
     };
+    /** Cruce por domiciliario (F6): abonos, reversiones y tarifas por pagar. */
+    couriers?: {
+        user_id: string;
+        name: string;
+        advances: number;
+        advances_count: number;
+        reversals: number;
+        completed_deliveries: number;
+        fees_owed: number;
+        fees_paid: number;
+        fees_pending: number;
+    }[];
 }
 
 export type CashExpenseCategory = 'domiciliario_pago' | 'proveedor' | 'imprevisto' | 'propina_distribuida' | 'otro';
@@ -126,7 +138,14 @@ interface UseCashRegisterReturn {
     refresh: () => Promise<void>;
     openSession: (openingAmount: number, notes?: string, cashRegisterId?: string) => Promise<void>;
     closeSession: (closingAmount: number, notes?: string) => Promise<CloseSessionResult>;
-    recordExpense: (input: { amount: number; category: CashExpenseCategory; description?: string; payment_method?: PaymentMethod }) => Promise<void>;
+    recordExpense: (input: {
+        amount: number;
+        category: CashExpenseCategory;
+        description?: string;
+        payment_method?: PaymentMethod;
+        /** F6: pago de tarifas al domiciliario — habilita el cruce por courier del cierre. */
+        courier_user_id?: string | null;
+    }) => Promise<void>;
     recordIncome: (input: { amount: number; category: CashIncomeCategory; description?: string; payment_method?: PaymentMethod }) => Promise<void>;
 }
 
@@ -140,6 +159,7 @@ function emptyLiveSummary(): CashSessionLiveSummary {
         pending_orders: 0,
         expenses: { total: 0, count: 0, by_method: { cash: 0, card: 0, transfer: 0, nequi: 0, daviplata: 0 }, by_category: {} },
         incomes: { total: 0, count: 0, by_method: { cash: 0, card: 0, transfer: 0, nequi: 0, daviplata: 0 }, by_category: {} },
+        couriers: [],
     };
 }
 
@@ -429,7 +449,13 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
     );
 
     const recordExpense = useCallback(
-        async (input: { amount: number; category: CashExpenseCategory; description?: string; payment_method?: PaymentMethod }) => {
+        async (input: {
+            amount: number;
+            category: CashExpenseCategory;
+            description?: string;
+            payment_method?: PaymentMethod;
+            courier_user_id?: string | null;
+        }) => {
             let status: number | null = null;
             try {
                 const res = await apiFetch('/api/v1/cash-register/expenses', {
@@ -441,6 +467,8 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                         description: input.description ?? null,
                         payment_method: input.payment_method ?? 'cash',
                         cash_session_id: session?.id ?? null,
+                        // F6: pago de tarifas vinculado al domiciliario.
+                        courier_user_id: input.courier_user_id ?? null,
                     }),
                 });
                 status = res.status;

@@ -923,6 +923,9 @@ Route::prefix('v1')->group(function () {
                     Route::put('deliveries/{id}/revert', [DeliveryController::class, 'revert'])
                         ->middleware('permission:deliveries.update,update')
                         ->name('api.deliveries.revert');
+                    Route::put('deliveries/{id}/no-show', [DeliveryController::class, 'noShow'])
+                        ->middleware('permission:deliveries.update,update')
+                        ->name('api.deliveries.no-show');
                     Route::put('deliveries/{id}/reject', [DeliveryController::class, 'reject'])
                         ->middleware('permission:deliveries.update,update')
                         ->name('api.deliveries.reject');
@@ -1056,6 +1059,11 @@ Route::prefix('v1')->group(function () {
                 Route::post('orders/{id}/close-with-payment', [OrderController::class, 'closeWithPayment'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.closeWithPayment');
+                // Abono del domiciliario al despachar (F6): PaymentReceipt cash
+                // con payment_data.courier_advance — el arqueo cuadra solo.
+                Route::post('orders/{id}/courier-advance', [OrderController::class, 'courierAdvance'])
+                    ->middleware('permission:orders.update,update')
+                    ->name('api.orders.courierAdvance');
                 Route::post('orders/{id}/cancel', [OrderController::class, 'cancel'])
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.cancel');

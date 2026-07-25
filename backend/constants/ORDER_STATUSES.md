@@ -36,6 +36,8 @@ Modelo plano sin sub-tipos. Forward-only: una orden solo puede avanzar en el flu
 
 ⓘ `pending_approval` (#191): órdenes de mesa con QR aún no aprobadas por el mesero. NO entran en `operational`, `kanban` ni `revenue`. Desde el pedido público sin mesa (QR de sede, `/menus?branch=`) también lo usan órdenes `pickup`/`delivery` creadas por el cliente: se aprueban con `POST /api/v1/orders/{id}/approve` (`OrderController::approve`, solo órdenes SIN `table_session_id`) → pasan a `pending` y sus items a `approved`. El costo del envío entra como línea `order_items` sintética (`menu_item_id='delivery_fee'`, name "Domicilio", tax 0, nace `served` — no es un plato: no aparece en el KDS ni bloquea la promoción a `ready`) para conservar el invariante `orders.total = SUM(líneas)`.
 
+ⓘ `failed` (activado en F6, antes declarado sin uso): entrega fallida / no-show de domicilio. Lo setea `OrderController::cancel` con `category='no_show'` en órdenes delivery SIN pago registrado (con abono del domiciliario el camino es `refund` → `refunded`). El delivery asociado se cierra con razón `no_show` (`DELIVERY_STATUSES.md`). No es revenue.
+
 ⓘ `abandoned`: lo asigna el cron `orders:mark-abandoned` (`MarkAbandonedOrdersCommand`, hourly) a pedidos públicos sin sesión de mesa que llevan más de `config('orders.abandon_after_hours')` (24h) en `pending_approval` sin aprobación. Cancela sus items (`cancellation_reason=system`) y audita `order.abandoned`. Métrica de carritos perdidos en reportes. Los buffers de sesión de mesa NO se marcan (su ciclo lo maneja la sesión).
 
 Fuente: `config/orders.php:23-134`.

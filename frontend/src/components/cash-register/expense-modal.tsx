@@ -7,8 +7,9 @@ import { CASH_EXPENSE_CATEGORIES, type CashExpenseCategory } from '@/hooks/use-c
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { usePaymentMethods } from '@/hooks/use-payment-methods';
 import type { PaymentMethod } from '@/types';
+import { apiFetch } from '@/lib/api';
 import { AlertCircle, MinusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Modal para registrar un egreso de caja contra la sesión activa.
@@ -16,7 +17,13 @@ import { useState } from 'react';
  */
 interface Props {
     onClose: () => void;
-    onSubmit: (input: { amount: number; category: CashExpenseCategory; description?: string; payment_method?: PaymentMethod }) => Promise<void>;
+    onSubmit: (input: {
+        amount: number;
+        category: CashExpenseCategory;
+        description?: string;
+        payment_method?: PaymentMethod;
+        courier_user_id?: string | null;
+    }) => Promise<void>;
 }
 
 export default function ExpenseModal({ onClose, onSubmit }: Props) {
@@ -28,6 +35,23 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
     const [description, setDescription] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // F6: pago a domiciliario vinculado al repartidor (cruce del cierre).
+    const [couriers, setCouriers] = useState<{ id: string; name: string }[]>([]);
+    const [courierId, setCourierId] = useState<string>('');
+
+    useEffect(() => {
+        if (category !== 'domiciliario_pago' || couriers.length > 0) return;
+        void (async () => {
+            try {
+                const res = await apiFetch('/api/v1/deliveries/couriers');
+                if (!res.ok) return;
+                const json = (await res.json().catch(() => null)) as { data?: { id: string; name: string }[] } | null;
+                if (json?.data) setCouriers(json.data.map((c) => ({ id: c.id, name: c.name })));
+            } catch {
+                // Selector opcional: sin couriers el egreso sigue funcionando.
+            }
+        })();
+    }, [category, couriers.length]);
 
     // BUG-003: strip separadores de miles (. ó ,) antes de parsear para que
     // "$99.000" COP no se interprete como 99 por el punto decimal de JS.
@@ -47,6 +71,7 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                 category,
                 description: description.trim() || undefined,
                 payment_method: paymentMethod,
+                courier_user_id: category === 'domiciliario_pago' && courierId ? courierId : null,
             });
             onClose();
         } catch (e) {
@@ -81,6 +106,25 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                             ))}
                         </select>
                     </div>
+
+                    {category === 'domiciliario_pago' && couriers.length > 0 && (
+                        <div className="space-y-1">
+                            <Label htmlFor="expense_courier">Domiciliario (para el cruce del cierre)</Label>
+                            <select
+                                id="expense_courier"
+                                value={courierId}
+                                onChange={(e) => setCourierId(e.target.value)}
+                                className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-1 focus-visible:outline-none"
+                            >
+                                <option value="">Sin vincular</option>
+                                {couriers.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div className="space-y-1">
                         <Label htmlFor="expense_amount">Monto</Label>

@@ -143,6 +143,68 @@ export default function DaySalesIndex() {
         handleReassign,
     } = useDaySalesActions({ orders, refresh });
 
+    // F6: abono del domiciliario (receipt cash courier_advance) y no-show.
+    const [advanceOrderId, setAdvanceOrderId] = useState<string | null>(null);
+    const [advanceSubmitting, setAdvanceSubmitting] = useState(false);
+    const [noShowContext, setNoShowContext] = useState<{ orderId: string; deliveryId: string | null; orderStatus: string } | null>(null);
+    const [noShowSubmitting, setNoShowSubmitting] = useState(false);
+
+    async function confirmCourierAdvance() {
+        if (advanceOrderId === null) return;
+        setAdvanceSubmitting(true);
+        try {
+            const res = await apiFetch(`/api/v1/orders/${advanceOrderId}/courier-advance`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast('error', (json as { message?: string }).message ?? 'No se pudo registrar el abono.');
+                return;
+            }
+            showToast('success', 'Abono del domiciliario registrado en caja.');
+            setAdvanceOrderId(null);
+            setOrderDetail(null);
+            void refresh();
+        } catch {
+            showToast('error', 'Error de conexión al registrar el abono.');
+        } finally {
+            setAdvanceSubmitting(false);
+        }
+    }
+
+    async function confirmNoShow() {
+        if (noShowContext === null) return;
+        setNoShowSubmitting(true);
+        try {
+            // Orden ya terminal (refund del abono hecho) → solo cerrar el
+            // delivery; si sigue viva y sin pago → cancel con categoría no_show
+            // (el backend la pasa a `failed` y cierra el delivery).
+            const terminal = ['refunded', 'failed', 'cancelled'].includes(noShowContext.orderStatus);
+            const res = terminal && noShowContext.deliveryId
+                ? await apiFetch(`/api/v1/deliveries/${noShowContext.deliveryId}/no-show`, { method: 'PUT' })
+                : await apiFetch(`/api/v1/orders/${noShowContext.orderId}/cancel`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ category: 'no_show', reason: 'Entrega fallida / No show' }),
+                  });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast('error', (json as { message?: string }).message ?? 'No se pudo marcar la entrega fallida.');
+                return;
+            }
+            showToast('success', 'Entrega marcada como fallida (no show).');
+            setNoShowContext(null);
+            setOrderDetail(null);
+            void refresh();
+        } catch {
+            showToast('error', 'Error de conexión.');
+        } finally {
+            setNoShowSubmitting(false);
+        }
+    }
+
     async function confirmCancel() {
         if (cancelOrderId === null) return;
         setCancelling(true);
@@ -395,6 +457,10 @@ export default function DaySalesIndex() {
                 onReassignCourier={(orderId, deliveryId) => void openReassign(orderId, deliveryId)}
                 onCancelOrder={(orderId) => setCancelOrderId(orderId)}
                 onRefundOrder={(orderId) => setRefundOrderId(orderId)}
+                onCourierAdvance={(orderId) => setAdvanceOrderId(orderId)}
+                onNoShow={(orderId, deliveryId) =>
+                    setNoShowContext({ orderId, deliveryId, orderStatus: orderDetail?.status ?? '' })
+                }
             />
 
             {refundOrderId !== null && orderDetail && (
@@ -418,6 +484,30 @@ export default function DaySalesIndex() {
                 loading={cancelling}
                 onConfirm={() => void confirmCancel()}
                 onCancel={() => setCancelOrderId(null)}
+            />
+
+            {/* F6: abono del domiciliario — el repartidor entrega el total en efectivo a caja. */}
+            <ConfirmDialog
+                open={advanceOrderId !== null}
+                title="¿Registrar abono del domiciliario?"
+                message="El repartidor entrega en efectivo el valor total del pedido a la caja. Queda como pago de la orden; si la entrega falla, se revierte con una devolución."
+                confirmLabel="Registrar abono"
+                cancelLabel="Volver"
+                loading={advanceSubmitting}
+                onConfirm={() => void confirmCourierAdvance()}
+                onCancel={() => setAdvanceOrderId(null)}
+            />
+
+            {/* F6/CA5: entrega fallida / no show. */}
+            <ConfirmDialog
+                open={noShowContext !== null}
+                title="¿Marcar entrega fallida (no show)?"
+                message="Nadie recibió el pedido o la dirección no existe. La orden queda como entrega fallida y el cliente quedará marcado con alerta. Si el domiciliario abonó, primero registra la devolución."
+                confirmLabel="Marcar no show"
+                cancelLabel="Volver"
+                loading={noShowSubmitting}
+                onConfirm={() => void confirmNoShow()}
+                onCancel={() => setNoShowContext(null)}
             />
         </PageShell>
     );

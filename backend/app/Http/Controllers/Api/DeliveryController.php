@@ -388,4 +388,26 @@ class DeliveryController extends Controller
 
         return response()->json(['data' => $delivery]);
     }
+
+    /**
+     * Entrega fallida / no-show (F6, CA5). Cierra el delivery con razón
+     * estructurada `no_show` DESPUÉS de resolver la orden (refund del abono →
+     * `refunded`, o cancel category=no_show → `failed`). No bloquea por
+     * receipt — el dinero ya quedó compensado por el asiento correspondiente.
+     */
+    public function noShow(Request $request, string $id): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'deliveries', 'update');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $payload = $request->attributes->get('jwt_payload');
+        $actorId = (string) ($payload['sub'] ?? '');
+
+        $delivery = Delivery::forCompany($companyNit)->with('order')->findOrFail($id);
+        $actor = User::findOrFail($actorId);
+
+        $delivery = $this->deliveryService->markNoShow($delivery, $actor);
+
+        return response()->json(['data' => $delivery]);
+    }
 }

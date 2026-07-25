@@ -80,6 +80,25 @@ checkout público:
   cliente (solo efectivo, validado ≥ total+propina en el controller).
   Informativo — las devueltas reales se calculan al cobrar.
 
+### Abono del domiciliario (F6) — `payment_data.courier_advance`
+
+- `POST /orders/{id}/courier-advance` (`orders.update`, orden delivery en
+  `in_transit` con delivery asignada y sin receipt positivo previo) crea un
+  `PaymentReceipt` **normal**: `payment_method='cash'`, `amount=orders.total`,
+  `cash_session_id` de la caja, `payment_data: {courier_advance: true,
+  courier_user_id, tip_amount: 0}`. La propina NO entra al abono (es del
+  repartidor, la recibe del cliente).
+- `computeExpectedCash`/`liveSummary` cuadran sin lógica nueva (es un receipt
+  cash más). `closeWithPayment` rechaza con 409 `ORDER_ALREADY_PAID` si la
+  orden ya está cubierta por receipts positivos (evita doble cobro).
+- **Reversión por entrega fallida** = `refund` existente (receipt negativo →
+  el domiciliario recupera su plata; orden → `refunded`). Inmutabilidad DIAN
+  intacta: nada se edita, todo es asiento nuevo.
+- **Cruce al cierre**: `liveSummary.couriers[]` y el PDF de cierre agrupan por
+  `courier_user_id`: abonos, reversiones, tarifas adeudadas (SUM líneas
+  `Domicilio` de sus entregas `completed` del turno) y pagos registrados con
+  el egreso `domiciliario_pago` + `cash_register_expenses.courier_user_id`.
+
 ---
 
 ## Convenciones críticas

@@ -19,6 +19,8 @@ interface Props {
     onApprove: (order: ChatCartFlowOrder) => Promise<void>;
     /** Cambio de tipo en caliente (F5). `address` requerido al pasar a domicilio. */
     onChangeOrderType: (order: ChatCartFlowOrder, to: 'pickup' | 'delivery', address?: string) => Promise<void>;
+    /** CA5: aviso manual de cancelación al cliente — NUNCA automático. */
+    onSendCancellationNotice: (order: ChatCartFlowOrder) => Promise<void>;
     onResendMenuLink: () => Promise<void>;
     onOpenOrder: (orderId: string) => void;
 }
@@ -49,6 +51,7 @@ export function ChatCartActions({
     onRejectProof,
     onApprove,
     onChangeOrderType,
+    onSendCancellationNotice,
     onResendMenuLink,
     onOpenOrder,
 }: Props) {
@@ -74,6 +77,8 @@ export function ChatCartActions({
 
     const { session } = cartFlow;
     const activeOrders = cartFlow.orders.filter((o) => !TERMINAL_STATUSES.has(o.status));
+    // CA5: última orden fallida/cancelada — ofrecer el aviso manual al cliente.
+    const lastFailed = [...cartFlow.orders].reverse().find((o) => ['failed', 'cancelled', 'refunded'].includes(o.status)) ?? null;
     const expired = session.expired_at !== null && new Date(session.expired_at).getTime() < Date.now();
     const building =
         session.last_activity_at !== null && Date.now() - new Date(session.last_activity_at).getTime() < 3 * 60_000;
@@ -258,6 +263,21 @@ export function ChatCartActions({
                     </div>
                 );
             })}
+
+            {/* CA5: aviso manual de cancelación (entrega fallida / pedido cancelado). */}
+            {lastFailed !== null && canUpdate && (
+                <div className="pt-1">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        disabled={busy !== null}
+                        onClick={() => void run(`cancel-notice-${lastFailed.id}`, () => onSendCancellationNotice(lastFailed))}
+                    >
+                        Enviar aviso de cancelación
+                    </Button>
+                </div>
+            )}
 
             {actionError && <p className="text-destructive mt-1 text-xs">{actionError}</p>}
         </div>

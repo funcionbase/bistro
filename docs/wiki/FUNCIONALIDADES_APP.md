@@ -2812,6 +2812,31 @@ Payload: type (pickup|delivery), customer_name, customer_phone,
   (botón "Pasar a domicilio/para llevar" con dirección inline). Audit
   `order.type_changed`.
 
+#### Ledger de efectivo del domiciliario (F6)
+
+- **Abono al despachar (CA4)**: `POST /orders/{id}/courier-advance`
+  (`orders.update`) — el repartidor entrega el total del pedido en efectivo a
+  caja. Es un `PaymentReceipt` cash normal con
+  `payment_data.{courier_advance, courier_user_id}` → `computeExpectedCash` y
+  el arqueo cuadran sin lógica nueva. Propina fuera del abono (es del
+  repartidor). Guards: delivery `in_transit` asignada, sin receipt positivo
+  previo, caja abierta. `closeWithPayment` → 409 `ORDER_ALREADY_PAID` si ya
+  está cubierta. Botón "Registrar abono del domiciliario" en
+  `OrderDetailModal` (vista deliveries).
+- **Entrega fallida / no-show (CA5)**: con abono → `refund` existente (asiento
+  negativo, el domiciliario recupera su plata, orden `refunded`) y luego
+  `PUT /deliveries/{id}/no-show`; sin abono → `POST /orders/{id}/cancel` con
+  `category='no_show'` (orden → `failed`, delivery cerrado con razón
+  `no_show`). Botón "Entrega fallida / No show" en `OrderDetailModal`. El
+  aviso al cliente es un botón MANUAL en el panel del chat ("Enviar aviso de
+  cancelación") — nunca automático.
+- **Cruce al cierre**: `liveSummary.couriers[]` (modal de cierre) y el PDF de
+  cierre (`pdf/cash-drawer.blade.php`) muestran por domiciliario: abonos,
+  reversiones, entregas completadas, tarifas adeudadas (SUM líneas Domicilio)
+  y pagos. Las tarifas se pagan con el egreso `domiciliario_pago` vinculado
+  al repartidor (`cash_register_expenses.courier_user_id`, selector en el
+  modal de egresos).
+
 ### 9.13 Resumen de los 18 endpoints de menú
 
 | Método | URL | Permission | Notas |
