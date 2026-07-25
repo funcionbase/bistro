@@ -2728,9 +2728,13 @@ Payload: type (pickup|delivery), customer_name, customer_phone,
   (dirección/barrio a mano, no hay validación automática) y aprueba con
   `POST /api/v1/orders/{id}/approve` (→ `pending`, items → `approved`) o cancela.
 - Precios SIEMPRE del menú activo de la sede. El envío entra como línea
-  `order_items` sintética (`menu_item_id='delivery_fee'`, "Domicilio", tax 0),
-  con el precio configurado por sede (`branch_settings.delivery_fee`, editable en
-  `/company/branches` → branding del menú).
+  `order_items` sintética (`menu_item_id='delivery_fee'` — constante
+  `Order::DELIVERY_FEE_ITEM_ID`, "Domicilio", tax 0), con el precio configurado
+  por sede (`branch_settings.delivery_fee`, editable en `/company/branches` →
+  branding del menú). El mismo fee aplica a órdenes delivery creadas desde caja
+  (`OrderController::store` lo inyecta antes del aggregate; la fila nace
+  `served` para no aparecer en KDS). El bootstrap expone
+  `activeBranch.delivery_fee` para que caja muestre el total real.
 - Domicilios solo dentro de la ciudad de la sede (`branches.city`) — aviso
   informativo en el checkout público; la verificación es manual en la aprobación.
 - Cliente vinculado al CRM por phone (upsert de `Contact` con nombre).

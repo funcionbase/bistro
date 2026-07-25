@@ -37,6 +37,14 @@ class Order extends Model
     use HasUuids;
 
     /**
+     * menu_item_id sintético de la línea "Domicilio" (no existe en el menú).
+     * La inyecta el backend al crear órdenes delivery (caja y flujo público);
+     * nunca puede venir del payload porque los ids se resuelven contra el
+     * catálogo del menú activo.
+     */
+    public const DELIVERY_FEE_ITEM_ID = 'delivery_fee';
+
+    /**
      * Inmutabilidad de `branch_id` post-creación (#192).
      *
      * Si una orden cambia de sede después de creada, los reportes históricos,

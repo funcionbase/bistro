@@ -26,6 +26,7 @@ class BootstrapService
         private readonly JwtService $jwtService,
         private readonly FeaturePermissionService $featurePermissions,
         private readonly BillingService $billing,
+        private readonly BranchSettingsService $branchSettings,
     ) {}
 
     /**
@@ -123,6 +124,13 @@ class BootstrapService
                     'name' => $payload['active_branch_name'] ?? null,
                     'slug' => $payload['active_branch_slug'] ?? null,
                 ];
+
+            // Fee de domicilio de la sede activa: caja lo necesita para mostrar
+            // el total real de órdenes delivery (el backend lo inyecta como línea).
+            $rawFee = $this->branchSettings->get((string) $activeBranchId, 'delivery_fee');
+            $activeBranch['delivery_fee'] = $rawFee !== null && $rawFee !== ''
+                ? round((float) $rawFee, 2)
+                : null;
         }
 
         if ($activeCompanyNit !== null) {

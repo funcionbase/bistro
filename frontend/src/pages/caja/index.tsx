@@ -282,13 +282,17 @@ export default function CajaPage() {
     );
     // Aplicar descuento del cupón (si fue validado) sobre el total bruto. El
     // backend recalcula con la misma política (descuento sobre base gravable).
+    // El backend inyecta la línea "Domicilio" al persistir órdenes delivery;
+    // acá solo se refleja para que el total mostrado coincida con el real.
+    const deliveryFee = orderType === 'delivery' ? (sharedData.activeBranch?.delivery_fee ?? 0) : 0;
+    const grossTotal = taxBreakdown.total + deliveryFee;
     const discountAmount =
-        appliedCoupon?.valid && typeof appliedCoupon.discount_amount === 'number' ? Math.min(appliedCoupon.discount_amount, taxBreakdown.total) : 0;
-    const total = Math.max(0, taxBreakdown.total - discountAmount);
+        appliedCoupon?.valid && typeof appliedCoupon.discount_amount === 'number' ? Math.min(appliedCoupon.discount_amount, grossTotal) : 0;
+    const total = Math.max(0, grossTotal - discountAmount);
 
     // Happy hour activo: badge informativo. Si no hay cupón manual aplicado,
     // el backend hará el auto-apply al cerrar la orden (#125).
-    const activeAutoApply = useActiveAutoApply(appliedCoupon?.valid ? 0 : taxBreakdown.total, clientPhone || undefined);
+    const activeAutoApply = useActiveAutoApply(appliedCoupon?.valid ? 0 : grossTotal, clientPhone || undefined);
 
     const handleSubmit = async () => {
         setSubmitError(null);
@@ -719,7 +723,7 @@ export default function CajaPage() {
                                                         onClick={() =>
                                                             void validateCoupon(
                                                                 couponInput.trim(),
-                                                                taxBreakdown.total,
+                                                                grossTotal,
                                                                 clientPhone.trim() || undefined,
                                                             )
                                                         }
@@ -730,6 +734,13 @@ export default function CajaPage() {
                                             )}
                                             {couponError && !appliedCoupon?.valid && <div className="text-destructive">{couponError}</div>}
                                         </div>
+
+                                        {deliveryFee > 0 && (
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-muted-foreground">Domicilio</span>
+                                                <span className="tabular-nums">{formatCurrency(deliveryFee)}</span>
+                                            </div>
+                                        )}
 
                                         <div className="flex items-center justify-between border-t pt-2">
                                             <span className="text-sm font-semibold">Total</span>

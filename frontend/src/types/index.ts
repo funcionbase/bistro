@@ -296,6 +296,8 @@ export interface Branch {
     address?: string | null;
     city?: string | null;
     menu_qr_token?: string | null;
+    /** Fee de domicilio de la sede (solo viene en activeBranch del bootstrap). */
+    delivery_fee?: number | null;
 }
 
 export interface SharedData {
