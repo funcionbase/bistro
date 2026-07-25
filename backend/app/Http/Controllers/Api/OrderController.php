@@ -32,6 +32,7 @@ use App\Services\TableSessionService;
 use App\Services\TaxCalculator;
 use App\Support\OrderTotalCalculator;
 use Carbon\Carbon;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -1469,10 +1470,17 @@ class OrderController extends Controller
     {
         $this->permissionService->assertPermission($request, 'orders', 'update');
 
+        $validated = $request->validate([
+            // Guard de carrera (F4): si el cliente modificó el pedido entre que
+            // el cajero lo miró y aprobó, el total ya no coincide → 409 para
+            // obligar a revisar el nuevo total antes de confirmar.
+            'expected_total' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
         $companyNit = $this->activeCompanyNit($request);
         $actor = $this->actingUser($request);
 
-        $order = DB::transaction(function () use ($id, $companyNit) {
+        $order = DB::transaction(function () use ($id, $companyNit, $validated) {
             /** @var Order $order */
             $order = Order::forCompany($companyNit)->lockForUpdate()->findOrFail($id);
 
@@ -1480,6 +1488,15 @@ class OrderController extends Controller
                 throw ValidationException::withMessages([
                     'status' => 'Solo se pueden aprobar órdenes pendientes de aprobación.',
                 ]);
+            }
+
+            if (isset($validated['expected_total'])
+                && abs((float) $order->total - (float) $validated['expected_total']) > 0.009) {
+                throw new HttpResponseException(response()->json([
+                    'message' => 'El pedido fue actualizado por el cliente. Revisa el nuevo total antes de aprobar.',
+                    'code' => 'ORDER_CHANGED',
+                    'current_total' => (string) $order->total,
+                ], 409));
             }
 
             if ($order->table_session_id !== null) {

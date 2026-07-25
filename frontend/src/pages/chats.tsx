@@ -8,6 +8,7 @@ import { ChatPresence } from '@/components/chats/chat-presence';
 import { ChatSourceBadge } from '@/components/chats/chat-source-badge';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { ClientDetailModal, type ClientDetail } from '@/components/chats/client-detail-modal';
+import { ChatCartActions } from '@/components/chats/chat-cart-actions';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { PageShell } from '@/components/page-shell';
 import { Button } from '@/components/ui/button';
@@ -145,6 +146,9 @@ export default function ChatsPage() {
         retryMessage,
         setBotPaused,
         updateContact,
+        sendReceipt,
+        rejectProof,
+        approveOrder,
         loading,
         error,
     } = useChats(token, {
@@ -336,6 +340,8 @@ export default function ChatsPage() {
     const permissions = props.permissions ?? [];
     const isSystem = props.role?.is_system ?? false;
     const canUpdate = isSystem || permissions.includes('chats.update');
+    // Aprobar pedidos desde el panel del chat (F4) exige permiso de órdenes.
+    const canApproveOrders = isSystem || permissions.includes('orders.update');
     // `chats.audit` es owner/admin por template: el operador no administra su
     // propia auditoria. El backend valida igual — esconder el boton no es control.
     const canAudit = isSystem || permissions.includes('chats.audit');
@@ -850,6 +856,24 @@ export default function ChatsPage() {
                                 {botError && <p className="text-destructive px-3 pt-2 text-xs">{botError}</p>}
 
                                 {selectedChat && <ChatPresence viewers={selectedChat.viewers ?? []} />}
+
+                                {/* Panel de próxima acción del flujo de carta (F4): tracking del
+                                    link, recibo térmico, aprobación y comprobantes. */}
+                                {selectedChat?.cart_flow && (
+                                    <ChatCartActions
+                                        cartFlow={selectedChat.cart_flow}
+                                        canUpdate={canUpdate}
+                                        canApprove={canApproveOrders}
+                                        onSendReceipt={(order) => sendReceipt(order.id, order.total)}
+                                        onRejectProof={(order) => rejectProof(order.id)}
+                                        onApprove={(order) => approveOrder(order.id, order.total)}
+                                        onResendMenuLink={async () => {
+                                            const url = await requestMenuLink();
+                                            if (url) await sendMessage(`¡Hola! Aquí está nuestra carta 📋 ${url}`);
+                                        }}
+                                        onOpenOrder={(orderId) => void openOrderDetail(orderId)}
+                                    />
+                                )}
 
                                 {SHOW_BOT_CONTROLS && selectedChat?.bot_paused && (
                                     <div className="flex items-center gap-2 border-b bg-[color:var(--color-status-warning)]/10 px-3 py-2 text-xs text-[color:var(--color-status-warning)]">

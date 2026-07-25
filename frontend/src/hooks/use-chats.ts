@@ -82,10 +82,43 @@ export interface ChatSummary {
     latest_order: ChatLatestOrder | null;
 }
 
+/** Orden ligada a la sesión de carta (F4) con el guard del recibo térmico. */
+export interface ChatCartFlowOrder {
+    id: string;
+    short_code: string;
+    status: string;
+    status_label: string;
+    order_type: string;
+    total: number;
+    tip_amount: number;
+    payment_preference: string | null;
+    cash_pays_with: number | null;
+    customer_notes: string | null;
+    delivery_address: string | null;
+    receipt_sent_at: string | null;
+    /** El total cambió después del último recibo enviado → sugerir reenviar. */
+    receipt_stale: boolean;
+    ordered_at: string | null;
+}
+
+/** Panel de próxima acción del chat (F4): última carta enviada + sus órdenes. */
+export interface ChatCartFlow {
+    session: {
+        token: string;
+        status: 'active' | 'abandoned' | 'converted';
+        viewed_at: string | null;
+        last_activity_at: string | null;
+        expired_at: string | null;
+        created_at: string | null;
+    };
+    orders: ChatCartFlowOrder[];
+}
+
 export interface ChatDetail extends ChatSummary {
     messages: ChatMessage[];
     /** Otros operadores con este chat abierto en los últimos 90 s (§5.7). */
     viewers?: string[];
+    cart_flow?: ChatCartFlow | null;
 }
 
 export interface ContactPayload {
@@ -108,6 +141,12 @@ interface UseChatsReturn {
     retryMessage: (messageId: string) => Promise<void>;
     setBotPaused: (paused: boolean) => Promise<void>;
     updateContact: (payload: ContactPayload) => Promise<void>;
+    /** Recibo térmico virtual (F4, CA2). Lanza Error con el motivo si el backend rechaza (409). */
+    sendReceipt: (orderId: string, expectedTotal: number) => Promise<void>;
+    /** Rechazo de comprobante de transferencia (F4, CA3). */
+    rejectProof: (orderId: string) => Promise<void>;
+    /** Aprobación con guard de carrera (F4, CA3/CA4): expected_total → 409 ORDER_CHANGED. */
+    approveOrder: (orderId: string, expectedTotal: number) => Promise<void>;
     loading: boolean;
     error: string | null;
     refresh: () => Promise<void>;
@@ -319,6 +358,61 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
         [token, selectedChatId, fetchChatDetail, fetchChats],
     );
 
+    const sendReceipt = useCallback(
+        async (orderId: string, expectedTotal: number): Promise<void> => {
+            if (!token || !selectedChatId) return;
+            const res = await apiFetch(`/api/v1/chats/${selectedChatId}/orders/${orderId}/receipt`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expected_total: expectedTotal }),
+            });
+            // Refetch SIEMPRE: en 409 (recibo vigente / total cambió) el panel
+            // necesita el estado fresco para reflejar el motivo.
+            const refetch = Promise.all([fetchChatDetail(selectedChatId), fetchChats()]);
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                await refetch;
+                throw new Error((json as { message?: string }).message ?? 'No se pudo enviar el recibo.');
+            }
+            await refetch;
+        },
+        [token, selectedChatId, fetchChatDetail, fetchChats],
+    );
+
+    const rejectProof = useCallback(
+        async (orderId: string): Promise<void> => {
+            if (!token || !selectedChatId) return;
+            const res = await apiFetch(`/api/v1/chats/${selectedChatId}/orders/${orderId}/reject-proof`, { method: 'POST' });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error((json as { message?: string }).message ?? 'No se pudo enviar el aviso.');
+            }
+            await Promise.all([fetchChatDetail(selectedChatId), fetchChats()]);
+        },
+        [token, selectedChatId, fetchChatDetail, fetchChats],
+    );
+
+    const approveOrder = useCallback(
+        async (orderId: string, expectedTotal: number): Promise<void> => {
+            if (!token || !selectedChatId) return;
+            const res = await apiFetch(`/api/v1/orders/${orderId}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expected_total: expectedTotal }),
+            });
+            const refetch = Promise.all([fetchChatDetail(selectedChatId), fetchChats()]);
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                const body = json as { message?: string; errors?: Record<string, string[]> };
+                const detail = body.errors ? Object.values(body.errors).flat()[0] : undefined;
+                await refetch;
+                throw new Error(detail ?? body.message ?? 'No se pudo aprobar el pedido.');
+            }
+            await refetch;
+        },
+        [token, selectedChatId, fetchChatDetail, fetchChats],
+    );
+
     useEffect(() => {
         void fetchChats();
         const interval = setInterval(() => {
@@ -353,6 +447,9 @@ export function useChats(token: string | null, options: UseChatsOptions = {}): U
         retryMessage,
         setBotPaused,
         updateContact,
+        sendReceipt,
+        rejectProof,
+        approveOrder,
         loading,
         error,
         refresh: fetchChats,

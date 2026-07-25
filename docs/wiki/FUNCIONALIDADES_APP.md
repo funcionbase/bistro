@@ -2771,6 +2771,32 @@ Payload: type (pickup|delivery), customer_name, customer_phone,
   frontend cae a checkout de orden nueva). Precios del menú activo en BD;
   audit `order.items_appended_by_customer`; ChatMessage bot al hilo del chat.
 
+#### Chat: panel de próxima acción y recibo térmico virtual (F4)
+
+- **`cart_flow` en `GET /chats/{id}`**: última sesión de carta del chat +
+  órdenes (`status`, `payment_preference`, `cash_pays_with`, `customer_notes`,
+  `receipt_sent_at`, `receipt_stale`). Viaja por el polling de 30s existente.
+- **Panel `chat-cart-actions.tsx`** bajo el header del chat: "Carta enviada —
+  sin abrir" / "Abrió la carta {hora}" / badge pulsante "Está armando el
+  pedido…" (`last_activity_at` < 3 min) / "Link vencido" + reenviar carta. Por
+  orden en curso: chips (tipo, medio de pago, paga-con/devueltas, notas CA7/
+  CA8) y botones — **nada se envía automático**.
+- **Recibo térmico (CA2)**: `POST /chats/{id}/orders/{orderId}/receipt`
+  (`chats.update`) arma texto plano 32 cols con `WhatsappReceiptBuilder`
+  (envuelto en ``` para monoespaciado WhatsApp; total desde `orders.total`,
+  propina desglosada, PAGA CON/CAMBIO si efectivo, strip ESC/GS y backticks)
+  y lo envía como ChatMessage operator. Guards bajo lock: 409
+  `RECEIPT_ALREADY_SENT` si vigente (`receipt_sent_total == total+tip`), 409
+  `ORDER_CHANGED` si `expected_total` difiere (carrera con el append del
+  cliente). Outbound fallido queda `failed` y se reintenta con `retryMessage`
+  sin resetear el guard. Audit `chat.receipt.sent` (sin el cuerpo).
+- **Aprobación (CA3/CA4)**: reutiliza `POST /orders/{id}/approve` + param
+  opcional `expected_total` (mismo guard 409). Con preferencia transferencia
+  el botón sugiere verificar el comprobante (llega como mensaje con imagen).
+- **Rechazar comprobante (CA3)**: `POST /chats/{id}/orders/{orderId}/reject-proof`
+  envía aviso estándar; la orden sigue `pending_approval`. Audit
+  `chat.payment_proof.rejected`.
+
 ### 9.13 Resumen de los 18 endpoints de menú
 
 | Método | URL | Permission | Notas |

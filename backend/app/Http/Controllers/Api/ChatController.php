@@ -16,6 +16,7 @@ use App\Models\CartSession;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\ClientNote;
+use App\Models\Company;
 use App\Models\CompanyWhatsappAccount;
 use App\Models\Contact;
 use App\Models\Municipality;
@@ -29,6 +30,7 @@ use App\Services\CompanySettingsService;
 use App\Services\FeaturePermissionService;
 use App\Services\Whatsapp\AutomationDispatcher;
 use App\Services\Whatsapp\WhatsappOutboundMessageSender;
+use App\Services\WhatsappReceiptBuilder;
 use App\Support\PhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -376,9 +378,68 @@ class ChatController extends Controller
         );
 
         $this->attachLatestPaidOrders(collect([$chat]), $companyNit);
+        $this->attachCartFlow($chat, $companyNit);
 
         return response()->json([
             'data' => new ChatResource($chat),
+        ]);
+    }
+
+    /**
+     * Panel de próxima acción del chat (F4): última sesión de carta enviada y
+     * las órdenes que produjo, con el guard de recibo. Viaja en el polling de
+     * 30s existente — cero infra nueva.
+     */
+    private function attachCartFlow(Chat $chat, string $companyNit): void
+    {
+        $session = CartSession::withoutGlobalScopes()
+            ->where('chat_id', $chat->id)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($session === null) {
+            return;
+        }
+
+        $orders = Order::forCompany($companyNit)
+            ->where('cart_session_id', $session->id)
+            ->orderBy('ordered_at')
+            ->get()
+            ->map(function (Order $order): array {
+                $currentTotal = round((float) $order->total + (float) $order->tip_amount, 2);
+                $receiptStale = $order->receipt_sent_at !== null
+                    && abs((float) $order->receipt_sent_total - $currentTotal) > 0.009;
+
+                return [
+                    'id' => (string) $order->id,
+                    'short_code' => strtoupper(substr((string) $order->id, 0, 4)),
+                    'status' => $order->status,
+                    'status_label' => (string) (config('orders.labels')[$order->status] ?? $order->status),
+                    'order_type' => $order->order_type,
+                    'total' => (float) $order->total,
+                    'tip_amount' => (float) $order->tip_amount,
+                    'payment_preference' => $order->payment_preference,
+                    'cash_pays_with' => $order->cash_pays_with !== null ? (float) $order->cash_pays_with : null,
+                    'customer_notes' => $order->customer_notes,
+                    'delivery_address' => $order->delivery_address,
+                    'receipt_sent_at' => $order->receipt_sent_at?->toIso8601String(),
+                    'receipt_stale' => $receiptStale,
+                    'ordered_at' => $order->ordered_at?->toIso8601String(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $chat->setAttribute('cart_flow', [
+            'session' => [
+                'token' => $session->jwt_jti,
+                'status' => $session->status,
+                'viewed_at' => $session->viewed_at?->toIso8601String(),
+                'last_activity_at' => $session->last_activity_at?->toIso8601String(),
+                'expired_at' => $session->expired_at?->toIso8601String(),
+                'created_at' => $session->created_at?->toIso8601String(),
+            ],
+            'orders' => $orders,
         ]);
     }
 
@@ -926,6 +987,208 @@ class ChatController extends Controller
                 'expires_at' => $session->expired_at?->toIso8601String(),
             ],
         ]);
+    }
+
+    /**
+     * Resuelve una orden ligada al chat (F4): por `cart_session.chat_id` o, en
+     * su defecto, por coincidencia de teléfono dentro de la empresa. Si no
+     * pertenece → 404 auditado (mismo patrón §7.5 que la media).
+     */
+    private function findChatOrderOrDeny(Request $request, Chat $chat, string $companyNit, string $orderId): Order
+    {
+        $order = Str::isUuid($orderId)
+            ? Order::forCompany($companyNit)->with('cartSession')->find($orderId)
+            : null;
+
+        $belongs = $order !== null && (
+            ($order->cartSession !== null && (string) $order->cartSession->chat_id === (string) $chat->id)
+            || ($order->client_phone !== null && (string) $order->client_phone === (string) $chat->client_phone)
+        );
+
+        if (! $belongs) {
+            $this->auditLogger->log(
+                action: 'chat.access.denied',
+                user: $this->actor($request),
+                data: [
+                    'chat_id' => $chat->id,
+                    'order_id' => $orderId,
+                    'attempted_company_nit' => $companyNit,
+                    'route' => $request->route()?->getName(),
+                ],
+                request: $request,
+                dedupeKey: $orderId,
+            );
+
+            abort(404);
+        }
+
+        return $order;
+    }
+
+    /**
+     * Envía el recibo térmico virtual de la orden al cliente (CA2). Guards
+     * bajo lock: recibo vigente → 409 RECEIPT_ALREADY_SENT; `expected_total`
+     * distinto del total actual → 409 ORDER_CHANGED (carrera con el append
+     * del cliente). Si la entrega WhatsApp falla, el mensaje queda `failed`
+     * en el hilo y `retryMessage` lo reintenta — el guard NO se resetea.
+     */
+    public function sendReceipt(Request $request, WhatsappReceiptBuilder $builder, string $id, string $orderId): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'update');
+
+        $validated = $request->validate([
+            'expected_total' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $chat = $this->findChatOrDeny($request, $companyNit, $id, ['contact']);
+        $order = $this->findChatOrderOrDeny($request, $chat, $companyNit, $orderId);
+
+        $company = Company::query()->where('nit', $companyNit)->firstOrFail();
+        $clientName = $chat->contact?->name ?? $chat->client_name;
+
+        try {
+            $body = DB::transaction(function () use ($order, $company, $builder, $clientName, $validated) {
+                /** @var Order $locked */
+                $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+                $currentTotal = round((float) $locked->total + (float) $locked->tip_amount, 2);
+
+                if (isset($validated['expected_total'])
+                    && abs((float) $locked->total - (float) $validated['expected_total']) > 0.009) {
+                    throw new \RuntimeException('ORDER_CHANGED');
+                }
+
+                // "Vigente" ⇔ el total no cambió desde el último envío.
+                if ($locked->receipt_sent_at !== null
+                    && abs((float) $locked->receipt_sent_total - $currentTotal) < 0.009) {
+                    throw new \RuntimeException('RECEIPT_ALREADY_SENT');
+                }
+
+                $locked->receipt_sent_at = now();
+                $locked->receipt_sent_total = number_format($currentTotal, 2, '.', '');
+                $locked->save();
+
+                return $builder->buildForWhatsapp($locked, $company, $clientName);
+            });
+        } catch (\RuntimeException $e) {
+            return match ($e->getMessage()) {
+                'ORDER_CHANGED' => response()->json([
+                    'message' => 'El pedido fue actualizado por el cliente. Revisa el nuevo total antes de enviar el recibo.',
+                    'code' => 'ORDER_CHANGED',
+                ], 409),
+                'RECEIPT_ALREADY_SENT' => response()->json([
+                    'message' => 'El recibo de este pedido ya fue enviado y sigue vigente.',
+                    'code' => 'RECEIPT_ALREADY_SENT',
+                ], 409),
+                default => throw $e,
+            };
+        }
+
+        // Mensaje + entrega FUERA de la txn (patrón storeMessage): un fallo de
+        // WhatsApp no revierte el guard — queda `failed` y se reintenta.
+        $now = now();
+        $payload = (array) $request->attributes->get('jwt_payload', []);
+
+        $message = ChatMessage::create([
+            'chat_id' => $chat->id,
+            'sender' => 'operator',
+            'sent_by_user_id' => $payload['sub'] ?? null,
+            'body' => $body,
+            'sent_at' => $now,
+        ]);
+
+        $chat->update([
+            'last_message_at' => $now,
+            'pending_reply_since' => null,
+            'bot_paused' => true,
+        ]);
+
+        if ($chat->source === 'whatsapp') {
+            WhatsappOutboundMessageSender::forCurrentEnvironment()->deliver($chat, $message);
+            $message->refresh();
+        }
+
+        // Sin el cuerpo (§7.6): ya vive en chat_messages.
+        $this->auditLogger->log(
+            action: 'chat.receipt.sent',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'order_id' => $order->id,
+                'company_nit' => $companyNit,
+                'chat_message_id' => $message->id,
+                'receipt_total' => (string) $order->refresh()->receipt_sent_total,
+                'status' => $message->status,
+            ],
+            request: $request,
+        );
+
+        return response()->json([
+            'data' => new ChatMessageResource($message),
+        ], 201);
+    }
+
+    /**
+     * "Rechazar comprobante" (CA3): aviso estándar al cliente de que el pago
+     * no pudo verificarse. La orden queda `pending_approval` — nada cambia de
+     * estado; nunca se envía automático.
+     */
+    public function rejectProof(Request $request, string $id, string $orderId): JsonResponse
+    {
+        $this->permissionService->assertPermission($request, 'chats', 'update');
+
+        $companyNit = (string) $request->attributes->get('active_company_nit');
+        $chat = $this->findChatOrDeny($request, $companyNit, $id);
+        $order = $this->findChatOrderOrDeny($request, $chat, $companyNit, $orderId);
+
+        if ($order->status !== 'pending_approval') {
+            return response()->json([
+                'message' => 'El pedido ya no está en revisión.',
+                'code' => 'ORDER_NOT_PENDING',
+            ], 409);
+        }
+
+        $now = now();
+        $payload = (array) $request->attributes->get('jwt_payload', []);
+
+        $message = ChatMessage::create([
+            'chat_id' => $chat->id,
+            'sender' => 'operator',
+            'sent_by_user_id' => $payload['sub'] ?? null,
+            'body' => 'No pudimos verificar tu pago. Por favor revisa que la transferencia se haya realizado y envíanos de nuevo el comprobante para confirmar tu pedido. 🙏',
+            'sent_at' => $now,
+        ]);
+
+        $chat->update([
+            'last_message_at' => $now,
+            'pending_reply_since' => null,
+            'bot_paused' => true,
+        ]);
+
+        if ($chat->source === 'whatsapp') {
+            WhatsappOutboundMessageSender::forCurrentEnvironment()->deliver($chat, $message);
+            $message->refresh();
+        }
+
+        $this->auditLogger->log(
+            action: 'chat.payment_proof.rejected',
+            user: $this->actor($request),
+            auditable: $chat,
+            data: [
+                'chat_id' => $chat->id,
+                'order_id' => $order->id,
+                'company_nit' => $companyNit,
+                'chat_message_id' => $message->id,
+                'status' => $message->status,
+            ],
+            request: $request,
+        );
+
+        return response()->json([
+            'data' => new ChatMessageResource($message),
+        ], 201);
     }
 
     public function updateBot(UpdateChatBotRequest $request, string $id): JsonResponse

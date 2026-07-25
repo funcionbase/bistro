@@ -71,6 +71,9 @@ class ChatResource extends JsonResource
             'latest_order' => $this->latest_order_id !== null
                 ? ['id' => (string) $this->latest_order_id, 'status' => (string) $this->latest_order_status]
                 : null,
+            // Panel de próxima acción (F4): última sesión de carta + sus
+            // órdenes con guard de recibo. Lo inyecta show(); no es columna.
+            'cart_flow' => $this->when($this->cart_flow !== null, fn () => $this->cart_flow),
         ];
     }
 }

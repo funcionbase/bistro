@@ -1606,6 +1606,16 @@ Route::prefix('v1')->group(function () {
                 Route::post('chats/{id}/menu-link', [ChatController::class, 'menuLink'])
                     ->middleware(['permission:chats.update,update', 'throttle:20,1'])
                     ->name('api.chats.menu-link');
+                // Recibo térmico virtual (F4, CA2): envía un WhatsApp real —
+                // guard anti-duplicado en BD + throttle contra spam de clicks.
+                Route::post('chats/{id}/orders/{orderId}/receipt', [ChatController::class, 'sendReceipt'])
+                    ->middleware(['permission:chats.update,update', 'throttle:20,1'])
+                    ->name('api.chats.orders.receipt');
+                // Rechazo de comprobante de transferencia (F4, CA3): aviso
+                // estándar al cliente; la orden sigue pending_approval.
+                Route::post('chats/{id}/orders/{orderId}/reject-proof', [ChatController::class, 'rejectProof'])
+                    ->middleware(['permission:chats.update,update', 'throttle:20,1'])
+                    ->name('api.chats.orders.reject-proof');
                 // Reintento de un saliente fallido (§8.4b punto 4). Reintenta el
                 // MISMO registro: crear uno nuevo dejaria dos burbujas por un
                 // mensaje que el cliente ve una sola vez.
