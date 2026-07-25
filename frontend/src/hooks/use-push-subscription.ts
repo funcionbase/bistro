@@ -52,6 +52,47 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/**
+ * Re-suscripción silenciosa disparada por el SW (`pwa:push:resubscribe`, evento
+ * `pushsubscriptionchange`): el navegador rotó el endpoint y la sub anterior
+ * quedó inválida. Solo actúa si el permiso ya está concedido — nunca abre el
+ * prompt. Reusa la misma clave VAPID y el mismo POST que `subscribe()`.
+ */
+export async function resubscribePush(vapidPublicKey: string): Promise<void> {
+    if (!('serviceWorker' in navigator) || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        return;
+    }
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return;
+
+    const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    const p256dhBuf = sub.getKey('p256dh');
+    const authBuf = sub.getKey('auth');
+    if (!p256dhBuf || !authBuf) return;
+
+    const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    await fetch('/api/v1/push/subscriptions', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+            endpoint: sub.endpoint,
+            p256dh: arrayBufferToBase64Url(p256dhBuf),
+            auth: arrayBufferToBase64Url(authBuf),
+            user_agent: navigator.userAgent,
+        }),
+    });
+}
+
 function detectStandalone(): boolean {
     if (typeof window === 'undefined') return false;
     const media = window.matchMedia('(display-mode: standalone)').matches;
@@ -100,6 +141,14 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         setBusy(true);
         setError(null);
         try {
+            // `serviceWorker.ready` NUNCA resuelve si no hay SW registrado
+            // (dev, o registro fallido) → el botón quedaba en busy para
+            // siempre. Verificar el registro antes de esperar `ready`.
+            const existing = await navigator.serviceWorker.getRegistration();
+            if (!existing) {
+                setError('Notificaciones no disponibles en esta sesión: recarga la página e intenta de nuevo.');
+                return;
+            }
             const reg = await navigator.serviceWorker.ready;
 
             const perm = await Notification.requestPermission();

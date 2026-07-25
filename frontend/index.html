@@ -4,6 +4,23 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
+        <!-- Anti-FOUC de tema: aplica `.dark` al <html> ANTES de que cargue el
+             CSS, replicando la semántica de initializeTheme (use-appearance):
+             dark si appearance === 'dark' o ('system' y el SO prefiere oscuro).
+             Sin esto, un usuario en dark veía un flash claro en cada carga. -->
+        <script>
+            (function () {
+                try {
+                    var a = localStorage.getItem('appearance') || 'system';
+                    if (a === 'dark' || (a === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        document.documentElement.classList.add('dark');
+                    }
+                } catch (e) {
+                    /* sin storage: queda light e initializeTheme corrige al hidratar */
+                }
+            })();
+        </script>
+
         <!-- SEO: metadatos estáticos del shell — los crawlers los leen con el
              primer byte; las rutas SPA (manual, panel) los sobreescriben por JS. -->
         <title>bistro — Software para restaurantes en Pereira, Manizales y Armenia | Menú QR, POS e inventario</title>

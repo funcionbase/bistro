@@ -415,6 +415,24 @@ export async function estimateStorageUsage(): Promise<number | null> {
     }
 }
 
+/**
+ * Limpieza de logout (dispositivo compartido): borra los snapshots cacheados
+ * (bootstrap/menú/sesión de caja), el carrito y la bitácora — datos legibles
+ * de la sesión que no deben quedar tras cerrar sesión. NO toca `outbox`,
+ * `pending_orders` ni `id_map`: son mutaciones de dinero sin sincronizar (y su
+ * resolución de IDs) — borrarlas perdería ventas de forma irrecuperable.
+ */
+export async function clearCachedStores(): Promise<void> {
+    const db = await getOfflineDb();
+    await Promise.all([
+        db.clear('cached_bootstrap'),
+        db.clear('cached_menu'),
+        db.clear('cached_cash_session'),
+        db.clear('cart'),
+        db.clear('sync_log'),
+    ]);
+}
+
 export async function clearAllOfflineData(): Promise<void> {
     const db = await getOfflineDb();
     await Promise.all([

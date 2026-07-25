@@ -50,7 +50,16 @@ registerRoute(
             // la recarga offline del SPA fallaba (el propósito de esta ruta).
             const precached = await matchPrecache('/index.html');
             if (precached) return precached;
-            return fetch(request.url);
+            // Sin precache y sin red (primer load offline, cache eviccionado):
+            // responder un shell mínimo en vez de dejar que el fetch rechace y
+            // el navegador muestre su pantalla de error de red.
+            return fetch(request.url).catch(
+                () =>
+                    new Response(
+                        '<!doctype html><html lang="es"><meta charset="utf-8"><title>Sin conexión</title><body style="font-family:system-ui;display:grid;place-items:center;min-height:100vh"><div><h1>Sin conexión</h1><p>Reintenta cuando vuelva la red.</p></div>',
+                        { headers: { 'Content-Type': 'text/html; charset=utf-8' }, status: 503 },
+                    ),
+            );
         },
         {
             // `\.[a-z0-9]+$` — navegaciones a archivos reales (sitemap.xml,
@@ -161,7 +170,9 @@ self.addEventListener('push', (event) => {
     const options: NotificationOptions & Record<string, unknown> = {
         body: payload.body,
         icon: payload.icon ?? '/icons/icon-192.png',
-        badge: payload.badge ?? '/icons/icon-96-monochrome.png',
+        // Fallback a un ícono que SÍ existe en public/icons — el monochrome
+        // de 96px nunca se generó y Android mostraba el badge genérico.
+        badge: payload.badge ?? '/icons/icon-192.png',
         tag: payload.tag,
         renotify: false,
         data: {
@@ -189,9 +200,11 @@ self.addEventListener('notificationclick', (event) => {
                 const clientUrl = new URL(client.url);
                 if (clientUrl.origin === self.location.origin) {
                     await client.focus();
-                    if ('navigate' in client) {
-                        await client.navigate(targetUrl).catch(() => undefined);
-                    }
+                    // Navegación SPA vía postMessage (listener en spa/main.tsx):
+                    // `client.navigate` hacía full reload y perdía el estado de
+                    // la pestaña (caja, formularios). El hard-navigate queda
+                    // solo para el caso sin clientes (openWindow abajo).
+                    client.postMessage({ type: 'pwa:navigate', url: targetUrl });
                     return;
                 }
             }

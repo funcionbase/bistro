@@ -8,11 +8,13 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { SavePageEasterEgg } from '../components/save-page-easter-egg';
 import { initializeTheme } from '../hooks/use-appearance';
+import { BOOTSTRAP_QUERY_KEY, type BootstrapResponse } from '../hooks/use-bootstrap';
+import { resubscribePush } from '../hooks/use-push-subscription';
 import { attachCtaListener } from '../lib/analytics';
 import { installChunkRecoveryHandlers } from '../lib/chunk-recovery';
+import { isAnyDirty } from '../lib/dirty-state';
 import { activateSpanishValidation } from '../lib/native-validation-i18n';
 import { queryClient } from '../lib/query-client';
-import { setToken } from '../lib/token';
 import { router } from './router';
 
 // Anti "Failed to fetch dynamically imported module": intercepta chunk
@@ -40,13 +42,6 @@ if (import.meta.env.PROD) {
     }
 }
 
-// Migración legacy: si el OAuth callback dejó `?token=` en la URL, persistirlo
-// para que apiFetch envíe Bearer hasta que la cookie HttpOnly migre.
-const urlToken = new URLSearchParams(window.location.search).get('token');
-if (urlToken) {
-    setToken(urlToken);
-}
-
 const el = document.getElementById('spa-root');
 if (el) {
     createRoot(el).render(
@@ -61,6 +56,28 @@ initializeTheme();
 attachCtaListener();
 activateSpanishValidation();
 
+// Mensajes SW → página. El SW no puede re-suscribir push ni navegar el router
+// por sí mismo; delega en la pestaña activa:
+//  - `pwa:push:resubscribe` (evento `pushsubscriptionchange`): el navegador
+//    rotó el endpoint push → re-suscribir con la clave VAPID del bootstrap
+//    cacheado y re-registrar en el backend. Sin este listener, el mensaje del
+//    SW se perdía y la sub quedaba zombie hasta el próximo 410.
+//  - `pwa:navigate` (click en notificación): navegación SPA con el router,
+//    sin full reload. El SW conserva openWindow cuando no hay pestañas.
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+        const msg = event.data as { type?: string; url?: string } | null;
+        if (msg?.type === 'pwa:push:resubscribe') {
+            const vapid = queryClient.getQueryData<BootstrapResponse>(BOOTSTRAP_QUERY_KEY)?.vapidPublicKey;
+            if (vapid) {
+                void resubscribePush(vapid).catch(() => undefined);
+            }
+        } else if (msg?.type === 'pwa:navigate' && typeof msg.url === 'string') {
+            void router.navigate(msg.url);
+        }
+    });
+}
+
 // Service Worker (PWA): registra `/sw.js` para cache de assets y soporte offline.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     void import('workbox-window').then(({ Workbox }) => {
@@ -72,7 +89,11 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
         // confiable cuando un deploy nuevo toma control de la página.
         wb.addEventListener('controlling', () => {
             if (!hadController) return; // primera instalación, no actualización
-            if (document.visibilityState === 'hidden') {
+            // La recarga silenciosa en background solo si NO hay trabajo sin
+            // guardar (isAnyDirty): recargar con un formulario a medias
+            // perdía los cambios sin aviso. Con dirty, el banner de update
+            // lo maneja cuando el usuario vuelve.
+            if (document.visibilityState === 'hidden' && !isAnyDirty()) {
                 window.location.reload(); // background → recarga silenciosa
             } else {
                 window.dispatchEvent(new CustomEvent('pwa:update-available'));
