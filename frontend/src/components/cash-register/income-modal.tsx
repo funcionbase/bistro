@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CASH_INCOME_CATEGORIES, type CashIncomeCategory } from '@/hooks/use-cash-register';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { usePaymentMethods } from '@/hooks/use-payment-methods';
@@ -70,18 +71,18 @@ export default function IncomeModal({ onClose, onSubmit }: Props) {
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <Label htmlFor="income_category">Categoría</Label>
-                        <select
-                            id="income_category"
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value as CashIncomeCategory)}
-                            className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-1 focus-visible:outline-none"
-                        >
-                            {Object.entries(CASH_INCOME_CATEGORIES).map(([k, v]) => (
-                                <option key={k} value={k}>
-                                    {v}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={category} onValueChange={(v) => setCategory(v as CashIncomeCategory)}>
+                            <SelectTrigger id="income_category">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(CASH_INCOME_CATEGORIES).map(([k, v]) => (
+                                    <SelectItem key={k} value={k}>
+                                        {v}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -104,18 +105,18 @@ export default function IncomeModal({ onClose, onSubmit }: Props) {
 
                     <div className="space-y-1">
                         <Label htmlFor="income_method">Método</Label>
-                        <select
-                            id="income_method"
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                            className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-1 focus-visible:outline-none"
-                        >
-                            {catalog.methods.map((m) => (
-                                <option key={m} value={m}>
-                                    {catalog.labels[m]}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                            <SelectTrigger id="income_method">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {catalog.methods.map((m) => (
+                                    <SelectItem key={m} value={m}>
+                                        {catalog.labels[m]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <p className="text-muted-foreground text-[11px]">Solo el efectivo afecta el arqueo del cajón físico.</p>
                     </div>
 

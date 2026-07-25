@@ -19,6 +19,7 @@ import {
 } from '@/hooks/use-cash-register';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { useToken } from '@/hooks/use-token';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { PaymentMethod } from '@/types';
 import { AlertCircle, CheckCircle2, Lock, MinusCircle, PlusCircle, RotateCcw, Unlock } from 'lucide-react';
 import { useState } from 'react';
@@ -33,7 +34,11 @@ import { useState } from 'react';
  */
 
 interface Props {
-    children: React.ReactNode;
+    /**
+     * Render-prop opcional: recibe la caja seleccionada para que la página
+     * hija no monte un segundo useCashRegister (doble fetch del mismo estado).
+     */
+    children: React.ReactNode | ((selectedRegister: CashRegister | null) => React.ReactNode);
 }
 
 export default function CashRegisterPanel({ children }: Props) {
@@ -91,7 +96,7 @@ export default function CashRegisterPanel({ children }: Props) {
                 onChangeCaja={() => selectRegister(null)}
                 hasOtherOpenRegisters={hasOtherOpenRegisters}
             />
-            {children}
+            {typeof children === 'function' ? children(selectedRegister ?? null) : children}
         </>
     );
 }
@@ -177,7 +182,7 @@ function OpenSessionScreen({
                             <Input
                                 id="opening_notes"
                                 value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
+                                onChange={(e) => setNotes(sanitizePlainText(e.target.value, 500, true, false))}
                                 placeholder="Ej. monto recibido del turno anterior"
                                 maxLength={500}
                             />
@@ -609,7 +614,7 @@ function CloseSessionDialog({
                         <Input
                             id="closing_notes"
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            onChange={(e) => setNotes(sanitizePlainText(e.target.value, 500, true, false))}
                             placeholder="Ej. faltante por consumo de empleados"
                             maxLength={500}
                         />

@@ -295,36 +295,46 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
 
     const openSession = useCallback(
         async (openingAmount: number, notes?: string, cashRegisterId?: string) => {
-            let status: number | null = null;
-            try {
-                const res = await apiFetch('/api/v1/cash-register/open', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        opening_amount: openingAmount,
-                        notes: notes ?? null,
-                        cash_register_id: cashRegisterId ?? null,
-                    }),
-                });
-                status = res.status;
-                if (res.ok) {
-                    await refresh();
-                    return;
+            // El client_uuid se genera ANTES del request y se usa en AMBOS caminos
+            // (online y outbox): si el server procesó pero la respuesta se perdió,
+            // el reintento encolado es idempotente y no duplica la apertura.
+            const { uuidv4 } = await import('@/lib/offline/uuid');
+            const clientUuid = uuidv4();
+
+            // Encolar SOLO ante error de red real (!onLine o fetch lanzó). Una
+            // respuesta HTTP con red viva (4xx Y 5xx) se propaga al caller: un
+            // 5xx pudo haber procesado la operación en el server y encolarla
+            // duplicaría la apertura.
+            if (navigator.onLine) {
+                let res: Response | null = null;
+                try {
+                    res = await apiFetch('/api/v1/cash-register/open', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            client_uuid: clientUuid,
+                            opening_amount: openingAmount,
+                            notes: notes ?? null,
+                            cash_register_id: cashRegisterId ?? null,
+                        }),
+                    });
+                } catch {
+                    res = null; // red caída a mitad de request → cae al encolado offline
                 }
-                if (status < 500) {
+                if (res) {
+                    if (res.ok) {
+                        await refresh();
+                        return;
+                    }
                     const json = await res.json().catch(() => ({}));
                     throw new Error((json as { message?: string }).message ?? 'No se pudo abrir la caja.');
                 }
-            } catch (e) {
-                if (status !== null && status < 500) throw e;
             }
 
             // Apertura offline (plan §9): encola cash.open + sesión provisional local.
             if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede abrir caja offline.');
             const { putOutboxOp, putCachedCashSession } = await import('@/lib/offline/db');
-            const { uuidv4 } = await import('@/lib/offline/uuid');
             const { refreshPendingCount } = await import('@/lib/offline/sync-engine');
-            const clientUuid = uuidv4();
             const nowIso = new Date().toISOString();
             await putOutboxOp({
                 op_id: uuidv4(),
@@ -364,7 +374,14 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
 
     const closeSession = useCallback(
         async (closingAmount: number, notes?: string): Promise<CloseSessionResult> => {
-            // Online: exige 0 pendientes de sync.
+            // Mismo client_uuid para el intento online y el eventual encolado
+            // (idempotencia si el server procesó y la respuesta se perdió).
+            const { uuidv4 } = await import('@/lib/offline/uuid');
+            const clientUuid = uuidv4();
+
+            // Online: exige 0 pendientes de sync. Encolar SOLO ante error de
+            // red real (fetch lanzó); 4xx/5xx con red viva se propagan — un 5xx
+            // pudo haber cerrado la caja en el server y encolar duplicaría.
             if (navigator.onLine) {
                 const pendingSyncCount = await countAllPending();
                 if (pendingSyncCount > 0) {
@@ -372,34 +389,35 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                         `Cierre bloqueado: hay ${pendingSyncCount} operación${pendingSyncCount === 1 ? '' : 'es'} pendiente${pendingSyncCount === 1 ? '' : 's'} de sincronizar. Espera al sync antes de cerrar.`,
                     );
                 }
-                let status: number | null = null;
+                let res: Response | null = null;
                 try {
-                    const res = await apiFetch('/api/v1/cash-register/close', {
+                    res = await apiFetch('/api/v1/cash-register/close', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
+                            client_uuid: clientUuid,
                             closing_amount: closingAmount,
                             notes: notes ?? null,
                             pending_sync_count: pendingSyncCount,
                             cash_session_id: session?.id ?? null,
                         }),
                     });
-                    status = res.status;
+                } catch {
+                    res = null; // red caída a mitad de request → cae al encolado offline
+                }
+                if (res) {
                     const json = await res.json().catch(() => ({}));
                     if (res.ok) {
                         await refresh();
                         return (json as { data: CloseSessionResult }).data;
                     }
-                    if (status < 500) throw new Error((json as { message?: string }).message ?? 'No se pudo cerrar la caja.');
-                } catch (e) {
-                    if (status !== null && status < 500) throw e;
+                    throw new Error((json as { message?: string }).message ?? 'No se pudo cerrar la caja.');
                 }
             }
 
             // Cierre provisional offline.
             if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede cerrar caja offline.');
             const { putOutboxOp, deleteCart } = await import('@/lib/offline/db');
-            const { uuidv4 } = await import('@/lib/offline/uuid');
             const { refreshPendingCount } = await import('@/lib/offline/sync-engine');
             const nowIso = new Date().toISOString();
             await putOutboxOp({
@@ -408,7 +426,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 company_nit: companyNit,
                 branch_id: branchId,
                 payload: {
-                    client_uuid: uuidv4(),
+                    client_uuid: clientUuid,
                     closing_amount: closingAmount,
                     notes: notes ?? null,
                     closed_at_client: nowIso,
@@ -430,37 +448,44 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
 
     const recordExpense = useCallback(
         async (input: { amount: number; category: CashExpenseCategory; description?: string; payment_method?: PaymentMethod }) => {
-            let status: number | null = null;
-            try {
-                const res = await apiFetch('/api/v1/cash-register/expenses', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount: input.amount,
-                        category: input.category,
-                        description: input.description ?? null,
-                        payment_method: input.payment_method ?? 'cash',
-                        cash_session_id: session?.id ?? null,
-                    }),
-                });
-                status = res.status;
-                if (res.ok) {
-                    await refresh();
-                    return;
+            // Mismo client_uuid online y encolado (idempotencia ante respuesta perdida).
+            const { uuidv4 } = await import('@/lib/offline/uuid');
+            const clientUuid = uuidv4();
+
+            // Encolar SOLO ante error de red real; 4xx/5xx con red viva se
+            // propagan — un 5xx pudo haber registrado el egreso y encolar duplicaría.
+            if (navigator.onLine) {
+                let res: Response | null = null;
+                try {
+                    res = await apiFetch('/api/v1/cash-register/expenses', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            client_uuid: clientUuid,
+                            amount: input.amount,
+                            category: input.category,
+                            description: input.description ?? null,
+                            payment_method: input.payment_method ?? 'cash',
+                            cash_session_id: session?.id ?? null,
+                        }),
+                    });
+                } catch {
+                    res = null; // red caída a mitad de request → cae al encolado offline
                 }
-                if (status < 500) {
+                if (res) {
+                    if (res.ok) {
+                        await refresh();
+                        return;
+                    }
                     const json = await res.json().catch(() => ({})) as { message?: string; errors?: Record<string, string[]> };
                     const firstFieldError = json.errors ? Object.values(json.errors)[0]?.[0] : undefined;
                     throw new Error(firstFieldError ?? json.message ?? 'No se pudo registrar el egreso.');
                 }
-            } catch (e) {
-                if (status !== null && status < 500) throw e;
             }
 
             // Egreso offline.
             if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede registrar egreso offline.');
             const { putOutboxOp } = await import('@/lib/offline/db');
-            const { uuidv4 } = await import('@/lib/offline/uuid');
             const { refreshPendingCount } = await import('@/lib/offline/sync-engine');
             const nowIso = new Date().toISOString();
             await putOutboxOp({
@@ -469,7 +494,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 company_nit: companyNit,
                 branch_id: branchId,
                 payload: {
-                    client_uuid: uuidv4(),
+                    client_uuid: clientUuid,
                     amount: input.amount,
                     category: input.category,
                     description: input.description ?? null,
@@ -490,37 +515,44 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
 
     const recordIncome = useCallback(
         async (input: { amount: number; category: CashIncomeCategory; description?: string; payment_method?: PaymentMethod }) => {
-            let status: number | null = null;
-            try {
-                const res = await apiFetch('/api/v1/cash-register/incomes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount: input.amount,
-                        category: input.category,
-                        description: input.description ?? null,
-                        payment_method: input.payment_method ?? 'cash',
-                        cash_session_id: session?.id ?? null,
-                    }),
-                });
-                status = res.status;
-                if (res.ok) {
-                    await refresh();
-                    return;
+            // Mismo client_uuid online y encolado (idempotencia ante respuesta perdida).
+            const { uuidv4 } = await import('@/lib/offline/uuid');
+            const clientUuid = uuidv4();
+
+            // Encolar SOLO ante error de red real; 4xx/5xx con red viva se
+            // propagan — un 5xx pudo haber registrado la entrada y encolar duplicaría.
+            if (navigator.onLine) {
+                let res: Response | null = null;
+                try {
+                    res = await apiFetch('/api/v1/cash-register/incomes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            client_uuid: clientUuid,
+                            amount: input.amount,
+                            category: input.category,
+                            description: input.description ?? null,
+                            payment_method: input.payment_method ?? 'cash',
+                            cash_session_id: session?.id ?? null,
+                        }),
+                    });
+                } catch {
+                    res = null; // red caída a mitad de request → cae al encolado offline
                 }
-                if (status < 500) {
+                if (res) {
+                    if (res.ok) {
+                        await refresh();
+                        return;
+                    }
                     const json = (await res.json().catch(() => ({}))) as { message?: string; errors?: Record<string, string[]> };
                     const firstFieldError = json.errors ? Object.values(json.errors)[0]?.[0] : undefined;
                     throw new Error(firstFieldError ?? json.message ?? 'No se pudo registrar la entrada.');
                 }
-            } catch (e) {
-                if (status !== null && status < 500) throw e;
             }
 
             // Entrada offline.
             if (!companyNit || !branchId) throw new Error('Sin empresa/sede activa: no se puede registrar entrada offline.');
             const { putOutboxOp } = await import('@/lib/offline/db');
-            const { uuidv4 } = await import('@/lib/offline/uuid');
             const { refreshPendingCount } = await import('@/lib/offline/sync-engine');
             const nowIso = new Date().toISOString();
             await putOutboxOp({
@@ -529,7 +561,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 company_nit: companyNit,
                 branch_id: branchId,
                 payload: {
-                    client_uuid: uuidv4(),
+                    client_uuid: clientUuid,
                     amount: input.amount,
                     category: input.category,
                     description: input.description ?? null,

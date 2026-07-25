@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CASH_EXPENSE_CATEGORIES, type CashExpenseCategory } from '@/hooks/use-cash-register';
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter';
 import { usePaymentMethods } from '@/hooks/use-payment-methods';
+import { sanitizePlainText } from '@/lib/input-sanitize';
 import type { PaymentMethod } from '@/types';
 import { AlertCircle, MinusCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -68,18 +70,18 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <Label htmlFor="expense_category">Categoría</Label>
-                        <select
-                            id="expense_category"
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value as CashExpenseCategory)}
-                            className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-1 focus-visible:outline-none"
-                        >
-                            {Object.entries(CASH_EXPENSE_CATEGORIES).map(([k, v]) => (
-                                <option key={k} value={k}>
-                                    {v}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={category} onValueChange={(v) => setCategory(v as CashExpenseCategory)}>
+                            <SelectTrigger id="expense_category">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(CASH_EXPENSE_CATEGORIES).map(([k, v]) => (
+                                    <SelectItem key={k} value={k}>
+                                        {v}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -102,18 +104,18 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
 
                     <div className="space-y-1">
                         <Label htmlFor="expense_method">Método</Label>
-                        <select
-                            id="expense_method"
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                            className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-1 focus-visible:outline-none"
-                        >
-                            {catalog.methods.map((m) => (
-                                <option key={m} value={m}>
-                                    {catalog.labels[m]}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                            <SelectTrigger id="expense_method">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {catalog.methods.map((m) => (
+                                    <SelectItem key={m} value={m}>
+                                        {catalog.labels[m]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -121,7 +123,7 @@ export default function ExpenseModal({ onClose, onSubmit }: Props) {
                         <Input
                             id="expense_description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(sanitizePlainText(e.target.value, 500, true, false))}
                             placeholder="Ej. domicilio Rappi orden #1234"
                             maxLength={500}
                         />
