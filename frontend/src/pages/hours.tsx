@@ -11,6 +11,7 @@ import { HoursSkeleton } from '@/components/ui/hours-skeleton';
 import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
 import { useBusinessHours } from '@/hooks/use-business-hours';
+import { useDirtyState } from '@/hooks/use-dirty-state';
 import { useToken } from '@/hooks/use-token';
 import type { BusinessHour, BusinessHourException, BusinessHourExceptionFormData, BusinessHourFormData } from '@/types/business-hours';
 import { AlertCircle, Plus, RefreshCw } from 'lucide-react';
@@ -75,6 +76,10 @@ export default function HoursRoute() {
     const readOnly = !canUpdate;
 
     const [schedule, setSchedule] = useState<BusinessHourFormData[]>(DEFAULT_HOURS);
+    // Snapshot del último horario cargado/guardado para el dirty tracking (#192):
+    // el BranchSwitcher pide confirmación si hay cambios sin guardar.
+    const [savedSnapshot, setSavedSnapshot] = useState<string>(() => JSON.stringify(DEFAULT_HOURS));
+    useDirtyState(!readOnly && JSON.stringify(schedule) !== savedSnapshot, 'hours-schedule');
     const [saving, setSaving] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [editingException, setEditingException] = useState<BusinessHourException | null>(null);
@@ -86,7 +91,9 @@ export default function HoursRoute() {
 
     useEffect(() => {
         if (hours.length > 0) {
-            setSchedule(buildScheduleFromApi(hours));
+            const loaded = buildScheduleFromApi(hours);
+            setSchedule(loaded);
+            setSavedSnapshot(JSON.stringify(loaded));
         }
     }, [hours]);
 
@@ -98,6 +105,7 @@ export default function HoursRoute() {
         setSaving(true);
         try {
             await updateHours(schedule);
+            setSavedSnapshot(JSON.stringify(schedule));
             await fetchStatus();
             showToast('success', 'Horario semanal actualizado.');
         } catch (err: unknown) {

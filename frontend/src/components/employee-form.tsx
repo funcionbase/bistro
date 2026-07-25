@@ -5,11 +5,12 @@ import { FieldHint } from '@/components/ui/field-hint';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDirtyState } from '@/hooks/use-dirty-state';
 import { apiFetch } from '@/lib/api';
 import { sanitizePlainText } from '@/lib/input-sanitize';
 import { useSharedData } from '@/lib/shared-data';
 import { Banknote, Briefcase, Clock, HeartPulse, IdCard, LoaderCircle, Phone } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export type EmployeeFormValues = {
     primary_branch_id: string;
@@ -100,6 +101,11 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
     const [values, setValues] = useState<EmployeeFormValues>({ ...defaultValues, ...initial });
     const [branches, setBranches] = useState<Branch[]>([]);
     const [positions, setPositions] = useState<Position[]>([]);
+
+    // Dirty tracking (#192): compara contra el snapshot inicial para que el
+    // BranchSwitcher pida confirmación antes de descartar cambios.
+    const initialSnapshotRef = useRef(JSON.stringify({ ...defaultValues, ...initial }));
+    useDirtyState(!readOnly && JSON.stringify(values) !== initialSnapshotRef.current, 'employee-form');
 
     // El catálogo de bancos viene del bootstrap (misma fuente que el enrolamiento
     // y Mi Empresa). La columna `employees.bank` guarda el nombre del banco como
