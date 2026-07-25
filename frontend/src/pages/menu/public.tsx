@@ -304,6 +304,13 @@ export default function PublicMenu({ nit, table, branch_id, branchToken, cartTok
             setPlacedOrder(json.data);
             setCart({});
             setCheckoutOpen(false);
+            // Reset de preferencias del checkout (F2): el siguiente pedido del
+            // mismo cart no debe heredar paga-con/propina/notas del anterior.
+            setPaymentPref(null);
+            setPaysWith('');
+            setTipEnabled(false);
+            setTipAmount('');
+            setCustNotes('');
         } catch {
             setSubmitError('No pudimos enviar el pedido. Revisa tu conexión e intenta de nuevo.');
         } finally {

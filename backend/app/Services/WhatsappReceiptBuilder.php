@@ -79,7 +79,10 @@ class WhatsappReceiptBuilder
             $lineTotal = $this->money(round((float) $item->unit_price * $qty, 2));
 
             if (mb_strwidth($name) <= 10) {
-                $lines[] = sprintf('%-10s %3d %8s %8s', $name, $qty, $price, $lineTotal);
+                // Pad manual por ANCHO (no sprintf %-10s, que pádea por bytes y
+                // desalinea nombres con tildes/ñ en UTF-8).
+                $padded = $name.str_repeat(' ', 10 - mb_strwidth($name));
+                $lines[] = sprintf('%s %3d %8s %8s', $padded, $qty, $price, $lineTotal);
             } else {
                 // Nombre largo: línea propia + bloque numérico alineado debajo.
                 $lines = array_merge($lines, $this->wrap($name));

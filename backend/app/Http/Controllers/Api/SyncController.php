@@ -244,6 +244,14 @@ class SyncController extends Controller
             }
 
             $items = $this->orderController->buildOrderLines($payloadItems, $catalog, $company, $branchId);
+
+            // Paridad con el flujo online (F1): las órdenes delivery cargan la
+            // línea de domicilio también en el replay offline — sin esto el
+            // total sincronizado quedaba sin fee y descuadraba contra caja.
+            if (($payload['order_type'] ?? null) === 'delivery') {
+                $items = $this->orderController->appendDeliveryFeeLine($items, $branchId, $company);
+            }
+
             $aggregate = app(TaxCalculator::class)->aggregate($items);
 
             $clientAt = isset($op['created_at_client']) ? Carbon::parse($op['created_at_client']) : now();

@@ -210,24 +210,7 @@ class OrderController extends Controller
         // sintética ANTES del aggregate, para que el prorrateo del cupón y el
         // invariante `total = SUM(líneas)` queden idénticos.
         if ($validated['order_type'] === 'delivery') {
-            $deliveryFee = round((float) ($this->branchSettings->get($branchId, 'delivery_fee') ?? 0), 2);
-            if ($deliveryFee > 0) {
-                // Tasa explícita 0: el transporte no hace parte de la base gravable.
-                $feeBreakdown = $this->taxCalculator->calculateLine($deliveryFee, 1, 0.0, (bool) $company->tax_included_in_price);
-                $items[] = [
-                    'id' => Order::DELIVERY_FEE_ITEM_ID,
-                    'name' => 'Domicilio',
-                    'price' => $deliveryFee,
-                    'cost' => null,
-                    'quantity' => 1,
-                    'category' => 'domicilio',
-                    'notes' => null,
-                    'tax_rate' => $feeBreakdown['tax_rate'],
-                    'subtotal' => $feeBreakdown['subtotal'],
-                    'tax_amount' => $feeBreakdown['tax_amount'],
-                    'total' => $feeBreakdown['total'],
-                ];
-            }
+            $items = $this->appendDeliveryFeeLine($items, $branchId, $company);
         }
 
         $aggregate = $this->taxCalculator->aggregate($items);
@@ -483,6 +466,41 @@ class OrderController extends Controller
         }
 
         return $lines;
+    }
+
+    /**
+     * Anexa la línea sintética "Domicilio" (tax 0) al array de líneas si la
+     * sede tiene fee configurado. Punto único para caja Y sync offline — sin
+     * esto una orden delivery sincronizada offline quedaba sin fee mientras la
+     * misma orden online sí lo llevaba (descuadre vs el total mostrado).
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    public function appendDeliveryFeeLine(array $items, string $branchId, Company $company): array
+    {
+        $deliveryFee = round((float) ($this->branchSettings->get($branchId, 'delivery_fee') ?? 0), 2);
+        if ($deliveryFee <= 0) {
+            return $items;
+        }
+
+        // Tasa explícita 0: el transporte no hace parte de la base gravable.
+        $feeBreakdown = $this->taxCalculator->calculateLine($deliveryFee, 1, 0.0, (bool) $company->tax_included_in_price);
+        $items[] = [
+            'id' => Order::DELIVERY_FEE_ITEM_ID,
+            'name' => 'Domicilio',
+            'price' => $deliveryFee,
+            'cost' => null,
+            'quantity' => 1,
+            'category' => 'domicilio',
+            'notes' => null,
+            'tax_rate' => $feeBreakdown['tax_rate'],
+            'subtotal' => $feeBreakdown['subtotal'],
+            'tax_amount' => $feeBreakdown['tax_amount'],
+            'total' => $feeBreakdown['total'],
+        ];
+
+        return $items;
     }
 
     /**
@@ -1047,6 +1065,15 @@ class OrderController extends Controller
                 return [$order, $from];
             }
 
+            // Orden legacy sin filas `order_items` (pre-#293): recalcular desde
+            // filas dejaría el total en 0. No admite cambio de tipo — se
+            // cancela y se crea de nuevo (mismo criterio que otros flujos).
+            if (! OrderItem::query()->where('order_id', $order->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'order' => 'Esta orden no admite cambio de tipo (creada con una versión anterior). Cancélala y crea una nueva.',
+                ]);
+            }
+
             if ($to === 'delivery') {
                 $order->delivery_address = (string) $validated['delivery_address'];
 
@@ -1517,14 +1544,21 @@ class OrderController extends Controller
         ]);
 
         // Delivery activo → cancelarlo con razón estructurada no_show (F6). La
-        // orden ya quedó terminal; el service registra el log y la auditoría.
+        // orden ya quedó terminal (txn commiteada): un fallo acá NO puede
+        // convertir la respuesta en error — se reporta y el delivery se
+        // resuelve manualmente con PUT /deliveries/{id}/no-show.
         if ($isNoShow && $order->order_type === 'delivery') {
-            $delivery = Delivery::withoutBranchScope()
-                ->where('order_id', $order->id)
-                ->whereIn('status', ['pending', 'completed'])
-                ->first();
-            if ($delivery !== null) {
-                app(DeliveryService::class)->markNoShow($delivery, $this->actingUser($request));
+            try {
+                $delivery = Delivery::withoutBranchScope()
+                    ->where('order_id', $order->id)
+                    ->whereIn('status', ['pending', 'completed'])
+                    ->first();
+                $actor = $this->actingUser($request);
+                if ($delivery !== null && $actor !== null) {
+                    app(DeliveryService::class)->markNoShow($delivery, $actor);
+                }
+            } catch (\Throwable $e) {
+                report($e);
             }
         }
 

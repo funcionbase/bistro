@@ -229,7 +229,9 @@ class ChatController extends Controller
             // el nombre debe resolverse igual.
             ->with(['latestMessage', 'whatsappAccount', 'contact' => function ($q): void {
                 $q->withoutGlobalScope(BranchScope::class)
-                    ->select('id', 'name', 'address', 'neighborhood', 'municipality_dane_code');
+                    // no_show_count/fraud_flagged_at: sin estas columnas el badge
+                    // de fraude (F7) del listado quedaba siempre oculto.
+                    ->select('id', 'name', 'address', 'neighborhood', 'municipality_dane_code', 'no_show_count', 'fraud_flagged_at');
             }])
             // Prioridad real (§8.4b punto 2): primero los que esperan respuesta,
             // el que espera hace mas tiempo arriba. Postgres pone los NULL al
