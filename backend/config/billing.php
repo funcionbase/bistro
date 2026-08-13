@@ -9,7 +9,7 @@ return [
     'overdue_day' => (int) env('BILLING_OVERDUE_DAY', 16),
     'overdue_hour' => (int) env('BILLING_OVERDUE_HOUR', 3),
 
-    // Régimen fiscal de flexyflow como empresa-proveedora SaaS.
+    // Régimen fiscal de la plataforma como empresa-proveedora SaaS.
     // Define si las invoices generadas para empresas cliente desglosan IVA.
     //  - iva_19: Régimen común (default — confirmado #246).
     //  - simple_no_iva: Régimen Simple sin IVA.
@@ -37,25 +37,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | flexyflow como empresa-proveedora SaaS (#246)
+    | Empresa-proveedora SaaS (#246)
     |--------------------------------------------------------------------------
-    | Identificación de flexyflow como la empresa que factura a sus empresas
-    | cliente. Necesario para emitir invoices SaaS con CUFE/QR DIAN. Resolución
-    | DIAN y DianProviderConfig se crean vía FlexyFlowProviderSeeder.
+    | Identificación de la empresa que opera esta instancia y factura a sus
+    | empresas cliente. Necesario para emitir invoices SaaS con CUFE/QR DIAN.
+    | Resolución DIAN y DianProviderConfig se crean vía FlexyFlowProviderSeeder.
     */
     'flexyflow' => [
-        // Default vacío: el NIT placeholder (900000001) se mostraba como si
-        // fuera real en "Datos para transferir a flexyflow". Vacío = no se
-        // muestra en el panel, FlexyFlowProviderSeeder skipea y la emisión DIAN
-        // SaaS lanza error explícito (guards existentes).
+        // Todos vacíos por default a propósito: un valor de ejemplo se
+        // mostraría como si fuera real en "Datos para transferir" y en las
+        // invoices SaaS. Vacío = no se muestra en el panel, el seeder
+        // skipea y la emisión DIAN SaaS lanza error explícito (guards
+        // existentes) hasta que configures los datos reales de tu empresa.
         'nit' => env('FLEXYFLOW_NIT', ''),
         'dv' => env('FLEXYFLOW_DV', ''),
-        'commercial_name' => env('FLEXYFLOW_COMMERCIAL_NAME', 'flexyflow SAS'),
-        'legal_name' => env('FLEXYFLOW_LEGAL_NAME', 'flexyflow SAS'),
-        'address' => env('FLEXYFLOW_ADDRESS', 'Cartago, Valle del Cauca'),
-        'municipality_dane_code' => env('FLEXYFLOW_MUNICIPALITY_DANE', '76147'),
-        'billing_email' => env('FLEXYFLOW_BILLING_EMAIL', 'facturacion@flexyflow.co'),
-        'billing_phone' => env('FLEXYFLOW_BILLING_PHONE', '+***REMOVED-PHONE***'),
+        'commercial_name' => env('FLEXYFLOW_COMMERCIAL_NAME', ''),
+        'legal_name' => env('FLEXYFLOW_LEGAL_NAME', ''),
+        'address' => env('FLEXYFLOW_ADDRESS', ''),
+        'municipality_dane_code' => env('FLEXYFLOW_MUNICIPALITY_DANE', ''),
+        'billing_email' => env('FLEXYFLOW_BILLING_EMAIL', ''),
+        'billing_phone' => env('FLEXYFLOW_BILLING_PHONE', ''),
     ],
     'pdf_driver' => env('INVOICE_PDF_DRIVER', 'dompdf'),
     'storage_disk' => env('INVOICE_STORAGE_DISK', 'local'),
@@ -81,15 +82,16 @@ return [
     // Disco para comprobantes de pago subidos por el cliente. Retención DIAN.
     'payment_proof_disk' => env('BILLING_PAYMENT_PROOF_DISK', 's3_documents'),
 
-    // Disco + prefijo para el CSV diario de morosos (uso interno flexyflow).
+    // Disco + prefijo para el CSV diario de morosos (uso interno).
     'delinquent_export_disk' => env('BILLING_DELINQUENT_EXPORT_DISK', 's3_documents'),
-    'delinquent_export_prefix' => env('BILLING_DELINQUENT_EXPORT_PREFIX', 'flexyflow-internal/delinquent-companies'),
+    'delinquent_export_prefix' => env('BILLING_DELINQUENT_EXPORT_PREFIX', 'internal/delinquent-companies'),
 
-    // Email operativo de flexyflow para notificación de comprobantes subidos.
+    // Email operativo para notificación de comprobantes subidos.
     'ops_email' => env('BILLING_OPS_EMAIL'),
 
-    // Llave de pago de flexyflow visible al cliente bloqueado. Se expone vía
-    // Inertia shared props SOLO cuando company.status ∈ {past_due, suspended}.
+    // Llave de pago del proveedor SaaS, visible al cliente bloqueado. Se
+    // expone vía Inertia shared props SOLO cuando company.status ∈
+    // {past_due, suspended}.
     'flexyflow_payment' => [
         'breb_key' => env('FLEXYFLOW_PAYMENT_BREB_KEY'),
         'bank_name' => env('FLEXYFLOW_PAYMENT_BANK_NAME'),

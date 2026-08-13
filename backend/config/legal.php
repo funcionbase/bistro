@@ -3,18 +3,14 @@
 declare(strict_types=1);
 
 /**
- * URLs de los documentos legales que enlaza el flujo de enrollment.
+ * URLs de los documentos legales que enlaza el flujo de enrollment
+ * (checkboxes de aceptación en registro de usuario/empresa).
  *
- * Términos y privacidad viven en el sitio institucional (flexyflow.co) —
- * mismos links que footer/consent-banner (`app-footer-meta.tsx`), fijos por
- * dominio, no varían por ambiente.
- *
- * El contrato de servicio vive dentro del propio SPA (`/legal/contract`),
- * por eso solo guardamos el path relativo: BootstrapService lo resuelve
- * contra `app.frontend_url`, que sí varía por ambiente (dev/qa/pdn).
+ * TODO: reemplazar por tus propios documentos legales antes de producción.
+ * Fijas por dominio, no varían por ambiente.
  */
 return [
-    'terms' => 'https://flexyflow.co/terms-conditions/',
-    'privacy' => 'https://flexyflow.co/privacy-policy/',
-    'contract_path' => '/legal/contract',
+    'terms' => 'https://example.com/terms-conditions/',
+    'privacy' => 'https://example.com/privacy-policy/',
+    'contract' => 'https://example.com/service-contract/',
 ];

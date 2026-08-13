@@ -108,3 +108,50 @@ services:
             - PGWEB_DATABASE_URL=postgres://postgres:root@db:5432/laravel_app?sslmode=disable
         ports:
             - "127.0.0.1:8081:8081"
+
+    # Postgres dedicado a Evolution API (Prisma) — separado de `db` (la BD de
+    # la app) para no mezclar schemas/lifecycle de un servicio de terceros.
+    evolution-db:
+        image: postgres:15-alpine
+        container_name: flexyflow_evolution_db
+        restart: unless-stopped
+        environment:
+            - POSTGRES_DB=evolution
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=root
+        volumes:
+            - ./evolution-db-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d evolution"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+
+    # Evolution API (Baileys) — transporte WhatsApp que consume
+    # App\Services\Whatsapp\EvolutionClient (docs/wiki/WhatsApp-Bot.md,
+    # backend/config/evolution.php). Versión pineada a 2.3.7 = misma que qa/pdn
+    # (docs/wiki/BACKEND_FILES.md). Sin Redis (CLAUDE.md §12): cache local.
+    #
+    # Para usar desde el backend nativo (`bistro/backend/.env`), descomentar
+    # el bloque "DEV LOCAL" del .env.example:
+    #   EVOLUTION_BASE_URL=http://localhost:8080
+    #   EVOLUTION_GLOBAL_TOKEN=bistro-dev-local-token
+    #
+    # Manager UI (vincular WhatsApp por QR): http://localhost:8080/manager
+    evolution-api:
+        image: evoapicloud/evolution-api:v2.3.7
+        container_name: flexyflow_evolution_api
+        restart: unless-stopped
+        depends_on:
+            evolution-db:
+                condition: service_healthy
+        environment:
+            - SERVER_URL=http://localhost:8080
+            - AUTHENTICATION_API_KEY=bistro-dev-local-token
+            - DATABASE_PROVIDER=postgresql
+            - DATABASE_CONNECTION_URI=postgresql://postgres:root@evolution-db:5432/evolution?schema=evolution_api
+            - CACHE_REDIS_ENABLED=false
+            - CACHE_LOCAL_ENABLED=true
+        ports:
+            - "8080:8080"

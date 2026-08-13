@@ -110,7 +110,6 @@ const TableMenu = lazy(() => import('@/pages/table/menu'));
 const ManualIndex = lazy(() => import('@/pages/manual/index'));
 const ManualMarkdownPage = lazy(() => import('@/pages/manual/page'));
 const ManualFaq = lazy(() => import('@/pages/manual/faq'));
-const ManualLegalContrato = lazy(() => import('@/pages/manual/legal-contrato'));
 
 // Carta pública (destino del QR impreso): `/menus/{nit}?table=N`. El QR
 // codifica `/menus/{nit}`; la página persiste el NIT en localStorage y la
@@ -187,13 +186,7 @@ export const router = createBrowserRouter([
             // de contenido resuelven por :slug → markdown en src/data/manual/.
             { path: '/manual', element: <ManualIndex /> },
             { path: '/manual/faq', element: <ManualFaq /> },
-            { path: '/manual/legal/contrato', element: <ManualLegalContrato /> },
             { path: '/manual/:slug', element: <ManualMarkdownPage /> },
-
-            // Alias corto para el link de aceptación en enrollment (mismo
-            // contenido que /manual/legal/contrato, URL más limpia para
-            // compartir/firmar fuera del contexto del manual).
-            { path: '/legal/contract', element: <ManualLegalContrato /> },
 
             { path: '/login', element: <Login /> },
             { path: '/register', element: <Register /> },

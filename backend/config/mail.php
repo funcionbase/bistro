@@ -145,6 +145,6 @@ return [
     |
     */
 
-    'ops_alert_address' => env('MAIL_OPS_ALERT_ADDRESS', 'cristian@flexyflow.co'),
+    'ops_alert_address' => env('MAIL_OPS_ALERT_ADDRESS', 'hello@funcionbase.com'),
 
 ];

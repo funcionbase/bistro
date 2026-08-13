@@ -63,10 +63,6 @@ export const wikiSections: WikiSection[] = [
         ],
     },
     {
-        label: 'legal',
-        pages: [{ slug: 'legal/contrato', label: 'Contrato de servicio' }],
-    },
-    {
         label: 'ayuda',
         pages: [{ slug: 'faq', label: 'Preguntas frecuentes' }],
     },

@@ -10,8 +10,9 @@ import { useState } from 'react';
  * **analíticas** (GTM + GA4). Solo aparece en builds con GA4 configurado.
  */
 
-/** Política de privacidad pública (pdn). El banner solo aparece donde hay trackers (pdn). */
-const PRIVACY_URL = 'https://flexyflow.co/privacy-policy/';
+// TODO: reemplazar por la política de privacidad real antes de producción.
+// El banner solo aparece donde hay trackers (GA4 configurado).
+const PRIVACY_URL = 'https://example.com/privacy-policy/';
 
 export function ConsentBanner() {
     const [open, setOpen] = useState(() => Boolean(resolveGa4Id(null)) && getStoredConsent() === null);

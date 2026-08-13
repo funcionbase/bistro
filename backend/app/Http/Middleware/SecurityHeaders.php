@@ -43,7 +43,7 @@ class SecurityHeaders
                 "default-src 'self'",
                 "script-src 'self' 'nonce-{$nonce}'",
                 "style-src 'self' 'unsafe-inline'",
-                "img-src 'self' data: https://cdn.flexyflow.com https://lh3.googleusercontent.com",
+                "img-src 'self' data: https://lh3.googleusercontent.com",
                 "font-src 'self' https://fonts.bunny.net",
                 "connect-src {$connectSrc}",
                 "frame-ancestors 'none'",

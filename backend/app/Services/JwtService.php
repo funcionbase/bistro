@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\Cookie;
  * Registro activo: cada emisión actualiza user_active_tokens para soporte de invalidación por membresía.
  *
  * Almacenamiento en navegador: el JWT viaja en una cookie HttpOnly + Secure + SameSite=Lax
- * (`COOKIE_NAME`). El JS de la app no la puede leer, mitigando el robo por XSS. Para clientes
+ * (`COOKIE_NAME` = `bistro_jwt`). El JS de la app no la puede leer, mitigando el robo por XSS. Para clientes
  * API externos (no-navegador) se sigue aceptando `Authorization: Bearer`.
  *
  * @env JWT_SECRET — clave HMAC-SHA256 para firma
@@ -41,7 +41,7 @@ class JwtService
     /**
      * Nombre de la cookie HttpOnly que transporta el JWT en el navegador.
      */
-    public const COOKIE_NAME = 'flexyflow_jwt';
+    public const COOKIE_NAME = 'bistro_jwt';
 
     private const ALGORITHM = 'HS256';
 

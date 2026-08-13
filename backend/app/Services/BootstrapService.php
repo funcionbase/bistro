@@ -257,13 +257,11 @@ class BootstrapService
                 ->toArray(),
             // URLs de TOS, privacidad y contrato (config/legal.php). El
             // frontend las usa en enrollment para abrir cada documento en
-            // una pestaña nueva. TOS/privacidad son fijas (sitio
-            // institucional); el contrato vive en el propio SPA y se resuelve
-            // contra frontend_url del ambiente actual.
+            // una pestaña nueva.
             'legalUrls' => [
                 'terms' => config('legal.terms'),
                 'privacy' => config('legal.privacy'),
-                'contract' => rtrim((string) config('app.frontend_url'), '/').config('legal.contract_path'),
+                'contract' => config('legal.contract'),
             ],
         ];
     }

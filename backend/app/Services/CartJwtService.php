@@ -37,7 +37,7 @@ class CartJwtService
         $this->signingKey = (string) config('bot.cart_jwt_secret');
         $this->encryptionKey = (string) config('bot.cart_jwt_encryption_key');
         $this->ttlSeconds = (int) config('bot.cart_jwt_ttl', 4200);
-        $this->baseUrl = rtrim((string) config('bot.cart_base_url', 'https://pedidos.flexyflow.co'), '/');
+        $this->baseUrl = rtrim((string) config('bot.cart_base_url', 'http://localhost:5173'), '/');
 
         if (empty($this->signingKey) || empty($this->encryptionKey)) {
             throw new RuntimeException('CART_JWT_SECRET and JWT_PAYLOAD_ENCRYPTION_KEY must be configured.');

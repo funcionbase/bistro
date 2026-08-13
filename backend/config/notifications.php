@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Configuración del sistema de notificaciones push de flexyflow (#149).
+ * Configuración del sistema de notificaciones push (#149).
  *
  * - `web_push`: claves VAPID (P-256) + subject (mailto). El subject lo usa el
  *   endpoint del navegador para contactar al operador del servicio en caso
- *   de abuso o entrega bloqueada. Convención: `mailto:info@flexyflow.co`.
+ *   de abuso o entrega bloqueada.
  *
  * - `dispatch`: tuning del flujo de despacho.
  *   - `pending_approval_reminder_after_minutes`: minutos sin atender un item
@@ -24,7 +24,7 @@ return [
     'web_push' => [
         'vapid_public_key' => env('VAPID_PUBLIC_KEY'),
         'vapid_private_key' => env('VAPID_PRIVATE_KEY'),
-        'vapid_subject' => env('VAPID_SUBJECT', 'mailto:info@flexyflow.co'),
+        'vapid_subject' => env('VAPID_SUBJECT', 'mailto:hello@funcionbase.com'),
     ],
 
     'dispatch' => [

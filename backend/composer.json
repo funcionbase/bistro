@@ -15,7 +15,7 @@
         "api"
     ],
     "homepage": "https://flexyflow.co",
-    "license": "proprietary",
+    "license": "MIT",
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",

@@ -63,21 +63,9 @@ return [
     | para redirigir tras el callback OAuth y para cualquier ruta de página
     | que llegue al backend por error.
     |
-    | Se resuelve por APP_ENV (qa/pdn) sin necesitar una variable de entorno;
-    | FRONTEND_URL solo se usa como override puntual si hiciera falta.
-    |
-    | Cutover #239: el subdominio operativo es `bistro.flexyflow.co` en pdn y
-    | `panel-qa.flexyflow.co` en qa. El subdominio anterior se apaga en el
-    | cutover (sin redirect ni soporte dual) — quien tenga bookmarks viejos
-    | aterriza en error DNS y se ve forzado a usar el nuevo dominio.
-    |
     */
 
-    'frontend_url' => env('FRONTEND_URL') ?: match (env('APP_ENV')) {
-        'pdn', 'production' => 'https://bistro.flexyflow.co',
-        'qa' => 'https://panel-qa.flexyflow.co',
-        default => 'http://localhost:5173',
-    },
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
     /*
     |--------------------------------------------------------------------------

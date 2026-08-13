@@ -68,14 +68,7 @@
 
 ## Documentos legales
 
-TOS y política de privacidad viven en el sitio institucional (`flexyflow.co`), fuera de este repo:
-
-- `https://flexyflow.co/terms-conditions/`
-- `https://flexyflow.co/privacy-policy/`
-
-El contrato de servicio SÍ vive en este repo (`frontend/src/data/legal/contrato.md`, versión en el frontmatter) y se renderiza en el propio SPA en `/legal/contract` (alias de `/manual/legal/contrato`).
-
-`config/legal.php` define las 3 URLs: terms/privacy fijas, contrato resuelto contra `app.frontend_url` (varía por ambiente: dev/qa/pdn) + `/legal/contract`. El frontend lee las URLs absolutas vía `useBootstrap().data.legalUrls` (las expone `BootstrapService::buildCatalogs()`) y las abre en pestaña nueva (`target="_blank" rel="noopener noreferrer"`) en las pantallas de enrollment.
+`config/legal.php` define 3 URLs placeholder (terms/privacy/contract, todas `https://example.com/...` con nota TODO) — reemplazalas por tus propios documentos legales antes de producción. El frontend las lee vía `useBootstrap().data.legalUrls` (las expone `BootstrapService::buildCatalogs()`) y las abre en pestaña nueva (`target="_blank" rel="noopener noreferrer"`) en los checkboxes de aceptación de las pantallas de enrollment.
 
 **Aceptaciones**: la tabla `user_acceptances` se conserva como historial inmutable (Habeas Data CO). Para nuevas aceptaciones se guarda `accepted_at + ip_address + user_agent + document_type` — sin snapshot. Para TOS/privacidad la evidencia del contenido vive fuera del repo (sitio institucional); para el contrato, en el git history de `contrato.md` (versión + `published_at` en el frontmatter, cláusula 3.3 del propio contrato).
 

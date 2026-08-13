@@ -8,9 +8,9 @@ $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 | Fuente: `CORS_ALLOWED_ORIGINS` (lista separada por comas) si está definida.
 | Si no, se deriva de `FRONTEND_URL` + los orígenes de desarrollo locales.
 |
-| El deploy es cross-origin same-site: frontend en `bistro.flexyflow.co`,
-| API en `bistro-api.flexyflow.co`. Para que la cookie HttpOnly del JWT
-| (`flexyflow_jwt`) y la cookie de mesa (`tdt_*`) viajen entre ambos hay que:
+| El deploy típico es cross-origin same-site: frontend y API en subdominios
+| distintos del mismo dominio. Para que la cookie HttpOnly del JWT
+| (`bistro_jwt`) y la cookie de mesa (`tdt_*`) viajen entre ambos hay que:
 |   1. `supports_credentials => true` (abajo).
 |   2. Enumerar los orígenes exactos — `*` es inválido junto a credenciales.
 |
@@ -28,19 +28,17 @@ $allowedOrigins = array_values(array_unique(array_filter(array_map(
 ))));
 
 /*
-| CIBER-09: los patrones de origen ahora son configurables por env
-| (`CORS_ALLOWED_ORIGINS_PATTERNS`, regexes separadas por `|||`). El default es
-| el wildcard de subdominios `*.flexyflow.co` (load-bearing: el carrito/menú se
-| sirven desde subdominios como `pedidos.` que hacen CORS credenciado). En pdn
-| se RECOMIENDA fijar `CORS_ALLOWED_ORIGINS` con la lista explícita y dejar este
-| valor vacío para eliminar la superficie de subdominios (subdomain takeover).
+| Los patrones de origen son configurables por env
+| (`CORS_ALLOWED_ORIGINS_PATTERNS`, regexes separadas por `|||`). Sin valor,
+| no hay wildcard de subdominios — usar la lista explícita de
+| `CORS_ALLOWED_ORIGINS` de arriba. Solo activar un wildcard si tu deploy
+| sirve carrito/menú desde subdominios dinámicos (ej. `pedidos.tu-dominio.com`)
+| que necesiten CORS credenciado; hacerlo amplía la superficie de ataque
+| (subdomain takeover) — usar con lista explícita cuando sea posible.
 */
 $allowedOriginPatterns = array_values(array_filter(array_map(
     'trim',
-    explode('|||', (string) env(
-        'CORS_ALLOWED_ORIGINS_PATTERNS',
-        '#^https://([a-z0-9-]+\.)*flexyflow\.co$#i'
-    ))
+    explode('|||', (string) env('CORS_ALLOWED_ORIGINS_PATTERNS', ''))
 )));
 
 return [
@@ -55,9 +53,9 @@ return [
     | que el SPA pega cross-origin: la API REST, las rutas públicas del QR de
     | mesa, el flujo OAuth de Google y el proxy de assets de S3.
     |
-    | Restringido (#174 P2-2): nunca `allowed_origins=['*']`. El patrón sigue
-    | aceptando cualquier subdominio de flexyflow.co (PDN + QA + futuros) y la
-    | lista explícita agrega los orígenes locales de desarrollo.
+    | Restringido: nunca `allowed_origins=['*']`. El patrón de subdominios es
+    | opt-in por env (vacío por default) y la lista explícita agrega los
+    | orígenes locales de desarrollo.
     |
     */
 

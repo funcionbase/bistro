@@ -5,11 +5,9 @@
     // no sea un archivo existente devuelva index.html — necesario para que
     // React Router resuelva las rutas del cliente (/dashboard, /t/:qr, etc.).
     //
-    // Cutover #239: el subdominio operativo migra a `bistro.flexyflow.co`. Sin
-    // soporte dual ni redirect — el host anterior (`restaurante.flexyflow.co`)
-    // se apaga al deployar este Worker con el custom domain nuevo. Runbook en
-    // `docs/wiki/runbooks/panel-migration.md`.
-    "name": "bistro-flexyflow-co",
+    // Nombre del Worker en Cloudflare — cambialo al desplegar en tu propia
+    // cuenta, y apuntá tu custom domain en el dashboard de Cloudflare.
+    "name": "bistro",
     "compatibility_date": "2026-05-20",
     // Worker que sirve los assets (binding ASSETS) y reescribe los OG tags solo
     // en /menus/:nit para que la preview de WhatsApp sea del menu del restaurante

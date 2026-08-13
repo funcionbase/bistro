@@ -1,7 +1,10 @@
 # Dev environment (Docker)
 
-Levanta los servicios necesarios para correr la app localmente con paridad
-respecto a producción (Supabase + AWS S3).
+Levanta los servicios de infraestructura/terceros necesarios para correr la
+app localmente con paridad respecto a producción (Supabase + AWS S3 +
+Evolution API). **Backend y frontend corren nativos en el host** (`npm run
+dev` en la raíz, ver `../README.md`) — Docker es solo para lo que no tiene
+sentido instalar a mano: BD, storage S3-compatible y el servidor de WhatsApp.
 
 ## Servicios
 
@@ -10,6 +13,9 @@ respecto a producción (Supabase + AWS S3).
 | `db` | `postgres:15-alpine` | Supabase managed PostgreSQL |
 | `minio` | `minio/minio` | AWS S3 (buckets `*-assets`, `*-documents`) |
 | `minio-bootstrap` | `minio/mc` | Equivalente al `aws s3 mb` + ACL + objeto `.health` |
+| `pgweb` | `sosedoff/pgweb` | GUI de BD (solo dev) |
+| `evolution-db` | `postgres:15-alpine` | Postgres propio de Evolution (Prisma) |
+| `evolution-api` | `evoapicloud/evolution-api:v2.3.7` | Evolution API en el host EC2 (mismo puerto 8080) |
 
 ## Uso
 
@@ -24,6 +30,9 @@ Endpoints expuestos:
 | Postgres | `localhost:5432` | `postgres` / `root`, db `laravel_app` |
 | MinIO API (S3) | `http://localhost:9000` | `minioadmin` / `minioadmin` |
 | MinIO Console | `http://localhost:9001` | `minioadmin` / `minioadmin` |
+| pgweb | `http://localhost:8081` | — |
+| Evolution API | `http://localhost:8080` | header `apikey: bistro-dev-local-token` |
+| Evolution Manager UI (QR) | `http://localhost:8080/manager` | mismo `apikey` |
 
 El servicio `minio-bootstrap` corre una sola vez al levantar y crea:
 
@@ -33,7 +42,7 @@ El servicio `minio-bootstrap` corre una sola vez al levantar y crea:
 
 ## Conectar la app Laravel
 
-Editar `application/.env`:
+Editar `backend/.env`:
 
 ```ini
 DB_CONNECTION=pgsql
@@ -61,7 +70,7 @@ AWS_URL=http://localhost:9000/flexyflow-panel-local-assets
 ## Verificar que funciona
 
 ```bash
-cd application
+cd backend
 php artisan tinker --execute '
 echo "assets:    " . (Storage::disk("s3")->exists(".health") ? "ok" : "fail") . PHP_EOL;
 echo "documents: " . (Storage::disk("s3_documents")->exists(".health") ? "ok" : "fail") . PHP_EOL;
@@ -80,13 +89,37 @@ uploaded: http://localhost:9000/flexyflow-panel-local-assets/test.txt
 
 Abrir esa URL en el browser → debe descargar `test.txt`.
 
+## Conectar WhatsApp (Evolution API)
+
+Descomentar el bloque "DEV LOCAL" de la sección `EVOLUTION API` en
+`backend/.env.example` (copiarlo a `backend/.env`):
+
+```ini
+EVOLUTION_BASE_URL=http://localhost:8080
+EVOLUTION_GLOBAL_TOKEN=bistro-dev-local-token
+```
+
+`bistro-dev-local-token` es el valor fijo de `AUTHENTICATION_API_KEY` que
+`docker-compose.yml` le pasa al contenedor — mismo token en ambos lados o el
+backend recibe 401.
+
+Verificar que responde:
+
+```bash
+curl -H "apikey: bistro-dev-local-token" http://localhost:8080/instance/fetchInstances
+```
+
+Esperado: `[]` (sin instancias todavía). Para vincular un WhatsApp de prueba,
+usar el flujo normal de la app (creación de canal → QR) o entrar directo al
+Manager UI (`http://localhost:8080/manager`, mismo `apikey`).
+
 ## Resetear datos
 
 ```bash
 docker compose down -v
-rm -rf docker/postgres-data docker/minio-data
+rm -rf docker/postgres-data docker/minio-data docker/evolution-db-data
 docker compose up -d
-cd application && php artisan migrate --seed
+cd backend && php artisan migrate --seed
 ```
 
 ## Diferencias con prod
@@ -99,8 +132,13 @@ cd application && php artisan migrate --seed
   el `DELETE` manualmente si se necesita probar el comportamiento.
 - **No hay paridad de IAM:** en local cualquier credencial MinIO root accede a
   todo. En prod las EC2 usan IAM role con permisos limitados a los buckets.
+- **Evolution local no tiene guard de líder:** en qa/pdn con N≥2 instancias EC2
+  hay un mecanismo de líder único (`docs/wiki/WhatsApp-Bot.md`); en local solo
+  hay un contenedor, no aplica.
 
 ## Referencias
 
 - Issue #43 — T7 (mirror local de S3).
 - `aws/iac/cloudformation/stacks/03-storage.yaml` — definición de los buckets en AWS.
+- `docs/wiki/WhatsApp-Bot.md` — contrato de Evolution API / bot de WhatsApp.
+- `backend/config/evolution.php` — config del cliente Evolution.
