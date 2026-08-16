@@ -45,7 +45,7 @@ function buildScheduleFromApi(apiHours: BusinessHour[]): BusinessHourFormData[] 
 }
 
 /**
- * Horarios de operación — ruta SPA (#220, Fase 3).
+ * Horarios de operación — ruta SPA (Fase 3).
  *
  * Migrada de Inertia: el layout (sidebar + header) lo aporta SpaAppLayout
  * como route layout; esta página renderiza sólo su contenido. La data
@@ -76,7 +76,7 @@ export default function HoursRoute() {
     const readOnly = !canUpdate;
 
     const [schedule, setSchedule] = useState<BusinessHourFormData[]>(DEFAULT_HOURS);
-    // Snapshot del último horario cargado/guardado para el dirty tracking (#192):
+    // Snapshot del último horario cargado/guardado para el dirty tracking:
     // el BranchSwitcher pide confirmación si hay cambios sin guardar.
     const [savedSnapshot, setSavedSnapshot] = useState<string>(() => JSON.stringify(DEFAULT_HOURS));
     useDirtyState(!readOnly && JSON.stringify(schedule) !== savedSnapshot, 'hours-schedule');

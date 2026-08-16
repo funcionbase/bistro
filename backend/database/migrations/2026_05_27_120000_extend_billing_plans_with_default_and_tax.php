@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #246 Fase 1 — Plan default + impuestos en `billing_plans`.
+ * Plan default + impuestos en `billing_plans`.
  *
  * Cambios:
  *  - `is_default boolean default false` con UNIQUE WHERE is_default=true.
@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Schema;
  *  - `tax_regime varchar default 'iva_19'` — régimen tributario del plan.
  *  - `tax_rate decimal(5,2) default 19.00` — tarifa congelada por plan.
  *
- * Régimen FlexyFlow confirmado en #246 decisión #2: IVA 19% (Régimen común).
- * Configurable globalmente vía `config('billing.flexyflow_tax_regime')`,
+ * Régimen funcionbase confirmado: IVA 19% (Régimen común).
+ * Configurable globalmente vía `config('billing.funcionbase_tax_regime')`,
  * pero la fila del plan congela el valor histórico para auditoría DIAN.
  */
 return new class extends Migration

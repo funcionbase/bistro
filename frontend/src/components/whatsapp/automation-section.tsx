@@ -439,7 +439,7 @@ export function AutomationSection({
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Ejemplo de payload</DialogTitle>
-                        <DialogDescription>Lo que bistro envía a tu webhook, firmado con HMAC-SHA256 en el header X-Flexyflow-Signature.</DialogDescription>
+                        <DialogDescription>Lo que bistro envía a tu webhook, firmado con HMAC-SHA256 en el header X-funcionbase-Signature.</DialogDescription>
                     </DialogHeader>
                     <pre className="bg-muted overflow-x-auto rounded-md p-3 text-xs">{PAYLOAD_EXAMPLE}</pre>
                     <DialogFooter>

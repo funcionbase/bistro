@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Regla de alerta de margen/costos (#124).
+ * Regla de alerta de margen/costos.
  *
  * En v1 hay UNA fila por (company_nit, type) — sin reglas custom libres. El
  * AlertSeedService garantiza que las 4 reglas (margin_below, cost_increase,

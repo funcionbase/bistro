@@ -32,7 +32,7 @@ use InvalidArgumentException;
  *  - Items con `status=in_kitchen` o posterior NO se pueden cancelar desde
  *    el cliente; el mesero usa una acción manual aparte con motivo obligatorio.
  *
- * Aislamiento por sede (#192): los `lockForUpdate` sobre `TableSession` usan
+ * Aislamiento por sede: los `lockForUpdate` sobre `TableSession` usan
  * `withoutBranchScope()` por la misma razón que TableCashierService — el
  * filtro por `session_id` cierra el aislamiento y el caller ya validó la
  * sede al cargar la sesión bajo BranchScope.

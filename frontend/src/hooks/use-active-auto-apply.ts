@@ -3,7 +3,7 @@ import type { ActiveAutoApply } from '@/types/coupon';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Sondea `/cart/active-auto-apply` para anunciar cupones programados (#125 happy hour)
+ * Sondea `/cart/active-auto-apply` para anunciar cupones programados (happy hour)
  * que se aplicarán automáticamente al cerrar la orden.
  *
  * No persiste nada. Solo es indicativo para el operador: cuando el total cambie

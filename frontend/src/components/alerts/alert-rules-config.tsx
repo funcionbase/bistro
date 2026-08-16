@@ -65,7 +65,7 @@ const META: Record<AlertType, RuleMeta> = {
 const ORDER: AlertType[] = ['margin_below', 'cost_increase', 'item_low_volume', 'low_stock'];
 
 /**
- * Configuración de las 4 reglas de alerta (#124). Se embebe en
+ * Configuración de las 4 reglas de alerta. Se embebe en
  * /company/preferences. Una sola tarjeta agrupa todas — cada regla tiene su
  * propio botón de guardar para no acoplar cambios.
  */

@@ -102,7 +102,7 @@ export default function EmployeeForm({ initial, onSubmit, submitting, submitLabe
     const [branches, setBranches] = useState<Branch[]>([]);
     const [positions, setPositions] = useState<Position[]>([]);
 
-    // Dirty tracking (#192): compara contra el snapshot inicial para que el
+    // Dirty tracking: compara contra el snapshot inicial para que el
     // BranchSwitcher pida confirmación antes de descartar cambios.
     const initialSnapshotRef = useRef(JSON.stringify({ ...defaultValues, ...initial }));
     useDirtyState(!readOnly && JSON.stringify(values) !== initialSnapshotRef.current, 'employee-form');

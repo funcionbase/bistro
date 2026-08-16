@@ -74,7 +74,7 @@ function CompanyCard({ company, onSelect, disabled = false, loading = false }: C
 }
 
 /**
- * Selector de empresa — ruta SPA (#220, Fase 2).
+ * Selector de empresa — ruta SPA (Fase 2).
  *
  * La data de empresas llega vía useBootstrap() (GET /api/v1/bootstrap).
  * La selección llama /api/v1/auth/select-company y navega al destino

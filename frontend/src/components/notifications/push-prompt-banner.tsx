@@ -5,8 +5,8 @@ import { Bell, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 /**
- * Banner discreto que invita al usuario a activar notificaciones push
- * (#149). Se muestra al cargar el dashboard SOLO si:
+ * Banner discreto que invita al usuario a activar notificaciones push.
+ * Se muestra al cargar el dashboard SOLO si:
  *  - El navegador soporta Web Push (`isSupported`).
  *  - La PWA está instalada (`isStandalone`) — fuera del browser tab.
  *  - El permiso es `default` (ni granted ni denied).

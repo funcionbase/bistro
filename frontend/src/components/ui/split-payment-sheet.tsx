@@ -40,8 +40,7 @@ const METHOD_ICONS: Record<PaymentMethod, LucideIcon> = {
 };
 
 /**
- * Modal grande para cobrar a un comensal específico o a toda la mesa
- * (#191 Fase 6).
+ * Modal grande para cobrar a un comensal específico o a toda la mesa.
  *
  * Inputs: método (cash/card/transfer), referencia (obligatoria si no es
  * cash), propina opcional. Valida monto = `amount` exacto y entrega el

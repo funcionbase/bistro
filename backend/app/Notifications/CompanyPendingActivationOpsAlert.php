@@ -17,7 +17,7 @@ use Illuminate\Notifications\Notification;
  * envíos duplicados en el ASG N-instance.
  *
  * Destinatario: `config('mail.ops_alert_address')` — por default
- * `cristian@flexyflow.co`. NO usa `Notifiable` sobre un User: el destinatario
+ * `hello@funcionbase.com`. NO usa `Notifiable` sobre un User: el destinatario
  * es un buzón fijo del equipo, no una cuenta de la plataforma.
  */
 class CompanyPendingActivationOpsAlert extends Notification
@@ -36,7 +36,7 @@ class CompanyPendingActivationOpsAlert extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("[flexyflow] Nueva empresa pendiente de aprobación — {$this->company->commercial_name}")
+            ->subject("[bistro] Nueva empresa pendiente de aprobación — {$this->company->commercial_name}")
             ->markdown('emails.enrollment.ops-alert-pending-activation', [
                 'company' => $this->company,
                 'owner' => $this->owner,

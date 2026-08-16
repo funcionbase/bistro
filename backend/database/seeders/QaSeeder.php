@@ -22,13 +22,13 @@ use Illuminate\Database\Seeder;
 
 //   │           Email           │               Rol               │
 //   ├───────────────────────────┼─────────────────────────────────┤
-//   │ cristianmarint@gmail.com  │ Propietario                     │
+//   │ owner@example.com         │ Propietario                     │
 //   ├───────────────────────────┼─────────────────────────────────┤
-//   │ flexyflowco@gmail.com     │ Administradora (Carolina Mejía) │
+//   │ admin@example.com         │ Administradora (Carolina Mejía) │
 //   ├───────────────────────────┼─────────────────────────────────┤
-//   │ flexyconsultora@gmail.com │ Cocina (Sebastián Ramírez)      │
+//   │ kitchen@example.com       │ Cocina (Sebastián Ramírez)      │
 //   ├───────────────────────────┼─────────────────────────────────┤
-//   │ cristianmarintt@gmail.com │ Domiciliario                    │
+//   │ courier@example.com       │ Domiciliario                    │
 class QaSeeder extends Seeder
 {
     public function run(): void
@@ -37,28 +37,26 @@ class QaSeeder extends Seeder
             ProductionSeeder::class,
             RestauranteFlexySeeder::class,
             CompanySettingsSeeder::class,
-            // Facturación electrónica DIAN (#235). Crea perfil fiscal mínimo
+            // Facturación electrónica DIAN. Crea perfil fiscal mínimo
             // + 2 resoluciones (PO, FE) + MockDianProvider activo por empresa.
             // Idempotente — solo escribe lo que falta.
             DianDemoSeeder::class,
-            // Flujos DIAN sobre las órdenes históricas demo (#235): siembra
+            // Flujos DIAN sobre las órdenes históricas demo: siembra
             // documentos DEE POS / FEV / NC con CUFE/CUDE reales para una
             // muestra de las órdenes completed/refunded existentes. Demuestra
             // los escenarios: pos accepted, fev accepted, pos rejected + retry,
             // pos + nota crédito sobre orden refunded, contact con perfil
             // incompleto. Idempotente — skip si ya hay documento para la orden.
             DianFlowsSeeder::class,
-            // ChatConversationsDemoSeeder::class,
-            // DemoWhatsappAccountSeeder::class,
-            // Escenarios para probar el feed de alertas (#124) en /dashboard.
+            // Escenarios para probar el feed de alertas en /dashboard.
             // Idempotente; depende del dataset de RestauranteFlexySeeder.
             AlertScenariosSeeder::class,
-            // Colaboradores y turnos demo (#182). Crea employees para los 4
+            // Colaboradores y turnos demo. Crea employees para los 4
             // users del equipo demo (owner/admin/kitchen/courier) + 5 sin
             // user_id, y genera turnos para la semana actual con uno activo
             // ahora para que la caja pueda operar en QA sin esperar.
             EmployeesDemoSeeder::class,
-            // Empresa adicional en past_due de 2 meses (#175) para probar el
+            // Empresa adicional en past_due de 2 meses para probar el
             // banner amber con countdown y la vista de comprobante de pago.
             PastDueDemoCompanySeeder::class,
         ]);

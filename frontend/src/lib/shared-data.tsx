@@ -4,7 +4,7 @@ import { type ReactNode, createContext, useContext, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**
- * Contexto de SharedData del shell SPA (#220).
+ * Contexto de SharedData del shell SPA.
  *
  * Lo puebla `<SpaSharedDataBridge>` desde `useBootstrap()` (GET
  * /api/v1/bootstrap). Los componentes lo leen vía `useSharedData()` y la

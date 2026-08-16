@@ -33,7 +33,7 @@ class CartCouponController extends Controller
     public function __construct(private readonly CouponService $couponService) {}
 
     /**
-     * Anuncia el mejor cupón auto-aplicable para el carrito actual (#125 happy hour).
+     * Anuncia el mejor cupón auto-aplicable para el carrito actual (happy hour).
      *
      * Útil para mostrar un badge "🎉 Happy Hour activo: -20% hasta 19:00" en la UI.
      * No persiste nada; la redención ocurre al cerrar la orden, igual que en `apply()`.

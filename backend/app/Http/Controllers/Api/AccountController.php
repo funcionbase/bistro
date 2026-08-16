@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
 /**
- * Gestión de la cuenta del usuario autenticado para el shell SPA (#220).
+ * Gestión de la cuenta del usuario autenticado para el shell SPA.
  *
  * Migra las acciones de `Settings\ProfileController` / `PasswordController`
  * (que devolvían redirects de Inertia) a respuestas JSON. El usuario se

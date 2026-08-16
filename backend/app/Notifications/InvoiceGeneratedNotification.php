@@ -15,9 +15,9 @@ use Illuminate\Notifications\Notification;
  * invoice mensual nueva. Receptores: owners + admins activos via
  * Company::usersToNotifyForBilling().
  *
- * #257 — incluye bloque "Tu plan" leyendo el snapshot de la subscription via
+ * Incluye bloque "Tu plan" leyendo el snapshot de la subscription via
  * BillingPlanPresenter, y la instruccion explicita de subir comprobante de
- * pago manual en /billing (transferencia BREB / cuenta flexyflow).
+ * pago manual en /billing (transferencia BREB / cuenta bistro).
  */
 class InvoiceGeneratedNotification extends Notification implements BillingNotificationContract, ShouldQueue
 {

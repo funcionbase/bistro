@@ -135,7 +135,7 @@ Route::prefix('v1')->group(function () {
     Route::post('webhooks/ses-notifications', [SesNotificationController::class, 'receive'])
         ->name('api.webhooks.ses.receive');
 
-    // Webhooks DIAN (#235). ÚNICO endpoint DIAN público (sin JWT).
+    // Webhooks DIAN. ÚNICO endpoint DIAN público (sin JWT).
     // Defensas:
     //  - `provider` restringido por regex a la lista cerrada (mock|factura1|siigo).
     //    Nuevos providers se agregan en este whitelist + en DianProviderFactory.
@@ -150,7 +150,7 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:60,1')
         ->name('api.webhooks.dian');
 
-    // #246 — endpoints públicos del módulo pricing/promo (sin auth, throttle agresivo
+    // Endpoints públicos del módulo pricing/promo (sin auth, throttle agresivo
     // contra enumeración de slugs). Lectura del plan default + preview de un
     // promo code antes de loguearse (URL `?promo=` en enrollment).
     Route::middleware('throttle:30,1')->group(function () {
@@ -163,13 +163,13 @@ Route::prefix('v1')->group(function () {
 
     // "No fui yo" del correo de verificacion. Sin JWT: el correo del owner
     // contiene el token unico, basta con validar el token. throttle:10,1
-    // (#174 P0-3) protege ante reproduccion si un token llega a un atacante.
+    // protege ante reproduccion si un token llega a un atacante.
     Route::get('whatsapp/verification/reject', [WhatsappVerificationController::class, 'reject'])
         ->middleware('throttle:10,1')
         ->name('api.whatsapp.verification.reject');
 
     // CSP violation reporting — sin autenticación, llamado por el browser.
-    // throttle:60,1 por IP (#174 P0-2) evita log-spam que infla el canal
+    // throttle:60,1 por IP evita log-spam que infla el canal
     // single + CloudWatch; 60 reports/min son holgados para un browser real.
     Route::post('csp-report', function (Request $request) {
         $report = $request->json()->all();
@@ -179,7 +179,7 @@ Route::prefix('v1')->group(function () {
             'ip' => $request->ip(),
         ]);
 
-        // #200 — además del log textual, dejar rastro en audit_logs para
+        // Además del log textual, dejar rastro en audit_logs para
         // que los analistas de seguridad puedan filtrar por
         // action='csp.violation' y agregar por documento, dominio, etc.
         // sin tener que parsear el log file.
@@ -238,11 +238,11 @@ Route::prefix('v1')->group(function () {
             ->name('api.auth.verification.resend-public');
     });
 
-    // throttle:api (#174 P1-1) — limiter por jwt.sub o IP (240/min). Cubre
+    // throttle:api — limiter por jwt.sub o IP (240/min). Cubre
     // dashboard polling y uso humano sin estorbar; flujos batch deben usar
     // endpoints especificos fuera de este grupo si superan ese techo.
     Route::middleware(['jwt', 'throttle:api'])->group(function () {
-        // Bootstrap del frontend SPA (#220): emite las shared props que hoy
+        // Bootstrap del frontend SPA: emite las shared props que hoy
         // consume Inertia. NO requiere company.access — el cliente lo llama
         // antes del selector de empresa/sede para construir su contexto.
         Route::get('bootstrap', [BootstrapController::class, 'show'])->name('api.bootstrap');
@@ -250,19 +250,19 @@ Route::prefix('v1')->group(function () {
         Route::get('me', [MeController::class, 'show'])->name('api.me');
         Route::delete('me', [MeController::class, 'destroy'])->name('api.me.destroy');
 
-        // #237 — Contexto de negocio de la sede activa: vertical, capabilities,
+        // Contexto de negocio de la sede activa: vertical, capabilities,
         // labels dinámicos y prep_areas. Frontend lo carga después de seleccionar
         // empresa+sede y lo refresca al cambiar de sede activa.
         Route::middleware(['company.access', 'branch.access'])
             ->get('me/active-context', [BusinessContextController::class, 'show'])
             ->name('api.me.active-context');
 
-        // #237 — Catálogo de verticales (autenticado). Usado por onboarding y
+        // Catálogo de verticales (autenticado). Usado por onboarding y
         // el selector de "cambiar tipo de negocio" de la sede.
         Route::get('business-types', [BusinessContextController::class, 'catalog'])
             ->name('api.business-types.index');
 
-        // Gestión de cuenta (#220) — consumido por settings/profile y
+        // Gestión de cuenta — consumido por settings/profile y
         // settings/password del shell SPA. `updatePassword` re-habilitado con
         // el acceso dual: cambia la contraseña (pide la actual) o la FIJA por
         // primera vez en cuentas Google (password null, sin contraseña actual).
@@ -307,20 +307,20 @@ Route::prefix('v1')->group(function () {
         });
 
         // Lectura del estado de la empresa activa — debe seguir disponible
-        // mientras la empresa esté pending_activation/rejected (#154), para que
+        // mientras la empresa esté pending_activation/rejected, para que
         // el frontend pueda mostrar la pantalla "Cuenta en revisión".
         // NO se aplica `company.verified` a esta ruta a propósito.
         Route::middleware('company.access')->group(function () {
             Route::get('companies/active', [ActiveCompanyController::class, 'show'])
                 ->name('api.companies.active');
 
-            // #154: vista previa de la evidencia de propiedad subida en el
+            // Vista previa de la evidencia de propiedad subida en el
             // enrolamiento. Sólo accesible al uploader o al owner (rol de
             // sistema). Devuelve URL firmada de S3 (≤ 15 min).
             Route::get('enrollment/proof/preview', [EnrollmentProofController::class, 'preview'])
                 ->name('api.enrollment.proof.preview');
 
-            // #149 — Web Push subscriptions. NO van dentro de
+            // Web Push subscriptions. NO van dentro de
             // company.verified+company.not_blocked: un user con empresa
             // past_due/suspended igual puede suscribirse para enterarse de
             // novedades (es feature de UX, no canal financiero). El throttle
@@ -338,8 +338,8 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // Resto de rutas de empresa: requieren acceso + verificación (#154) +
-        // bloqueo selectivo por past_due prolongado (#175). El último deja pasar
+        // Resto de rutas de empresa: requieren acceso + verificación +
+        // bloqueo selectivo por past_due prolongado. El último deja pasar
         // billing/comprobantes incluso si la empresa está `suspended`.
         Route::middleware(['company.access', 'company.verified', 'company.not_blocked'])->group(function () {
             // Configuraciones de empresa — requiere permiso company.update
@@ -356,7 +356,7 @@ Route::prefix('v1')->group(function () {
                 ->middleware('permission:company.update,update')
                 ->name('api.companies.settings.update');
 
-            // Guía de configuración inicial (#setup-guide). RBAC validado en el
+            // Guía de configuración inicial. RBAC validado en el
             // controller (is_system=true, excluyendo Empleado). Sin permiso nuevo.
             Route::get('company/setup-guide', [SetupGuideController::class, 'show'])
                 ->name('api.company.setup-guide.show');
@@ -367,7 +367,7 @@ Route::prefix('v1')->group(function () {
                 ->middleware('permission:company.update,update')
                 ->name('api.company.update');
 
-            // SMS fallidos (#275 Fase 4): feedback al usuario que disparó el
+            // SMS fallidos (Fase 4): feedback al usuario que disparó el
             // cambio de estado cuando el SMS al cliente falla async. Self-scoped
             // (solo los del propio actor) → sin permiso nuevo, solo company.access.
             Route::get('order-sms-failures', [OrderSmsFailureController::class, 'index'])
@@ -375,7 +375,7 @@ Route::prefix('v1')->group(function () {
             Route::post('order-sms-failures/seen', [OrderSmsFailureController::class, 'markSeen'])
                 ->name('api.orders.smsFailures.seen');
 
-            // Sedes (multi-sede #117). Se gestionan a nivel de empresa, sin requerir branch.access.
+            // Sedes (multi-sede). Se gestionan a nivel de empresa, sin requerir branch.access.
             Route::prefix('company/branches')->group(function () {
                 Route::get('/', [BranchController::class, 'index'])
                     ->name('api.company.branches.index');
@@ -400,7 +400,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('{branch}/menu/copy', [BranchController::class, 'copyMenu'])
                     ->middleware('permission:branches.copy_menu,update')
                     ->name('api.company.branches.menu.copy');
-                // #237 — cambio de vertical de una sede existente. Requiere
+                // Cambio de vertical de una sede existente. Requiere
                 // permiso `branches.manage,update` (mismo que update general).
                 Route::post('{branch}/change-business-type', [BranchController::class, 'changeBusinessType'])
                     ->middleware('permission:branches.manage,update')
@@ -436,7 +436,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.company.branches.cashRegisters.update');
             });
 
-            // Bodegas (multi-bodega #120). Subdivisiones de inventario dentro
+            // Bodegas (multi-bodega). Subdivisiones de inventario dentro
             // de una sede. Permiso unificado warehouses.manage.
             Route::prefix('company/warehouses')->group(function () {
                 Route::get('/', [WarehouseController::class, 'index'])
@@ -452,7 +452,7 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:warehouses.manage,delete')
                     ->name('api.company.warehouses.destroy');
 
-                // Asignación de bodegas a sedes (#costeo-multibodega). Una
+                // Asignación de bodegas a sedes. Una
                 // bodega es company-scoped y sirve a N sedes vía el pivot
                 // branch_warehouses. Permiso dedicado warehouses.assign_branches
                 // (config cross-sede: owner + admin por default).
@@ -486,7 +486,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.company.printers.test');
             });
 
-            // Colaboradores y planificador de turnos (HU #182).
+            // Colaboradores y planificador de turnos.
             // Las mutaciones financieras (pay_rate, cambio de estado en cascada,
             // cancelación masiva) están protegidas internamente con
             // DB::transaction + AuditService::log.
@@ -557,7 +557,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.me.salary');
             });
 
-            // Facturación electrónica DIAN (#235).
+            // Facturación electrónica DIAN.
             // - Configuración global de empresa: owner-only por seeder; admin
             //   recibe dian.config.read para consultar tokens enmascarados.
             // - Operativos (documents, recipients, print): branch.access para
@@ -664,7 +664,7 @@ Route::prefix('v1')->group(function () {
             });
 
             // Reportes
-            // Reportes — requieren sede activa (multi-sede #117). Si el usuario tiene
+            // Reportes — requieren sede activa (multi-sede). Si el usuario tiene
             // metrics.view_all_branches puede pasar `?branch=all` (consolidado) o
             // `?branch=<uuid>` (sede ajena) — branch.consolidate intercepta el flag.
             Route::prefix('reports')->middleware(['branch.access', 'branch.consolidate', 'permission:reports.read,read'])->group(function () {
@@ -689,7 +689,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('cash-register/sessions/{id}', [CashRegisterController::class, 'show'])
                     ->name('api.reports.cashRegister.show');
 
-                // Informes de colaboradores (HU #182). Permiso dedicado workforce.reports
+                // Informes de colaboradores. Permiso dedicado workforce.reports
                 // dentro del mismo grupo de reports.read.
                 Route::middleware('permission:workforce.reports,read')->group(function () {
                     Route::get('workforce', [WorkforceReportController::class, 'index'])
@@ -702,13 +702,13 @@ Route::prefix('v1')->group(function () {
             });
 
             // Sesión de caja (apertura/cierre/consulta del turno actual). Requiere
-            // sede activa: cada sede opera su propia caja (multi-sede #117).
+            // sede activa: cada sede opera su propia caja (multi-sede).
             Route::prefix('cash-register')->middleware('branch.access')->group(function () {
                 Route::get('current', [CashRegisterController::class, 'current'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.cashRegister.current');
 
-                // Catálogo de cajas de la sede + estado (selector multi-caja #117).
+                // Catálogo de cajas de la sede + estado (selector multi-caja).
                 Route::get('registers', [CashRegisterController::class, 'registers'])
                     ->middleware('permission:orders.read,read')
                     ->name('api.cashRegister.registers.index');
@@ -799,7 +799,7 @@ Route::prefix('v1')->group(function () {
 
             // Métricas operativas — requieren reports.read y sede activa. Modo consolidado
             // (?branch=all) y sede ajena (?branch=<uuid>) gateados por branch.consolidate.
-            // Dashboard SPA (#220) — emite las props que antes diferían en
+            // Dashboard SPA — emite las props que antes diferían en
             // Inertia. Los permisos se gatean dentro de cada build* (panel
             // sin permiso retorna null), por eso no lleva `permission:` aquí.
             Route::get('dashboard', [ApiDashboardController::class, 'data'])
@@ -813,7 +813,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('items/top', [MetricsController::class, 'topItems'])->name('api.metrics.items.top');
                 Route::get('carts/abandonment', [MetricsController::class, 'cartAbandonment'])->name('api.metrics.carts.abandonment');
                 Route::get('sms/counts', [MetricsController::class, 'smsCounts'])->name('api.metrics.sms.counts');
-                // #294: escaneos del menú QR desde menu_scan_daily_rollup.
+                // Escaneos del menú QR desde menu_scan_daily_rollup.
                 Route::get('menu-scans', [MetricsController::class, 'menuScans'])->name('api.metrics.menu-scans');
 
                 Route::get('kpis/today', [MetricsController::class, 'kpisToday'])->name('api.metrics.kpis.today');
@@ -823,18 +823,18 @@ Route::prefix('v1')->group(function () {
                 Route::get('cart/abandonment', [MetricsController::class, 'abandonmentRate'])->name('api.metrics.cart.abandonment');
                 Route::get('activity/heatmap', [MetricsController::class, 'activityHeatmap'])->name('api.metrics.activity.heatmap');
 
-                // Operación offline (#140): KPIs de sincronización por período.
+                // Operación offline: KPIs de sincronización por período.
                 Route::get('offline/operation', [MetricsController::class, 'offlineOperation'])->name('api.metrics.offline.operation');
 
-                // Food cost (issue #113): KPIs agregados + breakdown por plato + scatter precio/costo.
+                // Food cost: KPIs agregados + breakdown por plato + scatter precio/costo.
                 Route::get('foodcost/summary', [FoodCostController::class, 'summary'])->name('api.metrics.foodcost.summary');
                 Route::get('foodcost/items/{menuItemId}/history', [FoodCostController::class, 'itemHistory'])->name('api.metrics.foodcost.item.history');
 
-                // #114 Menu engineering: matriz popularidad x margen unitario.
+                // Menu engineering: matriz popularidad x margen unitario.
                 Route::get('menu-engineering', [MenuEngineeringController::class, 'matrix'])->name('api.metrics.menu-engineering');
             });
 
-            // Multi-sede (#117): el bloque operacional siguiente requiere sede activa.
+            // Multi-sede: el bloque operacional siguiente requiere sede activa.
             // El BranchScope global filtra automáticamente cualquier modelo con BelongsToBranch.
             Route::middleware('branch.access')->group(function () {
 
@@ -877,7 +877,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.hours.exceptions.destroy');
 
                 // Gestión de entregas / repartidores
-                // #119: bolsa de órdenes disponibles para auto-asignación.
+                // Bolsa de órdenes disponibles para auto-asignación.
                 // Requiere `deliveries.self_assign` (default rol Domiciliario).
                 // Declarada ANTES del grupo con `deliveries/{id}` para que el
                 // segmento estático "available" tome precedencia sobre la ruta dinámica.
@@ -889,7 +889,7 @@ Route::prefix('v1')->group(function () {
                     Route::get('deliveries/couriers', [DeliveryController::class, 'getCouriers'])->name('api.deliveries.couriers');
                     Route::get('deliveries/metrics', [DeliveryMetricsController::class, 'index'])->middleware('branch.consolidate')->name('api.deliveries.metrics');
                     Route::get('deliveries/reassign-reasons', [DeliveryController::class, 'getReassignReasons'])->name('api.deliveries.reassign-reasons');
-                    // #119: vista mobile-first del domiciliario — mis entregas
+                    // Vista mobile-first del domiciliario — mis entregas
                     // asignadas en la sede activa.
                     Route::get('deliveries/mine', [DeliveryController::class, 'mine'])->name('api.deliveries.mine');
                     Route::get('deliveries/{id}', [DeliveryController::class, 'show'])
@@ -911,7 +911,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('orders/{orderId}/assign-courier', [DeliveryController::class, 'assignCourier'])
                     ->middleware('permission:deliveries.create,create')
                     ->name('api.orders.assign-courier');
-                // #119: cambios de estado del domiciliario (auto-asignación,
+                // Cambios de estado del domiciliario (auto-asignación,
                 // revertir, rechazar). Throttle agresivo para evitar toggles
                 // accidentales en mobile. La autorización fina (courier
                 // propio o admin) vive en el controller.
@@ -948,21 +948,21 @@ Route::prefix('v1')->group(function () {
                 Route::get('invoices/{id}/download', [BillingController::class, 'download'])
                     ->name('api.billing.invoices.download');
 
-                // Comprobantes de pago manuales (#175). El POST exige billing.write
+                // Comprobantes de pago manuales. El POST exige billing.write
                 // pero la lectura del historial usa billing.read.
                 Route::get('payment-proofs', [PaymentProofController::class, 'index'])
                     ->name('api.billing.payment-proofs.index');
                 Route::post('payment-proofs', [PaymentProofController::class, 'store'])
                     ->name('api.billing.payment-proofs.store');
                 // Stream del archivo del comprobante para previsualización
-                // inline (#193). Recibe UUID (no id numérico) para evitar
+                // inline. Recibe UUID (no id numérico) para evitar
                 // enumeración. Valida pertenencia a la empresa activa y
                 // devuelve el blob con `Content-Disposition: inline`.
                 Route::get('payment-proofs/{proof}', [PaymentProofController::class, 'show'])
                     ->where('proof', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
                     ->name('api.billing.payment-proofs.show');
 
-                // #246 — Promo codes self-service. GET y preview con
+                // Promo codes self-service. GET y preview con
                 // billing.read; POST + DELETE exigen owner/admin estricto
                 // (validación en el controller).
                 Route::get('promo-code', [PromoCodeController::class, 'showActive'])
@@ -1002,7 +1002,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.exports.billing.pdf');
             });
 
-            // Kanban de órdenes — multi-sede (#117): toda mutación requiere sede activa.
+            // Kanban de órdenes — multi-sede: toda mutación requiere sede activa.
             Route::middleware('branch.access')->group(function () {
                 Route::get('orders', [OrderController::class, 'index'])
                     ->middleware('permission:orders.read,read')
@@ -1013,7 +1013,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('orders', [OrderController::class, 'store'])
                     ->middleware('permission:orders.create,create')
                     ->name('api.orders.store');
-                // Sync de batch offline (#140). Idempotente por client_uuid; el
+                // Sync de batch offline. Idempotente por client_uuid; el
                 // controller resuelve company_nit del JWT y rechaza el batch si
                 // alguna orden trae un company_nit distinto (multitenant strict).
                 Route::post('orders/sync-batch', [OrderSyncController::class, 'syncBatch'])
@@ -1071,7 +1071,7 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:orders.update,update')
                     ->name('api.orders.refund');
 
-                // Pantalla del mesero — sesiones de mesa con QR (#191 Fase 4).
+                // Pantalla del mesero — sesiones de mesa con QR (Fase 4).
                 // Lecturas y mutaciones de tandas/items/notas. La página vive en
                 // `pages/orders/table-sessions/*`.
                 Route::get('table-sessions', [TableSessionController::class, 'index'])
@@ -1115,7 +1115,7 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:orders.update,update')
                     ->name('api.cancellation-requests.resolve');
 
-                // Kitchen Display System (#191 Fase 5 + #115 estaciones).
+                // Kitchen Display System (Fase 5, estaciones).
                 // Tickets = order_items con status approved|in_kitchen|ready.
                 // Forward-only transitions. CRUD estándar: kds.read para ver,
                 // kds.update para operar. Sigue el patrón canónico del catálogo.
@@ -1132,13 +1132,13 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:kds,update')
                     ->name('api.kds.tickets.mark-served');
 
-                // #115 — Estaciones KDS: lectura para selector de menú abierta
+                // Estaciones KDS: lectura para selector de menú abierta
                 // a cualquier rol con `kds.read` (cook + manager + admin etc.).
                 Route::get('kds/stations', [KdsStationController::class, 'index'])
                     ->middleware('permission:kds,read')
                     ->name('api.kds.stations.index');
 
-                // #115 — Gestión admin de estaciones y device-tokens.
+                // Gestión admin de estaciones y device-tokens.
                 // Sensible de sede: default solo owner; admin requiere
                 // asignación manual (mismo patrón que cash_register
                 // .bypass_switch_lock / inventory.transfer_cross_branch).
@@ -1164,7 +1164,7 @@ Route::prefix('v1')->group(function () {
                         ->name('api.company.kds.stations.tokens.destroy');
                 });
 
-                // Caja con pago dividido (#191 Fase 6). Receipts inmutables;
+                // Caja con pago dividido (Fase 6). Receipts inmutables;
                 // refund = receipt nuevo con amount negativo + reference obligatoria.
                 Route::get('caja/table-sessions/{id}', [TableCashierController::class, 'show'])
                     ->middleware('permission:orders.read,read')
@@ -1182,7 +1182,7 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:orders.update,update')
                     ->name('api.caja.table-sessions.refund-item');
 
-                // Admin de mesas físicas (#191 Fase 8). CRUD con soft-archive.
+                // Admin de mesas físicas (Fase 8). CRUD con soft-archive.
                 Route::get('tables', [TableAdminController::class, 'index'])
                     ->middleware('permission:company.update,read')
                     ->name('api.tables.index');
@@ -1203,14 +1203,14 @@ Route::prefix('v1')->group(function () {
                     ->name('api.tables.restore');
             }); // fin grupo branch.access (orders)
 
-            // Inventario de insumos (#111). Bitácora append-only — corregir =
+            // Inventario de insumos. Bitácora append-only — corregir =
             // movimiento `adjustment` opuesto. Stock y costo se mutan SOLO vía
             // los endpoints de movimientos; PATCH de ingrediente toca metadatos.
             // Multi-sede: cada sede tiene su propio inventario aislado.
-            // #192: las vistas valuation y history/valuation aceptan
+            // Las vistas valuation y history/valuation aceptan
             // `?branch=all` (consolidado por empresa) y `?branch=<uuid>`
             // (otra sede) si el actor tiene `metrics.view_all_branches`.
-            // #237 — el módulo entero queda gateado por la capability `inventory`
+            // El módulo entero queda gateado por la capability `inventory`
             // del vertical de la sede activa. Sedes con `inventory:false` en su
             // override del vertical (o vertical que no la habilita) reciben 403
             // BUSINESS_CAPABILITY_DENIED.
@@ -1251,7 +1251,7 @@ Route::prefix('v1')->group(function () {
                     ->middleware('permission:inventory.update,update')
                     ->name('api.inventory.movements.adjustment');
 
-                // Transferencias entre bodegas de la misma sede (#120).
+                // Transferencias entre bodegas de la misma sede.
                 Route::post('transfers', [InventoryTransferController::class, 'store'])
                     ->middleware('permission:inventory.update,update')
                     ->name('api.inventory.transfers.store');
@@ -1262,7 +1262,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.inventory.history.valuation');
             });
 
-            // Compras a proveedores (#118). Estados, transiciones y métodos de
+            // Compras a proveedores. Estados, transiciones y métodos de
             // pago canónicos en `config/purchases.php`. La recepción mueve
             // inventario vía InventoryService; la anulación post-recepción
             // genera una nota crédito + adjustments negativos.
@@ -1450,10 +1450,10 @@ Route::prefix('v1')->group(function () {
                     ->name('api.whatsapp.disconnect');
             });
 
-            // CRM básico de clientes (#123). Cross-sede: un teléfono = un cliente
+            // CRM básico de clientes. Cross-sede: un teléfono = un cliente
             // para toda la empresa, sin importar la sede donde haya pedido. NO
             // requiere `branch.access` por diseño (consolidado).
-            // Refactor #235: rutas por contact_id (canónico) en vez de phone,
+            // Refactor: rutas por contact_id (canónico) en vez de phone,
             // que ya no es único en contacts (familia comparte número).
             // Catálogo DANE para el selector de ciudad del formulario de
             // dirección (Ciudad, Departamento). Global, sin scope de empresa.
@@ -1492,9 +1492,9 @@ Route::prefix('v1')->group(function () {
                     ->name('api.clients.tags.destroy');
             });
 
-            // Fidelización con puntos (#122). Cross-sede: una cuenta por
+            // Fidelización con puntos. Cross-sede: una cuenta por
             // (company_nit, client_phone) sin importar la sede activa.
-            // #192: el reporte summary acepta `?branch=all` o
+            // El reporte summary acepta `?branch=all` o
             // `?branch=<uuid>` con permiso `metrics.view_all_branches`.
             Route::prefix('loyalty')->group(function () {
                 Route::get('accounts', [LoyaltyController::class, 'index'])
@@ -1517,7 +1517,7 @@ Route::prefix('v1')->group(function () {
                     ->name('api.loyalty.reports.summary');
             });
 
-            // Alertas accionables (#124). Gate por reports.read (mismo que
+            // Alertas accionables. Gate por reports.read (mismo que
             // protege food cost/márgenes) — el contenido del feed expone
             // info financiera indirectamente. Config de reglas requiere
             // company.update (mismo gate que /company/preferences).
@@ -1647,7 +1647,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('chats/{id}/contact', [ChatController::class, 'updateContact'])
                     ->middleware('permission:chats.update,update')
                     ->name('api.chats.contact.update');
-                // Aislamiento por sede (#192): reasignar chat a otra sede. La
+                // Aislamiento por sede: reasignar chat a otra sede. La
                 // autorización es composable (owner OR chats.reassign_branch +
                 // acceso a sede destino) y se resuelve dentro del controller —
                 // no se aplica middleware permission:* porque el slug no
@@ -1657,7 +1657,7 @@ Route::prefix('v1')->group(function () {
             }); // fin del grupo branch.access de chats
 
             // Gestión de menú
-            // Menús son recurso PER-SEDE (#117): cada branch maneja su carta.
+            // Menús son recurso PER-SEDE: cada branch maneja su carta.
             // El middleware branch.access setea active_branch_id en el request
             // para que el BranchScope global filtre RestaurantMenu automáticamente.
             // Sin esto, GET /menus devolvía menús de TODAS las sedes mezclados.
@@ -1710,29 +1710,29 @@ Route::prefix('v1')->group(function () {
         ->name('api.billing.invoices.pdf')
         ->middleware('signed');
 
-    // Cupon/cart aplicados por OPERADOR (cajero en POS), no por cliente final
-    // (#174 P2-3). Por eso usan el JWT de usuario, no cart.jwt — el flujo de
+    // Cupon/cart aplicados por OPERADOR (cajero en POS), no por cliente final.
+    // Por eso usan el JWT de usuario, no cart.jwt — el flujo de
     // comensal aplica cupones via /api/v1/cart/{jwt}. throttle:api alineado
     // con el resto del grupo JWT (240/min por usuario).
     Route::middleware(['jwt', 'throttle:api', 'company.access', 'company.verified', 'company.not_blocked'])->group(function () {
         Route::get('coupons/{code}/validate', [CouponValidationController::class, 'validate'])->name('api.coupons.validate');
         Route::post('cart/apply-coupon', [CartCouponController::class, 'apply'])->name('api.cart.apply-coupon');
-        // Auto-apply activo en franja horaria (#125 happy hour) — para mostrar badge.
+        // Auto-apply activo en franja horaria (happy hour) — para mostrar badge.
         Route::post('cart/active-auto-apply', [CartCouponController::class, 'activeAutoApply'])->name('api.cart.active-auto-apply');
     });
 
-    // Menú público — sin auth (TC-3.3.1, issue #26). Cualquier visitante puede ver el menú activo de cualquier empresa,
+    // Menú público — sin auth (TC-3.3.1). Cualquier visitante puede ver el menú activo de cualquier empresa,
     // sólo ítems disponibles. El controlador no consume datos del JWT.
     Route::get('public/menu/{companyNit}', [MenuController::class, 'showPublic'])->name('api.menus.public');
 
-    // Telemetría pública del QR del menú (issue #95). Append-only en menu_scan_events
+    // Telemetría pública del QR del menú. Append-only en menu_scan_events
     // particionada. Rate-limit y bot-detection en el controller.
     Route::post('public/menu/{nit}/scan', [MenuController::class, 'recordScan'])
         ->where('nit', '[A-Za-z0-9._-]+')
         ->middleware('throttle:menu-scan-public')
         ->name('api.menus.public.scan');
 
-    // Resolución pública de mesa por nit + número (#191). El cliente que
+    // Resolución pública de mesa por nit + número. El cliente que
     // entra a /menus/{nit}?table=N consulta aquí para saber si la mesa
     // existe en la sede default y si tiene una sesión grupal activa.
     // Mismo throttle que scan (30/min IP+nit) — el endpoint es read-only
@@ -1785,7 +1785,7 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:branch-order-public')
         ->name('api.public.branch.orders.store');
 
-    // Mesa con QR (#191) — flujo público sin auth, identidad por cookie firmada
+    // Mesa con QR — flujo público sin auth, identidad por cookie firmada
     // `tdt_*`. Migrado del stack web a la API REST cuando el frontend pasó a
     // SPA standalone: el QR escaneado abre la página SPA `/t/{qr}` y ésta
     // hidrata su contexto contra estos endpoints.
@@ -1816,7 +1816,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('menu', TableMenuController::class)
                     ->name('api.public.table.menu');
 
-                // Carrito del comensal (#191 Fase 3). El frontend los consume
+                // Carrito del comensal (Fase 3). El frontend los consume
                 // con fetch + polling cada 5s.
                 Route::get('state', [TableOrderController::class, 'state'])
                     ->name('api.public.table.state');
@@ -1839,7 +1839,7 @@ Route::prefix('v1')->group(function () {
         });
 
     // Carrito publico — autenticado solo por el JWT de carrito (CartJwtService).
-    // El front lo invoca al abrir la URL pedidos.flexyflow.co/{jwt}.
+    // El front lo invoca al abrir la URL pedidos.example.com/{jwt}.
     Route::post('cart/migrate-jwt/{jwt}', [CartController::class, 'migrateJwt'])
         ->where('jwt', '[A-Za-z0-9._-]+')
         ->name('api.cart.migrate-jwt');
@@ -1847,7 +1847,7 @@ Route::prefix('v1')->group(function () {
         ->where('jwt', '[A-Za-z0-9._-]+')
         ->name('api.cart.show');
 
-    // Fidelización pública (#122) — el cliente consulta su saldo y canjea
+    // Fidelización pública — el cliente consulta su saldo y canjea
     // desde /menus/{nit}. POST + rate-limit estricto para no exponer phones.
     // 404 cuando el programa está deshabilitado para la empresa (no revela
     // si el phone existe).
@@ -1860,7 +1860,7 @@ Route::prefix('v1')->group(function () {
             ->name('api.public.loyalty.redeem');
     });
 
-    // #115 — Kitchen Display System por estación (modo device-token).
+    // Kitchen Display System por estación (modo device-token).
     // Las tabletas físicas de cocina autentican con `Authorization: Bearer
     // <token>` o cookie `kds_device_token`. Sin JWT — el middleware
     // `kds.device` resuelve company/branch/station desde el token e inyecta
@@ -1912,7 +1912,7 @@ Route::prefix('external')->middleware('bot.token')->group(function () {
     Route::post('chats/{chat}/typing', [ExternalChatReplyController::class, 'typing'])
         ->name('api.external.chats.typing');
 
-    // Fidelización para el bot WhatsApp (#122). El bot (n8n) consume estos
+    // Fidelización para el bot WhatsApp. El bot (n8n) consume estos
     // endpoints al detectar intents `/puntos` y `/canjear` en el chat. El
     // company_nit viene del JWT de bot — nunca del body.
     Route::post('loyalty/lookup', [ExternalLoyaltyController::class, 'lookup'])

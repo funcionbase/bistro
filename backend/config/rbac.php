@@ -27,7 +27,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Audit (consumido por `php artisan rbac:audit` — HU #215 Fase 1)
+    | Audit (consumido por `php artisan rbac:audit` — Fase 1)
     |--------------------------------------------------------------------------
     |
     | Configura el comando que cruza `routes/api.php` contra el catálogo de
@@ -64,7 +64,7 @@ return [
             // Sin JWT de usuario. Cada uno tiene throttle y rate-limit dedicado
             // en el routing. La autorización efectiva vive en el scope del
             // recurso (NIT de empresa, NIT + phone, etc.), no en RBAC.
-            'api/v1/public/menu/{nit}/scan' => 'Telemetría pública del QR del menú (#95). Append-only, throttle:menu-scan-public.',
+            'api/v1/public/menu/{nit}/scan' => 'Telemetría pública del QR del menú. Append-only, throttle:menu-scan-public.',
             'api/v1/public/loyalty/{nit}/lookup' => 'Consulta pública de puntos de fidelidad por NIT + phone. Throttle:loyalty-public.',
             'api/v1/public/loyalty/{nit}/redeem' => 'Redención pública de puntos por NIT + phone + code. Throttle:loyalty-public.',
 
@@ -81,7 +81,7 @@ return [
             // autenticado (jwt + company.access) puede invocarlos para
             // construir un carrito. No exponen catálogo administrativo
             // (eso vive en `coupons.read`).
-            'api/v1/cart/active-auto-apply' => 'Lectura de cupones auto-aplicables al carrito en construcción (#125 happy hour). Read-only.',
+            'api/v1/cart/active-auto-apply' => 'Lectura de cupones auto-aplicables al carrito en construcción (happy hour). Read-only.',
             'api/v1/cart/apply-coupon' => 'Validación de un código de cupón contra el carrito. Read-only — no muta cart_coupons.',
 
             // --- Chat: reasignación entre sedes --------------------------

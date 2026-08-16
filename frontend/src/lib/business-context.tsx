@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-q
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 
 /**
- * Contrato del endpoint GET /api/v1/me/active-context (#237).
+ * Contrato del endpoint GET /api/v1/me/active-context.
  *
  * Devuelve el vertical de la sede activa + capabilities resueltas + labels
  * dinámicos + prep_areas. El frontend lo consume después del bootstrap y

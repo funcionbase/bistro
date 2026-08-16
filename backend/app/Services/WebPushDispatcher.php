@@ -13,7 +13,7 @@ use Minishlink\WebPush\WebPush;
 use Throwable;
 
 /**
- * Envío de notificaciones Web Push (#149).
+ * Envío de notificaciones Web Push.
  *
  * Encapsula `minishlink/web-push` para que el resto del backend sólo vea:
  *

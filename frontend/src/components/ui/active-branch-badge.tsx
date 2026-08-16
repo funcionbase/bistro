@@ -13,7 +13,7 @@ interface ActiveBranchBadgeProps {
 }
 
 /**
- * Pill que muestra la sede activa actual (#192 Fase 3.3).
+ * Pill que muestra la sede activa actual.
  *
  * Se renderiza dentro del `PageHeader` y en cualquier vista operativa donde
  * el usuario deba tener visibilidad permanente del contexto en el que

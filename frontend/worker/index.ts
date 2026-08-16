@@ -18,7 +18,7 @@ interface Env {
     ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
-const OG_IMAGE = 'https://bistro.flexyflow.co/og-menu.png';
+const OG_IMAGE = 'https://bistro.example.com/og-menu.png';
 const TITLE = 'Nuestro menú — Pedí online';
 const DESC = 'Mirá el menú y hacé tu pedido en segundos. Menú digital, sin filas.';
 

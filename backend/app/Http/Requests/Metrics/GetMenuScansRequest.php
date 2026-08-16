@@ -9,7 +9,7 @@ use Illuminate\Validation\Validator;
 /**
  * Endpoint: GET /api/v1/metrics/menu-scans (MetricsController). Requiere reports.read.
  *
- * Escaneos del menú QR leídos de menu_scan_daily_rollup (#294).
+ * Escaneos del menú QR leídos de menu_scan_daily_rollup.
  * Períodos: today, week, month, custom (custom requiere date_from y date_to).
  */
 class GetMenuScansRequest extends FormRequest

@@ -12,12 +12,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Hidrata `$request->attributes->get('table_guest')` y `'table_session'` a
- * partir de la cookie `tdt_*` que ataja al comensal (#191).
+ * partir de la cookie `tdt_*` que ataja al comensal.
  *
  * Aplica a rutas `/t/{qr_token}/*` distintas del join. Sin cookie o cookie
  * inválida → atributos quedan en null y el controller decide redirigir.
  *
- * #193: si la empresa del QR está bloqueada por mora, aborta 404 antes de
+ * Si la empresa del QR está bloqueada por mora, aborta 404 antes de
  * hidratar el guest. El comensal ve "no encontrado" sin distinguir entre
  * QR inválido y restaurante en mora — no se filtra información comercial.
  */
@@ -32,7 +32,7 @@ class ResolveTableGuest
         if (is_string($qrToken) && $qrToken !== '') {
             $table = $this->tableSessions->resolveTable($qrToken);
 
-            // Guard de empresa operativa (#193). Indistinguible de "QR inválido".
+            // Guard de empresa operativa. Indistinguible de "QR inválido".
             $company = Company::query()->where('nit', $table->company_nit)->first();
             if ($company === null || ! $company->canServePublic()) {
                 abort(404);

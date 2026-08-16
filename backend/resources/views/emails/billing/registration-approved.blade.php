@@ -7,7 +7,7 @@
 
 Hola, {{ $name }}.
 
-¡Buenas noticias! Tu empresa **{{ $companyName }}** quedó activada y ya puedes empezar a usar todo el panel de restaurante flexyflow.
+¡Buenas noticias! Tu empresa **{{ $companyName }}** quedó activada y ya puedes empezar a usar todo el panel de bistro.
 
 @component('mail::panel', ['variant' => 'panel-accent'])
 <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #1E232E; opacity: 0.6;">Tu plan</span><br>
@@ -25,7 +25,7 @@ Hola, {{ $name }}.
 @endif
 
 @if ($trialEndsAt)
-Tu período de prueba va hasta el **{{ $trialEndsAt }}**. A partir de esa fecha generamos tu factura mensual y la pagas por transferencia (BREB / cuenta bancaria de flexyflow) con los datos que aparecen en el panel de facturación.
+Tu período de prueba va hasta el **{{ $trialEndsAt }}**. A partir de esa fecha generamos tu factura mensual y la pagas por transferencia (BREB / cuenta bancaria de bistro) con los datos que aparecen en el panel de facturación.
 @else
 Cuando llegue el primer cobro te enviaremos la factura y la pagas por transferencia con los datos que aparecen en el panel de facturación.
 @endif

@@ -52,7 +52,7 @@ class InvoicePdfService
             'plan' => $invoice->subscription?->plan,
             'lines' => $invoice->lines,
             'payments' => $invoice->payments,
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
         ];
     }
 }

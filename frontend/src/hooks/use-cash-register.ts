@@ -115,7 +115,7 @@ export interface CloseSessionResult {
 }
 
 const POLL_INTERVAL_MS = 30_000;
-const SELECTED_REGISTER_KEY = 'flexyflow.selected_register_id';
+const SELECTED_REGISTER_KEY = 'bistro.selected_register_id';
 
 function selectedRegisterKey(branchId: string): string {
     return `${SELECTED_REGISTER_KEY}:${branchId}`;
@@ -247,7 +247,7 @@ export function useCashRegister(token: string | null): UseCashRegisterReturn {
                 updatedRegisters = ((regsJson as { data: CashRegister[] }).data ?? []).filter((r) => !r.archived);
                 setRegisters(updatedRegisters);
 
-                // BUG-031: limpiar selección si el registro ya no existe en la sede
+                // Limpiar selección si el registro ya no existe en la sede
                 // (archivado, eliminado, o empresa nueva sin registros aún).
                 const currentSel = selectedRegisterIdRef.current;
                 const selIsValid = currentSel ? updatedRegisters.some((r) => r.id === currentSel) : false;

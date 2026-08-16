@@ -8,7 +8,7 @@ use App\Models\CompanyUser;
 
 /**
  * Resuelve la ruta inicial post-login según el rol del usuario en la
- * empresa activa (#119).
+ * empresa activa.
  *
  * El usuario con rol "Domiciliario" (o cualquier rol que solo tenga
  * permisos de courier sin acceso a administración) entra directo a

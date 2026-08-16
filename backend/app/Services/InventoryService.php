@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Lógica transaccional del módulo de inventario multibodega (#120).
+ * Lógica transaccional del módulo de inventario multibodega.
  *
  * Reglas:
  *  - Cada `recordMovement` opera sobre una bodega (origen). Bloquea con

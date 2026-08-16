@@ -9,7 +9,7 @@
  * con `subscribeConsent()`; `setStoredConsent()` notifica a todos.
  */
 
-const STORAGE_KEY = 'flexyflow_consent';
+const STORAGE_KEY = 'funcionbase_consent';
 
 /** Bump si cambian las categorías → re-pregunta a usuarios con consentimiento viejo. */
 const CONSENT_VERSION = 3;

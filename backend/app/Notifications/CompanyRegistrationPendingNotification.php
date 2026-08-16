@@ -38,12 +38,12 @@ class CompanyRegistrationPendingNotification extends Notification
             : ($notifiable->name ?? 'propietario');
 
         return (new MailMessage)
-            ->subject('¡Tu empresa quedó registrada en flexyflow!')
+            ->subject('¡Tu empresa quedó registrada en bistro!')
             ->markdown('emails.enrollment.company-pending-approval', [
                 'firstName' => $firstName,
                 'company' => $this->company,
                 'dashboardUrl' => config('app.frontend_url'),
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

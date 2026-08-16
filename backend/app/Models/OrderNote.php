@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * Nota asociada a una orden (#191).
+ * Nota asociada a una orden.
  *
  * Diferente a `order_items.notes` (individual): estas son notas que aplican
  * a toda la orden o que la cocina debe ver replicadas en cada ticket KDS.

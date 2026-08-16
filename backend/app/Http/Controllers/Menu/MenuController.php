@@ -203,7 +203,7 @@ class MenuController extends Controller
 
         DB::transaction(function () use ($menu, $companyNit, $jwtPayload, $request) {
             // Solo desactivamos otros menús de la MISMA sede. En multi-sede
-            // (#117) cada branch opera su propia carta; activar Cartago no
+            // cada branch opera su propia carta; activar Cartago no
             // debe degradar Pereira a draft, lo que dejaba esa sede sin
             // menú servible y bloqueaba la creación de órdenes ahí.
             RestaurantMenu::forCompany($companyNit)
@@ -764,7 +764,7 @@ class MenuController extends Controller
         // en OrderController). Coherente con el flujo: si los cobros fallarían,
         // ofrecer el menú genera frustración al cliente.
         //
-        // Multi-sede (#117): se evalúa por SEDE (la resuelta arriba). Ruta
+        // Multi-sede: se evalúa por SEDE (la resuelta arriba). Ruta
         // pública sin `active_branch_id` → el BranchScope global NO aplica, así
         // que el filtro de sede DEBE ser explícito; si no, una sede con caja
         // abierta dejaría el menú de otra sede (cerrada) disponible por error.
@@ -971,7 +971,7 @@ class MenuController extends Controller
         $isBot = $this->botDetection->isBot($request, $company->nit);
         $ipHashHex = $this->botDetection->hashIp($request->ip());
 
-        // Multi-sede (#117): menu_scan_events.branch_id es NOT NULL. Si el
+        // Multi-sede: menu_scan_events.branch_id es NOT NULL. Si el
         // frontend resolvió la sede del QR (token de sede o de mesa) la manda
         // como branch_id y el scan se atribuye a ESA sede; si no, cae a la
         // sede default. Si no hay sedes (caso edge), retornamos 204 sin

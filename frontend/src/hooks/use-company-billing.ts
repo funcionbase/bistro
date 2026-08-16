@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api';
 import { type BillingSubscriptionData } from '@/types';
 import { useEffect, useState } from 'react';
 
-/** Contrato de servicio aceptado por el owner al crear la empresa (#170). */
+/** Contrato de servicio aceptado por el owner al crear la empresa. */
 export interface AcceptedContract {
     version: string;
     accepted_at: string | null;

@@ -222,7 +222,7 @@ class DeliveryController extends Controller
     }
 
     /**
-     * Mis entregas (#119). Lista deliveries con `user_id = actor` en la
+     * Mis entregas. Lista deliveries con `user_id = actor` en la
      * sede activa. Pestañas: asignadas (`pending`), completadas hoy,
      * canceladas hoy. Sin paginación pesada — el courier típico maneja
      * <20 entregas por turno.
@@ -263,7 +263,7 @@ class DeliveryController extends Controller
     }
 
     /**
-     * Bolsa de órdenes disponibles para auto-asignación (#119). Devuelve
+     * Bolsa de órdenes disponibles para auto-asignación. Devuelve
      * órdenes con `order_type='delivery'`, `status` en {ready, in_kitchen}
      * y SIN delivery pending activo, en la sede activa del actor.
      *
@@ -295,7 +295,7 @@ class DeliveryController extends Controller
     }
 
     /**
-     * El domiciliario se auto-asigna una orden disponible (#119).
+     * El domiciliario se auto-asigna una orden disponible.
      *
      * Throttle aplicado a nivel de ruta. La carrera se resuelve por
      * `Order::lockForUpdate` dentro de `DeliveryService::selfAssign`.
@@ -328,7 +328,7 @@ class DeliveryController extends Controller
     }
 
     /**
-     * Revertir delivery completado por error (#119). Solo el courier
+     * Revertir delivery completado por error. Solo el courier
      * propio o un admin con `deliveries.update`. Bloquea con receipt.
      */
     public function revert(Request $request, string $id): JsonResponse
@@ -357,7 +357,7 @@ class DeliveryController extends Controller
     }
 
     /**
-     * El cliente rechazó la entrega (#119). Cancela delivery + orden,
+     * El cliente rechazó la entrega. Cancela delivery + orden,
      * bloquea con receipt. Solo courier propio o admin.
      */
     public function reject(Request $request, string $id): JsonResponse

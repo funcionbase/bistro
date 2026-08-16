@@ -12,7 +12,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * Validación de payload para aplicar un promo code desde billing-tab
  * (self-service) o desde enrollment (`?promo=...`).
  *
- * Sanitización (#246 CLAUDE.md §5): el slug se normaliza a uppercase + trim
+ * Sanitización (CLAUDE.md §5): el slug se normaliza a uppercase + trim
  * a nivel service, pero acá aplicamos `identifier` para limpiar input antes
  * de validar la regla `SafePlainText` (max 50 bytes — espejo de la columna
  * `promo_codes.code`).

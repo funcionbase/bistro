@@ -7,7 +7,7 @@ use App\Models\LoyaltyAccount;
 use App\Models\User;
 
 /**
- * Authorization para fidelización (#122).
+ * Authorization para fidelización.
  *
  * El middleware permission:loyalty.{read,update} aplica RBAC. Esta policy
  * adicionalmente confirma que el actor pertenece a la empresa de la cuenta —

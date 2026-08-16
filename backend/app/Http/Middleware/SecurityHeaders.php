@@ -15,8 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
  * - X-Content-Type-Options: nosniff — previene MIME sniffing
  * - X-Frame-Options: SAMEORIGIN — protege contra clickjacking
  * - Referrer-Policy: strict-origin-when-cross-origin — limita fuga de referrer en requests cross-origin
- * - Permissions-Policy: deshabilita camera/microphone/geolocation (#174 P3-3)
- * - Strict-Transport-Security: HSTS un año + subdomains (#174 P3-3, gateado por app.hsts_enabled)
+ * - Permissions-Policy: deshabilita camera/microphone/geolocation
+ * - Strict-Transport-Security: HSTS un año + subdomains (gateado por app.hsts_enabled)
  *
  * El nonce CSP se genera por request y se pasa a Vite vía Vite::useCspNonce().
  */

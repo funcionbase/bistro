@@ -73,7 +73,7 @@ Tipos canónicos en `resources/js/lib/company-status.ts` (no en `types/`):
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `VITE_APP_NAME` | flexyflow | `<title>` y branding |
+| `VITE_APP_NAME` | bistro | `<title>` y branding |
 | `VITE_API_URL` | `/api/v1` | Base URL para llamadas REST |
 | `VITE_PUSHER_APP_KEY` | — | WebSocket Pusher (futuro) |
 | `VITE_PUSHER_HOST` | — | Pusher |
@@ -101,7 +101,7 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 
 ### Flujo del token JWT
 
-1. Backend devuelve un marker opaco (`'__authenticated__'`) en los props compartidos de Inertia tras login. **El JWT real nunca llega al JS** — vive en cookie HttpOnly `flexyflow_jwt`.
+1. Backend devuelve un marker opaco (`'__authenticated__'`) en los props compartidos de Inertia tras login. **El JWT real nunca llega al JS** — vive en cookie HttpOnly `bistro_jwt`.
 2. `app.tsx` llama a `setToken()` en `lib/token.ts` para sincronizar el marker.
 3. `useToken()` suscribe componentes a cambios.
 4. `apiFetch()` en `lib/api.ts`:
@@ -128,18 +128,18 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 | `verify-email.tsx` | `/verify-email` | `AuthHeroLayout` | `GET /api/v1/auth/verification/status` (poll 5s + focus), `POST .../resend` | Pantalla "revisa tu correo" del registro por email. Cuando el poll ve verified → avanza sola a `/enrollment/user` (continuidad). Sin JWT → `/login`. Reenvío limitado 3/10min server-side |
 | `confirm-password.tsx` | `/confirm-password` | `GoogleOnlyAuthGate` | — | Único uso restante del gate HU #231 (re-auth sensible, fuera del alcance del acceso dual) |
 | `company-selector.tsx` | `/auth/company-selector` | sin layout | `POST /api/v1/auth/select-company` | Multi-empresa: lista companies del JWT, llama `setToken()` con nuevo JWT; botón "Cerrar sesión" (`useLogout`) junto a "Registrar otra empresa" |
-| `branch-selector.tsx` | `/auth/branch-selector` | sin layout | `POST /api/v1/auth/switch-branch` | Multi-sede (#117): tarjetas de sedes accesibles. Persiste última en `localStorage['flexyflow.last_branch_id:<nit>']` y auto-selecciona si sigue accesible. Redirige a `/dashboard` |
+| `branch-selector.tsx` | `/auth/branch-selector` | sin layout | `POST /api/v1/auth/switch-branch` | Multi-sede (#117): tarjetas de sedes accesibles. Persiste última en `localStorage['bistro.last_branch_id:<nit>']` y auto-selecciona si sigue accesible. Redirige a `/dashboard` |
 
 ### Manual de usuario (`pages/manual/` + `data/manual/`, fv1.46.0)
 
-Contenido en **markdown**: `src/data/manual/<slug>.md` (frontmatter: `title`, `description`, `metaTitle`, `metaDescription`, `section`, `readingTime`, `lastUpdated`) servido por la página genérica `pages/manual/page.tsx` (ruta `/manual/:slug`, `import.meta.glob ?raw`, slug inexistente → redirect al índice). Renderiza con `components/ui/markdown.tsx` (remark-gfm + rehype-raw + rehype-sanitize con schema extendido: `div.callout-*`, `kbd`, `figure`/`img`; links internos → `<Link>` SPA, `![alt](src "caption")` → figure con caption). Cada página abre con una ilustración SVG del panel (`public/images/manual/<slug>.svg`, abstractas para no desactualizarse con la UI). Quedan como JSX: `index.tsx` (grids), `faq.tsx` (acordeón `details`) y `legal-contrato.tsx` (ya era md). `manual-layout.tsx`: diseño editorial estilo homerun — H1 display `font-brand`, rail derecho xl con meta + TOC autogenerado desde los `h2`, TOC mobile en `<details>`, CTA "Entrar al panel" también en el sidebar móvil, prev/next (`PagerLink`).
+Contenido en **markdown**: `src/data/manual/<slug>.md` (frontmatter: `title`, `description`, `metaTitle`, `metaDescription`, `section`, `readingTime`, `lastUpdated`) servido por la página genérica `pages/manual/page.tsx` (ruta `/manual/:slug`, `import.meta.glob ?raw`, slug inexistente → redirect al índice). Renderiza con `components/ui/markdown.tsx` (remark-gfm + rehype-raw + rehype-sanitize con schema extendido: `div.callout-*`, `kbd`, `figure`/`img`; links internos → `<Link>` SPA, `![alt](src "caption")` → figure con caption). Cada página abre con una ilustración SVG del panel (`public/images/manual/<slug>.svg`, abstractas para no desactualizarse con la UI). Quedan como JSX: `index.tsx` (grids) y `faq.tsx` (acordeón `details`). `manual-layout.tsx`: diseño editorial estilo homerun — H1 display `font-brand`, rail derecho xl con meta + TOC autogenerado desde los `h2`, TOC mobile en `<details>`, CTA "Entrar al panel" también en el sidebar móvil, prev/next (`PagerLink`).
 
 ### Enrollment (`pages/enrollment/`, 2 páginas)
 
 | Archivo | URL | APIs | Notas |
 |---------|-----|------|-------|
-| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a `flexyflow.co` en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
-| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (link a `/legal/contract` en pestaña nueva, URL desde `bootstrap.legalUrls.contract`) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
+| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a `example.com` en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
+| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (checkbox con link externo en pestaña nueva, URL desde `bootstrap.legalUrls.contract` — mismo patrón placeholder que TOS/privacidad) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
 
 ### Dashboard, Métricas, Reportes
 
@@ -457,7 +457,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 - `PastDueBanner` (#193) — banner blando global en `app-layout.tsx`. `Alert variant="warning"` con countdown desde el día 1 hasta `expected_block_at` (TZ `America/Bogota`). CTA `Ir a Facturación`. Sólo se renderiza si `activeCompany.status === 'past_due'`. Tokens DS (`var(--color-status-warning)`), sin hex.
 - `SuspendedBanner` (#193) — banner persistente global en `app-layout.tsx`. `Alert variant="critical"` con días desde `payment_blocked_at` + monto adeudado (fetch a `/api/v1/billing/subscription`, skeleton inline) + CTA prominente. Sólo si `activeCompany.status === 'suspended'`. Tokens DS, sin hex.
 - `components/branches/missing-branch-banner` (#193) — banner global en `app-layout.tsx` cuando `!activeBranch`. Tres sub-estados según conteo de sedes y permisos: empresa sin sedes con CTA `Crear primera sede` (si puede manage), empresa sin sedes sin permiso (mensaje a admin), o hay sedes pero JWT sin sede activa (CTA al `branch-selector`). Antes cada banner operativo (`PendingApprovalsBanner`, `PendingCancellationsBanner`) replicaba un fallback "Sede activa fuera de fecha"; ahora se centraliza acá para que el mensaje sea único y accionable.
-- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago flexyflow y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
+- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago de bistro y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
 
 #### `components/company/`
 
@@ -796,7 +796,7 @@ import { route, routeBackend } from '@/lib/route-compat';
 
 route('orders.board');         // → /orders/board   (path relativo del SPA)
 route('menu.show', { id: 42 }); // → /menu/42
-routeBackend('auth.google');   // → https://panel-api.flexyflow.co/auth/google
+routeBackend('auth.google');   // → https://panel-api.example.com/auth/google
 ```
 
 ### Cuándo usar `route()` vs `routeBackend()`
@@ -806,7 +806,7 @@ routeBackend('auth.google');   // → https://panel-api.flexyflow.co/auth/google
 | `route(name, params)` | Path relativo (`/dashboard`) | `<a href>` y navegación a rutas del SPA — las sirve el Worker de Cloudflare |
 | `routeBackend(name, params)` | URL absoluta al backend (prefija `VITE_API_URL`) | `<a href>` o `window.location.href` top-level que debe ir **cross-origin al backend Laravel**: hoy solo el flujo OAuth de Google (`auth.google`) |
 
-El SPA (`bistro.flexyflow.co`) y la API (`panel-api.flexyflow.co`)
+El SPA (`bistro.example.com`) y la API (`panel-api.example.com`)
 viven en hosts distintos. Un `<a href>` con path relativo a `/auth/google`
 caería en el Worker SPA, que no maneja esa ruta → **404**. `routeBackend()`
 antepone `VITE_API_URL` para que la navegación llegue al backend real.
@@ -863,7 +863,7 @@ Endpoints consumidos: `GET/POST/PUT/DELETE /api/v1/company/printers` y `POST /ap
 
 | Componente | Texto | Por qué |
 |------------|-------|---------|
-| `pages/welcome.tsx` | Wordmark `restaurantes flexyflow` + H1 `Accede a tu cuenta` | Punto de entrada de marca antes del login |
+| `pages/welcome.tsx` | Landing pública con wordmark `bistro` | Punto de entrada de marca antes del login |
 | `layouts/auth/auth-{simple,split}-layout.tsx` | H1 del título de pantalla | Auth flujos secundarios (registro, password reset) |
 | `pages/**/*.tsx` (27 páginas) | H1 principal de cada página (`Dashboard`, `Caja`, `Pedidos`, `Menú`, `Cupones`, etc.) | Identidad consistente en titular de cada vista |
 | `components/app-logo.tsx` | Wordmark del header móvil | Brand moment en navegación |
@@ -1335,7 +1335,7 @@ Pantalla de configuración/consulta DIAN (permiso `dian.documents.read` / `dian.
 | **Resoluciones** | | Cards por resolución (rango, consumo, vigencia, badges Activa/Por vencer/Agotada) + alta (gateada por `DIAN_EDITABLE`). Botón "Consultar facturas" salta al tab Facturas con esa resolución preseleccionada. |
 | **Contacto por defecto** | | Solo lectura: adquirente genérico CONSUMIDOR FINAL (NIT 222222222222). |
 
-- El tab **Proveedor se retiró** (2026-07): el proveedor tecnológico es único para toda la plataforma y lo opera flexyflow; la config sigue en backend (`DianProviderConfig`).
+- El tab **Proveedor se retiró** (2026-07): el proveedor tecnológico es único para toda la plataforma y lo opera bistro; la config sigue en backend (`DianProviderConfig`).
 - `DIAN_EDITABLE = false`: pantalla informativa mientras el módulo no se libera; el banner comunica que DIAN hace parte del **Plan Plus** ($300.000/mes + $10 por factura generada).
 - El catálogo de resoluciones se carga una vez en la página y baja por props a ambos tabs; tabs controlados (`value`/`onValueChange`) para el salto Resoluciones → Facturas.
 - Contenedor estándar `mx-auto max-w-7xl p-4 sm:p-6` (igual a `company/settings`).

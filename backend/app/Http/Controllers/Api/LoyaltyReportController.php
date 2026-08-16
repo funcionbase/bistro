@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Reportes del programa de fidelización (#122).
+ * Reportes del programa de fidelización.
  *
  * Todas las agregaciones se hacen en SQL (CLAUDE.md). El período se interpreta
  * sobre America/Bogota; los filtros del cliente llegan como ISO date strings.

@@ -24,43 +24,43 @@ Schedule::command('chats:purge-old')->dailyAt('03:00')->onOneServer();
 Schedule::job(new AggregateMenuScansJob)->dailyAt('03:15')->onOneServer();
 
 // Poda eventos crudos de menu_scan_events > 90 días con DELETE por rango
-// (post-#193: se retiró el particionamiento por mes para evitar la acumulación
+// (se retiró el particionamiento por mes para evitar la acumulación
 // de tablas hijas con el tiempo; el rollup diario conserva los agregados).
 Schedule::job(new DropOldMenuScanPartitionsJob)->dailyAt('03:30')->onOneServer();
 
-// Snapshot diario del food cost por ítem de menú (issue #113). Si el scheduler
+// Snapshot diario del food cost por ítem de menú. Si el scheduler
 // no está corriendo, FoodCostMetricsService::ensureTodaySnapshot() ejecuta el
 // mismo cálculo en demand al primer acceso al endpoint del día.
 Schedule::command('foodcost:snapshot-daily')->dailyAt('04:00')->onOneServer();
 
-// Snapshot diario del stock por bodega (issue #120). Idempotente vía upsert.
+// Snapshot diario del stock por bodega. Idempotente vía upsert.
 // Si no corre, WarehouseStockHistoryService::valuationOn() reconstruye desde
 // movements al primer query del día. El cron se programa entre el rollup de
 // menu_scans y el food cost para no solapar con tareas pesadas.
 Schedule::command('inventory:snapshot-daily')->dailyAt('03:45')->onOneServer();
 
-// Fidelización (#122): expira balances inactivos (>N meses sin earn) y cupones
+// Fidelización: expira balances inactivos (>N meses sin earn) y cupones
 // de canje vencidos. Diario en horario bajo. Si el scheduler no corre, los
 // canjes vencidos siguen apareciendo como 'issued' pero el cupón ya está
 // expirado por valid_until — la UI igualmente los rechaza.
 Schedule::command('loyalty:expire-stale')->dailyAt('04:15')->onOneServer();
 
-// Alertas accionables (#124): evalúa las 4 reglas (margin_below, cost_increase,
+// Alertas accionables: evalúa las 4 reglas (margin_below, cost_increase,
 // item_low_volume, low_stock) por empresa y persiste eventos con dedup diario.
 // Se programa tras los snapshots de food cost/inventory para usar datos frescos.
 Schedule::command('alerts:evaluate')->dailyAt('05:00')->onOneServer();
 
-// Canary multi-EC2 (#43): loguea host+timestamp cada minuto. Con onOneServer()
+// Canary multi-EC2: loguea host+timestamp cada minuto. Con onOneServer()
 // + cache_locks compartido en Supabase, CloudWatch Logs debe mostrar 1 entrada
 // por minuto. Si aparecen 2 con hosts distintos → bug de coordinacion.
 Schedule::command('healthcheck:heartbeat')->everyMinute()->onOneServer();
 
-// Past-due #175: marca facturas vencidas y recalcula el status de la empresa
+// Past-due: marca facturas vencidas y recalcula el status de la empresa
 // (active → past_due → suspended → active). Idempotente — correr varias veces
 // el mismo día es seguro. onOneServer() previene doble ejecución en el ASG.
 Schedule::command('billing:mark-overdue-invoices')->dailyAt('04:30')->onOneServer();
 
-// Generación mensual de invoices (#175 + #246 post-pago).
+// Generación mensual de invoices (post-pago).
 // Corre el día 1 de cada mes a las 03:00 Bogota y factura el mes ANTERIOR
 // (post-pago: factura de junio cubre 1-31 mayo).
 //
@@ -92,7 +92,7 @@ Schedule::command('billing:generate-monthly-invoices')
 //     ->onOneServer()
 //     ->withoutOverlapping(15);
 
-// #246 — Expira `company_promo_codes.status='active'` cuya ends_at < hoy.
+// Expira `company_promo_codes.status='active'` cuya ends_at < hoy.
 //
 // N-instance safe:
 //   - PromoCodeService::expireOverdue procesa fila-a-fila con DB::transaction
@@ -106,7 +106,7 @@ Schedule::command('billing:expire-discounts')
     ->onOneServer()
     ->withoutOverlapping(15);
 
-// Reactivación post-pago #193: recalcula status de empresas en past_due/suspended
+// Reactivación post-pago: recalcula status de empresas en past_due/suspended
 // cada 4 horas para que un comprobante aprobado a media tarde se refleje sin
 // esperar al cron diario. Cubre tres transiciones: past_due → active (deuda
 // liquidada), past_due → suspended (gracia expirada), suspended → active
@@ -119,7 +119,7 @@ Schedule::command('companies:recalculate-statuses')
     ->onOneServer()
     ->withoutOverlapping(30);
 
-// Mesa con QR #191: marca como `expired` las sesiones que pasaron de su
+// Mesa con QR: marca como `expired` las sesiones que pasaron de su
 // expires_at sin pago ni cierre manual. Cada 5 min con onOneServer +
 // withoutOverlapping (requiere cache store compartido — CACHE_STORE=database
 // sobre postgres, el proyecto no usa Redis/DynamoDB). El batch=200 limita
@@ -139,13 +139,13 @@ Schedule::command('orders:mark-abandoned')
     ->onOneServer()
     ->withoutOverlapping(10);
 
-// Past-due #175: export diario CSV con foto de empresas en past_due/suspended
+// Past-due: export diario CSV con foto de empresas en past_due/suspended
 // a S3 interno (uso operativo/contable). Siempre escribe archivo aunque haya
 // 0 filas — sirve de heartbeat para ops. Corre 1h después del cron de
 // past_due para tomar el estado ya recalculado.
 Schedule::command('billing:export-delinquent')->dailyAt('05:30')->onOneServer();
 
-// Aislamiento por sede #192: canario diario que reporta filas con branch_id
+// Aislamiento por sede: canario diario que reporta filas con branch_id
 // NULL en cualquier tabla operativa. La migración fundacional fuerza
 // NOT NULL, por lo que el reporte esperado es 0. Si el comando falla
 // (exit code 1), CloudWatch Logs lo muestra y la operación lo revisa
@@ -153,7 +153,7 @@ Schedule::command('billing:export-delinquent')->dailyAt('05:30')->onOneServer();
 // READ-ONLY — la versión --fix-default jamás se programa automática.
 Schedule::command('branches:audit-orphans')->dailyAt('04:45')->onOneServer();
 
-// Push notifications #149: recordatorios de items pending_approval con
+// Push notifications: recordatorios de items pending_approval con
 // `submitted_at` > 5 min. Cada minuto con onOneServer (lock cross-instance
 // EC2) + withoutOverlapping(5) (timeout en el mismo nodo). Triple defensa
 // vs duplicados: el comando además toma un Cache::lock per-item con TTL
@@ -166,7 +166,7 @@ Schedule::command('notifications:remind-pending-approvals')
     ->onOneServer()
     ->withoutOverlapping(5);
 
-// Facturación electrónica DIAN #235. Todos los schedules con onOneServer +
+// Facturación electrónica DIAN. Todos los schedules con onOneServer +
 // withoutOverlapping (regla §12 CLAUDE.md + add-on §5 N-instance). Requieren
 // CACHE_STORE=database para el lock cross-EC2.
 //

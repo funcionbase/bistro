@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
- * Registro de un SMS al cliente disparado por un cambio de estado de orden
- * (#275). Ancla de deduplicación N-instance-safe: UNIQUE(order_id, to_status).
+ * Registro de un SMS al cliente disparado por un cambio de estado de orden.
+ * Ancla de deduplicación N-instance-safe: UNIQUE(order_id, to_status).
  *
  * Ciclo del campo `status`: queued (registrado dentro de la transacción del
  * cambio de estado) → sent | failed (resuelto por SendOrderStatusSmsJob).

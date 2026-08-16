@@ -16,7 +16,7 @@ interface Options {
 }
 
 /**
- * Polling continuo sin botón de toggle, pensado para vistas kiosk (#115 KDS
+ * Polling continuo sin botón de toggle, pensado para vistas kiosk (KDS
  * standalone). A diferencia de `useLivePolling` (que requiere activación
  * manual y se apaga a los 5 min), `useAutoPolling` mantiene el ritmo todo el
  * tiempo que el componente está montado y la pestaña visible.

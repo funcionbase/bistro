@@ -1,12 +1,13 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #246 Fase 1 — Vincular promo a invoices + deprecar `subscription_discounts`.
+ * Vincular promo a invoices + deprecar `subscription_discounts`.
  *
  * Cambios:
  *  - `invoices.company_promo_code_id uuid nullable FK` — trazabilidad del
@@ -72,13 +73,13 @@ return new class extends Migration
             $startsAt = $row->starts_at;
             $endsAt = $row->ends_at;
             if ($endsAt === null && $row->months_duration !== null) {
-                $endsAt = \Carbon\Carbon::parse($startsAt)
+                $endsAt = Carbon::parse($startsAt)
                     ->addMonths((int) $row->months_duration)
                     ->toDateTimeString();
             }
             if ($endsAt === null) {
                 // Fallback raro: dar 1 mes desde starts_at.
-                $endsAt = \Carbon\Carbon::parse($startsAt)->addMonth()->toDateTimeString();
+                $endsAt = Carbon::parse($startsAt)->addMonth()->toDateTimeString();
             }
 
             $mappedStatus = match ($row->status) {

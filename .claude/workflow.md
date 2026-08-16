@@ -86,7 +86,7 @@ Los comentarios del issue son la **fuente de verdad histórica**. Hay que dejar 
 **Cómo se publica**:
 
 ```bash
-gh issue comment <NNN> --repo cristianmarint/bistro-flexyflow-co \
+gh issue comment <NNN> --repo funcionbase-com/bistro \
   --body-file .tmp_decisions_NNN.md
 rm .tmp_decisions_NNN.md
 ```

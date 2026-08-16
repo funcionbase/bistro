@@ -59,7 +59,7 @@ return [
     | Frontend URL
     |--------------------------------------------------------------------------
     |
-    | URL del frontend SPA (proyecto independiente, #220). El backend la usa
+    | URL del frontend SPA (proyecto independiente). El backend la usa
     | para redirigir tras el callback OAuth y para cualquier ruta de página
     | que llegue al backend por error.
     |
@@ -145,7 +145,7 @@ return [
 
     'csp_report_uri' => env('CSP_REPORT_URI', '/api/v1/csp-report'),
 
-    // HSTS (#174 P3-3). Requiere TLS confiable en todo el dominio + subdominios:
+    // HSTS. Requiere TLS confiable en todo el dominio + subdominios:
     // activar solo en QA/PDN. En local se queda en false porque http://localhost.
     'hsts_enabled' => (bool) env('HSTS_ENABLED', false),
 

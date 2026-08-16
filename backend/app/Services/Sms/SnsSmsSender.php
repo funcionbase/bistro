@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * Wrapper de `SnsClient::publish` para enviar SMS al cliente (#275).
+ * Wrapper de `SnsClient::publish` para enviar SMS al cliente.
  *
  * Origen "internacional best-effort" (Decisión 2 del issue): Colombia no
  * soporta Sender ID alfanumérico ni long codes, así que NO se setea SenderID —

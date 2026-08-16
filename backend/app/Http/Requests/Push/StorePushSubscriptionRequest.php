@@ -10,7 +10,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * POST /api/v1/push/subscriptions — registra suscripción Web Push del
- * dispositivo (CA2 #149).
+ * dispositivo.
  *
  * El payload es el shape devuelto por `PushSubscription.toJSON()` del
  * navegador (endpoint + keys.p256dh + keys.auth). El backend persiste

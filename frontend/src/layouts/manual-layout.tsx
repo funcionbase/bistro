@@ -101,7 +101,7 @@ export default function ManualLayout({
             canonical.rel = 'canonical';
             document.head.appendChild(canonical);
         }
-        canonical.href = `https://bistro.flexyflow.co${location.pathname}`;
+        canonical.href = `https://bistro.example.com${location.pathname}`;
 
         // JSON-LD (breadcrumbs + artículo) para posicionamiento del manual —
         // Google lo lee del DOM renderizado.
@@ -113,9 +113,9 @@ export default function ManualLayout({
                 '@context': 'https://schema.org',
                 '@type': 'BreadcrumbList',
                 itemListElement: [
-                    { '@type': 'ListItem', position: 1, name: 'bistro', item: 'https://bistro.flexyflow.co/' },
-                    { '@type': 'ListItem', position: 2, name: 'Manual de usuario', item: `https://bistro.flexyflow.co${MANUAL_BASE}` },
-                    { '@type': 'ListItem', position: 3, name: pageTitle, item: `https://bistro.flexyflow.co${location.pathname}` },
+                    { '@type': 'ListItem', position: 1, name: 'bistro', item: 'https://bistro.example.com/' },
+                    { '@type': 'ListItem', position: 2, name: 'Manual de usuario', item: `https://bistro.example.com${MANUAL_BASE}` },
+                    { '@type': 'ListItem', position: 3, name: pageTitle, item: `https://bistro.example.com${location.pathname}` },
                 ],
             },
             {
@@ -124,7 +124,7 @@ export default function ManualLayout({
                 headline: pageTitle,
                 description: metaDescription,
                 inLanguage: 'es-CO',
-                author: { '@type': 'Organization', name: 'flexyflow', url: 'https://flexyflow.co' },
+                author: { '@type': 'Organization', name: 'bistro', url: 'https://example.com' },
                 about: 'Software de gestión para restaurantes: menú digital QR, POS, inventario y facturación DIAN',
             },
         ]);
@@ -178,7 +178,7 @@ export default function ManualLayout({
             {/* Header sticky */}
             <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
                 <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
-                    <a href="https://bistro.flexyflow.co" className="flex shrink-0 items-center gap-2" aria-label="bistro — inicio">
+                    <a href="https://bistro.example.com" className="flex shrink-0 items-center gap-2" aria-label="bistro — inicio">
                         <BrandLogo className="h-7" />
                     </a>
                     <span className="hidden text-muted-foreground sm:block">/</span>
@@ -196,7 +196,7 @@ export default function ManualLayout({
                         <span>Menú</span>
                     </button>
                     <a
-                        href="https://bistro.flexyflow.co"
+                        href="https://bistro.example.com"
                         className="hidden rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 lg:block"
                     >
                         Entrar al panel
@@ -227,7 +227,7 @@ export default function ManualLayout({
                         </div>
                         {/* CTA accesible en mobile (en desktop vive en el header) */}
                         <a
-                            href="https://bistro.flexyflow.co"
+                            href="https://bistro.example.com"
                             className="mb-5 flex min-h-[44px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                         >
                             Entrar al panel
@@ -248,8 +248,8 @@ export default function ManualLayout({
                 <main className="min-w-0 flex-1">
                     {/* Breadcrumbs */}
                     <nav className="mb-6 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
-                        <a href="https://bistro.flexyflow.co" className="hover:text-foreground">
-                            bistro.flexyflow.co
+                        <a href="https://bistro.example.com" className="hover:text-foreground">
+                            bistro.example.com
                         </a>
                         <span>/</span>
                         <Link to={MANUAL_BASE} className="hover:text-foreground">
@@ -319,12 +319,12 @@ export default function ManualLayout({
                     {/* Footer mínimo */}
                     <footer className="mt-16 border-t border-border pt-6 text-center text-xs text-muted-foreground">
                         <p>
-                            <a href="https://bistro.flexyflow.co" className="hover:text-foreground">
-                                bistro.flexyflow.co
+                            <a href="https://bistro.example.com" className="hover:text-foreground">
+                                bistro.example.com
                             </a>{' '}
                             &nbsp;·&nbsp;{' '}
-                            <a href="https://flexyflow.co" className="hover:text-foreground">
-                                flexyflow.co
+                            <a href="https://example.com" className="hover:text-foreground">
+                                example.com
                             </a>
                         </p>
                     </footer>

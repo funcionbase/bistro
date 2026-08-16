@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Catálogo de promo codes administrables — #246.
+ * Catálogo de promo codes administrables.
  *
  * Slug `code` único globalmente. Vigencia (`starts_at`..`ends_at`) define
  * cuándo el código puede aplicarse a nuevas empresas. `max_companies` limita
@@ -76,7 +77,7 @@ class PromoCode extends Model
      *
      * @param  Builder<PromoCode>  $query
      */
-    public function scopeApplicable(Builder $query, ?\Carbon\CarbonInterface $at = null): void
+    public function scopeApplicable(Builder $query, ?CarbonInterface $at = null): void
     {
         $now = $at ?? now();
 

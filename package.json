@@ -1,7 +1,7 @@
 {
     "name": "bistro",
     "private": true,
-    "description": "App bistro (flexyflow). backend/ = API Laravel, frontend/ = SPA React. Scripts: `npm run backend`, `npm run queue`, `npm run frontend`, `npm run dev` (los tres).",
+    "description": "App bistro (bistro). backend/ = API Laravel, frontend/ = SPA React. Scripts: `npm run backend`, `npm run queue`, `npm run frontend`, `npm run dev` (los tres).",
     "scripts": {
         "backend": "cd backend && php artisan serve --port=80",
         "queue": "cd backend && php artisan queue:listen --tries=1",

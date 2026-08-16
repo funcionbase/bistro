@@ -11,14 +11,14 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Endpoints públicos de fidelización para el menú web (#122).
+ * Endpoints públicos de fidelización para el menú web.
  *
  * Sin autenticación: rate-limit estricto por IP y phone para evitar enumeración.
  * NO devuelve PII más allá del balance/tier del phone solicitado. Si la empresa
  * tiene el programa deshabilitado, responde 404 (no se debe revelar que el
  * teléfono existe en la BD).
  *
- * #193: si la empresa está bloqueada por mora, también respondemos 404 sin
+ * Si la empresa está bloqueada por mora, también respondemos 404 sin
  * revelar el motivo comercial al comensal. Misma política que el menú público.
  */
 class PublicLoyaltyController extends Controller

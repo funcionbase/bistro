@@ -1,8 +1,8 @@
 ---
 title: "Horarios"
 description: "Define cuándo está abierto tu negocio: horario semanal, excepciones por fecha (feriados o eventos) y el estado en vivo de apertura/cierre."
-metaTitle: "Horarios — Manual bistro.flexyflow.co"
-metaDescription: "Cómo configurar el horario de tu negocio en bistro.flexyflow.co: horario semanal, excepciones por fecha, estado en vivo y efecto en el bot de WhatsApp."
+metaTitle: "Horarios — Manual bistro.example.com"
+metaDescription: "Cómo configurar el horario de tu negocio en bistro.example.com: horario semanal, excepciones por fecha, estado en vivo y efecto en el bot de WhatsApp."
 section: "el día a día"
 readingTime: "5 min"
 lastUpdated: "8 de julio de 2026"
@@ -41,7 +41,7 @@ El sistema calcula en tiempo real si el negocio está abierto o cerrado con base
 
 <div class="callout callout-info">
 <p>
-<strong>Zona horaria:</strong> bistro flexy usa la hora oficial de Colombia (hora de Bogotá)
+<strong>Zona horaria:</strong> bistro usa la hora oficial de Colombia (hora de Bogotá)
 para todos los cálculos de horario.
 </p>
 </div>

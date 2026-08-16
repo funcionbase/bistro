@@ -42,7 +42,7 @@ const statusClass: Record<CancellationRequestCardProps['status'], string> = {
 };
 
 /**
- * Card de una `cancellation_request` (#191 Fase 4).
+ * Card de una `cancellation_request`.
  *
  * Aparece en el detalle de la sesión del mesero cuando un comensal pidió
  * cancelar un item que ya está `approved` (post-aprobación, pre-cocina).

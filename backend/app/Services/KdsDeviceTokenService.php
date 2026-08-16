@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Generación y revocación de device-tokens KDS (#115).
+ * Generación y revocación de device-tokens KDS.
  *
  * El token en claro tiene 48 chars (URL-safe base62 derivado de
  * `Str::random(48)`). Se hashea con SHA-256 antes de persistirse. El claro

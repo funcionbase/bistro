@@ -91,9 +91,9 @@ Body:
 
 ```json
 {
-  "name": "Cristian Marín",
-  "email": "cristianmarint@gmail.com",
-  "cedula": "1010100001"
+  "name": "Juan Pérez",
+  "email": "juan.perez@example.com",
+  "cedula": "000000000"
 }
 ```
 
@@ -113,9 +113,9 @@ Response 200:
 {
   "data": {
     "id": 22,
-    "name": "Cristian Marín",
-    "email": "cristianmarint@gmail.com",
-    "cedula": "1010100001",
+    "name": "Juan Pérez",
+    "email": "juan.perez@example.com",
+    "cedula": "000000000",
     "email_verified_at": "2026-04-15T19:32:00Z"
   }
 }
@@ -147,11 +147,11 @@ Response 200: `{"message": "Cuenta eliminada."}`. El frontend invalida la sesió
 {
   "data": {
     "id": 22,
-    "name": "Cristian Marín",
-    "first_name": "Cristian",
-    "last_name": "Marín",
-    "email": "cristianmarint@gmail.com",
-    "cedula": "1010100001",
+    "name": "Juan Pérez",
+    "first_name": "Juan",
+    "last_name": "Pérez",
+    "email": "juan.perez@example.com",
+    "cedula": "000000000",
     "email_verified_at": "2026-04-15T19:32:00Z",
     "active_company": {
       "nit": "1",
@@ -192,11 +192,11 @@ Throttle: 20 req/min en el prefijo `push/`. Ver `PWA-Push-Notifications.md` para
 ### Eliminar cuenta (OAuth)
 
 1. Usuario abre tarjeta "Eliminar cuenta" en `/settings/profile`. Texto rojo y CTA destructivo.
-2. UI muestra dialog: "Escribí tu correo para confirmar". Input con placeholder `cristianmarint@gmail.com`.
+2. UI muestra dialog: "Escribí tu correo para confirmar". Input con placeholder `juan.perez@example.com`.
 3. Submit: `POST /api/v1/account/delete` con `{confirm_email: '<email>'}`.
 4. Backend valida `confirm_email` igual al email actual y ejecuta `users::delete()` (hard delete).
 5. Cascade: borra `company_users`, `user_acceptances`, `user_active_tokens`, `push_subscriptions`.
-6. UI: invalida JWT (cookie `flexyflow_jwt` con `expires` pasado) y redirige a `/`.
+6. UI: invalida JWT (cookie `bistro_jwt` con `expires` pasado) y redirige a `/`.
 
 ### Cambiar tema (apariencia)
 

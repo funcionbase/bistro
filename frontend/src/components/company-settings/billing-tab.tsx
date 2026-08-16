@@ -1,6 +1,6 @@
 import { ActivePromoCodeCard } from '@/components/billing/active-promo-code-card';
 import DianUsageCard from '@/components/billing/dian-usage-card';
-import { FlexyFlowPaymentInfo } from '@/components/billing/flexyflow-payment-info';
+import { funcionbasePaymentInfo } from '@/components/billing/bistro-payment-info';
 import InvoiceList from '@/components/billing/invoice-list';
 import OverdueBanner from '@/components/billing/overdue-banner';
 import { PromoCodeEnrollForm } from '@/components/billing/promo-code-enroll-form';
@@ -49,15 +49,15 @@ export function BillingTab({
 }: BillingTabProps) {
     const [contractDialogOpen, setContractDialogOpen] = useState(false);
 
-    // #246 — promo code self-service. owner/admin pueden aplicar/cancelar;
+    // Promo code self-service. owner/admin pueden aplicar/cancelar;
     // los demás roles ven el promo activo si existe pero sin form de inscripción.
     const bootstrap = useBootstrap().data;
     const roleName = bootstrap?.role?.name ?? '';
     const canManagePromo = bootstrap?.role?.is_system === true && (roleName === 'Propietario' || roleName === 'Administrador');
     const promo = useCompanyPromoCode(true);
 
-    // #246 — Datos para transferir a flexyflow (visible siempre, no solo en mora).
-    const flexyflowPayment = bootstrap?.activeCompany?.flexyflow_payment ?? null;
+    // Datos para transferir a bistro (visible siempre, no solo en mora).
+    const funcionbasePayment = bootstrap?.activeCompany?.funcionbase_payment ?? null;
 
     return (
         <>
@@ -81,9 +81,9 @@ export function BillingTab({
                     )}
                     <SubscriptionCard subscription={billingData?.subscription ?? null} />
                     {billingData?.dian_usage && <DianUsageCard usage={billingData.dian_usage} />}
-                    {/* #246 — Datos para transferir a flexyflow (visible siempre). */}
-                    {flexyflowPayment !== null && <FlexyFlowPaymentInfo payment={flexyflowPayment} />}
-                    {/* #246 — promo code activo o form para inscribir uno nuevo. */}
+                    {/* Datos para transferir a bistro (visible siempre). */}
+                    {funcionbasePayment !== null && <funcionbasePaymentInfo payment={funcionbasePayment} />}
+                    {/* Promo code activo o form para inscribir uno nuevo. */}
                     {!promo.loading && promo.active !== null && (
                         <ActivePromoCodeCard active={promo.active} canCancel={canManagePromo} onCancel={promo.cancel} />
                     )}
@@ -94,7 +94,7 @@ export function BillingTab({
                 </>
             )}
 
-            {/* Contrato de servicio aceptado (#170). Snapshot inmutable
+            {/* Contrato de servicio aceptado. Snapshot inmutable
                 del contrato firmado por el owner al crear la empresa. Vive
                 en el tab Facturación porque agrupa todo lo relacionado con
                 la relación contractual (suscripción, facturas, contrato). */}

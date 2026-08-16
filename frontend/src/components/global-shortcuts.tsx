@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 const PALETTE_HOLD_MS = 350;
 
 /**
- * Motor global de atajos de teclado del shell autenticado (#50, rediseño
+ * Motor global de atajos de teclado del shell autenticado (rediseño
  * anti-conflictos). Montado una sola vez en `spa-app-layout.tsx`.
  *
  * Implementa el patrón "go to" con tecla líder en dos modos complementarios:

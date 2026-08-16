@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
- * Issue #237 — Generalización del modelo de negocio.
+ * Generalización del modelo de negocio.
  *
  * Crea el bloque de catálogos de vertical:
  *   - business_types: catálogo cerrado de verticales (restaurant, bakery, cafe,

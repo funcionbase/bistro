@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Referencia al documento de propiedad subido durante el enrolamiento de la
- * empresa (issue #154). El archivo vive en S3 (`disk` + `s3_key`); esta fila
+ * empresa. El archivo vive en S3 (`disk` + `s3_key`); esta fila
  * sólo guarda metadatos para localizarlo y auditarlo.
  *
  * Inmutable después de crearse: la app no expone endpoints de mutación. El

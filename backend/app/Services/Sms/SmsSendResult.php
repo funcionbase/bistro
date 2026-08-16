@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Sms;
 
 /**
- * Resultado inmutable de un intento de envío de SMS (#275).
+ * Resultado inmutable de un intento de envío de SMS.
  */
 final readonly class SmsSendResult
 {

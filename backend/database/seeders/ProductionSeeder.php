@@ -25,7 +25,7 @@ class ProductionSeeder extends Seeder
             BankSeeder::class,
             FeatureSeeder::class,
             PermissionTemplateSeeder::class,
-            // #237 — catálogo de verticales (restaurant, bakery, cafe, etc.).
+            // Catálogo de verticales (restaurant, bakery, cafe, etc.).
             // Idempotente; permite refrescar default_capabilities o agregar
             // verticales sin migración nueva.
             BusinessTypesSeeder::class,
@@ -35,18 +35,18 @@ class ProductionSeeder extends Seeder
             // BillingService::activateCompany al activar la empresa. La duración
             // del trial vive en esta fila, no en BILLING_TRIAL_DAYS. Idempotente.
             TrialPromoCodeSeeder::class,
-            // #246 — flexyflow como empresa-proveedora SaaS: resolución DIAN +
+            // bistro como empresa-proveedora SaaS: resolución DIAN +
             // DianProviderConfig (mock por defecto). Idempotente. La empresa se
-            // crea desde config('billing.flexyflow.*') si no existe.
-            FlexyFlowProviderSeeder::class,
+            // crea desde config('billing.bistro.*') si no existe.
+            funcionbaseProviderSeeder::class,
             MetaPlatformCredentialsSeeder::class,
-            // Backfills idempotentes para #182: aseguran que empresas existentes
+            // Backfills idempotentes de colaboradores: aseguran que empresas existentes
             // reciban los company_role_permissions nuevos y la fila de
             // workforce_settings. Para empresas nuevas, ambos puntos se cubren
             // en el flujo de enrollment.
             EmployeesFeatureBackfillSeeder::class,
             WorkforceSettingsBackfillSeeder::class,
-            // Backfill idempotente para #115: features kds.* a roles
+            // Backfill idempotente de KDS: features kds.* a roles
             // is_system existentes + estaciones KDS canónicas
             // (caliente/fría/barra/fritos) por sede activa. Empresas nuevas
             // siembran inline en CompanyEnrollmentController y BranchController.

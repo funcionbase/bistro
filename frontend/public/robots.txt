@@ -1,4 +1,4 @@
-# bistro.flexyflow.co — contenido público (landing, manual, cartas QR) abierto
+# bistro.example.com — contenido público (landing, manual, cartas QR) abierto
 # a todos los crawlers, incluidos bots de LLMs (GPTBot, ClaudeBot, PerplexityBot,
 # etc. caen bajo *). Solo se excluyen las rutas privadas del panel, que de todas
 # formas requieren autenticación.
@@ -35,4 +35,4 @@ Disallow: /deliveries
 Disallow: /my-deliveries
 Disallow: /dian
 
-Sitemap: https://bistro.flexyflow.co/sitemap.xml
+Sitemap: https://bistro.example.com/sitemap.xml

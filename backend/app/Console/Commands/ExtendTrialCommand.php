@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Extiende el trial gratuito de una empresa a N meses contados desde su
- * `created_at` (#193).
+ * `created_at`.
  *
  * Setea `companies.paid_billing_starts_at = created_at + N meses`. A partir
  * de esa fecha, `BillingService::generateMonthlyInvoices()` empieza a

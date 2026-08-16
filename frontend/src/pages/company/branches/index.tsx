@@ -128,7 +128,7 @@ export default function BranchesIndex() {
 
     const [brandingModalBranch, setBrandingModalBranch] = useState<Branch | null>(null);
 
-    // #237 — labels de business types para mostrar como badge en cada sede.
+    // Labels de business types para mostrar como badge en cada sede.
     const businessTypesQuery = useBusinessTypes();
     const businessTypeLabels = useMemo(() => {
         const map = new Map<string, string>();
@@ -204,7 +204,7 @@ export default function BranchesIndex() {
                 is_default: form.is_default,
             };
             // En create incluimos business_type_id; en edit el vertical va por
-            // endpoint dedicado (#237) que sembra prep_areas faltantes.
+            // endpoint dedicado que sembra prep_areas faltantes.
             if (!isEdit) {
                 baseBody.business_type_id = form.business_type_id;
             }

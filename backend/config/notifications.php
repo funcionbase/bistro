@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Configuración del sistema de notificaciones push (#149).
+ * Configuración del sistema de notificaciones push.
  *
  * - `web_push`: claves VAPID (P-256) + subject (mailto). El subject lo usa el
  *   endpoint del navegador para contactar al operador del servicio en caso

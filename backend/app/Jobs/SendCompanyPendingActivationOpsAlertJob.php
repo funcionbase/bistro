@@ -20,7 +20,7 @@ use Throwable;
  * Alerta interna: empresa nueva pendiente de aprobación.
  *
  * Job orquestador del envío al buzón ops (`config('mail.ops_alert_address')`,
- * por default `cristian@flexyflow.co`). Idempotencia N-instance:
+ * por default `hello@funcionbase.com`). Idempotencia N-instance:
  *
  *   1. `SELECT ... FOR UPDATE SKIP LOCKED` del driver `database` — un solo
  *      worker procesa cada fila de `jobs`.

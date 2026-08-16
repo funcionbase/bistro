@@ -1,6 +1,6 @@
 # Catálogo de notificaciones push (#149)
 
-Este `.md` documenta los **tipos** de notificación Web Push que flexyflow
+Este `.md` documenta los **tipos** de notificación Web Push que bistro
 puede enviar, su disparador, destinatario y payload canónico. Es la
 contraparte de [`AUDIT_EVENTS.md`](./AUDIT_EVENTS.md) (que documenta los
 `action` slugs auditados) y de [`PERMISSIONS_CATALOG.md`](./PERMISSIONS_CATALOG.md)

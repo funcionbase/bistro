@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 /**
  * Preview pública de un promo code consumida desde la URL `?promo=...`
  * en `/enroll` (sin auth). Devuelve los datos para mostrar el panel hero
- * dedicado al descuento. — #246.
+ * dedicado al descuento.
  */
 export interface PromoCodePreview {
     code: string;

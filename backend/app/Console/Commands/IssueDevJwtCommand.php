@@ -12,12 +12,12 @@ use Illuminate\Console\Command;
  * (Postman, scripts, integraciones de prueba). En producción aborta con error.
  *
  * Ejemplos:
- *   php artisan jwt:issue cristianmarint@gmail.com
- *   php artisan jwt:issue cristianmarint@gmail.com --company=9009009001 --branch=<uuid>
+ *   php artisan jwt:issue owner@example.com
+ *   php artisan jwt:issue owner@example.com --company=9009009001 --branch=<uuid>
  *
  * El token resultante es válido por las mismas horas que `JWT_TTL_SECONDS`
  * (default 6h). Pegarlo en la variable `jwt_token` del environment de Postman
- * (`postman/flexyflow-local.postman_environment.json`).
+ * (`postman/bistro-local.postman_environment.json`).
  */
 class IssueDevJwtCommand extends Command
 {

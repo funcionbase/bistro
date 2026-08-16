@@ -1,5 +1,5 @@
 /**
- * Mapa central de atajos de teclado de la aplicación (issue #50, rediseño anti-conflictos).
+ * Mapa central de atajos de teclado de la aplicación (rediseño anti-conflictos).
  *
  * ## Por qué secuencias con tecla líder `G`
  *
@@ -23,7 +23,7 @@
  */
 
 /**
- * Delay de hover en ms antes de mostrar cualquier tooltip de la app (issue #50).
+ * Delay de hover en ms antes de mostrar cualquier tooltip de la app.
  * Aplica tanto al `ShortcutTooltip` propio como al `delayDuration` del
  * `TooltipProvider` de Radix UI usado en sidebar, header y demás componentes.
  */

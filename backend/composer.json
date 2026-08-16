@@ -1,11 +1,11 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "flexyflow/backend-panel",
+    "name": "bistro/backend-panel",
     "version": "1.50.0",
     "type": "project",
-    "description": "Bistro \u2014 API backend (Laravel 12) del SaaS de restaurantes flexyflow: pedidos y KDS, caja y cobros, facturaci\u00f3n electr\u00f3nica DIAN, inventario, RBAC multi-empresa/multi-sede y notificaciones (SMS/WhatsApp/push). El campo `version` es SemVer manual y es la fuente de verdad del release de backend (App Deploy a pdn taggea `bistro-backend-v<version>`); ver CLAUDE.md \u00a714.",
+    "description": "Bistro \u2014 API backend (Laravel 12) del SaaS de restaurantes bistro: pedidos y KDS, caja y cobros, facturaci\u00f3n electr\u00f3nica DIAN, inventario, RBAC multi-empresa/multi-sede y notificaciones (SMS/WhatsApp/push). El campo `version` es SemVer manual y es la fuente de verdad del release de backend (App Deploy a pdn taggea `bistro-backend-v<version>`); ver CLAUDE.md \u00a714.",
     "keywords": [
-        "flexyflow",
+        "bistro",
         "bistro",
         "restaurante",
         "saas",
@@ -14,7 +14,7 @@
         "laravel",
         "api"
     ],
-    "homepage": "https://flexyflow.co",
+    "homepage": "https://funcionbase.com",
     "license": "MIT",
     "require": {
         "php": "^8.2",

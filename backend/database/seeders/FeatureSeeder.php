@@ -342,14 +342,14 @@ class FeatureSeeder extends Seeder
                 'description' => 'Permite conectar y desconectar el número de WhatsApp de una sede a la que el usuario tenga acceso. Se compone con "Conectar WhatsApp".',
                 'group' => 'WhatsApp',
             ],
-            // Sedes (multi-sede #117).
+            // Sedes (multi-sede).
             [
                 'slug' => 'branches.manage',
                 'name' => 'Gestionar sedes',
                 'description' => 'Crear, editar y archivar sedes de la empresa.',
                 'group' => 'Sedes',
             ],
-            // Aislamiento por sede (#192). Permisos sensibles que vienen
+            // Aislamiento por sede. Permisos sensibles que vienen
             // owner-only por default y son asignables a otros roles desde el
             // editor de permisos. No CRUD: la lógica del backend lee
             // jwt.permissions buscando el slug exacto.
@@ -407,14 +407,14 @@ class FeatureSeeder extends Seeder
                 'description' => 'Ver métricas y reportes de todas las sedes simultáneamente.',
                 'group' => 'Reportes',
             ],
-            // Bodegas (multi-bodega #120).
+            // Bodegas (multi-bodega).
             [
                 'slug' => 'warehouses.manage',
                 'name' => 'Gestionar bodegas',
                 'description' => 'Crear, editar y archivar bodegas de la empresa (cocina, barra, congelador, etc.).',
                 'group' => 'Inventario',
             ],
-            // Asignación de bodegas a sedes (#costeo-multibodega). Una bodega
+            // Asignación de bodegas a sedes. Una bodega
             // es company-scoped y puede servir a N sedes; este permiso controla
             // quién asigna/desasigna y marca la bodega default de cada sede.
             // Config cross-sede → owner + admin por default.
@@ -424,7 +424,7 @@ class FeatureSeeder extends Seeder
                 'description' => 'Asignar y desasignar bodegas a sedes y marcar la bodega default de cada sede.',
                 'group' => 'Inventario',
             ],
-            // CRM básico de clientes (#123). Vista cross-sede (un teléfono =
+            // CRM básico de clientes. Vista cross-sede (un teléfono =
             // un cliente para toda la empresa).
             //
             // Históricamente los clientes se "creaban" implícitamente al
@@ -456,7 +456,7 @@ class FeatureSeeder extends Seeder
                 'description' => 'Permite eliminar notas privadas y etiquetas de clientes.',
                 'group' => 'Clientes',
             ],
-            // Fidelización con puntos (#122). Saldo cross-sede por (company_nit,
+            // Fidelización con puntos. Saldo cross-sede por (company_nit,
             // client_phone). loyalty.read viene por defecto en
             // DEFAULT_EMPLOYEE_PERMISSIONS. loyalty.update controla ajustes
             // manuales de balance y canjes desde el staff.
@@ -472,7 +472,7 @@ class FeatureSeeder extends Seeder
                 'description' => 'Permite hacer ajustes manuales al saldo de puntos y emitir canjes a nombre del cliente.',
                 'group' => 'Fidelización',
             ],
-            // Colaboradores y planificador de turnos (#182).
+            // Colaboradores y planificador de turnos.
             [
                 'slug' => 'employees.read',
                 'name' => 'Ver colaboradores',

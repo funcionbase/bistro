@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Avisa al usuario que disparó un cambio de estado cuando el SMS al cliente
- * falló en el envío async (#275 Fase 4). El backend (OrderSmsFailureController)
+ * falló en el envío async. El backend (OrderSmsFailureController)
  * devuelve SOLO los fallos del propio usuario aún no vistos; tras mostrarlos
  * hacemos ack (`/seen`) para que no se repitan — el "una sola vez" lo garantiza
  * el servidor (idempotente entre dispositivos y N instancias).

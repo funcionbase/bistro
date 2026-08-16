@@ -80,7 +80,7 @@ trait BelongsToBranch
     /**
      * Escapa el global scope. Úsese SOLO con justificación explícita.
      *
-     * Convención (#192): cada call-site de `withoutBranchScope()` o
+     * Convención: cada call-site de `withoutBranchScope()` o
      * `withoutGlobalScope(BranchScope::class)` debe tener arriba un comentario
      * o un PHPDoc del método/clase que explique POR QUÉ se justifica el escape.
      * Casos legítimos:

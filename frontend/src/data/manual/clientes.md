@@ -1,8 +1,8 @@
 ---
 title: "Clientes"
 description: "El registro de clientes integrado: lista con filtros, segmentación automática en 6 tipos, ficha del cliente con historial de pedidos, chats, notas privadas, etiquetas y fidelización."
-metaTitle: "Clientes — Manual bistro.flexyflow.co"
-metaDescription: "El registro de clientes de bistro.flexyflow.co: segmentación automática, ficha con historial, notas privadas, etiquetas y fidelización consolidada entre sedes."
+metaTitle: "Clientes — Manual bistro.example.com"
+metaDescription: "El registro de clientes de bistro.example.com: segmentación automática, ficha con historial, notas privadas, etiquetas y fidelización consolidada entre sedes."
 section: "clientes y mercadeo"
 readingTime: "8 min"
 lastUpdated: "8 de julio de 2026"
@@ -12,7 +12,7 @@ lastUpdated: "8 de julio de 2026"
 
 ## El registro de clientes
 
-bistro flexy lleva un registro de cada cliente que te ha comprado o que te ha escrito por WhatsApp. No tienes que importar nada ni crear fichas a mano — se construyen solas con la actividad de la operación.
+bistro lleva un registro de cada cliente que te ha comprado o que te ha escrito por WhatsApp. No tienes que importar nada ni crear fichas a mano — se construyen solas con la actividad de la operación.
 
 La base de clientes es **a nivel de empresa** (no por sede). Si Laura pide en El Poblado y luego en Laureles, es la misma ficha con el historial completo de las dos sedes.
 

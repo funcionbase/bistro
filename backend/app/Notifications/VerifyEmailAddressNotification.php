@@ -40,7 +40,7 @@ class VerifyEmailAddressNotification extends Notification implements ShouldQueue
             ->markdown('emails.auth.verify-email', [
                 'verifyUrl' => $this->verifyUrl,
                 'expiresInMinutes' => $this->expiresInMinutes,
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

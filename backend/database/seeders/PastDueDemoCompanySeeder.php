@@ -41,7 +41,7 @@ use Illuminate\Support\Str;
  *    6 × `plan.pro.price` — visible en SuspendedBanner.
  *  - subscription Pro activa con starts_at ~7 meses atrás (un mes antes
  *    de la primera factura vencida, modelando suscripción legacy).
- *  - cristianmarint@gmail.com asociado como Propietario (rol del template
+ *  - owner@example.com asociado como Propietario (rol del template
  *    `owner` con todos los permisos del sistema). Se asume que el user ya
  *    existe (lo crea RestauranteFlexySeeder antes en el orden de QaSeeder).
  *
@@ -185,13 +185,13 @@ class PastDueDemoCompanySeeder extends Seeder
             ]);
         }
 
-        // Multi-sede (#192): toda empresa operativa debe tener al menos una
+        // Multi-sede: toda empresa operativa debe tener al menos una
         // sede. Aunque PastDueDemo está bloqueada y no opera, sin sede el
         // owner que se loguea ve `MissingBranchBanner` y la UI no puede
         // siquiera renderizar el dashboard híbrido del SuspendedBanner.
         // Creamos una sede default vacía (sin menú, inventario, órdenes)
         // — la empresa está suspended de todos modos.
-        // #237 — la empresa demo es de pastry/desserts → vertical `bakery`.
+        // La empresa demo es de pastry/desserts → vertical `bakery`.
         // Aunque está suspended y no opera, el vertical define las áreas
         // (horno + repostería) y módulos que mostraría la UI.
         $branch = Branch::firstOrCreate(
@@ -217,7 +217,7 @@ class PastDueDemoCompanySeeder extends Seeder
     }
 
     /**
-     * Asocia cristianmarint@gmail.com como Propietario de la empresa demo.
+     * Asocia owner@example.com como Propietario de la empresa demo.
      * Crea el rol del template `owner` (todos los permisos del sistema) e
      * inserta la membership como `active`. También garantiza el pivot
      * `branch_users` para la sede default — owners hacen bypass del pivot,
@@ -227,11 +227,11 @@ class PastDueDemoCompanySeeder extends Seeder
      */
     private function attachOwner(string $companyNit, string $branchId): void
     {
-        $user = User::query()->where('email', 'cristianmarint@gmail.com')->first();
+        $user = User::query()->where('email', 'owner@example.com')->first();
 
         if ($user === null) {
             $this->command?->warn(
-                'PastDueDemoCompanySeeder: no se encontró cristianmarint@gmail.com. '.
+                'PastDueDemoCompanySeeder: no se encontró owner@example.com. '.
                 'Saltando asociación de owner. (¿Se ejecutó RestauranteFlexySeeder antes?)'
             );
 
@@ -297,7 +297,7 @@ class PastDueDemoCompanySeeder extends Seeder
 
     /**
      * Siembra las prep_areas del vertical de la sede demo. Idempotente por
-     * (branch_id, slug). #237.
+     * (branch_id, slug).
      */
     private function ensurePrepAreas(Branch $branch): void
     {

@@ -16,7 +16,7 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Gate de bloqueo comercial por mora prolongada (issues #175 + #193).
+ * Gate de bloqueo comercial por mora prolongada.
  *
  * Funciona en dos contextos:
  *  - API: requiere el stack previo (`jwt + company.access + company.verified`)

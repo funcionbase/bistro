@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Verifica el JWT de usuario y propaga el contexto autenticado al request.
  *
- * Fuente del token (en orden): cookie HttpOnly `flexyflow_jwt`, header `Authorization: Bearer`,
+ * Fuente del token (en orden): cookie HttpOnly `bistro_jwt`, header `Authorization: Bearer`,
  * session flash, query string. Ver JwtService::extractTokenFromRequest().
  * Inyecta en request: jwt_token, jwt_payload, jwt_user_id.
  * Auto-refresco: si quedan menos de 300s para expirar, emite token nuevo y lo devuelve

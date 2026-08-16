@@ -18,7 +18,7 @@
 ```bash
 # clonar
 git clone <repo>
-cd flexyflow.restaurante/application
+cd <carpeta-clonada>   # backend/ y frontend/ viven en la raíz del repo
 
 # dependencias
 composer install

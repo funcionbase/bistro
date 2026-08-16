@@ -1,5 +1,5 @@
 /**
- * Panel de operación offline en /company/metrics (#140).
+ * Panel de operación offline en /company/metrics.
  *
  * Consume `GET /api/v1/metrics/offline/operation` y muestra:
  *  - 4 KPIs: órdenes sincronizadas, cobros sincronizados, monto total, fallos.

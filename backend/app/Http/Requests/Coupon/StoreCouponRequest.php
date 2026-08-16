@@ -60,7 +60,7 @@ class StoreCouponRequest extends FormRequest
             'max_uses' => ['nullable', 'integer', 'min:1'],
             'min_order_amount' => ['nullable', 'numeric', 'min:0'],
             'first_order_only' => ['nullable', 'boolean'],
-            // Programación (#125 happy hour). valid_days: array de ints 0-6.
+            // Programación (happy hour). valid_days: array de ints 0-6.
             // valid_hours_from/to: ambos o ninguno. auto_apply: boolean.
             'valid_days' => ['nullable', 'array'],
             'valid_days.*' => ['integer', 'between:0,6'],

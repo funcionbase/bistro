@@ -228,7 +228,7 @@ export function BranchMenuBranding({ branchId }: BranchMenuBrandingProps) {
             {/* Mostrar branding */}
             <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
                 <div>
-                    <p className="text-sm font-medium">Mostrar "Carta dinámica · flexyflow"</p>
+                    <p className="text-sm font-medium">Mostrar "Carta dinámica · bistro"</p>
                     <p className="text-muted-foreground text-xs">Pie de página al final del menú público</p>
                 </div>
                 <Badge

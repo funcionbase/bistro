@@ -7,7 +7,7 @@ use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Alta de una caja física en la sede activa (multi-caja #117). El permiso
+ * Alta de una caja física en la sede activa (multi-caja). El permiso
  * `cash_register.manage` se valida en la ruta; aquí solo forma + saneo.
  */
 class StoreCashRegisterRequest extends FormRequest

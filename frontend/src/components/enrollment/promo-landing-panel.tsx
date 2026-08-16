@@ -12,7 +12,7 @@ interface PromoLandingPanelProps {
 
 /**
  * Reemplaza el HeroPanel del enrollment cuando llega un `?promo=` válido
- * desde URL — #246. Muestra el código, % descuento, meses, precio normal
+ * desde URL. Muestra el código, % descuento, meses, precio normal
  * tachado y precio con descuento. CTA implícito: continuar el wizard.
  */
 export function PromoLandingPanel({ preview, loading, className }: PromoLandingPanelProps) {

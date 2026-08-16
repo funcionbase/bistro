@@ -526,7 +526,7 @@ class ChatController extends Controller
     }
 
     /**
-     * CIBER-05: stream autenticado de la media de un mensaje de chat. Antes se
+     * Stream autenticado de la media de un mensaje de chat. Antes se
      * servía por el proxy anónimo `/storage-proxy/chat-media/*` (sin auth ni
      * scope de empresa). Ahora resuelve el mensaje scopeado a la empresa activa
      * + `chats.read` y recién ahí firma la URL S3 (302, TTL corto). El `<img>`
@@ -937,7 +937,7 @@ class ChatController extends Controller
     /**
      * Link corto de carta con sesión de seguimiento (unifica "enviar la carta"
      * y "enviar carrito", antes cartLink con CartJWT de ~600 chars a
-     * pedidos.flexyflow.co).
+     * pedidos.example.com).
      *
      * Crea una `CartSession` ligada al chat (`chat_id`) con un token UUID en
      * `jwt_jti` y devuelve el token; el frontend arma la URL corta
@@ -1392,7 +1392,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Reasigna un chat hacia otra sede de la misma empresa (#192).
+     * Reasigna un chat hacia otra sede de la misma empresa.
      *
      * Política: el chat permanece único por (company_nit, client_phone) — su
      * `branch_id` indica cuál sede LO ATIENDE actualmente. Solo los usuarios
@@ -1404,7 +1404,7 @@ class ChatController extends Controller
      *    admin Y employee (los 3 roles institucionales), así que NO sirve como
      *    señal de "owner" para este permiso sensible de sede — `admin`/`employee`
      *    deben pasar por el permiso explícito. Se detecta el owner por nombre,
-     *    igual que `UserRoleController::authorizeManagerRole` (#192).
+     *    igual que `UserRoleController::authorizeManagerRole`.
      *  - Otros roles (incl. admin/employee): requieren permiso
      *    `chats.reassign_branch` Y tener acceso (vía `branch_users`) a la sede
      *    destino. No se puede "tomar" un chat hacia una sede a la que el actor

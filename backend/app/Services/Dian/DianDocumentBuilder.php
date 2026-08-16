@@ -19,7 +19,7 @@ use DateTimeZone;
  * `DocumentDto` neutral con todos los datos que el XML, el PDF y el CUFE
  * van a necesitar.
  *
- * - Items: usa `Order::orderItems()` materializados (#191) si están; cae a
+ * - Items: usa `Order::orderItems()` materializados si están; cae a
  *   `Order::items` JSON cuando no.
  * - Desglose tributario por línea: hoy aplica una sola tasa global desde
  *   `Order::tax_rate` + `tax_regime`. Cuando se introduzca multi-régimen

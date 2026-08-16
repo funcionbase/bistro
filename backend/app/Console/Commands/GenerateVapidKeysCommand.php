@@ -9,7 +9,7 @@ use RuntimeException;
 
 /**
  * Genera un par de claves VAPID (Voluntary Application Server Identification)
- * para Web Push (#149). Las claves son curva P-256 codificadas en base64url.
+ * para Web Push. Las claves son curva P-256 codificadas en base64url.
  *
  * Bootstrap único por entorno:
  *   $ php artisan push:generate-vapid-keys

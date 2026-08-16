@@ -35,11 +35,11 @@ services:
             start_period: 10s
 
     # MinIO: S3-compatible local storage. Mirrors AWS S3 buckets used in qa/pdn
-    # (flexyflow-panel-{env}-assets, flexyflow-panel-{env}-documents).
+    # (bistro-panel-{env}-assets, bistro-panel-{env}-documents).
     # See docker/README.md and issue #43 (T7).
     minio:
         image: minio/minio:latest
-        container_name: flexyflow_minio
+        container_name: funcionbase_minio
         restart: unless-stopped
         command: server /data --console-address ":9001"
         environment:
@@ -66,7 +66,7 @@ services:
     # positivo "Bucket created successfully" en cada `docker compose up`.
     minio-bootstrap:
         image: minio/mc:latest
-        container_name: flexyflow_minio_bootstrap
+        container_name: funcionbase_minio_bootstrap
         depends_on:
             minio:
                 condition: service_healthy
@@ -75,15 +75,15 @@ services:
             set -e;
             mc alias set local http://minio:9000 minioadmin minioadmin > /dev/null;
             changed=0;
-            if ! mc ls local/flexyflow-panel-local-assets > /dev/null 2>&1; then
-              mc mb local/flexyflow-panel-local-assets;
-              mc anonymous set download local/flexyflow-panel-local-assets;
-              echo ok | mc pipe local/flexyflow-panel-local-assets/.health > /dev/null;
+            if ! mc ls local/bistro-panel-local-assets > /dev/null 2>&1; then
+              mc mb local/bistro-panel-local-assets;
+              mc anonymous set download local/bistro-panel-local-assets;
+              echo ok | mc pipe local/bistro-panel-local-assets/.health > /dev/null;
               changed=1;
             fi;
-            if ! mc ls local/flexyflow-panel-local-documents > /dev/null 2>&1; then
-              mc mb local/flexyflow-panel-local-documents;
-              echo ok | mc pipe local/flexyflow-panel-local-documents/.health > /dev/null;
+            if ! mc ls local/bistro-panel-local-documents > /dev/null 2>&1; then
+              mc mb local/bistro-panel-local-documents;
+              echo ok | mc pipe local/bistro-panel-local-documents/.health > /dev/null;
               changed=1;
             fi;
             if [ \"$$changed\" = \"1\" ]; then
@@ -99,7 +99,7 @@ services:
     # Bind a 127.0.0.1 para no exponer credenciales en la LAN.
     pgweb:
         image: sosedoff/pgweb:latest
-        container_name: flexyflow_pgweb
+        container_name: funcionbase_pgweb
         restart: unless-stopped
         depends_on:
             db:
@@ -113,7 +113,7 @@ services:
     # la app) para no mezclar schemas/lifecycle de un servicio de terceros.
     evolution-db:
         image: postgres:15-alpine
-        container_name: flexyflow_evolution_db
+        container_name: funcionbase_evolution_db
         restart: unless-stopped
         environment:
             - POSTGRES_DB=evolution
@@ -141,7 +141,7 @@ services:
     # Manager UI (vincular WhatsApp por QR): http://localhost:8080/manager
     evolution-api:
         image: evoapicloud/evolution-api:v2.3.7
-        container_name: flexyflow_evolution_api
+        container_name: funcionbase_evolution_api
         restart: unless-stopped
         depends_on:
             evolution-db:

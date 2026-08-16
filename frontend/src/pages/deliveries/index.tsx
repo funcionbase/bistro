@@ -509,7 +509,7 @@ export default function DaySalesIndex() {
                 onCancel={() => setAdvanceOrderId(null)}
             />
 
-            {/* F6/CA5: entrega fallida / no show. */}
+            {/* F6: entrega fallida / no show. */}
             <ConfirmDialog
                 open={noShowContext !== null}
                 title="¿Marcar entrega fallida (no show)?"

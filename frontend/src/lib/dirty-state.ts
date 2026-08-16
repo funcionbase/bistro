@@ -1,5 +1,5 @@
 /**
- * Registro global de "trabajo sin guardar" (#192 Fase 3.2).
+ * Registro global de "trabajo sin guardar" (Fase 3.2).
  *
  * Las páginas con formularios o editores en uso registran un ticket
  * (un símbolo único) mientras están en estado dirty. El `BranchSwitcher`

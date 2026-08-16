@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 
 /**
  * Feedback al usuario que disparó un cambio de estado cuando el SMS al cliente
- * falló en el envío async (#275 Fase 4 — SendOrderStatusSmsJob marca `failed`).
+ * falló en el envío async (SendOrderStatusSmsJob marca `failed`).
  *
  * Self-scoped: cada quien ve SOLO los SMS fallidos que él mismo originó
  * (`user_id` = JWT sub) en la empresa activa y que aún no acusó recibo

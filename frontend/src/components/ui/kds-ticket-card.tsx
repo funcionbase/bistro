@@ -41,7 +41,7 @@ interface KdsTicketCardProps {
 }
 
 /**
- * Ticket del KDS (#191 Fase 5).
+ * Ticket del KDS.
  *
  * Card grande, tipografía alta, contraste fuerte — pensado para pantalla
  * fija en cocina. Muestra mesa, comensal, plato, cantidad, notas

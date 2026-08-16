@@ -53,7 +53,7 @@ class BillingPlanSeeder extends Seeder
             ['slug' => config('billing.default_plan_slug', 'default')],
             [
                 'name' => 'Plan Básico',
-                'description' => 'Acceso completo a la plataforma flexyflow sin costo. $0 COP/mes.',
+                'description' => 'Acceso completo a la plataforma bistro sin costo. $0 COP/mes.',
                 'price' => 0.00,
                 'currency' => 'COP',
                 'billing_cycle' => 'monthly',

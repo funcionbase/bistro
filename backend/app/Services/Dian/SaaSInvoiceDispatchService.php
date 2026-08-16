@@ -14,22 +14,22 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Orquesta la emisión DIAN para invoices SaaS (flexyflow → empresa cliente).
+ * Orquesta la emisión DIAN para invoices SaaS (bistro → empresa cliente).
  *
  * Reusa `ResolutionConsecutiveAllocator` + `CufeCudeGenerator` existentes
  * pero opera sobre `Invoice` en vez de `Order` (que es el camino de
  * `DianDispatchService`).
  *
  * Flujo:
- *   1. Resuelve issuer (flexyflow desde `config('billing.flexyflow.*')`).
+ *   1. Resuelve issuer (bistro desde `config('billing.bistro.*')`).
  *   2. Asigna consecutivo atómico (lockForUpdate sobre la resolución `invoice`
- *      activa del NIT flexyflow).
+ *      activa del NIT bistro).
  *   3. Computa CUFE con SHA-384 sobre input canónico (CufeCudeGenerator).
  *   4. Persiste `electronic_documents` con status `queued`, snapshot del
  *      provider activo (mock) y vincula al invoice (`invoices.electronic_document_id`).
  *   5. Audita el evento.
  *
- * NOTA #246 PR-2.5: este servicio crea el documento electrónico inicial.
+ * NOTA: este servicio crea el documento electrónico inicial.
  * La emisión real (XML UBL + PDF + push al proveedor) se delegará en una
  * iteración futura cuando se decida integrar el provider real (Factura1/
  * Siigo/Carvajal). Hoy queda como mock + audit para tener trazabilidad DIAN
@@ -56,14 +56,14 @@ class SaaSInvoiceDispatchService
                 return ElectronicDocument::query()->findOrFail($fresh->electronic_document_id);
             }
 
-            $flexyNit = (string) config('billing.flexyflow.nit');
+            $flexyNit = (string) config('billing.bistro.nit');
             if ($flexyNit === '') {
-                throw new RuntimeException('FLEXYFLOW_NIT no configurado — no se puede emitir DIAN para invoices SaaS.');
+                throw new RuntimeException('BISTRO_NIT no configurado — no se puede emitir DIAN para invoices SaaS.');
             }
 
             $issuer = Company::query()->where('nit', $flexyNit)->first();
             if ($issuer === null) {
-                throw new RuntimeException("flexyflow company NIT={$flexyNit} no existe — corre FlexyFlowProviderSeeder.");
+                throw new RuntimeException("bistro company NIT={$flexyNit} no existe — corre funcionbaseProviderSeeder.");
             }
 
             $resolution = DianResolution::query()
@@ -74,7 +74,7 @@ class SaaSInvoiceDispatchService
                 ->first();
 
             if ($resolution === null) {
-                throw new RuntimeException("flexyflow no tiene resolución DIAN tipo 'invoice' activa.");
+                throw new RuntimeException("bistro no tiene resolución DIAN tipo 'invoice' activa.");
             }
 
             $allocation = $this->allocator->allocate($resolution);
@@ -109,7 +109,7 @@ class SaaSInvoiceDispatchService
             }
 
             if ($branchId === '') {
-                throw new RuntimeException("No hay branch disponible para vincular el ElectronicDocument (flexyflow NIT={$flexyNit}).");
+                throw new RuntimeException("No hay branch disponible para vincular el ElectronicDocument (bistro NIT={$flexyNit}).");
             }
 
             $electronicDoc = ElectronicDocument::query()->create([

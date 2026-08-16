@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Cuenta de fidelización de un cliente (#122).
+ * Cuenta de fidelización de un cliente.
  *
  * Identidad: (company_nit, client_phone). Cross-sede por diseño — no usa
  * BelongsToBranch. Phone debe estar normalizado al formato 57XXXXXXXXXX

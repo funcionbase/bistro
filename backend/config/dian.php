@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Configuración del subsistema DIAN (HU #235).
+ * Configuración del subsistema DIAN.
  *
  * - `default_final_consumer`: convención DIAN UBL Colombia para "consumidor
  *   final" — adquirente genérico cuando el cajero no captura datos. NIT
@@ -34,7 +34,7 @@ return [
      * Default `false`: el módulo todavía no está habilitado para producción
      * (solo existe `MockDianProvider`, sin provider real contratado — ver
      * `DianProviderFactory`). Gate independiente de
-     * `billing.emit_dian_for_invoices` (invoices SaaS de flexyflow).
+     * `billing.emit_dian_for_invoices` (invoices SaaS de bistro).
      */
     'emission_enabled' => (bool) env('DIAN_EMISSION_ENABLED', false),
 

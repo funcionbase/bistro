@@ -30,7 +30,7 @@ class AuditService
     ): AuditLog {
         $request ??= request();
 
-        // Multi-sede (#117): registramos siempre dos identificadores cuando estén disponibles:
+        // Multi-sede: registramos siempre dos identificadores cuando estén disponibles:
         //  - branch_id: la sede del recurso auditado (si el modelo tiene ese atributo).
         //  - actor_active_branch_id: la sede que el usuario tenía activa al ejecutar la acción.
         // Permite reconstruir intentos cross-sede aunque ocurran en sedes distintas.

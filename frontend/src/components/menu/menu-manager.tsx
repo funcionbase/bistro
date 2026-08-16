@@ -81,7 +81,6 @@ export default function MenuManager({
                 return;
             }
 
-            // Check if we're dragging a category
             const activeCategory = menu.structure.categories.find((cat) => cat.id === active.id);
             if (activeCategory) {
                 const oldIndex = menu.structure.categories.findIndex((cat) => cat.id === active.id);
@@ -89,7 +88,6 @@ export default function MenuManager({
 
                 const newCategories = arrayMove(menu.structure.categories, oldIndex, newIndex);
 
-                // Update order for each category
                 newCategories.forEach((cat, index) => {
                     if (cat.order !== index + 1) {
                         updateCategoryOrder(cat.id, index + 1);
@@ -104,7 +102,6 @@ export default function MenuManager({
                 return;
             }
 
-            // Check if we're dragging an item within a category
             if (selectedCategory) {
                 const oldIndex = selectedCategory.items.findIndex((item) => item.id === active.id);
                 const newIndex = selectedCategory.items.findIndex((item) => item.id === over.id);
@@ -112,7 +109,6 @@ export default function MenuManager({
                 if (oldIndex !== -1 && newIndex !== -1) {
                     const newItems = arrayMove(selectedCategory.items, oldIndex, newIndex);
 
-                    // Update order for each item
                     newItems.forEach((item, index) => {
                         if (item.order !== index + 1) {
                             updateItemOrder(item.id, index + 1);
@@ -134,7 +130,6 @@ export default function MenuManager({
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <div className="flex flex-col gap-4">
-                {/* Action Buttons */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                     {canCreate && (
                         <Button onClick={onAddCategory} className="w-full gap-2 sm:w-auto" size="sm">
@@ -152,9 +147,7 @@ export default function MenuManager({
                     )}
                 </div>
 
-                {/* Main Content */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {/* Left Panel - Categories */}
                     <div className="space-y-3">
                         <h3 className="text-foreground font-semibold">Categorías</h3>
                         {menu.structure.categories.length === 0 ? (
@@ -182,7 +175,6 @@ export default function MenuManager({
                         )}
                     </div>
 
-                    {/* Right Panel - Items */}
                     <div className="space-y-3">
                         <h3 className="text-foreground font-semibold">
                             {selectedCategory ? `Items - ${selectedCategory.name}` : 'Selecciona una categoría'}

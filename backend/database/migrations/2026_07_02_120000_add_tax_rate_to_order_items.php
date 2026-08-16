@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Snapshot tributario por línea para las filas `order_items` (#293).
+ * Snapshot tributario por línea para las filas `order_items`.
  *
  * Las líneas de caja (`orders.items` JSON) ya congelan `tax_rate` efectiva al
  * crearse; las filas `order_items` del flujo QR no, así que

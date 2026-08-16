@@ -53,7 +53,7 @@ class GoogleAuthController extends Controller
 
     public function redirect(): RedirectResponse
     {
-        // CIBER-10: `stateless()` omite la validación de `state` (login CSRF).
+        // `stateless()` omite la validación de `state` (login CSRF).
         // Generamos un `state` propio, lo guardamos en una cookie HttpOnly de
         // vida corta (double-submit) y lo mandamos a Google. No depende de la
         // sesión server-side → N-instance safe (CLAUDE.md §12).
@@ -83,7 +83,7 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
-        // CIBER-10: valida el `state` echo de Google contra la cookie emitida en
+        // Valida el `state` echo de Google contra la cookie emitida en
         // redirect(). hash_equals evita timing; mismatch/ausencia → rechazo.
         $expectedState = (string) $request->cookie(self::OAUTH_STATE_COOKIE, '');
         $returnedState = (string) $request->query('state', '');
@@ -111,7 +111,7 @@ class GoogleAuthController extends Controller
             }
         }
 
-        // CIBER-08: el identificador primario es `google_id`. El match por email
+        // El identificador primario es `google_id`. El match por email
         // solo se usa para VINCULAR una cuenta preexistente (invitación) y exige
         // que Google haya verificado el email, y que la cuenta no esté ya
         // vinculada a OTRO `google_id` (evita adopción/takeover de cuenta ajena).

@@ -1,8 +1,8 @@
 {
-    "id": "flexyflow-bistro",
+    "id": "bistro",
     "name": "bistro",
     "short_name": "bistro",
-    "description": "bistro flexy — gestión para negocios de comida: POS, caja, menú digital, KDS y domicilios.",
+    "description": "bistro — gestión para negocios de comida: POS, caja, menú digital, KDS y domicilios.",
     "start_url": "/dashboard",
     "scope": "/",
     "display": "standalone",

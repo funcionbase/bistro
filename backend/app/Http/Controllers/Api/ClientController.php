@@ -21,9 +21,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * CRM básico de clientes (#123 + refactor #235).
+ * CRM básico de clientes.
  *
- * Cada Contact ES un cliente. La identidad canónica desde #235 es
+ * Cada Contact ES un cliente. La identidad canónica es
  * (company_nit, doc_number) cuando hay doc, complementada con phone (que
  * puede repetirse entre familiares). Las rutas usan `contacts.id` como
  * route key para evitar ambigüedad cuando varios clientes comparten phone.
@@ -247,7 +247,7 @@ class ClientController extends Controller
     }
 
     /**
-     * Edita los datos de un contacto existente desde el CRM (#123). Mismas
+     * Edita los datos de un contacto existente desde el CRM. Mismas
      * reglas que `store` (identidad canónica company_nit+doc_number, validación
      * cruzada kind↔doc_type, razón social obligatoria en empresas), pero el
      * UNIQUE de doc_number excluye al propio contacto. `address` y

@@ -1,5 +1,5 @@
 /**
- * Aviso de cuota de IndexedDB cerca del límite (#140).
+ * Aviso de cuota de IndexedDB cerca del límite.
  *
  * Chequea `navigator.storage.estimate()` cada 60s mientras hay pendientes.
  * - >80%: banner amarillo informativo.

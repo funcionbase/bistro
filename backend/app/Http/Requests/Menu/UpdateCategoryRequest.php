@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 /**
  * Endpoint: PUT /api/menus/{id}/categories/{catId} (MenuController). Requiere menu.update.
  *
- * kds_station_id (#115): mismo contrato que en StoreCategoryRequest. Si se
+ * kds_station_id: mismo contrato que en StoreCategoryRequest. Si se
  * manda null se desasocia la categoría (cae al fallback `is_default`); si
  * se omite del payload, el valor previo se preserva en el controller.
  */

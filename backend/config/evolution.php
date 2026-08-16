@@ -38,7 +38,7 @@ return [
 
         // Header compartido. El valor viaja por canal (secreto de 32 bytes), el
         // nombre es fijo.
-        'header' => 'X-Flexyflow-Token',
+        'header' => 'X-funcionbase-Token',
 
         // IPs autorizadas, separadas por coma. VACÍO = allowlist desactivada.
         // En pdn es la IP privada de la EC2; en local, la del bridge de Docker.

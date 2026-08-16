@@ -7,5 +7,4 @@ namespace App\Policies;
  *
  * Se mantiene el archivo para que el Gate discovery de Laravel no rompa si se registra via Gate::policy().
  */
-// Gate logic moved to Gate::define('manage-company-roles') in AppServiceProvider.
 class CompanyRolePolicy {}

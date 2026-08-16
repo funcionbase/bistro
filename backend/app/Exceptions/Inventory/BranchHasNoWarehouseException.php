@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use RuntimeException;
 
 /**
- * (#costeo-multibodega) La sede no tiene ninguna bodega asignada, por lo que
+ * La sede no tiene ninguna bodega asignada, por lo que
  * no se puede crear inventario, recibir compras ni configurar costo de receta
  * en ella.
  *

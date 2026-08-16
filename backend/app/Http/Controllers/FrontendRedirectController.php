@@ -6,7 +6,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * Redirige al frontend SPA (proyecto independiente, #220).
+ * Redirige al frontend SPA (proyecto independiente).
  *
  * El backend ya no sirve frontend. Cualquier ruta de página que llegue
  * al backend (enlaces viejos, accesos directos, el callback OAuth) se

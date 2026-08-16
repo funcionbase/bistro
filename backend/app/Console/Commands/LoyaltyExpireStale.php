@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Expira balances inactivos y cupones de canje vencidos (#122).
+ * Expira balances inactivos y cupones de canje vencidos.
  *
  * Recorre todas las empresas y, para cada una, aplica LoyaltyService::expireStale
  * según su configuración. Además, marca como 'expired' los LoyaltyRedemption

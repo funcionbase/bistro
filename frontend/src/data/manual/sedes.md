@@ -1,7 +1,7 @@
 ---
 title: "Sedes y bodegas"
 description: "Cada sede de tu operación con su caja, su inventario, su menú, su tablero de pedidos y hasta su propia vertical de negocio. Aislamiento de datos por NIT y por sede."
-metaTitle: "Sedes y bodegas — Manual bistro.flexyflow.co"
+metaTitle: "Sedes y bodegas — Manual bistro.example.com"
 metaDescription: "Si tu negocio tiene varios locales bajo el mismo NIT, cada sede opera con su caja, su inventario, su menú y sus reportes aparte. Bodegas internas, copia de menú y reportes consolidados."
 section: "administración"
 readingTime: "7 min"
@@ -12,7 +12,7 @@ lastUpdated: "8 de julio de 2026"
 
 ## ¿Quién necesita esto?
 
-Si manejas un solo local, no te preocupes — bistro flexy crea automáticamente una sede "Principal" al darte de alta y todo funciona sin que tengas que pensar en esto. Esta página es para:
+Si manejas un solo local, no te preocupes — bistro crea automáticamente una sede "Principal" al darte de alta y todo funciona sin que tengas que pensar en esto. Esta página es para:
 
 - Cadenas con varios locales bajo el mismo NIT (pizzerías, hamburgueserías, panaderías, bares, sucursales en distintos barrios o ciudades).
 - Negocios que abren una sede nueva y necesitan separar su operación.
@@ -55,7 +55,7 @@ Si tu cuenta tiene acceso a varias sedes, te aparece un selector en el menú lat
 <div class="callout callout-info">
 <p>
 <strong>Cambio bloqueado con caja abierta:</strong> si la sede en la que estás tiene una caja
-en turno abierto, bistro flexy bloquea el cambio de sede hasta que se cierre el turno. El
+en turno abierto, bistro bloquea el cambio de sede hasta que se cierre el turno. El
 Propietario sí puede saltarse este bloqueo con un permiso especial.
 </p>
 </div>

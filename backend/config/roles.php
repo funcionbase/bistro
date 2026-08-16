@@ -4,7 +4,7 @@ return [
     'system_roles' => array_map('trim', explode(',', env('SYSTEM_ROLES', 'owner,admin,employee'))),
 
     // Role types operativos que se siembran automáticamente al crear una
-    // empresa (#215 F4 — auto-seeding). is_system=false (renombrables /
+    // empresa (auto-seeding). is_system=false (renombrables /
     // eliminables por el owner). Distinto de `system_roles` que son los 3
     // institucionales con bypass.
     //
@@ -21,18 +21,18 @@ return [
         'owner' => 'Propietario',
         'admin' => 'Administrador',
         'employee' => 'Empleado',
-        // Roles operativos del flujo de mesa con QR (#191 Fase 7).
+        // Roles operativos del flujo de mesa con QR (Fase 7).
         // No son `system_roles` puros: se crean opcionalmente por empresa
         // vía `php artisan roles:sync-templates`. Heredan templates de
         // PermissionTemplate con role_type correspondiente.
         'waiter' => 'Mesero',
         'cook' => 'Cocinero',
         'cashier' => 'Cajero',
-        // Domiciliario: rol operativo courier-only (#119). is_system=false,
+        // Domiciliario: rol operativo courier-only. is_system=false,
         // renombrable. Sólo ve/toma sus entregas → activa el "courier mode".
         'courier' => 'Domiciliario',
-        // Roles operativos administrativos (#215 F4). Mismo modelo que los
-        // de #191: is_system=false, asignables/renombrables, sembrables
+        // Roles operativos administrativos (Fase 4). Mismo modelo que los
+        // operativos de mesa: is_system=false, asignables/renombrables, sembrables
         // vía `php artisan roles:sync-templates`.
         'manager' => 'Gerente',
         'accountant' => 'Contador',

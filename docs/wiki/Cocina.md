@@ -53,7 +53,7 @@ referencia canónica completa.
 
 | Contexto | Auth | Permiso |
 |---|---|---|
-| Consolidado web (`/kds`) | JWT cookie `flexyflow_jwt` | `kds.read` |
+| Consolidado web (`/kds`) | JWT cookie `bistro_jwt` | `kds.read` |
 | API consolidado (`/api/v1/kds/tickets`) | JWT + `EnsureCompanyAccess` + `EnsureBranchAccess` | `kds.read` (read) / `kds.update` (update) |
 | Settings (`/company/kds`) | JWT | `kds_stations.*` |
 | Standalone tablet (`/kds/{stationSlug}`) | Device-token (cookie HttpOnly `kds_device_token` o `Authorization: Bearer`) | — middleware `kds.device` resuelve company/branch/station — |

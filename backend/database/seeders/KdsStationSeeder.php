@@ -7,7 +7,7 @@ use App\Models\KdsStation;
 use Illuminate\Database\Seeder;
 
 /**
- * Backfill / siembra idempotente de estaciones KDS (#115) para todas las
+ * Backfill / siembra idempotente de estaciones KDS para todas las
  * sedes existentes.
  *
  * Para nuevas empresas/sedes, el seeding ocurre inline en
@@ -16,7 +16,7 @@ use Illuminate\Database\Seeder;
  *
  *  1. Dev / QA: garantiza que `RestauranteFlexySeeder` y otros fixtures
  *     tengan estaciones operables al final del run.
- *  2. PDN backfill: empresas que existían antes de #115 reciben las 4
+ *  2. PDN backfill: empresas que existían antes del feature KDS reciben las 4
  *     estaciones canónicas en su sede default al desplegar.
  *
  * Idempotente: `KdsStation::seedDefaultsForBranch` usa `firstOrCreate` por

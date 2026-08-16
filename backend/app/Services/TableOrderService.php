@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Mutaciones del carrito del comensal dentro del flujo de mesa con QR (#191).
+ * Mutaciones del carrito del comensal dentro del flujo de mesa con QR.
  *
  * Reglas contables (CLAUDE.md):
  *  - `unit_price` siempre desde `RestaurantMenu::findMenuItem` — NUNCA del payload.
@@ -77,7 +77,7 @@ class TableOrderService
             $item->unit_price = (string) number_format((float) ($menuItem['price'] ?? 0), 2, '.', '');
             $item->unit_cost = isset($menuItem['cost']) ? (string) number_format((float) $menuItem['cost'], 2, '.', '') : null;
             // Snapshot de la tasa efectiva por línea (item del menú > default
-            // congelado en la orden), paridad con buildOrderLines de caja (#293).
+            // congelado en la orden), paridad con buildOrderLines de caja.
             $item->tax_rate = $this->taxes->resolveRate(
                 isset($menuItem['tax_rate']) ? (float) $menuItem['tax_rate'] : null,
                 (float) ($order->snapshot_default_tax_rate ?? 0),
@@ -514,8 +514,8 @@ class TableOrderService
     /**
      * Resuelve (o crea lazy) la orden asociada a la sesión de mesa.
      *
-     * Naming: una orden por sesión. Estado inicial `pending_approval` (config
-     * #191) — el mesero la promueve a `pending` cuando aprueba la primera
+     * Naming: una orden por sesión. Estado inicial `pending_approval` — el
+     * mesero la promueve a `pending` cuando aprueba la primera
      * tanda. `total` arranca en 0 y lo recalcula `OrderTotalCalculator`.
      */
     private function resolveOrderForSession(TableSession $session): Order
@@ -550,7 +550,7 @@ class TableOrderService
 
         // Snapshot tributario al nacer la orden (paridad con el flujo de caja).
         // OrderTotalCalculator usa este snapshot (no el estado vivo de la
-        // empresa) para el desglose subtotal/tax_amount de la cuenta (#293).
+        // empresa) para el desglose subtotal/tax_amount de la cuenta.
         $company = Company::query()
             ->where('nit', $session->company_nit)
             ->first(['nit', 'default_tax_rate', 'tax_regime', 'tax_included_in_price']);

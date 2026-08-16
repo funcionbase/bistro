@@ -38,7 +38,7 @@ class AccountAlreadyExistsNotification extends Notification implements ShouldQue
             ->markdown('emails.auth.account-exists', [
                 'loginUrl' => $frontend.'/login',
                 'forgotUrl' => $frontend.'/forgot-password',
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

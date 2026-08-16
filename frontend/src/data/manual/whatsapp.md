@@ -1,8 +1,8 @@
 ---
 title: "WhatsApp del negocio"
-description: "Conecta el número de WhatsApp de tu negocio a flexyflow. Recibe pedidos por chat, responde desde la app y configura el mensaje de bienvenida del bot."
-metaTitle: "WhatsApp del negocio — Manual bistro.flexyflow.co"
-metaDescription: "Conecta el WhatsApp Business de tu negocio a flexyflow para recibir pedidos y responder desde la misma app."
+description: "Conecta el número de WhatsApp de tu negocio a bistro. Recibe pedidos por chat, responde desde la app y configura el mensaje de bienvenida del bot."
+metaTitle: "WhatsApp del negocio — Manual bistro.example.com"
+metaDescription: "Conecta el WhatsApp Business de tu negocio a bistro para recibir pedidos y responder desde la misma app."
 section: "clientes y mercadeo"
 readingTime: "8 min"
 lastUpdated: "23 de julio de 2026"
@@ -12,7 +12,7 @@ lastUpdated: "23 de julio de 2026"
 
 ## Para qué sirve
 
-Conectar tu WhatsApp Business a flexyflow te deja:
+Conectar tu WhatsApp Business a bistro te deja:
 
 - Recibir los mensajes de tus clientes en el panel de [chat](/manual/chat), sin tener que mirar el celular del negocio.
 - Responder desde la app, dejando registro de quién atendió cada conversación.
@@ -60,7 +60,7 @@ Cuando el bot esté operativo, el flujo de un pedido por WhatsApp se parece a es
 dentro de las 24 horas siguientes a su último mensaje. Pasada esa ventana, para volver a iniciar
 conversación se debe usar una <strong>plantilla pre-aprobada por Meta</strong> (por ejemplo:
 aviso de pedido listo, recordatorio de reserva). Las plantillas las gestiona el equipo de
-soporte de flexyflow contigo.
+soporte de bistro contigo.
 </p>
 </div>
 
@@ -138,7 +138,7 @@ instante. Es una protección contra accesos no autorizados al cambio de número.
 <td>Propietario, Administrador (configurable a Empleado).</td>
 </tr>
 <tr>
-<td>Conectar (con tu propio número o con uno de flexyflow)</td>
+<td>Conectar (con tu propio número o con uno de bistro)</td>
 <td>Propietario, Administrador. Exige código por correo.</td>
 </tr>
 <tr>
@@ -163,7 +163,7 @@ instante. Es una protección contra accesos no autorizados al cambio de número.
 <div class="callout callout-info">
 <p>
 <strong>Costos del lado de Meta:</strong> WhatsApp tiene su propia tarifa por
-conversación (la maneja Meta, no flexyflow). Hoy las conversaciones iniciadas por el cliente
+conversación (la maneja Meta, no bistro). Hoy las conversaciones iniciadas por el cliente
 las primeras 24h suelen ser gratis. Si tu volumen es alto, conviene revisar la política de
 precios vigente de Meta.
 </p>

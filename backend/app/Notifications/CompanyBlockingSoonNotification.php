@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Recordatorio enviado cuando faltan ≤7 días para que past_due pase a suspended (#175).
+ * Recordatorio enviado cuando faltan ≤7 días para que past_due pase a suspended.
  * Se dispara desde recalculateCompanyStatus (idempotencia: la guardia se hace
  * en el llamador para no enviar dos veces el mismo día).
  */

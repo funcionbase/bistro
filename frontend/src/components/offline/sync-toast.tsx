@@ -1,5 +1,5 @@
 /**
- * Toast efímero al completar un ciclo de sync (#140).
+ * Toast efímero al completar un ciclo de sync.
  *
  * Escucha cambios en SyncState y dispara un toast breve cuando `lastSyncAt`
  * cambia y el `pendingCount` baja a 0.

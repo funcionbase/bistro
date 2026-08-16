@@ -61,7 +61,7 @@ const EMPTY_STATION_FORM: StationFormState = {
 
 
 /**
- * #115 F6 — Configuración del KDS por sede: CRUD de estaciones y gestión
+ * F6 — Configuración del KDS por sede: CRUD de estaciones y gestión
  * de device-tokens.
  *
  * Mobile-first: listado en `Card` apiladas; copia el patrón de

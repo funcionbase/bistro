@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  * Invariante de domicilio único: reassignDeliverer() cancela el domicilio actual antes de crear uno nuevo.
  * El campo duration_minutes se calcula al completar (markAsDelivered), no al crear.
  * Todas las operaciones de estado se ejecutan en transacción DB y registran en auditoría.
- * Cada transición además persiste una fila en `delivery_status_logs` (#119) para
+ * Cada transición además persiste una fila en `delivery_status_logs` para
  * reconstruir historia con un único índice O(1) por `delivery_id`.
  * Notificaciones al cliente: WhatsApp vía DeliveryNotificationService.
  *
@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\DB;
  */
 class DeliveryService
 {
-    /** Razones estructuradas (#119). Valores tipo enum sincronizados con la BD. */
+    /** Razones estructuradas. Valores tipo enum sincronizados con la BD. */
     public const REASON_ERROR_USUARIO = 'error_usuario';
 
     public const REASON_PEDIDO_RECHAZADO = 'pedido_rechazado';
@@ -194,7 +194,7 @@ class DeliveryService
     }
 
     /**
-     * Auto-asignación del domiciliario sobre una orden disponible (#119).
+     * Auto-asignación del domiciliario sobre una orden disponible.
      *
      * Reglas:
      *  - La orden debe pertenecer a la misma sede activa del courier.
@@ -303,7 +303,7 @@ class DeliveryService
 
     /**
      * Revierte un delivery `completed` de vuelta a `pending` cuando el
-     * domiciliario lo marcó por error (#119).
+     * domiciliario lo marcó por error.
      *
      * Bloqueos:
      *  - El delivery debe estar `completed`.
@@ -366,7 +366,7 @@ class DeliveryService
     }
 
     /**
-     * El cliente rechazó la entrega (#119). El delivery pasa a `cancelled`
+     * El cliente rechazó la entrega. El delivery pasa a `cancelled`
      * y la orden a `cancelled` (terminal). Bloquea si la orden ya tiene
      * payment_receipt — el dinero salió, hay que pasar por refund admin.
      *
@@ -597,7 +597,7 @@ class DeliveryService
      * custom con el permiso. Excluye cajeros, cocineros, meseros, etc. que no
      * entregan. (Antes los pickers ofrecían a TODOS los miembros activos.)
      *
-     * Scope de sede (BK18): si se pasa `$activeBranchId`, además se filtra por
+     * Scope de sede: si se pasa `$activeBranchId`, además se filtra por
      * acceso a esa sede. Roles `is_system` (owner/admin/employee) bypasean — no
      * tienen filas `branch_users` pero acceden a todas las sedes de la empresa
      * (espejo de `EnsureBranchAccess` + `User::accessibleBranches`). El resto

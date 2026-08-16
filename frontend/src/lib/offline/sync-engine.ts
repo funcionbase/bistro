@@ -1,5 +1,5 @@
 /**
- * Motor de sincronización para órdenes/cobros offline (#140).
+ * Motor de sincronización para órdenes/cobros offline.
  *
  * Garantías y estrategia:
  *  - Idempotencia por `client_uuid` (UUID v4). El backend usa lockForUpdate y

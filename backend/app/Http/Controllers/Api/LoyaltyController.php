@@ -16,7 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Endpoints staff de fidelización (#122).
+ * Endpoints staff de fidelización.
  *
  * Permisos: loyalty.read (lectura) / loyalty.update (ajuste manual y canje
  * a nombre del cliente). Cross-sede: las cuentas viven por (company_nit,

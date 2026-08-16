@@ -69,7 +69,7 @@ export function ErrorScreen({
                         <div className="flex flex-wrap items-center gap-3">{actions}</div>
 
                         <p className="text-muted-foreground text-xs">
-                            &copy; {new Date().getFullYear()} flexyflow &middot; {footerLabel}
+                            &copy; {new Date().getFullYear()} bistro &middot; {footerLabel}
                         </p>
                     </div>
 

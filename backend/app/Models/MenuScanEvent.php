@@ -11,8 +11,8 @@ use Illuminate\Support\Carbon;
 /**
  * Evento de escaneo del QR público del menú (analítica de tráfico).
  *
- * Tabla simple (NO particionada — el particionamiento por mes se retiró en
- * #193 para no acumular tablas hijas). Append-only: la app sólo INSERT,
+ * Tabla simple (NO particionada — el particionamiento por mes se retiró
+ * para no acumular tablas hijas). Append-only: la app sólo INSERT,
  * la retención > 90 días vive en `DropOldMenuScanPartitionsJob` con DELETE
  * por rango sobre `scanned_at`.
  *

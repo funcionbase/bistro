@@ -11,11 +11,11 @@ return [
 
     // Régimen fiscal de la plataforma como empresa-proveedora SaaS.
     // Define si las invoices generadas para empresas cliente desglosan IVA.
-    //  - iva_19: Régimen común (default — confirmado #246).
+    //  - iva_19: Régimen común (default).
     //  - simple_no_iva: Régimen Simple sin IVA.
     //  - iva_5 / inc_8 / iva_exento: tarifas alternativas (raras).
-    'flexyflow_tax_regime' => env('FLEXYFLOW_TAX_REGIME', 'iva_19'),
-    'flexyflow_tax_rate' => (float) env('FLEXYFLOW_TAX_RATE', 19.00),
+    'funcionbase_tax_regime' => env('BISTRO_TAX_REGIME', 'iva_19'),
+    'funcionbase_tax_rate' => (float) env('BISTRO_TAX_RATE', 19.00),
 
     // Plan default SaaS — slug usado por endpoint público /api/v1/billing/plans/default.
     'default_plan_slug' => env('BILLING_DEFAULT_PLAN_SLUG', 'default'),
@@ -27,7 +27,7 @@ return [
     'trial_promo_code' => 'TRIAL3',
 
     // Precio unitario COP (IVA incluido) por documento electrónico DIAN
-    // emitido en el período — cargo por uso del Plan Plus (#facturación-dian).
+    // emitido en el período — cargo por uso del Plan Plus.
     'dian_unit_price' => (float) env('BILLING_DIAN_UNIT_PRICE', 10),
 
     // Si true, después de generar invoices mensuales se dispara EmitDianInvoiceJob
@@ -37,26 +37,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Empresa-proveedora SaaS (#246)
+    | Empresa-proveedora SaaS
     |--------------------------------------------------------------------------
     | Identificación de la empresa que opera esta instancia y factura a sus
     | empresas cliente. Necesario para emitir invoices SaaS con CUFE/QR DIAN.
-    | Resolución DIAN y DianProviderConfig se crean vía FlexyFlowProviderSeeder.
+    | Resolución DIAN y DianProviderConfig se crean vía funcionbaseProviderSeeder.
     */
-    'flexyflow' => [
+    'bistro' => [
         // Todos vacíos por default a propósito: un valor de ejemplo se
         // mostraría como si fuera real en "Datos para transferir" y en las
         // invoices SaaS. Vacío = no se muestra en el panel, el seeder
         // skipea y la emisión DIAN SaaS lanza error explícito (guards
         // existentes) hasta que configures los datos reales de tu empresa.
-        'nit' => env('FLEXYFLOW_NIT', ''),
-        'dv' => env('FLEXYFLOW_DV', ''),
-        'commercial_name' => env('FLEXYFLOW_COMMERCIAL_NAME', ''),
-        'legal_name' => env('FLEXYFLOW_LEGAL_NAME', ''),
-        'address' => env('FLEXYFLOW_ADDRESS', ''),
-        'municipality_dane_code' => env('FLEXYFLOW_MUNICIPALITY_DANE', ''),
-        'billing_email' => env('FLEXYFLOW_BILLING_EMAIL', ''),
-        'billing_phone' => env('FLEXYFLOW_BILLING_PHONE', ''),
+        'nit' => env('BISTRO_NIT', ''),
+        'dv' => env('BISTRO_DV', ''),
+        'commercial_name' => env('BISTRO_COMMERCIAL_NAME', ''),
+        'legal_name' => env('BISTRO_LEGAL_NAME', ''),
+        'address' => env('BISTRO_ADDRESS', ''),
+        'municipality_dane_code' => env('BISTRO_MUNICIPALITY_DANE', ''),
+        'billing_email' => env('BISTRO_BILLING_EMAIL', ''),
+        'billing_phone' => env('BISTRO_BILLING_PHONE', ''),
     ],
     'pdf_driver' => env('INVOICE_PDF_DRIVER', 'dompdf'),
     'storage_disk' => env('INVOICE_STORAGE_DISK', 'local'),
@@ -66,7 +66,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Issue #175 — Past-due con gracia y bloqueo total
+    | Past-due con gracia y bloqueo total
     |--------------------------------------------------------------------------
     */
 
@@ -92,11 +92,11 @@ return [
     // Llave de pago del proveedor SaaS, visible al cliente bloqueado. Se
     // expone vía Inertia shared props SOLO cuando company.status ∈
     // {past_due, suspended}.
-    'flexyflow_payment' => [
-        'breb_key' => env('FLEXYFLOW_PAYMENT_BREB_KEY'),
-        'bank_name' => env('FLEXYFLOW_PAYMENT_BANK_NAME'),
-        'account_number' => env('FLEXYFLOW_PAYMENT_ACCOUNT_NUMBER'),
-        'account_type' => env('FLEXYFLOW_PAYMENT_ACCOUNT_TYPE'),
-        'account_holder' => env('FLEXYFLOW_PAYMENT_ACCOUNT_HOLDER'),
+    'funcionbase_payment' => [
+        'breb_key' => env('BISTRO_PAYMENT_BREB_KEY'),
+        'bank_name' => env('BISTRO_PAYMENT_BANK_NAME'),
+        'account_number' => env('BISTRO_PAYMENT_ACCOUNT_NUMBER'),
+        'account_type' => env('BISTRO_PAYMENT_ACCOUNT_TYPE'),
+        'account_holder' => env('BISTRO_PAYMENT_ACCOUNT_HOLDER'),
     ],
 ];

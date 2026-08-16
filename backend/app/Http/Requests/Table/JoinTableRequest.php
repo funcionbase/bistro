@@ -7,7 +7,7 @@ namespace App\Http\Requests\Table;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Validación del formulario público de unión a mesa (#191).
+ * Validación del formulario público de unión a mesa.
  *
  * El servicio re-normaliza y re-valida el teléfono internamente; aquí solo
  * hacemos un guardado básico de forma y longitud para devolver mensajes UX

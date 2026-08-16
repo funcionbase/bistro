@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Aplicación de un promo code a una empresa específica — #246.
+ * Aplicación de un promo code a una empresa específica.
  *
  * Tabla puente con snapshot inmutable: `discount_percent` y `months_duration`
  * se congelan al aplicar. Si el `PromoCode` original cambia o se desactiva,

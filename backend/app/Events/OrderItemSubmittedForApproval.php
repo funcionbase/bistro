@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
  * `submitted_at` recién seteado (es decir, un comensal de mesa-QR envió un
  * pedido nuevo que requiere aprobación de mesero/cajero).
  *
- * Listener principal: `App\Listeners\NotifyPendingApprovalListener` (#149)
+ * Listener principal: `App\Listeners\NotifyPendingApprovalListener`
  * que encola `SendPendingApprovalPushJob` para notificar a los usuarios
  * con permiso `orders.update` activo en la sede de la orden.
  */

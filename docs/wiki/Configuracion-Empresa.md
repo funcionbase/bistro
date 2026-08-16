@@ -226,7 +226,7 @@ Ver `Facturación-Electrónica-DIAN.md` para detalles del modelo, providers sopo
 |--------|------|------------|-------|
 | `GET` | `/api/v1/whatsapp` | `whatsapp.read,read` | Estado actual de la cuenta |
 | `POST` | `/api/v1/whatsapp/embedded-signup-callback` | `whatsapp.connect,create` + OTP | Conectar via Meta SDK |
-| `POST` | `/api/v1/whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de flexyflow |
+| `POST` | `/api/v1/whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de bistro |
 | `DELETE` | `/api/v1/whatsapp/phone` | `whatsapp.swap_phone,delete` + Policy + OTP | Cambiar número (owner-only) |
 | `DELETE` | `/api/v1/whatsapp` | `whatsapp.disconnect,delete` + Policy + OTP | Desconectar (owner-only) |
 | `POST` | `/api/v1/whatsapp/verification/request` | `whatsapp.read,read` | Solicitar OTP |
@@ -269,7 +269,7 @@ Ver `WhatsApp-Bot.md` para flow completo (Embedded Signup, NaaS, OTP, webhook).
 
 ### Conectar WhatsApp (Embedded Signup)
 
-1. Owner abre `/company/whatsapp`. UI carga el SDK de Facebook con `config_id` por ambiente (`META_CONFIG_ID_QA=941660645323511`, `META_CONFIG_ID_PDN=2605276259869097`).
+1. Owner abre `/company/whatsapp`. UI carga el SDK de Facebook con `config_id` por ambiente (`META_CONFIG_ID_QA`, `META_CONFIG_ID_PDN`).
 2. Owner click "Conectar con Facebook" → flow Meta retorna `code`.
 3. Antes de enviar al backend, UI pide OTP por correo (`POST /api/v1/whatsapp/verification/request` con `action='connect'`). Rate limit: 3 códigos / 30 min por (company, action).
 4. Owner ingresa código de 6 dígitos. UI llama `POST /api/v1/whatsapp/embedded-signup-callback` con header `X-Whatsapp-Verification-Code`.

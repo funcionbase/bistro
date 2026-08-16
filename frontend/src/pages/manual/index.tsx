@@ -13,10 +13,10 @@ export default function ManualIndex() {
     return (
         <ManualLayout
             currentSlug=""
-            pageTitle="Manual de bistro.flexyflow.co"
+            pageTitle="Manual de bistro.example.com"
             pageDescription="Todo lo que necesitas para dominar el panel: desde el primer ingreso hasta la facturación electrónica DIAN."
-            metaTitle="Manual — bistro.flexyflow.co"
-            metaDescription="Manual de usuario de bistro.flexyflow.co: guías de pedidos, caja, menús, clientes, reportes, DIAN y más."
+            metaTitle="Manual — bistro.example.com"
+            metaDescription="Manual de usuario de bistro.example.com: guías de pedidos, caja, menús, clientes, reportes, DIAN y más."
         >
             {/* Stats */}
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -30,8 +30,8 @@ export default function ManualIndex() {
 
             <p>
                 Este manual cubre todas las funcionalidades de{' '}
-                <a href="https://bistro.flexyflow.co" target="_blank" rel="noopener noreferrer">
-                    bistro.flexyflow.co
+                <a href="https://bistro.example.com" target="_blank" rel="noopener noreferrer">
+                    bistro.example.com
                 </a>
                 , el panel de gestión para restaurantes, bares, panaderías y dark kitchens. Está organizado por área
                 funcional — puedes leerlo de principio a fin o ir directo a la sección que necesitas.
@@ -78,8 +78,8 @@ export default function ManualIndex() {
             <div className="callout callout-info">
                 <p>
                     <strong>¿Ejemplo rápido?</strong> Una pizzería puede tener su menú publicado en{' '}
-                    <a href="https://bistro.flexyflow.co" target="_blank" rel="noopener noreferrer">
-                        bistro.flexyflow.co
+                    <a href="https://bistro.example.com" target="_blank" rel="noopener noreferrer">
+                        bistro.example.com
                     </a>
                     , recibir pedidos por WhatsApp, cobrarlos desde la caja con datáfono o efectivo, imprimir la
                     comanda en la cocina y generar la tirilla DIAN, todo sin salir de la app.

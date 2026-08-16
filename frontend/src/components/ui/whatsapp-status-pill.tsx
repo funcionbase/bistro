@@ -85,7 +85,7 @@ export const WHATSAPP_STATUS_HELP: Record<WhatsappStatus, string> = {
     verifying: 'Estamos terminando de vincular el número. No cierres esta ventana.',
     connected: 'El número está recibiendo y enviando mensajes con normalidad.',
     disconnected: 'Se cerró la sesión desde el celular. Escaneá el QR otra vez para volver a conectar.',
-    // Honestidad antes que consuelo: apelar ante WhatsApp no depende de flexyflow.
-    banned: 'WhatsApp bloqueó este número. La apelación se hace ante el soporte de WhatsApp y no depende de flexyflow; mientras tanto podés conectar otro número.',
+    // Honestidad antes que consuelo: apelar ante WhatsApp no depende de bistro.
+    banned: 'WhatsApp bloqueó este número. La apelación se hace ante el soporte de WhatsApp y no depende de bistro; mientras tanto podés conectar otro número.',
     error: 'No podemos contactar el servidor de mensajería. El problema es nuestro, no tuyo.',
 };

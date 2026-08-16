@@ -53,7 +53,7 @@ export default function Dashboard() {
     // Gateamos el polling para no spammear logs/red mientras el usuario
     // resuelve la sede vía BranchSwitcher o /auth/branch-selector.
     //
-    // Cuando la empresa está `suspended` (#193), `EnsureCompanyNotBlocked`
+    // Cuando la empresa está `suspended`, `EnsureCompanyNotBlocked`
     // devuelve 403 `company_payment_blocked` en cualquier endpoint operativo.
     const { activeBranch, activeCompany, role, branches } = useSharedData();
     const hasActiveBranch = Boolean(activeBranch?.id);
@@ -67,7 +67,7 @@ export default function Dashboard() {
     // ponytail: backend duplica el check para seguridad; esto evita la request innecesaria.
     const canSeeSetupGuide = isSystem && role?.name !== 'Empleado';
 
-    // Datos del dashboard (#220): un solo endpoint que reemplaza las props
+    // Datos del dashboard: un solo endpoint que reemplaza las props
     // diferidas de Inertia. Re-fetch automático cada 5 min y al cambiar
     // período/sede (la queryKey los incluye).
     const dashboardQuery = useQuery<DashboardData>({
@@ -181,7 +181,7 @@ export default function Dashboard() {
                     </Alert>
                 )}
 
-                {/* BUG-028: usar activeCompany.status (live, de bootstrap con staleTime=60s)
+                {/* Usar activeCompany.status (live, de bootstrap con staleTime=60s)
                     como fuente de verdad; el URL param ?company_status= puede quedar stale. */}
                 {companyStatus !== undefined && isPendingVerification(companyStatus) && isPendingVerification(activeCompany?.status ?? 'pending') && (
                     <Alert variant="warning">
@@ -198,11 +198,11 @@ export default function Dashboard() {
 
                 {canSeeSetupGuide && <WhatsappOnboardingBanner />}
 
-                {/* Alertas accionables (#124). Gate por reports.read — el feed
+                {/* Alertas accionables. Gate por reports.read — el feed
                     expone información de márgenes/costos indirectamente. */}
                 {hasPermission('reports.read') && <AlertsFeed />}
 
-                {/* HU #235 — banner de resolución DIAN por vencer/agotada. */}
+                {/* Banner de resolución DIAN por vencer/agotada. */}
                 {hasPermission('dian.config.read') && <ResolutionExpirationAlert />}
 
                 {lowStockInventory && lowStockInventory.count > 0 && (

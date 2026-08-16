@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Gestión de suscripciones Web Push del usuario (#149 CA2).
+ * Gestión de suscripciones Web Push del usuario.
  *
  * Endpoints:
  *  - POST   /api/v1/push/subscriptions       → upsert (user_id, endpoint)

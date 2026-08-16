@@ -174,9 +174,9 @@ class AutomationFlowController extends Controller
         try {
             $response = Http::timeout(10)
                 ->withHeaders([
-                    'X-Flexyflow-Event' => 'ping',
-                    'X-Flexyflow-Delivery' => (string) Str::uuid(),
-                    'X-Flexyflow-Signature' => $signature,
+                    'X-funcionbase-Event' => 'ping',
+                    'X-funcionbase-Delivery' => (string) Str::uuid(),
+                    'X-funcionbase-Signature' => $signature,
                 ])
                 ->withBody($body, 'application/json')
                 ->post((string) $flow->url);

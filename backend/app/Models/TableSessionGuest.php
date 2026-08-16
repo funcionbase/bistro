@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Comensal anónimo dentro de una sesión de mesa (#191).
+ * Comensal anónimo dentro de una sesión de mesa.
  *
  * Identidad runtime = cookie firmada `device_token` (httpOnly, signed). Identidad
  * persistente = FK a `contacts` (un cliente único por (company_nit, phone)).

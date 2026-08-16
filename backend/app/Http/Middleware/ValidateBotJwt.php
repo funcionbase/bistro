@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
  * solo identifica la empresa del bot.
  * Retorna 401 si el token no está presente, es inválido o expiró.
  *
- * #193: si la empresa identificada por el JWT del bot está bloqueada por
+ * Si la empresa identificada por el JWT del bot está bloqueada por
  * mora (`fully_blocked`), retorna 503 `code='company_unavailable'`. El bot
  * debe interpretar como "no procesar mensajes / no canjear puntos" — el
  * comensal no debe enterarse del motivo comercial, así que el mensaje es
@@ -59,7 +59,7 @@ class ValidateBotJwt
 
         $companyNit = $payload['company_nit'];
 
-        // Guard de empresa operativa (#193). 503 indistinguible de cualquier
+        // Guard de empresa operativa. 503 indistinguible de cualquier
         // indisponibilidad técnica; el bot consume el `code` para dejar de
         // procesar mensajes / canjes hasta que la empresa vuelva.
         $company = Company::query()->where('nit', $companyNit)->first();

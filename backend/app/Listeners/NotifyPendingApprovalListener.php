@@ -10,7 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
 /**
- * Listener queued del evento `OrderItemSubmittedForApproval` (#149).
+ * Listener queued del evento `OrderItemSubmittedForApproval`.
  *
  * Convierte el evento síncrono en un job de cola para que el flujo HTTP
  * del comensal (TableOrderService::addItem) no pague la latencia de

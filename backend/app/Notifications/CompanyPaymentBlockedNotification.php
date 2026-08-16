@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Disparada cuando companies.status pasa de past_due → suspended (#175).
+ * Disparada cuando companies.status pasa de past_due → suspended.
  */
 class CompanyPaymentBlockedNotification extends Notification implements BillingNotificationContract, ShouldQueue
 {
@@ -48,7 +48,7 @@ class CompanyPaymentBlockedNotification extends Notification implements BillingN
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Tu cuenta de flexyflow fue suspendida por mora')
+            ->subject('Tu cuenta de bistro fue suspendida por mora')
             ->markdown('emails.billing.payment-blocked', [
                 'name' => $notifiable->name,
                 'panelUrl' => route('billing'),

@@ -7,7 +7,7 @@ use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Notifications\Notification;
 
 /**
- * #257 — Canal de correo con dedup idempotente a nivel (notif, user).
+ * Canal de correo con dedup idempotente a nivel (notif, user).
  *
  * Envuelve el MailChannel nativo. Antes de enviar, intenta registrar el envio
  * via NotificationDispatchTracker::markDispatched() (INSERT con UNIQUE compuesto

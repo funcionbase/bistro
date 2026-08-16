@@ -1,8 +1,8 @@
 /**
- * Capa IndexedDB para modo offline (#140 + caja offline-first).
+ * Capa IndexedDB para modo offline (caja offline-first).
  *
  * Object stores (v2):
- *  - pending_orders: órdenes creadas offline (legacy #140) — flujo de creación de
+ *  - pending_orders: órdenes creadas offline (legacy) — flujo de creación de
  *    orden vía `/orders/sync-batch`. Se conserva mientras coexiste con el outbox.
  *  - outbox: cola unificada de mutaciones tipadas (cobro, caja, append, refund…)
  *    con orden causal e idempotency-key por operación. Drena a `/sync/batch`.
@@ -18,7 +18,7 @@
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
-const DB_NAME = 'flexyflow_offline';
+const DB_NAME = 'funcionbase_offline';
 const DB_VERSION = 2;
 
 import type { PaymentMethod as CanonicalPaymentMethod } from '@/types';

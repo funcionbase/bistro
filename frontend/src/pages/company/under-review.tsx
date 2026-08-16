@@ -7,7 +7,7 @@ import { useLogout } from '@/lib/use-logout';
 import { Clock, FileText, ShieldCheck, XCircle } from 'lucide-react';
 
 /**
- * Issue #154 — Pantalla que ve el propietario cuando su empresa está en
+ * Pantalla que ve el propietario cuando su empresa está en
  * `pending_activation` (esperando verificación) o `rejected`. El middleware
  * `EnsureCompanyVerified` redirige aquí cualquier intento de operar mientras
  * la empresa no esté en `verified`/`active`.
@@ -31,8 +31,8 @@ export default function CompanyUnderReview() {
     const tone = isRejected ? 'critical' : 'warning';
     const calloutTitle = isRejected ? 'Verificación rechazada' : 'Estamos revisando tu solicitud';
     const calloutBody = isRejected
-        ? 'La evidencia que adjuntaste no pudo ser validada. Contacta al soporte de flexyflow para ver los detalles y opciones de reenvío.'
-        : 'Tu empresa quedará habilitada en cuanto el equipo de flexyflow valide el documento de propiedad que adjuntaste. Recibirás una notificación cuando esté lista.';
+        ? 'La evidencia que adjuntaste no pudo ser validada. Contacta al soporte de bistro para ver los detalles y opciones de reenvío.'
+        : 'Tu empresa quedará habilitada en cuanto el equipo de bistro valide el documento de propiedad que adjuntaste. Recibirás una notificación cuando esté lista.';
 
     const iconWrapperClass =
         tone === 'critical'
@@ -129,8 +129,8 @@ export default function CompanyUnderReview() {
                         >
                             <p className="text-base leading-relaxed md:text-lg">
                                 {isRejected
-                                    ? 'Escribinos a soporte@flexyflow.com y te ayudamos a re-enviar la documentación correcta.'
-                                    : 'Mientras se aprueba la documentación, no podrás operar esta empresa. Si necesitas apurar la revisión, escribinos a soporte@flexyflow.com.'}
+                                    ? 'Escribinos a hello@funcionbase.com y te ayudamos a re-enviar la documentación correcta.'
+                                    : 'Mientras se aprueba la documentación, no podrás operar esta empresa. Si necesitas apurar la revisión, escribinos a hello@funcionbase.com.'}
                             </p>
                         </HeroPanel>
                     </div>

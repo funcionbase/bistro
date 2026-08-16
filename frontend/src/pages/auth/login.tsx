@@ -13,7 +13,7 @@ import { useDocumentTitle } from '@/lib/use-document-title';
 
 /**
  * Login con correo/contraseña + Google (acceso dual). Reemplaza el
- * `GoogleOnlyAuthGate` de HU #231.
+ * `GoogleOnlyAuthGate`.
  *
  * El POST responde `{ redirect }` con la cookie JWT ya seteada; navegamos con
  * recarga completa para que el bootstrap arranque con la sesión fresca (mismo

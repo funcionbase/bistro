@@ -57,7 +57,7 @@ class UserRoleController extends Controller
             }
         }
 
-        // Multi-sede (#117): adjuntar las sedes asignadas a cada usuario para
+        // Multi-sede: adjuntar las sedes asignadas a cada usuario para
         // mostrar la columna "Sedes" sin requerir N requests adicionales.
         $userIds = $memberships->pluck('user_id')->all();
         $branchAssignments = BranchUser::query()

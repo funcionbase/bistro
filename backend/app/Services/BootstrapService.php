@@ -72,7 +72,7 @@ class BootstrapService
         $activeCompanyNit = $payload['active_company_nit'] ?? null;
         $activeBranchId = $payload['active_branch_id'] ?? null;
 
-        // #268 — `role` y `permissions` se recomputan EN VIVO desde BD, NO se
+        // `role` y `permissions` se recomputan EN VIVO desde BD, NO se
         // copian del payload del JWT. El token es un snapshot horneado al login:
         // si un owner edita un rol a mitad de sesión, el payload queda rancio y
         // el sidebar mostraría accesos que el backend ya rechaza (él valida en
@@ -157,7 +157,7 @@ class BootstrapService
                     $activeCompany['default_tax_label'] = $fresh->default_tax_label;
                     $activeCompany['tax_included_in_price'] = (bool) $fresh->tax_included_in_price;
 
-                    // #246 — Datos para transferir a flexyflow visibles SIEMPRE
+                    // Datos para transferir a bistro visibles SIEMPRE
                     // (no solo en mora). El cliente puede pagar proactivamente
                     // desde /company/settings → Facturación. Combina datos
                     // bancarios (BREB, banco, cuenta) + identificación fiscal
@@ -165,18 +165,18 @@ class BootstrapService
                     // paga y pueda diligenciar la transferencia sin error.
                     // NIT/DV vacío o ausente → null: el frontend oculta el campo
                     // (el placeholder 900000001 no debe mostrarse como NIT real).
-                    $flexyNit = trim((string) config('billing.flexyflow.nit'));
-                    $flexyDv = trim((string) config('billing.flexyflow.dv'));
+                    $flexyNit = trim((string) config('billing.bistro.nit'));
+                    $flexyDv = trim((string) config('billing.bistro.dv'));
 
-                    $activeCompany['flexyflow_payment'] = array_merge(
-                        config('billing.flexyflow_payment'),
+                    $activeCompany['funcionbase_payment'] = array_merge(
+                        config('billing.funcionbase_payment'),
                         [
                             'nit' => $flexyNit !== '' ? $flexyNit : null,
                             'dv' => $flexyDv !== '' ? $flexyDv : null,
-                            'legal_name' => config('billing.flexyflow.legal_name'),
-                            'commercial_name' => config('billing.flexyflow.commercial_name'),
-                            'billing_email' => config('billing.flexyflow.billing_email'),
-                            'billing_phone' => config('billing.flexyflow.billing_phone'),
+                            'legal_name' => config('billing.bistro.legal_name'),
+                            'commercial_name' => config('billing.bistro.commercial_name'),
+                            'billing_email' => config('billing.bistro.billing_email'),
+                            'billing_phone' => config('billing.bistro.billing_phone'),
                         ],
                     );
 
@@ -243,7 +243,7 @@ class BootstrapService
             // NO carga gtag.js. Se setea solo en pdn (ver config/services.php).
             'gaMeasurementId' => config('services.ga4.measurement_id') ?: null,
             // Catálogo de impresión (config/printing.php) — consumido por
-            // la página company/printers (#220, antes prop server-side).
+            // la página company/printers (antes prop server-side).
             'printingConfig' => [
                 'types' => config('printing.types'),
                 'connections' => config('printing.connections'),

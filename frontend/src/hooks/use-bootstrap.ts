@@ -102,7 +102,7 @@ export function useBootstrap(): UseQueryResult<BootstrapResponse> {
                 notifyIntroReady();
                 return snapshot;
             }
-            // Bootstrap OK ⇒ la cookie HttpOnly `flexyflow_jwt` es válida ⇒
+            // Bootstrap OK ⇒ la cookie HttpOnly `bistro_jwt` es válida ⇒
             // sesión confirmada. Con el JWT en cookie (invisible a JS) ya no
             // hay `?token=` que capturar tras el OAuth callback, así que el
             // éxito del bootstrap es la ÚNICA señal de "estás autenticado".

@@ -1,8 +1,8 @@
 ---
 title: "Facturación"
-description: "Acá conviven dos facturaciones: la suscripción que tu negocio le paga a flexyflow y la facturación electrónica DIAN que tu negocio le emite a sus clientes finales."
-metaTitle: "Facturación — Manual bistro.flexyflow.co"
-metaDescription: "Dos cosas distintas: lo que le pagas a flexyflow por usar el panel (suscripción mensual) y las facturas electrónicas que tu negocio le emite a sus clientes ante la DIAN."
+description: "Acá conviven dos facturaciones: la suscripción que tu negocio le paga a bistro y la facturación electrónica DIAN que tu negocio le emite a sus clientes finales."
+metaTitle: "Facturación — Manual bistro.example.com"
+metaDescription: "Dos cosas distintas: lo que le pagas a bistro por usar el panel (suscripción mensual) y las facturas electrónicas que tu negocio le emite a sus clientes ante la DIAN."
 section: "números y reportes"
 readingTime: "8 min"
 lastUpdated: "8 de julio de 2026"
@@ -16,7 +16,7 @@ lastUpdated: "8 de julio de 2026"
 </p>
 <ul>
 <li>
-<strong>La de flexyflow:</strong> lo que tu negocio le paga al panel cada mes por usar el
+<strong>La de bistro:</strong> lo que tu negocio le paga al panel cada mes por usar el
 servicio. Una sola factura mensual.
 </li>
 <li>
@@ -26,7 +26,7 @@ finales. Una por venta (o un documento equivalente POS).
 </ul>
 </div>
 
-## Suscripción a flexyflow
+## Suscripción a bistro
 
 Lo que pagas para tener el panel funcionando. Una sola suscripción activa por negocio.
 
@@ -51,7 +51,7 @@ Cuando tienes facturas vencidas, aparece un aviso en la parte superior de la app
 
 ### Cómo registrar un pago
 
-Desde la sección **comprobantes de pago** subes el soporte del pago (transferencia bancaria, consignación) en JPG, PNG o PDF. El equipo de flexyflow lo revisa y aplica el pago a la factura correspondiente.
+Desde la sección **comprobantes de pago** subes el soporte del pago (transferencia bancaria, consignación) en JPG, PNG o PDF. El equipo de bistro lo revisa y aplica el pago a la factura correspondiente.
 
 ### Historial de facturas
 
@@ -91,7 +91,7 @@ Si tienes un código promocional, lo aplicas desde la misma página de facturaci
 <div class="callout callout-warn">
 <p>
 <strong>Importante:</strong> el cambio de plan o la gestión comercial avanzada se manejan con
-el equipo de flexyflow, no desde la app.
+el equipo de bistro, no desde la app.
 </p>
 </div>
 
@@ -128,7 +128,7 @@ Cada documento emitido guarda su XML y su PDF (con código QR y CUFE/CUDE) en al
 
 <div class="callout callout-success">
 <p>
-<strong>En resumen:</strong> la <em>suscripción a flexyflow</em> es una factura mensual que tú
+<strong>En resumen:</strong> la <em>suscripción a bistro</em> es una factura mensual que tú
 recibes y pagas. La <em>facturación electrónica DIAN</em> son miles de documentos pequeños que
 tu negocio emite cada mes a sus clientes. La primera la gestionas con tu asesor; la segunda
 corre sola en caja una vez que la dejas configurada.

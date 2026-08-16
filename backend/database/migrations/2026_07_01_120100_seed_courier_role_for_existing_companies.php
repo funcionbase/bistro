@@ -7,7 +7,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Artisan;
 
 /**
- * Propaga el nuevo rol operativo "Domiciliario" (role_type=courier, #119) a las
+ * Propaga el nuevo rol operativo "Domiciliario" (role_type=courier) a las
  * empresas existentes de pdn.
  *
  * El seeder (fuente de verdad) no corre en pdn, y las empresas ya creadas no

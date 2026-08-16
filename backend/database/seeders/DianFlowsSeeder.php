@@ -121,7 +121,7 @@ class DianFlowsSeeder extends Seeder
 
     private function seedDemoContacts(Company $company): void
     {
-        // Refactor #235: la identidad canónica es (company_nit, doc_number)
+        // La identidad canónica es (company_nit, doc_number)
         // cuando hay doc. Phone es nullable y puede repetirse.
         // Sembramos 3 escenarios: empresa con FEV completo, persona natural
         // con FEV completo, contacto sin datos (flujo needs_recipient_data).

@@ -17,7 +17,7 @@ use Illuminate\Http\Request;
 
 /**
  * Endpoint público (sin auth) que resuelve una mesa por NIT + número y
- * reporta si hay una sesión grupal activa (#191).
+ * reporta si hay una sesión grupal activa.
  *
  * Usado por el menú público (`/menus/{nit}?table=N`) para decidir si
  * ofrecer al cliente "Unirme a esta mesa" (flujo `/t/{qr_token}`).
@@ -222,7 +222,7 @@ class TableResolveController extends Controller
             return response()->json(['table_exists' => false], 404);
         }
 
-        // Scope escape justificado (#192): endpoint público sin JWT. La sede
+        // Scope escape justificado: endpoint público sin JWT. La sede
         // se resolvió arriba a partir del NIT; el filtro explícito por
         // branch_id ya garantiza el aislamiento que BranchScope normalmente
         // haría desde el request.

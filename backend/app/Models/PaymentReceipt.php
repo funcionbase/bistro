@@ -77,7 +77,7 @@ class PaymentReceipt extends Model
     }
 
     /**
-     * Comensal específico asociado al pago (pago dividido, #191).
+     * Comensal específico asociado al pago (pago dividido).
      *
      * Nullable: en pago completo o en cobros que no provienen de mesa con QR,
      * el receipt no se asocia a un guest particular.

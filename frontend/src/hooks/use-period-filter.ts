@@ -10,7 +10,7 @@ interface UsePeriodFilterResult {
 }
 
 /**
- * Estado del filtro de período + sede del dashboard (#220 — agnóstico del
+ * Estado del filtro de período + sede del dashboard (agnóstico del
  * transporte).
  *
  * Sólo mantiene el estado; el componente reacciona al cambio refetcheando

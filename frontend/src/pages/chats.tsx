@@ -39,7 +39,7 @@ import { AlertCircle, ArrowLeft, Bot, History, MessageCircle, Pause, Pencil, Pla
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-/** Umbrales fijos de §8.4b punto 2. Configurables solo si alguien los pide. */
+/** Umbrales fijos. Configurables solo si alguien los pide. */
 const WAIT_AMBER_MIN = 5;
 const WAIT_RED_MIN = 15;
 
@@ -87,7 +87,7 @@ function OrderBadge({ order, onClick }: OrderBadgeProps) {
 }
 
 /**
- * "esperando hace 12 min" con umbral ámbar a los 5 y rojo a los 15 (§8.4b).
+ * "esperando hace 12 min" con umbral ámbar a los 5 y rojo a los 15.
  *
  * El color no viaja solo: el texto dice el tiempo exacto. Un operador daltónico
  * —o cualquiera mirando de reojo— necesita el número, no el tono.
@@ -101,7 +101,7 @@ function WaitingBadge({ since }: { since: string }) {
               ? 'text-[color:var(--color-status-warning)]'
               : 'text-muted-foreground';
 
-    // El tooltip da la hora exacta a la que el cliente escribió (§8.4c). El color
+    // El tooltip da la hora exacta a la que el cliente escribió. El color
     // no viaja solo: el texto ya dice el tiempo, el título agrega la hora.
     const at = new Date(since).toLocaleTimeString(APP_LOCALE, { hour: '2-digit', minute: '2-digit', timeZone: APP_TIMEZONE });
 
@@ -253,7 +253,7 @@ export default function ChatsPage() {
     // backend valida internamente el setting `whatsapp_read_receipts` antes de
     // tocar al proveedor — el frontend invoca a ciegas.
     //
-    // El MISMO request registra la presencia del operador en el chat (§5.7), asi
+    // El MISMO request registra la presencia del operador en el chat, asi
     // que se dispara aunque los read receipts esten apagados.
     const lastMarkedMessageIdRef = useRef<string | null>(null);
     useEffect(() => {
@@ -384,7 +384,7 @@ export default function ChatsPage() {
 
     const sortedChats = useMemo(() => chats, [chats]);
     // El filtro por canal solo aparece con dos o mas: con uno solo seria ruido
-    // en la pantalla de alguien que no tiene nada que filtrar (§8.4 punto 1).
+    // en la pantalla de alguien que no tiene nada que filtrar.
     const showChannelFilter = channels.length >= 2;
 
     // Inicializamos los campos del modal una sola vez al abrir. NO podemos
@@ -493,7 +493,7 @@ export default function ChatsPage() {
             : null;
 
     // Todas las imágenes de la conversación, para que el lightbox pueda
-    // recorrerlas con flechas (§8.4b punto 13) en vez de ser un callejón.
+    // recorrerlas con flechas en vez de ser un callejón.
     const chatImages = useMemo(() => {
         if (!selectedChat) return [];
         return selectedChat.messages
@@ -506,7 +506,7 @@ export default function ChatsPage() {
         setLightboxIndex(idx >= 0 ? idx : null);
     };
 
-    // Variables de las respuestas rápidas (§8.4b punto 14), resueltas al insertar.
+    // Variables de las respuestas rápidas, resueltas al insertar.
     // `{{sede}}` sale de la etiqueta del canal (que suele ser el nombre de la sede).
     const quickReplyVars = useMemo(
         () => ({
@@ -517,7 +517,7 @@ export default function ChatsPage() {
         [selectedChat, channel],
     );
 
-    // Fallback client-side del link de carta (§8.4b punto 8): menú de la sede
+    // Fallback client-side del link de carta: menú de la sede
     // activa (?branch=CWP) o, sin sede con token, el menú por empresa.
     const nit = props.activeCompany?.nit ?? '';
     const branchToken = props.activeBranch?.menu_qr_token ?? null;
@@ -577,7 +577,7 @@ export default function ChatsPage() {
         navigate(`/orders/cashier?client_phone=${encodeURIComponent(selectedChat.client_phone)}`);
     };
 
-    // Navegación por teclado de la bandeja (§8.4b punto 12): j/k mover, Enter
+    // Navegación por teclado de la bandeja: j/k mover, Enter
     // enfocar el compositor, Esc volver, / buscar. Respeta el foco en inputs para
     // no pisar la escritura del compositor ni la búsqueda.
     useEffect(() => {
@@ -855,7 +855,7 @@ export default function ChatsPage() {
                                                 toggle mudo obliga a adivinar quién está contestando.
                                                 Deshabilitado sin permiso: el motivo va en el
                                                 ReasonTooltip (envuelve un span, así el hover dispara
-                                                aunque el botón esté disabled — §8.4c regla 2). */}
+                                                aunque el botón esté disabled). */}
                                             {SHOW_BOT_CONTROLS && (
                                             <ReasonTooltip reason={!canUpdate ? 'Necesitás el permiso «Editar chats» para controlar el bot.' : null}>
                                                 <Button
@@ -1161,7 +1161,7 @@ function ChatListItem({
 }
 
 /**
- * Estado vacío accionable (§8.4b punto 3).
+ * Estado vacío accionable.
  *
  * Justo después de conectar, la bandeja está vacía y ese es el momento de mayor
  * duda del cliente ("¿funcionó?"). Dejarlo con un "Sin conversaciones" pelado es

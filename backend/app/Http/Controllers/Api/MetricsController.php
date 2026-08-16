@@ -89,7 +89,7 @@ class MetricsController extends Controller
     }
 
     /**
-     * Métricas de operación offline (#140).
+     * Métricas de operación offline.
      *
      * Agrega `offline_sync_events` para los últimos 30 días por defecto y
      * devuelve totales por tipo de evento (órdenes sincronizadas, cobros
@@ -229,8 +229,8 @@ class MetricsController extends Controller
     }
 
     /**
-     * SMS enviados al cliente por cambios de estado de orden (#275, Fase 3):
-     * total de empresa + desglose por sede en el período. `active_branch_id`
+     * SMS enviados al cliente por cambios de estado de orden: total de
+     * empresa + desglose por sede en el período. `active_branch_id`
      * (inyectado por branch.access; null en consolidado vía branch.consolidate)
      * decide si se filtra a una sede o se agregan todas.
      */
@@ -246,7 +246,7 @@ class MetricsController extends Controller
     }
 
     /**
-     * Escaneos del menú QR (#294): total, sesiones únicas, serie diaria y
+     * Escaneos del menú QR: total, sesiones únicas, serie diaria y
      * desgloses por mesa/sede leyendo menu_scan_daily_rollup (+ día en curso
      * desde menu_scan_events). `active_branch_id` decide sede vs consolidado.
      */

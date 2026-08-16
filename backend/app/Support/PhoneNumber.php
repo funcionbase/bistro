@@ -6,7 +6,7 @@ namespace App\Support;
 
 /**
  * Normalización de teléfonos a formato E.164 (`+<cc><número>`), exigido por
- * Amazon SNS para publicar SMS (#275).
+ * Amazon SNS para publicar SMS.
  *
  * El cajero puede tipear el número con o sin prefijo internacional. Si no
  * incluye prefijo, asumimos Colombia (`+57`) — todas las empresas operan en CO.

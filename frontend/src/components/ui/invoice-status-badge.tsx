@@ -24,7 +24,7 @@ const STATUS_TOKEN_CLASSES: Record<InvoiceStatus, string> = {
 };
 
 /**
- * Pildora de estado de una factura del producto flexyflow.
+ * Pildora de estado de una factura del producto bistro.
  *
  * Tokens DS (`--color-status-*`) en lugar de las paletas Tailwind crudas
  * (`bg-yellow-100`, `bg-green-100`, `bg-red-100`, `bg-gray-100`) que

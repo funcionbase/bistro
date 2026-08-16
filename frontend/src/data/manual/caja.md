@@ -1,8 +1,8 @@
 ---
 title: "Caja y cobros"
 description: "El POS integrado: abrir turno, tomar pedidos, cobrar con múltiples métodos de pago, propina, cupones, devoluciones, egresos e impresoras térmicas."
-metaTitle: "Caja y cobros — Manual bistro.flexyflow.co"
-metaDescription: "Manual de la caja POS de bistro.flexyflow.co: turnos, cobros divididos, devoluciones, egresos, impresoras USB y red, y modo sin conexión."
+metaTitle: "Caja y cobros — Manual bistro.example.com"
+metaDescription: "Manual de la caja POS de bistro.example.com: turnos, cobros divididos, devoluciones, egresos, impresoras USB y red, y modo sin conexión."
 section: "el día a día"
 readingTime: "10 min"
 lastUpdated: "8 de julio de 2026"
@@ -63,7 +63,7 @@ La devolución crea un nuevo comprobante con monto negativo — el pedido origin
 <p>
 <strong>Efectivo vs digital:</strong> en efectivo la devolución se ejecuta al instante (el
 cajero saca la plata del cajón). En tarjeta o transferencia es responsabilidad del operador
-gestionar el reembolso con el banco o plataforma — bistro flexy solo lo registra.
+gestionar el reembolso con el banco o plataforma — bistro solo lo registra.
 </p>
 </div>
 
@@ -95,10 +95,10 @@ El detalle de cada cierre (ventas por método de pago, entradas, egresos y la di
 
 ## Impresoras térmicas
 
-bistro flexy se conecta con impresoras térmicas de recibos por:
+bistro se conecta con impresoras térmicas de recibos por:
 
 - **USB:** directo desde el navegador (Chrome en escritorio). Sin programas especiales.
-- **Red local:** a través del agente de bistro flexy instalado en la computadora del local. El agente es un pequeño programa que vive en segundo plano y le pasa las órdenes de impresión a la impresora.
+- **Red local:** a través del agente de bistro instalado en la computadora del local. El agente es un pequeño programa que vive en segundo plano y le pasa las órdenes de impresión a la impresora.
 
 Se configuran en *configuración → impresoras*. Cada impresora puede ser de tipo: cocina, barra, recibos. Las de cocina y barra reciben comandas por categoría del plato; las de recibos imprimen el tiquete del cliente al cerrar el cobro.
 

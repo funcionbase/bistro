@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Endpoint de dashboard para el shell SPA (#220).
+ * Endpoint de dashboard para el shell SPA.
  *
  * Reutiliza la lógica de métricas del DashboardController web (métodos
  * `build*` ahora `protected`). Emite en JSON lo que antes iban como

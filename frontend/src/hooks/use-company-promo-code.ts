@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 
 /**
  * Promo activo actualmente aplicado a la empresa (snapshot inmutable),
- * con las invoices afectadas — #246.
+ * con las invoices afectadas.
  */
 export interface ActiveCompanyPromoCode {
     id: string;

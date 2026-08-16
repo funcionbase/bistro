@@ -10,7 +10,7 @@ import AuthHeroLayout from '@/layouts/auth/auth-hero-layout';
 /**
  * Mensajes contextuales asociados al `?reason=` que viene del backend cuando
  * redirige rutas legacy (login, register, forgot-password, etc.) hacia el
- * flujo Google OAuth — ver HU #231.
+ * flujo Google OAuth.
  */
 const REASON_MESSAGES: Record<string, string> = {
     email_auth_disabled:
@@ -93,7 +93,7 @@ interface GoogleOnlyAuthGateProps {
 }
 
 /**
- * Pantalla puente única para las rutas de auth legacy (HU #231).
+ * Pantalla puente única para las rutas de auth legacy.
  *
  * Reusa `AuthHeroLayout` (2-col responsive con `HeroPanel` lime + `HeroHeadline`
  * `font-brand`) — alineado con `FRONTEND_UI_GUIDELINES.md` §6.2b y el DS de
@@ -218,7 +218,7 @@ export default function GoogleOnlyAuthGate({ variant = 'login', manualOnly = fal
                 )}
 
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                    Al continuar aceptas los Términos y la Política de privacidad de flexyflow. Tu sesión queda asociada a la cuenta de Google con la que entres.
+                    Al continuar aceptas los Términos y la Política de privacidad de bistro. Tu sesión queda asociada a la cuenta de Google con la que entres.
                 </p>
             </div>
         </AuthHeroLayout>

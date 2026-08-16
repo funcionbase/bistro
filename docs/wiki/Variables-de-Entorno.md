@@ -33,7 +33,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `APP_MAINTENANCE_DRIVER` | No | `file` | Driver de modo mantenimiento (`file` \| `cache`) |
 | `PHP_CLI_SERVER_WORKERS` | No | `1` | Workers del servidor PHP CLI integrado |
 | `BCRYPT_ROUNDS` | No | `12` | Costo bcrypt de hashing de contraseñas |
-| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://bistro.flexyflow.co`, `qa`→`https://panel-qa.flexyflow.co`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
+| `FRONTEND_URL` | No | (según `APP_ENV`) | URL del SPA para el redirect post-OAuth y los orígenes CORS. `config/app.php` la resuelve por `APP_ENV`: `pdn`/`production`→`https://bistro.example.com`, `qa`→`https://panel-qa.example.com`, local→`http://localhost:5173`. Definila **solo** como override puntual; en `.env.example` va comentada — si se filtra un valor de dev, el callback de Google redirige a `localhost` |
 
 ---
 
@@ -82,13 +82,13 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 
 ---
 
-## JWT del carrito (pedidos.flexyflow.co)
+## JWT del carrito (pedidos.example.com)
 
 | Variable | Obligatoria | Default | Descripción |
 |----------|-------------|---------|-------------|
 | `CART_JWT_SECRET` | Sí en pdn | — | Clave HMAC HS256 para `CartJwtService` |
 | `CART_JWT_TTL` | No | `4200` | TTL en segundos del JWT de carrito (70 min) |
-| `CART_BASE_URL` | No | `https://pedidos.flexyflow.co` | URL base del front de carrito (se concatena `{jwt}`) |
+| `CART_BASE_URL` | No | `https://pedidos.example.com` | URL base del front de carrito (se concatena `{jwt}`) |
 | `MENU_LINK_TTL_HOURS` | No | `24` | TTL (horas) del link corto de carta enviado desde /chats (`/menus?cart={uuid}`) |
 
 ---
@@ -100,7 +100,7 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | `SESSION_DRIVER` | No | `database` | `database` \| `file` \| `cookie` |
 | `SESSION_LIFETIME` | No | `120` | Minutos de vida de la sesión |
 | `SESSION_SECURE_COOKIE` | No | `false` | `true` en qa/pdn (HTTPS). Obligatorio `true` si `SESSION_SAME_SITE=none` |
-| `SESSION_SAME_SITE` | No | `none` | Política SameSite de las cookies (`flexyflow_jwt`, sesión, mesa). `none` es obligatorio en el deploy cross-origin — el SPA (`bistro.flexyflow.co`) y la API (`panel-api.flexyflow.co`) viven en hosts distintos. En local sobre HTTP, `JwtService::buildCookie` degrada `none`→`lax` automáticamente y el dev no se rompe |
+| `SESSION_SAME_SITE` | No | `none` | Política SameSite de las cookies (`bistro_jwt`, sesión, mesa). `none` es obligatorio en el deploy cross-origin — el SPA (`bistro.example.com`) y la API (`panel-api.example.com`) viven en hosts distintos. En local sobre HTTP, `JwtService::buildCookie` degrada `none`→`lax` automáticamente y el dev no se rompe |
 | `SESSION_DOMAIN` | No | `null` | Dominio de la cookie. Vacío/`null` para que el navegador la asocie al host exacto |
 
 > **Cross-origin:** `SameSite=None` exige `Secure` — el navegador descarta una
@@ -137,9 +137,9 @@ Lista de variables `.env` reconocidas por la aplicación, agrupadas por dominio.
 | Variable | Obligatoria | Default | Descripción |
 |----------|-------------|---------|-------------|
 | `MAIL_MAILER` | Sí | `log` | `log` en local; `ses` en qa/pdn (override via `sync-env-secret.yml`) |
-| `MAIL_FROM_ADDRESS` | Sí | `noreply@flexyflow.co` | Debe pertenecer al dominio verificado en SES |
+| `MAIL_FROM_ADDRESS` | Sí | `noreply@funcionbase.com` | Debe pertenecer al dominio verificado en SES |
 | `MAIL_FROM_NAME` | Sí | `${APP_NAME}` | Nombre mostrado al destinatario |
-| `MAIL_REPLY_TO_ADDRESS` | No | `soporte@flexyflow.co` | Buzón que recibe respuestas vía CF Email Routing |
+| `MAIL_REPLY_TO_ADDRESS` | No | `soporte@funcionbase.com` | Buzón que recibe respuestas vía CF Email Routing |
 | `MAIL_REPLY_TO_NAME` | No | `${MAIL_FROM_NAME}` | Nombre del reply-to (hereda del from) |
 | `SES_CONFIGURATION_SET` | No | — | Configuration Set de SES (Fase 2 — habilita SNS para bounces) |
 | `SES_WEBHOOK_SECRET` | No | — | Secreto compartido para validar webhook SNS (Fase 2) |
@@ -162,7 +162,7 @@ Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) para configuración completa de D
 
 ## Documentos legales
 
-Sin variable de entorno propia. `config/legal.php` fija TOS/privacidad al sitio institucional (`flexyflow.co`) y resuelve el contrato contra `app.frontend_url` (`FRONTEND_URL`, ver arriba) + `/legal/contract`. `BootstrapService::buildCatalogs()` expone las 3 URLs al SPA vía `legalUrls`.
+Sin variable de entorno propia. `config/legal.php` fija TOS/privacidad/contrato a placeholders (`example.com`) — reemplazalos por tus propios documentos legales antes de producción. `BootstrapService::buildCatalogs()` expone las 3 URLs al SPA vía `legalUrls`.
 
 ---
 
@@ -187,12 +187,12 @@ Sin variable de entorno propia. `config/legal.php` fija TOS/privacidad al sitio 
 | `BILLING_TRIAL_DAYS` | No | `90` | Días de prueba post-creación durante los cuales la empresa se mantiene `active` aunque no tenga invoices (#175) |
 | `BILLING_PAYMENT_PROOF_DISK` | No | `s3_documents` | Disco para comprobantes de pago subidos por el cliente (#175) |
 | `BILLING_DELINQUENT_EXPORT_DISK` | No | `s3_documents` | Disco para el CSV diario de morosos (uso interno) (#175) |
-| `BILLING_DELINQUENT_EXPORT_PREFIX` | No | `flexyflow-internal/delinquent-companies` | Prefijo del CSV de morosos en el bucket |
-| `BILLING_OPS_EMAIL` | No | `ops@flexyflow.co` | Email operativo para notificación de comprobantes subidos (#175) |
+| `BILLING_DELINQUENT_EXPORT_PREFIX` | No | `bistro-internal/delinquent-companies` | Prefijo del CSV de morosos en el bucket |
+| `BILLING_OPS_EMAIL` | No | `ops@funcionbase.com` | Email operativo para notificación de comprobantes subidos (#175) |
 
 ## Facturación electrónica DIAN (documentos de orden)
 
-Documentos que el restaurante le emite a su cliente (FEV/DEE POS/notas). NO confundir con `BILLING_EMIT_DIAN_FOR_INVOICES` de la sección anterior, que es la emisión de las invoices SaaS de flexyflow hacia la empresa.
+Documentos que el restaurante le emite a su cliente (FEV/DEE POS/notas). NO confundir con `BILLING_EMIT_DIAN_FOR_INVOICES` de la sección anterior, que es la emisión de las invoices SaaS de bistro hacia la empresa.
 
 | Variable | Obligatoria | Default | Descripción |
 |----------|-------------|---------|-------------|
@@ -202,25 +202,25 @@ Documentos que el restaurante le emite a su cliente (FEV/DEE POS/notas). NO conf
 | `DIAN_STUCK_RECOVERY_MINUTES` | No | `15` | Minutos tras los cuales un documento `pending`/`sent` se considera atascado y es elegible para recuperación (`dian:dispatch-pending`) |
 | `DIAN_RESOLUTION_ALERT_DAYS` | No | `30` | Días antes del vencimiento de una resolución para alertar |
 
-### Datos para transferir a flexyflow (#246)
+### Datos para transferir a bistro (#246)
 
 Visibles al cliente en `/company/settings → Facturación` y en `SuspendedBlockedView`. No son secretos.
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `FLEXYFLOW_PAYMENT_BREB_KEY` | `@***REMOVED-BREB-KEY***` | Llave Bre-B para transferencias instantáneas |
-| `FLEXYFLOW_PAYMENT_BANK_NAME` | `Bancolombia` | Banco destinatario |
-| `FLEXYFLOW_PAYMENT_ACCOUNT_NUMBER` | `***REMOVED-ACCOUNT-NUMBER***` | Número de cuenta |
-| `FLEXYFLOW_PAYMENT_ACCOUNT_TYPE` | `ahorros` | Tipo de cuenta |
-| `FLEXYFLOW_PAYMENT_ACCOUNT_HOLDER` | `CRISTIAN MARIN` | Titular |
-| `FLEXYFLOW_NIT` | *(vacío)* | NIT de flexyflow. Vacío = se oculta en "Datos para transferir", FlexyFlowProviderSeeder skipea y la emisión DIAN SaaS falla explícito. Setear cuando exista NIT real |
-| `FLEXYFLOW_DV` | *(vacío)* | Dígito de verificación |
-| `FLEXYFLOW_COMMERCIAL_NAME` | `flexyflow SAS` | Nombre comercial |
-| `FLEXYFLOW_LEGAL_NAME` | `flexyflow SAS` | Razón social |
-| `FLEXYFLOW_ADDRESS` | `Cartago, Valle del Cauca` | Dirección fiscal |
-| `FLEXYFLOW_MUNICIPALITY_DANE` | `76147` | Código DANE municipal |
-| `FLEXYFLOW_BILLING_EMAIL` | `facturacion@flexyflow.co` | Email de facturación |
-| `FLEXYFLOW_BILLING_PHONE` | `+***REMOVED-PHONE***` | Teléfono de facturación |
+| `BISTRO_PAYMENT_BREB_KEY` | `@***REMOVED-BREB-KEY***` | Llave Bre-B para transferencias instantáneas |
+| `BISTRO_PAYMENT_BANK_NAME` | `Bancolombia` | Banco destinatario |
+| `BISTRO_PAYMENT_ACCOUNT_NUMBER` | `***REMOVED-ACCOUNT-NUMBER***` | Número de cuenta |
+| `BISTRO_PAYMENT_ACCOUNT_TYPE` | `ahorros` | Tipo de cuenta |
+| `BISTRO_PAYMENT_ACCOUNT_HOLDER` | `***REMOVED-ACCOUNT-HOLDER***` | Titular |
+| `BISTRO_NIT` | *(vacío)* | NIT de bistro. Vacío = se oculta en "Datos para transferir", funcionbaseProviderSeeder skipea y la emisión DIAN SaaS falla explícito. Setear cuando exista NIT real |
+| `BISTRO_DV` | *(vacío)* | Dígito de verificación |
+| `BISTRO_COMMERCIAL_NAME` | `bistro SAS` | Nombre comercial |
+| `BISTRO_LEGAL_NAME` | `bistro SAS` | Razón social |
+| `BISTRO_ADDRESS` | `Cartago, Valle del Cauca` | Dirección fiscal |
+| `BISTRO_MUNICIPALITY_DANE` | `76147` | Código DANE municipal |
+| `BISTRO_BILLING_EMAIL` | `facturacion@funcionbase.com` | Email de facturación |
+| `BISTRO_BILLING_PHONE` | `+***REMOVED-PHONE***` | Teléfono de facturación |
 
 ---
 
@@ -232,7 +232,7 @@ Visibles al cliente en `/company/settings → Facturación` y en `SuspendedBlock
 | `PDF_PAPER_SIZE` | No | `A4` | Tamaño del papel (`A4` \| `letter` \| `legal`) |
 | `PDF_ORIENTATION` | No | `portrait` | Orientación (`portrait` \| `landscape`) |
 | `PDF_INCLUDE_COMPANY_LOGO` | No | `true` | Incluir logo de empresa en el encabezado |
-| `PDF_FOOTER_TEXT` | No | `Generado por flexyflow` | Texto del pie de página |
+| `PDF_FOOTER_TEXT` | No | `Generado por bistro` | Texto del pie de página |
 | `PDF_FONT_SIZE` | No | `10` | Tamaño de fuente base (pt) |
 | `PDF_MAX_SYNC_ROWS` | No | `500` | Límite máximo de filas por exportación sincrónica |
 
@@ -265,8 +265,8 @@ El template es **neutral**. En qa/pdn las credenciales vienen del IAM instance p
 | Variable | Default | Descripción |
 |----------|---------|-------------|
 | `AWS_DEFAULT_REGION` | `us-east-1` | Región AWS — debe coincidir con la región de los identities de SES |
-| `AWS_BUCKET` | — | Bucket público (assets, logos, imágenes de menú, QR, iconos PWA). qa/pdn: `flexyflow-panel-{qa\|pdn}-assets` |
-| `AWS_BUCKET_DOCUMENTS` | — | Bucket privado (PDFs de factura, reportes, evidencia de enrolamiento — DIAN 10 años). qa/pdn: `flexyflow-panel-{qa\|pdn}-documents` |
+| `AWS_BUCKET` | — | Bucket público (assets, logos, imágenes de menú, QR, iconos PWA). qa/pdn: `bistro-{qa\|pdn}-assets` |
+| `AWS_BUCKET_DOCUMENTS` | — | Bucket privado (PDFs de factura, reportes, evidencia de enrolamiento — DIAN 10 años). qa/pdn: `bistro-{qa\|pdn}-documents` |
 | `AWS_ENDPOINT` | — | Endpoint custom S3-compatible. Vacío = endpoint nativo AWS |
 | `AWS_URL` | — | URL base del bucket público. Vacío = vhost-style automático |
 | `AWS_USE_PATH_STYLE_ENDPOINT` | `false` | `false` = vhost-style (AWS S3 real); `true` = path-style (MinIO local) |
@@ -391,13 +391,13 @@ El template es **neutral**. En qa/pdn las credenciales vienen del IAM instance p
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `META_APP_ID` | `1265007232388204` | App de Meta de flexyflow (compartida QA + PDN) |
+| `META_APP_ID` | *(tu App ID de Meta)* | App de Meta de bistro (compartida QA + PDN) |
 | `META_APP_SECRET` | — | App Secret (SECRETO, GitHub Secrets) |
-| `META_BUSINESS_ID` | `929046296489964` | Business Manager de flexyflow |
-| `META_SYSTEM_USER_ID` | `61573213870387` | System User de partner |
+| `META_BUSINESS_ID` | *(tu Business Manager ID de Meta)* | Business Manager de bistro |
+| `META_SYSTEM_USER_ID` | *(tu System User ID de partner)* | System User de partner |
 | `META_SYSTEM_USER_TOKEN` | — | Token "Nunca expira" del System User (SECRETO) |
-| `META_CONFIG_ID_QA` | `941660645323511` | Embedded Signup configuration ID (qa) |
-| `META_CONFIG_ID_PDN` | `2605276259869097` | Embedded Signup configuration ID (pdn) |
+| `META_CONFIG_ID_QA` | *(tu config ID)* | Embedded Signup configuration ID (qa) |
+| `META_CONFIG_ID_PDN` | *(tu config ID)* | Embedded Signup configuration ID (pdn) |
 | `META_GRAPH_API_VERSION` | `v25.0` | Versión del Graph API |
 | `META_WEBHOOK_VERIFY_TOKEN_QA` | — | Verify token del webhook (qa) |
 | `META_WEBHOOK_VERIFY_TOKEN_PDN` | — | Verify token del webhook (pdn) |
@@ -410,7 +410,7 @@ El template es **neutral**. En qa/pdn las credenciales vienen del IAM instance p
 |----------|---------|-------------|
 | `VAPID_PUBLIC_KEY` | — | Clave VAPID pública (P-256 base64url). Generar con `php artisan push:generate-vapid-keys`. Se expone via Inertia shared props. En PDN vive en SSM Parameter Store. |
 | `VAPID_PRIVATE_KEY` | — | Clave VAPID privada. Rotar invalida TODAS las subs existentes; los browsers re-suscriben via `pushsubscriptionchange` del SW. |
-| `VAPID_SUBJECT` | `mailto:info@flexyflow.co` | Subject de contacto (mailto o URL https) |
+| `VAPID_SUBJECT` | `mailto:hello@funcionbase.com` | Subject de contacto (mailto o URL https) |
 | `PUSH_INVENTORY_DIGEST_ENABLED` | `true` | Kill-switch del digest de inventario al login |
 
 ---
@@ -432,7 +432,7 @@ El frontend es un proyecto independiente (Vite + React + Cloudflare Worker). Viv
 | Variable | Default | Descripción |
 |----------|---------|-------------|
 | `VITE_APP_NAME` | `${APP_NAME}` | Nombre en `<title>` |
-| `VITE_API_URL` | — (vacío en dev) | Origin del backend Laravel (ej. `https://panel-api.flexyflow.co`). Lo usan `apiFetch` y `routeBackend()`. Vacío en dev → paths relativos vía proxy de Vite. En pdn se define en `bistro/frontend/.env.production` para el build del Worker |
+| `VITE_API_URL` | — (vacío en dev) | Origin del backend Laravel (ej. `https://panel-api.example.com`). Lo usan `apiFetch` y `routeBackend()`. Vacío en dev → paths relativos vía proxy de Vite. En pdn se define en `bistro/frontend/.env.production` para el build del Worker |
 
 ---
 
@@ -440,7 +440,7 @@ El frontend es un proyecto independiente (Vite + React + Cloudflare Worker). Viv
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `CORS_ALLOWED_ORIGINS` | — | Orígenes permitidos para CORS con credenciales (lista separada por coma). Vacío → `config/cors.php` deriva la lista de `FRONTEND_URL` + orígenes locales (`http://localhost`, `:80`, `:5173`). NUNCA usar `*` con credenciales — el config lo rechaza. El patrón `*.flexyflow.co` aplica siempre. |
+| `CORS_ALLOWED_ORIGINS` | — | Orígenes permitidos para CORS con credenciales (lista separada por coma). Vacío → `config/cors.php` deriva la lista de `FRONTEND_URL` + orígenes locales (`http://localhost`, `:80`, `:5173`). NUNCA usar `*` con credenciales — el config lo rechaza. El patrón `*.example.com` aplica siempre. |
 
 ---
 

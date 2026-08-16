@@ -1,8 +1,8 @@
 ---
 title: "Compras y proveedores"
 description: "Órdenes de compra de insumos con trazabilidad completa: desde el borrador hasta el pago, con adjuntos y vínculo al inventario. Gestión del catálogo de proveedores."
-metaTitle: "Compras y proveedores — Manual bistro.flexyflow.co"
-metaDescription: "Cómo gestionar compras de insumos y proveedores en bistro.flexyflow.co: órdenes de compra, estados, adjuntos, registro de pago y vínculo con inventario."
+metaTitle: "Compras y proveedores — Manual bistro.example.com"
+metaDescription: "Cómo gestionar compras de insumos y proveedores en bistro.example.com: órdenes de compra, estados, adjuntos, registro de pago y vínculo con inventario."
 section: "administración"
 readingTime: "7 min"
 lastUpdated: "8 de julio de 2026"
@@ -91,7 +91,7 @@ la mercancía fue devuelta.
 <div class="callout callout-info">
 <p>
 <strong>Entrada de inventario automática:</strong> cuando marcas la OC como "recibida",
-bistro flexy te ofrece registrar la entrada de stock en
+bistro te ofrece registrar la entrada de stock en
 <a href="/manual/inventario">inventario</a> por cada ítem de la OC. Puedes
 aceptarla tal cual o ajustar cantidades si la entrega fue parcial. Si prefieres registrar
 la entrada a mano, también puedes hacerlo desde inventario directamente.

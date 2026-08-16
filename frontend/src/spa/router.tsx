@@ -20,7 +20,7 @@ import { createBrowserRouter, Outlet, useParams, useSearchParams } from 'react-r
  * chunk por ruta.
  */
 
-// Shell autenticado + rutas exclusivas del panel (#lighthouse-perf): antes se
+// Shell autenticado + rutas exclusivas del panel: antes se
 // importaban eager, así que la landing/QR/manual pública cargaban de arranque
 // todo el sidebar + sync engine offline aunque el visitante no tuviera sesión.
 // Lazy igual que el resto de páginas — sin Suspense explícito porque ninguna
@@ -98,7 +98,7 @@ const KdsStation = lazy(() => import('@/pages/kds/station'));
 const EnrollmentUser = lazy(() => import('@/pages/enrollment/user'));
 const EnrollmentCompany = lazy(() => import('@/pages/enrollment/company'));
 
-// Mesa con QR (#191) — flujo público sin auth. El QR físico apunta a
+// Mesa con QR — flujo público sin auth. El QR físico apunta a
 // `/t/{qrToken}`; cada página hidrata su contexto desde la API pública
 // `/api/v1/public/table/{qrToken}` y opera con la cookie `tdt_*`.
 const TableJoin = lazy(() => import('@/pages/table/join'));
@@ -174,7 +174,7 @@ export const router = createBrowserRouter([
                 ),
             },
 
-            // Mesa con QR (#191) — públicas, sin layout ni auth.
+            // Mesa con QR — públicas, sin layout ni auth.
             { path: '/t/:qrToken', element: <TableJoin /> },
             { path: '/t/:qrToken/menu', element: <TableMenu /> },
 

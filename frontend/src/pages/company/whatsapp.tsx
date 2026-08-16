@@ -25,7 +25,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * Empresa → WhatsApp: lista de canales (§8.2).
+ * Empresa → WhatsApp: lista de canales.
  *
  * Este rediseño saca de la pantalla todo lo que era de Meta Cloud API — el SDK
  * de Facebook, el botón de Embedded Signup, el bloque NaaS y los campos
@@ -37,7 +37,7 @@ import { useNavigate } from 'react-router-dom';
  * no eran conceptos de Meta y los sigue usando Evolution.
  */
 /**
- * n8n aún no está desplegado (F6/§9 es a futuro). La sección Automatización se
+ * n8n aún no está desplegado (F6, a futuro). La sección Automatización se
  * muestra deshabilitada con la razón —no oculta— para que la capacidad sea
  * descubrible sin permitir configurar un flujo que no tendría a dónde apuntar.
  * Cuando n8n se despliegue, poner en true (o cablear a un flag de plan/feature).
@@ -203,7 +203,7 @@ export default function WhatsappPage() {
         .join(' · ');
 
     return (
-        <PageShell title="WhatsApp · flexyflow">
+        <PageShell title="WhatsApp · bistro">
             <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
                 {loading ? (
                     <WhatsappPageSkeleton />
@@ -287,11 +287,11 @@ export default function WhatsappPage() {
                             />
                         )}
 
-                        {/* Gestión de respuestas rápidas (§8.4b punto 7). Solo owner/admin,
+                        {/* Gestión de respuestas rápidas. Solo owner/admin,
                             proxy en `canUpdateSettings`; el backend valida igual. */}
                         {canUpdateSettings && <QuickRepliesManager token={token} branches={shared.branches ?? []} />}
 
-                        {/* Automatización (n8n) por empresa/sede (F6, §9.5). Visible como
+                        {/* Automatización (n8n) por empresa/sede (F6). Visible como
                             configuración; las acciones se gatean por `whatsapp.update`. */}
                         <AutomationSection
                             token={token}

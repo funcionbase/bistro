@@ -69,7 +69,7 @@ class JwtService
 
     /**
      * Extrae el JWT de un Request en orden de prioridad:
-     *   1. Cookie HttpOnly `flexyflow_jwt` (default para navegador — no accesible a JS)
+     *   1. Cookie HttpOnly `bistro_jwt` (default para navegador — no accesible a JS)
      *   2. Header `Authorization: Bearer <token>` (clientes API externos / integraciones)
      *   3. Session flash key `jwt_token` (handoff entre redirects internos sin exponer en URL)
      *
@@ -107,7 +107,7 @@ class JwtService
      *
      * `secure` y `same_site` se leen de `config('session.*')` (env-driven). El
      * deploy es cross-origin same-site (SPA y API en hosts distintos bajo
-     * flexyflow.co): en PDN debe ir `SESSION_SAME_SITE=none` +
+     * funcionbase.com): en PDN debe ir `SESSION_SAME_SITE=none` +
      * `SESSION_SECURE_COOKIE=true` para que el navegador adjunte la cookie en
      * los fetch del SPA. En local sobre HTTP ambos quedan en su default seguro
      * (`lax` / `false`) porque el dev pasa por el proxy de Vite (same-origin).
@@ -199,8 +199,8 @@ class JwtService
             $activeCompanyNit = null;
         }
 
-        // Rol + permisos se resuelven desde BD vía la fuente de verdad única
-        // (#268): `FeaturePermissionService::resolveRoleAndPermissions`. El
+        // Rol + permisos se resuelven desde BD vía la fuente de verdad única:
+        // `FeaturePermissionService::resolveRoleAndPermissions`. El
         // mismo método lo consume `BootstrapService` en cada carga, de modo que
         // el sidebar nunca diverge de lo que el backend valida en vivo.
         $resolved = app(FeaturePermissionService::class)->resolveRoleAndPermissions($user, $activeCompanyNit);
@@ -500,7 +500,7 @@ class JwtService
             return [[], null, null];
         }
 
-        // Multi-sede (#117): owners (is_system) ven todas las sedes activas de la
+        // Multi-sede: owners (is_system) ven todas las sedes activas de la
         // empresa; el resto sólo las del pivot branch_users.
         $branches = $isOwner
             ? Branch::query()
@@ -532,7 +532,7 @@ class JwtService
             }
         }
 
-        // Fallback de selección automática de sede activa (#117 + #122 hotfix):
+        // Fallback de selección automática de sede activa:
         //  1. Si el usuario sólo tiene UNA sede accesible, esa es la activa.
         //  2. Si tiene N>1 sedes, intentamos resolver a la marcada como
         //     is_default=true. Cada empresa tiene exactamente una default

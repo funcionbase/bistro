@@ -52,7 +52,7 @@ class CashRegisterController extends Controller
         $companyNit = $this->activeCompanyNit($request);
         $branchId = $this->activeBranchId($request);
 
-        // Multi-caja (#117): si el cliente indica `cash_session_id`, devolvemos
+        // Multi-caja: si el cliente indica `cash_session_id`, devolvemos
         // el estado de ESA caja; si no, fallback a la única caja abierta de la
         // sede (sede mono-caja / cliente legacy). El catálogo completo de cajas
         // vive en GET cash-register/registers.
@@ -114,7 +114,7 @@ class CashRegisterController extends Controller
         $validated = $request->validate([
             'opening_amount' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
-            // Multi-caja (#117): qué caja abre. Opcional para retrocompat
+            // Multi-caja: qué caja abre. Opcional para retrocompat
             // (mono-caja → "Caja principal" por defecto en el service).
             'cash_register_id' => ['nullable', 'uuid'],
         ]);
@@ -161,7 +161,7 @@ class CashRegisterController extends Controller
             // tiene en su IndexedDB sin sincronizar. Si > 0, el service
             // bloquea el cierre (decisión: bloqueo duro sin escape).
             'pending_sync_count' => ['nullable', 'integer', 'min:0'],
-            // Multi-caja (#117): qué caja se cierra. Opcional para retrocompat
+            // Multi-caja: qué caja se cierra. Opcional para retrocompat
             // (si hay una sola abierta en la sede, esa).
             'cash_session_id' => ['nullable', 'uuid'],
         ]);
@@ -179,7 +179,7 @@ class CashRegisterController extends Controller
         // debe cerrar la caja (ambos bypasean el guard).
         $this->shiftGuard->assertActiveShift($user, $companyNit, $branchId);
 
-        // Resolver sesión antes del cierre para verificar autoría (#117 Fase 3).
+        // Resolver sesión antes del cierre para verificar autoría.
         // El lockForUpdate real ocurre dentro de closeSession; este resolve previo
         // es solo para el chequeo de permiso — TOCTOU aceptable en este flujo.
         $pendingSession = $this->service->resolveSessionForCharge(
@@ -189,7 +189,7 @@ class CashRegisterController extends Controller
         );
 
         // Cerrar la caja de otro cajero requiere `cash_register.operate_others`.
-        // Cubre el caso "turno anterior no cerró, supervisor cierra" (#117 Fase 3).
+        // Cubre el caso "turno anterior no cerró, supervisor cierra".
         // is_system=true (owner/admin/employee) bypasea automáticamente vía hasPermission.
         $isOthersCash = $pendingSession->opened_by_user_id !== $user->id;
         if ($isOthersCash && ! $this->permissionService->hasPermission($request, 'cash_register', 'operate_others')) {
@@ -363,7 +363,7 @@ class CashRegisterController extends Controller
             'category' => ['required', 'string', 'in:'.implode(',', $categories)],
             'payment_method' => ['nullable', 'string', 'in:'.implode(',', $methods)],
             'description' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
-            // Multi-caja (#117): contra qué caja se carga el egreso.
+            // Multi-caja: contra qué caja se carga el egreso.
             'cash_session_id' => ['nullable', 'uuid'],
             // F6: pago de tarifas a domiciliario — vincula el egreso al
             // repartidor para el cruce por courier del cierre.

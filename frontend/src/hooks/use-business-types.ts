@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api-client';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 /**
- * Vertical disponible en el catálogo (#237). Mantenido en sincronía con
+ * Vertical disponible en el catálogo. Mantenido en sincronía con
  * `App\Models\BusinessType` y `BusinessContextController::catalog()`.
  */
 export interface BusinessTypeOption {

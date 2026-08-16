@@ -14,7 +14,7 @@ interface ActivePromoCodeCardProps {
 }
 
 /**
- * Card que muestra el promo activo de la empresa + invoices afectadas. — #246.
+ * Card que muestra el promo activo de la empresa + invoices afectadas.
  *
  * Permite cancelar si `canCancel` (owner/admin). El cancel no afecta
  * invoices ya emitidas — solo deja de aplicar en futuros períodos.
@@ -50,7 +50,7 @@ export function ActivePromoCodeCard({ active, canCancel, onCancel }: ActivePromo
 
     const appliedViaLabel: Record<ActiveCompanyPromoCode['applied_via'], string> = {
         enrollment: 'Aplicado al registrarse',
-        github_action: 'Aplicado por flexyflow',
+        github_action: 'Aplicado por bistro',
         self_service: 'Aplicado desde tu panel',
     };
 

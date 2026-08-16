@@ -19,7 +19,7 @@ function PanelSkeleton({ bodyHeight = 'h-48' }: { bodyHeight?: string }) {
 }
 
 /**
- * Skeleton fiel de `/company/metrics` (#269, Fase 2).
+ * Skeleton fiel de `/company/metrics`.
  *
  * Replica:
  *  - PageHeader (eyebrow + título + descripción + acciones de período).

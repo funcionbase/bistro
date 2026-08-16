@@ -1,5 +1,5 @@
 /**
- * Detecta si el usuario opera en "courier-only mode" (#119).
+ * Detecta si el usuario opera en "courier-only mode".
  *
  * Espejo del helper backend `App\Support\PostLoginRedirect` — mantener
  * ambas listas sincronizadas. Un usuario en courier mode:
@@ -23,7 +23,7 @@ const FULL_NAV_PERMISSIONS = [
     'menu.update',
     'inventory.read',
     'shifts.read',
-    // #115 — kds.read no convierte al usuario en courier-only:
+    // kds.read no convierte al usuario en courier-only:
     // si tiene acceso al KDS quiere decir que está en cocina, no en moto.
     'kds.read',
 ] as const;

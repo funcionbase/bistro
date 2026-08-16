@@ -1,8 +1,8 @@
 ---
 title: "Chat"
 description: "El panel de conversaciones de WhatsApp: multi-sede, búsqueda, responder mensajes, medios, doble chulito azul, estado del bot y perfil del cliente."
-metaTitle: "Chat — Manual bistro.flexyflow.co"
-metaDescription: "Cómo funciona el panel de chats de WhatsApp en bistro.flexyflow.co: múltiples sedes, buscar conversaciones, enviar mensajes y medios, estado del bot."
+metaTitle: "Chat — Manual bistro.example.com"
+metaDescription: "Cómo funciona el panel de chats de WhatsApp en bistro.example.com: múltiples sedes, buscar conversaciones, enviar mensajes y medios, estado del bot."
 section: "el día a día"
 readingTime: "7 min"
 lastUpdated: "8 de julio de 2026"
@@ -12,7 +12,7 @@ lastUpdated: "8 de julio de 2026"
 
 ## Para qué sirve el panel de chat
 
-Cuando conectas tu WhatsApp del negocio a flexyflow, todos los mensajes que llegan a tu número aparecen acá. El equipo puede responder desde el panel sin necesidad de tocar el celular del negocio — y queda registro de quién atendió cada conversación.
+Cuando conectas tu WhatsApp del negocio a bistro, todos los mensajes que llegan a tu número aparecen acá. El equipo puede responder desde el panel sin necesidad de tocar el celular del negocio — y queda registro de quién atendió cada conversación.
 
 ## Multi-sede
 

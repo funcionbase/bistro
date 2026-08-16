@@ -48,7 +48,7 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
-    | El SPA standalone (#220) consume la API cross-origin: necesita CORS con
+    | El SPA standalone consume la API cross-origin: necesita CORS con
     | credenciales para que las cookies HttpOnly viajen. `paths` cubre todo lo
     | que el SPA pega cross-origin: la API REST, las rutas públicas del QR de
     | mesa, el flujo OAuth de Google y el proxy de assets de S3.

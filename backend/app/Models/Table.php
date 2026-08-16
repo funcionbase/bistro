@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Mesa física del restaurante (#191).
+ * Mesa física del restaurante.
  *
  * Una mesa pertenece a una sede (branch). El `qr_token` es único globalmente:
  * el QR físico que se imprime identifica directamente esta mesa, por eso

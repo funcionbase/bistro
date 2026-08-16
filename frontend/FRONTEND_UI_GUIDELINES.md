@@ -1,7 +1,7 @@
-# flexyflow Panel — Guía de UI v3.4
+# bistro Panel — Guía de UI v3.4
 
 
-Esta guía define el sistema visual, de copy y técnico para **bistro.flexyflow.co**. Adapta el lenguaje de la **Fase 2 del rediseño** del sitio marketing (`flexyflow.co` v2.1) a una aplicación SaaS operativa: POS, caja, planificador de turnos, reportes, PWA, modo offline.
+Esta guía define el sistema visual, de copy y técnico para **bistro.example.com**. Adapta el lenguaje de la **Fase 2 del rediseño** del sitio marketing (`example.com` v2.1) a una aplicación SaaS operativa: POS, caja, planificador de turnos, reportes, PWA, modo offline.
 
 
 **Stack:** Laravel 12 · Inertia v2 · React 19 · Tailwind CSS 4 · shadcn/ui (Radix) · Ziggy · Vite.
@@ -27,7 +27,7 @@ Lo que **no** queremos: gradientes radiales tipo startup, glow effects, ilustrac
 
 ### Diferencias respecto al marketing
 
-| Aspecto | `flexyflow.co` | `bistro.flexyflow.co` |
+| Aspecto | `example.com` | `bistro.example.com` |
 |---|---|---|
 | Tipo | Landing editorial | App SaaS operativa |
 | Bloques | Sections full-width | Páginas con sidebar |
@@ -315,7 +315,7 @@ El lime `#C0FD79` es el acento de **momentos positivos** y de **decoración edit
 
 6. **Pills / eyebrows uppercase** — chips encima de H1 con `bg-accent text-accent-foreground` (`COLABORADORES`, `RESUMEN`, `CONTACTO`, `MANUAL DEL PRODUCTO`). Mismo patrón que el website.
 7. **Dot pulse decorativo** — `h-1.5 w-1.5 rounded-full bg-accent animate-pulse` dentro de pills "En vivo", indicadores de polling activo, presencia online de un colaborador. Es decoración positiva pura, no estado crítico.
-8. **Labels de categoría sobre surface dark** — `text-accent` uppercase tracking sobre `bg-foreground` para etiquetar grupos en footer dark, sidebar dark (cuando está activo), panel oscuro de configuración. Patrón validado en footer de `flexyflow.co/` (`EXPLORAR`, `EMPRESA`).
+8. **Labels de categoría sobre surface dark** — `text-accent` uppercase tracking sobre `bg-foreground` para etiquetar grupos en footer dark, sidebar dark (cuando está activo), panel oscuro de configuración. Patrón validado en footer de `example.com/` (`EXPLORAR`, `EMPRESA`).
 9. **Stats héroe sobre block-lime** — números grandes (`24/7`, `3×`, `−60%` en el patrón `KpiHero`) sobre `bg-accent`. El lime es el lienzo; los stats viven en negro tabular encima.
 
 #### Cuándo NO — prohibido aunque parezca tentador
@@ -722,9 +722,9 @@ Banners persistentes que aparecen arriba del contenido en TODAS las páginas aut
 
 ### `accent` — coherencia con website (verificado mayo 2026)
 
-Mismo color (`#C0FD79`), **misma filosofía**. Una inspección visual del website `flexyflow.co` realizada en mayo 2026 confirma que app y website convergen en el uso del lime:
+Mismo color (`#C0FD79`), **misma filosofía**. Una inspección visual del website `example.com` realizada en mayo 2026 confirma que app y website convergen en el uso del lime:
 
-**Patrón observado en el website 2026** (home `flexyflow.co/`):
+**Patrón observado en el website 2026** (home `example.com/`):
 
 - 1 `aside.bg-accent` grande con stats hero (`24/7`, `3×`, `−60%`) — equivalente al `KpiHero` de la app.
 - 1 `section.cta-section bg-accent text-accent-foreground py-28 md:py-40` como CTA final — equivalente al block-lime hero/CTA de la app.
@@ -1369,7 +1369,7 @@ PDFs generados desde Blade (`resources/views/pdf/*.blade.php`) — workforce rep
 
 ### Reglas de brand en PDF
 
-- **Header**: logo + razón social + NIT + sede. Usar `FlexyFont` para "FLEXYFLOW" si aparece como wordmark.
+- **Header**: logo + razón social + NIT + sede. Usar `FlexyFont` para "BISTRO" si aparece como wordmark.
 - **Títulos de sección y totales**: `FlexyFont` para diferenciarlos del body.
 - **Body, tablas, metadatos**: `Instrument Sans` o fallback `Arial`/`Helvetica` (no todos los PDFs renderizan bien custom fonts).
 - **Color**: fondo blanco siempre. Headings `#232733`, body `#1E232E`. Lime solo en banners de "estado conciliado".

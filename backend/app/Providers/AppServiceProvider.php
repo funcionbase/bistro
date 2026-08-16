@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // ImageManager con driver GD para rasterización de logos PWA (#140).
+        // ImageManager con driver GD para rasterización de logos PWA.
         // GD viene con PHP por defecto en la mayoría de hosts; si en producción
         // se prefiere Imagick, basta swappear el driver aquí.
         $this->app->singleton(ImageManager::class, fn () => new ImageManager(new GdDriver));
@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
         // Observers de modelos.
         CompanyRolePermission::observe(CompanyRolePermissionObserver::class);
 
-        // #257 — Canal de correo idempotente para notifs billing. Deduplica a
+        // Canal de correo idempotente para notifs billing. Deduplica a
         // nivel (notif, user) en el momento del envio (dentro del worker), de
         // modo que un reintento de cola no dispare un segundo correo. Las notifs
         // billing devuelven ['deduped_mail'] en via().
@@ -130,7 +130,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->ip().':'.$nit);
         });
 
-        // Fidelización pública (#122): consulta/canje desde menú público.
+        // Fidelización pública: consulta/canje desde menú público.
         // 10 req/min por IP+nit — protege contra enumeración de phones.
         RateLimiter::for('loyalty-public', function (Request $request) {
             $nit = $request->route('nit') ?? 'unknown';
@@ -156,7 +156,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->ip().':'.$token);
         });
 
-        // KDS device-token (#115): tablets de cocina con polling cada 2s
+        // KDS device-token: tablets de cocina con polling cada 2s
         // pueden hacer hasta ~30 req/min en lectura + acciones manuales del
         // cocinero. 60/min per token da margen sin invitar abuso. La key es
         // el token_hash inyectado por EnsureKdsDeviceToken — sin token, se
@@ -168,7 +168,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($key);
         });
 
-        // Mesa pública (#191): endpoint /t/{qr_token}/*. Doble bucket — uno por
+        // Mesa pública: endpoint /t/{qr_token}/*. Doble bucket — uno por
         // IP para frenar abuso individual y otro por QR para tolerar el pico
         // legítimo de un grupo grande de comensales escaneando la misma mesa.
         // Defaults (30/IP y 200/QR) configurables vía config/tables.php.

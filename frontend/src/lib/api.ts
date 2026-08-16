@@ -2,9 +2,9 @@ import { AUTH_MARKER, clearToken, getToken, markCookieMigrated } from './token';
 
 /**
  * Base del backend. En dev queda vacío → paths relativos que resuelve el
- * proxy de Vite. En producción cross-origin (#220) es `VITE_API_URL`
- * (ej. https://bistro-api.flexyflow.co) — el frontend vive en otro
- * host (bistro.flexyflow.co), así que los paths relativos no sirven.
+ * proxy de Vite. En producción cross-origin es `VITE_API_URL`
+ * (ej. https://bistro-api.example.com) — el frontend vive en otro
+ * host (bistro.example.com), así que los paths relativos no sirven.
  */
 const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL) ?? '';
 
@@ -19,7 +19,7 @@ export function resolveBackendUrl(url: string): string {
 /**
  * Wrapper sobre `fetch` que envía credenciales (cookies) y maneja 401.
  *
- * Estado FINAL: el JWT vive como cookie HttpOnly `flexyflow_jwt` que el browser
+ * Estado FINAL: el JWT vive como cookie HttpOnly `bistro_jwt` que el browser
  * adjunta automáticamente vía `credentials: 'include'`. El frontend NO envía
  * Bearer ni accede al JWT — robo por XSS imposible.
  *
@@ -57,11 +57,11 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
         markCookieMigrated();
     }
 
-    // #154: si el gate `EnsureCompanyVerified` rechaza, redirigir a la pantalla
+    // Si el gate `EnsureCompanyVerified` rechaza, redirigir a la pantalla
     // "Cuenta en revisión". El backend marca este caso con `code=company_not_verified`
     // para distinguirlo de otros 403 (RBAC, sede no autorizada, etc.).
     //
-    // Nota #193: 403 `company_payment_blocked` NO se auto-redirige a /billing.
+    // 403 `company_payment_blocked` NO se auto-redirige a /billing.
     // El middleware web (`EnsureCompanyNotBlocked`) ya redirige las rutas
     // web bloqueadas, y el dashboard híbrido necesita seguir mostrando KPIs
     // arriba del SuspendedBanner. Redirigir cada fetch fallido rompería

@@ -16,7 +16,7 @@ use Illuminate\Foundation\Queue\Queueable;
 /**
  * Envía notificación push a los usuarios con permiso `orders.update` activo
  * en la sede de la orden, anunciando un item pendiente de aprobación
- * (#149 CA5 — evento `OrderItemSubmittedForApproval`).
+ * (evento `OrderItemSubmittedForApproval`).
  *
  * El job recibe sólo el `orderItemId` para que su serialización a la cola
  * sea barata. La resolución de la orden, mesa, suscripciones y permisos

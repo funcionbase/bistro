@@ -28,7 +28,7 @@ interface BranchComparisonTableProps {
 
 
 /**
- * Tabla comparativa de aporte por sede en reportes consolidados (#192 Fase 3.5).
+ * Tabla comparativa de aporte por sede en reportes consolidados.
  *
  * Se renderiza cuando el reporte llega con `scope === 'consolidated'` y
  * `per_branch[]` no está vacío. Ordenado por `net_revenue` descendente

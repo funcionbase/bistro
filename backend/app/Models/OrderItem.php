@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Ítem materializado de una orden (#191, #293).
+ * Ítem materializado de una orden.
  *
  * FUENTE de líneas de la orden: todos los flujos de escritura (caja, QR,
  * sync offline, append) crean filas acá; `orders.items` JSON es una

@@ -28,7 +28,7 @@ class ChatAuditLogResource extends JsonResource
      * Etiquetas legibles. Un slug sin traducir ("chat.bot.toggled") es ruido
      * para quien atiende un restaurante.
      *
-     * `chat.reassigned` es el nombre REAL que emite el código desde #192 — no
+     * `chat.reassigned` es el nombre REAL que emite el código — no
      * `chat.reassign_branch` (como decía el catálogo) ni `chat.branch.reassigned`
      * (como decía el plan). Renombrarlo huerfanaría las filas históricas.
      *

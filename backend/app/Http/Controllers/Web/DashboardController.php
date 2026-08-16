@@ -68,7 +68,7 @@ class DashboardController extends Controller
                         ->first(fn (array $c) => $c['nit'] === $activeCompanyNit);
                 }
 
-                // Multi-sede (#117): el dashboard NO pasa por branch.access (es web,
+                // Multi-sede: el dashboard NO pasa por branch.access (es web,
                 // no API), así que el BranchScope global no recibe la sede activa
                 // automáticamente. La inyectamos manualmente desde el JWT.
                 //
@@ -149,7 +149,7 @@ class DashboardController extends Controller
     /**
      * Resumen de insumos bajo mínimo para el banner de alerta del dashboard.
      *
-     * Multibodega (#120): low-stock se mide por (ingrediente, bodega) — cada
+     * Multibodega: low-stock se mide por (ingrediente, bodega) — cada
      * fila puede aparecer una vez por bodega con stock bajo. El banner muestra
      * el nombre del insumo + la bodega afectada para que el operador sepa
      * dónde reabastecer.

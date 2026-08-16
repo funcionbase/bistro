@@ -1,7 +1,7 @@
 ---
 title: "Usuarios, roles y permisos"
 description: "Cómo decides qué puede tocar cada miembro de tu operación. Tres roles base, ocho plantillas listas, un catálogo de unos 82 permisos y excepciones individuales cuando hace falta."
-metaTitle: "Usuarios, roles y permisos — Manual bistro.flexyflow.co"
+metaTitle: "Usuarios, roles y permisos — Manual bistro.example.com"
 metaDescription: "Tres roles base, ocho plantillas operativas listas para usar y un editor fino para personalizar lo que cada miembro del equipo puede hacer. Invitaciones por correo con vigencia de 7 días."
 section: "administración"
 readingTime: "9 min"
@@ -14,7 +14,7 @@ lastUpdated: "8 de julio de 2026"
 
 Cada miembro de tu equipo tiene un **rol** dentro del negocio. El rol decide a qué módulos puede entrar (menú, pedidos, caja, métricas, inventario, chats, etc.) y qué puede hacer en cada uno (*ver*, *crear*, *actualizar*, *eliminar*).
 
-Cuando creas tu negocio, bistro flexy te deja armados los tres roles base. A partir de ahí decides si te quedas con esos o si activas las plantillas operativas pre-armadas (mesero, cocinero, cajero, gerente…) para no tener que configurar permisos uno por uno.
+Cuando creas tu negocio, bistro te deja armados los tres roles base. A partir de ahí decides si te quedas con esos o si activas las plantillas operativas pre-armadas (mesero, cocinero, cajero, gerente…) para no tener que configurar permisos uno por uno.
 
 ### Las cuatro acciones por módulo
 
@@ -194,7 +194,7 @@ En **administración → usuarios y roles → usuarios** ves la tabla con todos 
 Escribes el correo y eliges el rol con el que arrancará la persona. La invitación va por email con un enlace personal y **dura 7 días** antes de vencerse.
 
 - La persona entra al enlace, inicia sesión con su Google y queda enrolada al instante.
-- Si ya tenía cuenta en flexyflow, simplemente se le agrega tu operación como un negocio más.
+- Si ya tenía cuenta en bistro, simplemente se le agrega tu operación como un negocio más.
 
 ## Editor fino de permisos (excepciones individuales)
 

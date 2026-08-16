@@ -33,7 +33,7 @@ class ReassignDeliveryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // CIBER-01: courier scopeado a la empresa activa (era exists global).
+            // Courier scopeado a la empresa activa (era exists global).
             'user_id' => ['required', 'uuid', Rule::exists('company_users', 'user_id')
                 ->where('company_nit', $this->attributes->get('active_company_nit'))],
             'reason' => ['nullable', new SafePlainText(maxBytes: 255, allowWhitespace: true)],

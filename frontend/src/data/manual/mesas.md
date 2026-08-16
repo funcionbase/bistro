@@ -1,8 +1,8 @@
 ---
 title: "Mesas y QR"
 description: "El mapa de mesas, las sesiones con QR, aprobación del mesero, cobro dividido y cierre de mesa."
-metaTitle: "Mesas y QR — Manual bistro.flexyflow.co"
-metaDescription: "Cómo funciona el sistema de mesas y QR de bistro.flexyflow.co: sesiones, aprobación, cobro dividido entre comensales y cierre automático."
+metaTitle: "Mesas y QR — Manual bistro.example.com"
+metaDescription: "Cómo funciona el sistema de mesas y QR de bistro.example.com: sesiones, aprobación, cobro dividido entre comensales y cierre automático."
 section: "el día a día"
 readingTime: "7 min"
 lastUpdated: "8 de julio de 2026"

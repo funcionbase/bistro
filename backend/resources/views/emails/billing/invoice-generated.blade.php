@@ -19,7 +19,7 @@ Se generó la factura de tu suscripción **{{ $plan['name'] }}** para el períod
 @endphp
 @include('emails.partials.data-table', ['rows' => $rows])
 
-Para pagar, ingresa al panel de facturación. Ahí encontrarás los datos de transferencia BREB / cuenta bancaria de flexyflow y la opción para subir el comprobante de pago. Apenas lo verifiquemos, marcamos tu factura como pagada.
+Para pagar, ingresa al panel de facturación. Ahí encontrarás los datos de transferencia BREB / cuenta bancaria de bistro y la opción para subir el comprobante de pago. Apenas lo verifiquemos, marcamos tu factura como pagada.
 
 @component('mail::button', ['url' => $panelUrl, 'color' => 'primary'])
 Ver factura y subir comprobante

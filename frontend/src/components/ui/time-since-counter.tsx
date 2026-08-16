@@ -15,7 +15,7 @@ interface TimeSinceCounterProps {
 
 /**
  * Chip con cronómetro vivo que muestra minutos transcurridos desde
- * `sinceIso`. Útil para el KDS (#191 Fase 5) — pinta verde durante los
+ * `sinceIso`. Útil para el KDS — pinta verde durante los
  * primeros minutos, ámbar al pasar `warningMinutes`, rojo al pasar
  * `dangerMinutes`.
  *

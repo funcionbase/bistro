@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  * Retira el sistema interno de versionado de documentos legales.
  *
  * Los documentos (TOS, privacidad, contrato) ahora viven en el wiki externo
- * (https://flexyflow.co/wiki/restaurante/legal/...). La tabla `legal_documents`
+ * (https://funcionbase.com/wiki/restaurante/legal/...). La tabla `legal_documents`
  * y su sync vía `legal:sync` quedan obsoletas.
  *
  * `user_acceptances` se conserva con sus registros históricos completos

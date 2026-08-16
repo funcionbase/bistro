@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * #257 — Registro append-only de notificaciones billing despachadas.
+ * Registro append-only de notificaciones billing despachadas.
  *
  * UNIQUE(notification_class, idempotency_key, user_id) garantiza que un
  * mismo evento jamas se envie dos veces al mismo user. Permite consultar

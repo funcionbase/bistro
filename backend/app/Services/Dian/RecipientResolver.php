@@ -13,7 +13,7 @@ use App\Services\Dian\Exceptions\NeedsRecipientDataException;
 
 /**
  * Resuelve el adquirente del documento aplicando la cascada §5.3 del
- * refinamiento (refactor #235 agrega prioridad 1.5):
+ * refinamiento:
  *
  *   1. billing_* snapshot ya capturado en la `Order` (modal del cajero) →
  *      el cajero capturó datos explícitos: ganan siempre.

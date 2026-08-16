@@ -8,7 +8,7 @@ namespace App\Services\Dian\DTOs;
  * Línea del documento (item de la orden).
  *
  * Producida por `DianDocumentBuilder` desde `Order::items[]` o
- * `OrderItem`s materializados (#191). Cada línea lleva su desglose
+ * `OrderItem`s materializados. Cada línea lleva su desglose
  * tributario propio porque DIAN exige `<cac:InvoiceLine>` con su
  * `<cac:TaxTotal>` por línea (la suma debe matchear `LegalMonetaryTotal`).
  */

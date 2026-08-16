@@ -7,7 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Catálogo cerrado de verticales del producto (#237).
+ * Catálogo cerrado de verticales del producto.
  *
  * El catálogo nace en la migración `2026_05_24_120000_create_business_types_block.php`.
  * Este seeder es la **fuente operativa** que permite refrescar / agregar entradas

@@ -29,7 +29,7 @@ class AccountEmailChangeController extends Controller
             'token' => $token,
             'newEmail' => $pending?->new_email,
             'loginUrl' => $this->loginUrl(),
-            'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+            'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
         ]);
     }
 
@@ -44,7 +44,7 @@ class AccountEmailChangeController extends Controller
                 'ok' => false,
                 'message' => $e->getMessage(),
                 'loginUrl' => $this->loginUrl(),
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
         }
 
@@ -52,7 +52,7 @@ class AccountEmailChangeController extends Controller
             'ok' => true,
             'newEmail' => $user->email,
             'loginUrl' => $this->loginUrl(),
-            'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+            'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
         ]);
     }
 

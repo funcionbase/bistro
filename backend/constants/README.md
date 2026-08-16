@@ -27,7 +27,7 @@
 - No se generan tipos TypeScript ni constantes PHP desde estos `.md`. Si en el
   futuro se desea autogenerar (por ejemplo `permissions.generated.ts` desde el
   catálogo), se abre sub-issue específico (mencionado en
-  [#201 — Fuera de alcance](https://github.com/cristianmarint/flexyflow.restaurante/issues/201)).
+  [#201 — Fuera de alcance](https://github.com/cristianmarint/bistro.restaurante/issues/201)).
 - No es documentación de producto / negocio ni de arquitectura ejecutiva
   (todo el material humano vive en `docs/wiki/`).
 

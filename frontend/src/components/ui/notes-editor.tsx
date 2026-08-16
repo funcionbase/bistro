@@ -30,7 +30,7 @@ interface NotesEditorProps {
 /**
  * Editor reutilizable de notas con contador y botones rápidos.
  *
- * Pensado para el flujo de mesa con QR (#191): notas individuales por item
+ * Pensado para el flujo de mesa con QR: notas individuales por item
  * en el carrito del comensal, notas grupales/cocina en el detalle, y el
  * mesero editando notas en la pantalla de aprobación. La capa de DB siempre
  * recorta a 500 caracteres; este componente refleja el límite en UI.

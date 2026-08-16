@@ -70,7 +70,7 @@
         <table>
             <tr>
                 <td style="vertical-align: middle; width: 50%;">
-                    <div class="brand font-brand">flexyflow.co</div>
+                    <div class="brand font-brand">example.com</div>
                     <div class="brand-sub">construimos la operación digital de tu negocio</div>
                 </td>
                 <td style="vertical-align: top; width: 50%;">

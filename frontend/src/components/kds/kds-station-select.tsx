@@ -12,13 +12,13 @@ interface KdsStationSelectProps {
     id?: string;
     /**
      * Texto cuando no hay estación elegida. Por defecto refleja el comportamiento
-     * de fallback (#115): los items caen en la estación default de la sede.
+     * de fallback: los items caen en la estación default de la sede.
      */
     fallbackLabel?: string;
 }
 
 /**
- * Selector reutilizable de estaciones KDS de la sede activa (#115).
+ * Selector reutilizable de estaciones KDS de la sede activa.
  *
  * Carga la lista vía `GET /api/v1/kds/stations` al montarse. El valor `null`
  * representa "sin asignar" — los items de la categoría caerán en la estación

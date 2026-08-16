@@ -3,7 +3,7 @@ import { forwardRef } from 'react';
 import { Link as RouterLink, type LinkProps } from 'react-router-dom';
 
 /**
- * Link de navegación del shell SPA (#220).
+ * Link de navegación del shell SPA.
  *
  * Envuelve el `<Link>` de React Router. Si el destino no está registrado
  * en el router, el catch-all hace hard navigation.
@@ -15,7 +15,7 @@ import { Link as RouterLink, type LinkProps } from 'react-router-dom';
  * `data-[active=true]:…` pero sin el atributo, y el item activo del sidebar
  * nunca se resalta.
  *
- * Prefetch (#269, Fase 4): en hover/focus dispara `preloadRoute(href)`, que
+ * Prefetch: en hover/focus dispara `preloadRoute(href)`, que
  * descarga el chunk lazy de la ruta destino (el `prefetch='intent'` de RR es
  * no-op con `React.lazy`). Idempotente y gateado por el mapa de rutas, así que
  * links no registrados (p.ej. detalles) no hacen nada.

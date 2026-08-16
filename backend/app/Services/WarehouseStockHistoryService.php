@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Snapshots históricos del stock por bodega (#120).
+ * Snapshots históricos del stock por bodega.
  *
  * Patrón alineado con `MenuItemCostHistory`:
  *  - `snapshotDaily(?date)`: idempotente, upsert por (warehouse, ingredient, date).

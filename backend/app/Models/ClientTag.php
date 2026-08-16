@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 /**
  * Etiqueta sobre un cliente del restaurante.
  *
- * Identidad canónica desde #235: `contact_id` (FK a contacts). UNIQUE parcial
+ * Identidad canónica: `contact_id` (FK a contacts). UNIQUE parcial
  * en (company_nit, contact_id, tag) impide duplicados. El UNIQUE legacy por
  * phone subsiste para filas históricas sin contact_id.
  *

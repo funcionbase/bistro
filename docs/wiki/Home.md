@@ -1,11 +1,11 @@
-# flexyflow Restaurante — Wiki
+# bistro — Wiki
 
 > Documentación técnica y funcional de la plataforma SaaS de gestión de restaurantes.
 > Última actualización: 2026-05-28.
 
 ---
 
-## ¿Qué es flexyflow?
+## ¿Qué es bistro?
 
 Plataforma multi-empresa y multi-sede para la gestión integral de restaurantes en Colombia. Cubre el ciclo operativo completo: desde el onboarding del negocio, la captura de pedidos por mesa / mostrador / domicilio / WhatsApp, la cocina con KDS, la caja y la facturación electrónica DIAN, hasta el inventario, las compras, los reportes y el programa de fidelización.
 

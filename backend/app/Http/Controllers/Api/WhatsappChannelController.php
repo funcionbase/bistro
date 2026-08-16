@@ -382,7 +382,7 @@ class WhatsappChannelController extends Controller
             'chat_id' => $chat->id,
             'sender' => 'operator',
             'sent_by_user_id' => $this->actor($request)?->id,
-            'body' => 'Mensaje de prueba de flexyflow. Si lo estás viendo, tu WhatsApp quedó conectado.',
+            'body' => 'Mensaje de prueba de bistro. Si lo estás viendo, tu WhatsApp quedó conectado.',
             'sent_at' => $now,
         ]);
 

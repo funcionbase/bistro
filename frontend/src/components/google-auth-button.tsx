@@ -18,7 +18,7 @@ interface GoogleAuthButtonProps {
  *
  * Excepción de marca documentada: el logo de Google se mantiene multicolor
  * por requisito legal de Google Brand Guidelines, aunque rompa la regla de
- * "una sola superficie lime" de Flexyflow.
+ * "una sola superficie lime" de funcionbase.
  */
 export default function GoogleAuthButton({
     label = 'Continuar con Google',

@@ -9,7 +9,7 @@ use Illuminate\Validation\Validator;
 /**
  * Endpoint: GET /api/metrics/sms/counts (MetricsController). Requiere reports.read.
  *
- * SMS enviados al cliente por cambios de estado de orden (#275, Fase 3).
+ * SMS enviados al cliente por cambios de estado de orden (Fase 3).
  * Períodos: today, week, month, custom (custom requiere date_from y date_to).
  */
 class GetSmsCountsRequest extends FormRequest

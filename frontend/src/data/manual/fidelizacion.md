@@ -1,7 +1,7 @@
 ---
 title: "Puntos de fidelidad"
 description: "El cliente acumula puntos cada vez que te compra y los canjea por descuentos. Niveles, libro mayor auditado, expiración automática y reportes consolidados entre sedes."
-metaTitle: "Puntos de fidelidad — Manual bistro.flexyflow.co"
+metaTitle: "Puntos de fidelidad — Manual bistro.example.com"
 metaDescription: "Programa de fidelización con puntos por compra, niveles (bronce, plata, oro), canje por cupones amarrados al teléfono, libro mayor auditado y reportes consolidados entre sedes."
 section: "clientes y mercadeo"
 readingTime: "7 min"

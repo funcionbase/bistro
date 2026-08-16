@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 /**
  * Genera las facturas mensuales de suscripción para todas las empresas activas.
  *
- * Cron: primer día del mes (post-pago — factura el mes anterior, decisión #246).
+ * Cron: primer día del mes (post-pago — factura el mes anterior).
  * Muta `invoices` + `invoice_lines`. Idempotente:
  *  - BillingService::generateMonthlyInvoices() omite suscripciones con factura
  *    no-void para el período.

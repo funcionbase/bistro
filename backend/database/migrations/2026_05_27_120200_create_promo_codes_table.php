@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #246 Fase 1 — Catálogo de promo codes administrables (`promo_codes`).
+ * Catálogo de promo codes administrables (`promo_codes`).
  *
  * Reemplaza el modelo legacy `subscription_discounts` (descuento ad-hoc por
  * empresa) por dos tablas:
@@ -18,12 +18,12 @@ use Illuminate\Support\Facades\Schema;
  *
  * Constraints:
  *  - `code` único globalmente (UPPER, slug URL).
- *  - `discount_percent` BETWEEN 1 AND 100 (decisión #246 #1 — permite 100% = mes gratis).
+ *  - `discount_percent` BETWEEN 1 AND 100 (permite 100% = mes gratis).
  *  - `usage_count <= max_companies` (cuando max_companies != null) — enforced
  *    en service layer con `lockForUpdate`.
  *  - `starts_at < ends_at` (vigencia del código en sí).
  *
- * Soft-deleted (política #246 §9).
+ * Soft-deleted.
  */
 return new class extends Migration
 {

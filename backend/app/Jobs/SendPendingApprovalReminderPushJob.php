@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Recordatorio push para items con `status='pending_approval'` y
- * `submitted_at` antiguo (#149 CA5).
+ * `submitted_at` antiguo.
  *
  * Disparado por `notifications:remind-pending-approvals` (cron each minute).
  * Reutiliza el mismo tag que el push inicial para que el OS lo reemplace

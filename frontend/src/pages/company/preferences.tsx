@@ -186,7 +186,6 @@ export default function CompanyPreferences() {
                 )}
 
                 <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Pedidos */}
                     <DashboardPanel title="Pedidos" icon={ShoppingCart}>
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -304,7 +303,6 @@ export default function CompanyPreferences() {
                         </div>
                     </DashboardPanel>
 
-                    {/* Notificaciones */}
                     <DashboardPanel title="Notificaciones" icon={Bell}>
                         <div className="space-y-4">
                             <div className="border-border flex items-center gap-3 rounded-lg border px-3 py-2.5">
@@ -383,7 +381,7 @@ export default function CompanyPreferences() {
                         </div>
                     </DashboardPanel>
 
-                    {/* Reportes — food cost (issue #113) */}
+                    {/* Reportes — food cost */}
                     <DashboardPanel title="Reportes" icon={BarChart3}>
                         <div className="space-y-4">
                             <div className="space-y-1.5">
@@ -425,7 +423,7 @@ export default function CompanyPreferences() {
                 </div>
 
                 {/*
-                    Alertas accionables (#124). Solo lectura para no-owners
+                    Alertas accionables. Solo lectura para no-owners
                     (la validación final la hace el backend con permission:company.update).
                 */}
                 {!readOnly && <AlertRulesConfig />}

@@ -1,7 +1,7 @@
 import { ROUTE_MAP } from './route-map';
 
 /**
- * Resolver de rutas con nombre para el shell SPA (#220).
+ * Resolver de rutas con nombre para el shell SPA.
  *
  * Resuelve nombres de ruta contra `ROUTE_MAP` — el mapa autogenerado desde
  * `php artisan route:list`. Reemplaza al `route()` global de Ziggy.
@@ -11,7 +11,7 @@ import { ROUTE_MAP } from './route-map';
  *    para `<a href>` y navegación a rutas del SPA (las sirve el Worker).
  *  - `routeBackend(name, params)` prefija con `VITE_API_URL` para que el
  *    `<a href>` apunte al backend Laravel cross-origin (ej. el flujo OAuth de
- *    Google: el botón debe ir DIRECTO a `bistro-api.flexyflow.co/auth/google`,
+ *    Google: el botón debe ir DIRECTO a `bistro-api.example.com/auth/google`,
  *    no a una ruta inexistente del Worker SPA).
  *
  * Cuándo usar `routeBackend` en vez de `route`:
@@ -27,7 +27,7 @@ type RouteParams = Record<string, string | number> | undefined;
 /**
  * Host del backend Laravel. En dev queda vacío → paths relativos que resuelve
  * el proxy de Vite (ver `vite.config.ts` server.proxy). En PDN/QA viene de
- * `VITE_API_URL` (ej. `https://bistro-api.flexyflow.co`).
+ * `VITE_API_URL` (ej. `https://bistro-api.example.com`).
  *
  * Definida fuera de la función para no recalcularse en cada llamada.
  */

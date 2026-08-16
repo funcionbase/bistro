@@ -17,7 +17,7 @@ return [
 
     // Listado completo de status válidos en BD.
     //
-    // pending_approval (estado nuevo introducido por #191): órdenes de mesa con QR
+    // pending_approval (estado nuevo): órdenes de mesa con QR
     // que aún no han sido aprobadas por el mesero. NO entran en `operational`,
     // `kanban`, ni `revenue`. Solo aparecen en pantallas dedicadas (mesero).
     'all' => [
@@ -122,7 +122,7 @@ return [
 
     // Mapeo de status → categoría (para lógica de UI o policies).
     //
-    // `pre_operational` es categoría nueva (#191) para órdenes de mesa con QR
+    // `pre_operational` es categoría nueva para órdenes de mesa con QR
     // que aún no fueron aprobadas por el mesero. No son ingreso ni operación
     // confirmada; viven en una pantalla aparte (mesero) hasta que se aprueban.
     'category' => [
@@ -138,7 +138,7 @@ return [
         'abandoned' => 'terminal_failure',
     ],
 
-    // Estados independientes de cada `order_item` (#191). Una orden de mesa
+    // Estados independientes de cada `order_item`. Una orden de mesa
     // tiene varios items con ciclo de vida propio: el cliente los agrega
     // (pending_approval), el mesero los aprueba (approved), cocina los
     // produce (in_kitchen → ready), el mesero los entrega (served), y

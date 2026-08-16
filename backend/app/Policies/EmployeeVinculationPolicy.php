@@ -7,7 +7,7 @@ use App\Models\Employee;
 use App\Models\User;
 
 /**
- * Policy de cambio de estado de vinculación de un colaborador (#182 §12).
+ * Policy de cambio de estado de vinculación de un colaborador.
  *
  * Las 4 reglas duras:
  *  1. Un usuario no puede cambiar su propio estado.

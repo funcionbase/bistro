@@ -1,6 +1,6 @@
 # EMAIL_SES_SETUP — Amazon SES + Cloudflare Email Routing
 
-> Política de envío y recepción de correo electrónico para `flexyflow.co`.
+> Política de envío y recepción de correo electrónico para `funcionbase.com`.
 > Fuente de verdad para la configuración SES, DKIM, SPF, DMARC, IAM y
 > Cloudflare Routing. Aplicable a `qa` y `pdn`.
 
@@ -9,7 +9,7 @@
 ```
 ┌─────────────────────────┐                ┌──────────────────────────┐
 │  Laravel app (EC2 ASG)  │  HTTPS API     │  Amazon SES (us-east-1)  │
-│  driver: ses            │ ─────────────► │  identity: flexyflow.co  │
+│  driver: ses            │ ─────────────► │  identity: funcionbase.com  │
 │  via IAM instance role  │                │  DKIM verificado en CF   │
 └─────────────────────────┘                └──────────┬───────────────┘
                                                        │  envia
@@ -21,9 +21,9 @@
 
 ┌────────────────────────────┐  MX: route1/2/3.mx.cloudflare.net
 │  Quien escribe a           │ ──────────────────────────────────────┐
-│  hola@flexyflow.co,        │                                       │
-│  soporte@flexyflow.co,     │                                       ▼
-│  ops@flexyflow.co, ...     │                            ┌──────────────────────┐
+│  hello@funcionbase.com,        │                                       │
+│  soporte@funcionbase.com,     │                                       ▼
+│  ops@funcionbase.com, ...     │                            ┌──────────────────────┐
 └────────────────────────────┘                            │  Cloudflare Email    │
                                                           │  Routing (gratis)    │
                                                           │  forward → Gmail     │
@@ -49,13 +49,13 @@ viene nativo en Laravel 12. Stateless, multi-instancia safe (CLAUDE.md §12).
 | Variable                  | Local              | qa/pdn                                    | Notas                                              |
 | ------------------------- | ------------------ | ----------------------------------------- | -------------------------------------------------- |
 | `MAIL_MAILER`             | `log`              | `ses`                                     | Override via `sync-env-secret.yml` (GH Env Vars).  |
-| `MAIL_FROM_ADDRESS`       | `noreply@...`      | `noreply@flexyflow.co`                    | Debe pertenecer al dominio verificado en SES.      |
+| `MAIL_FROM_ADDRESS`       | `noreply@...`      | `noreply@funcionbase.com`                    | Debe pertenecer al dominio verificado en SES.      |
 | `MAIL_FROM_NAME`          | `${APP_NAME}`      | `${APP_NAME}`                             | Hereda del nombre de la app.                       |
-| `MAIL_REPLY_TO_ADDRESS`   | `soporte@...`      | `soporte@flexyflow.co`                    | Buzon real (Cloudflare Routing → Gmail).           |
+| `MAIL_REPLY_TO_ADDRESS`   | `soporte@...`      | `soporte@funcionbase.com`                    | Buzon real (Cloudflare Routing → Gmail).           |
 | `AWS_DEFAULT_REGION`      | `us-east-1`        | `us-east-1`                               | Mantener consistente con S3.                       |
 | `AWS_ACCESS_KEY_ID`       | (MinIO o vacio)    | **vacio**                                 | IAM instance profile entrega credenciales.         |
 | `AWS_SECRET_ACCESS_KEY`   | (MinIO o vacio)    | **vacio**                                 | IAM instance profile entrega credenciales.         |
-| `SES_CONFIGURATION_SET`   | vacio              | `flexyflow-default` (cuando Fase 2 activa) | Habilita SNS para bounces/complaints.              |
+| `SES_CONFIGURATION_SET`   | vacio              | `bistro-default` (cuando Fase 2 activa) | Habilita SNS para bounces/complaints.              |
 | `SES_WEBHOOK_SECRET`      | vacio              | secret cuando Fase 2 activa               | Defensa en profundidad sobre firma SNS nativa.     |
 
 ## 3. Setup inicial — checklist completo
@@ -63,22 +63,22 @@ viene nativo en Laravel 12. Stateless, multi-instancia safe (CLAUDE.md §12).
 ### 3.1 Verificar el dominio en SES
 
 1. AWS Console → SES (region **us-east-1**) → **Verified identities** → **Create identity**.
-2. Tipo: **Domain**, valor: `flexyflow.co`.
-3. **Use a custom MAIL FROM domain**: `mail.flexyflow.co` (subdominio).
+2. Tipo: **Domain**, valor: `funcionbase.com`.
+3. **Use a custom MAIL FROM domain**: `mail.example.com` (subdominio).
 4. **Behavior on MX failure**: `UseDefaultValue`.
 5. **DKIM**: dejar `Easy DKIM` con `RSA_2048_BIT`. SES genera 3 CNAMEs.
 6. Click **Create identity**.
 
 ### 3.2 Pegar los CNAMEs de DKIM en Cloudflare
 
-En el panel CF de `flexyflow.co` → **DNS** → **Records** → **Add record**:
+En el panel CF de `funcionbase.com` → **DNS** → **Records** → **Add record**:
 
 ```
 Type   Name                                          Content
 ─────  ────────────────────────────────────────────  ────────────────────────────────────
-CNAME  <token1>._domainkey.flexyflow.co             <token1>.dkim.amazonses.com
-CNAME  <token2>._domainkey.flexyflow.co             <token2>.dkim.amazonses.com
-CNAME  <token3>._domainkey.flexyflow.co             <token3>.dkim.amazonses.com
+CNAME  <token1>._domainkey.example.com             <token1>.dkim.amazonses.com
+CNAME  <token2>._domainkey.example.com             <token2>.dkim.amazonses.com
+CNAME  <token3>._domainkey.example.com             <token3>.dkim.amazonses.com
 ```
 
 **Proxy status**: DNS only (gris, NO naranja). DKIM no funciona con proxy CF.
@@ -87,13 +87,13 @@ Esperar 5–15 min y refrescar SES; los 3 CNAMEs deben aparecer en **Verified**.
 
 ### 3.3 Custom MAIL FROM domain
 
-SES exige 1 MX + 1 SPF TXT para `mail.flexyflow.co`:
+SES exige 1 MX + 1 SPF TXT para `mail.example.com`:
 
 ```
 Type   Name                       Content
 ─────  ─────────────────────────  ────────────────────────────────────
-MX     mail.flexyflow.co          10 feedback-smtp.us-east-1.amazonses.com
-TXT    mail.flexyflow.co          "v=spf1 include:amazonses.com -all"
+MX     mail.example.com          10 feedback-smtp.us-east-1.amazonses.com
+TXT    mail.example.com          "v=spf1 include:amazonses.com -all"
 ```
 
 Sin esto, los correos siguen saliendo pero el header `From` muestra
@@ -101,15 +101,15 @@ Sin esto, los correos siguen saliendo pero el header `From` muestra
 
 ### 3.4 SPF y DMARC del dominio raíz
 
-SPF para el dominio raíz (cuando enviás desde `noreply@flexyflow.co`):
+SPF para el dominio raíz (cuando enviás desde `noreply@funcionbase.com`):
 
 ```
 Type   Name              Content
 ─────  ────────────────  ────────────────────────────────────
-TXT    flexyflow.co      "v=spf1 include:amazonses.com -all"
+TXT    funcionbase.com      "v=spf1 include:amazonses.com -all"
 ```
 
-> Si ya existe un TXT SPF para `flexyflow.co` (p.ej. Google Workspace),
+> Si ya existe un TXT SPF para `funcionbase.com` (p.ej. Google Workspace),
 > **NO crear otro** — modificar el existente para incluir ambos:
 > `"v=spf1 include:amazonses.com include:_spf.google.com -all"`.
 
@@ -118,7 +118,7 @@ DMARC en modo observación primero:
 ```
 Type   Name                    Content
 ─────  ──────────────────────  ───────────────────────────────────────────────────────
-TXT    _dmarc.flexyflow.co     "v=DMARC1; p=none; rua=mailto:dmarc@flexyflow.co; fo=1"
+TXT    _dmarc.example.com     "v=DMARC1; p=none; rua=mailto:dmarc@funcionbase.com; fo=1"
 ```
 
 `p=none` recibe reportes pero NO rechaza nada. Después de 1–2 semanas de
@@ -134,17 +134,17 @@ Política mínima — pegar al rol del ASG:
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowSendFromFlexyflowIdentity",
+      "Sid": "AllowSendFromBistroIdentity",
       "Effect": "Allow",
       "Action": [
         "ses:SendEmail",
         "ses:SendRawEmail"
       ],
-      "Resource": "arn:aws:ses:us-east-1:<ACCOUNT_ID>:identity/flexyflow.co",
+      "Resource": "arn:aws:ses:us-east-1:<ACCOUNT_ID>:identity/funcionbase.com",
       "Condition": {
         "StringEquals": {
           "ses:FromAddress": [
-            "noreply@flexyflow.co"
+            "noreply@funcionbase.com"
           ]
         }
       }
@@ -154,7 +154,7 @@ Política mínima — pegar al rol del ASG:
 ```
 
 Reemplazar `<ACCOUNT_ID>` por el AWS Account ID. La condición restringe a
-`FromAddress=noreply@flexyflow.co` — si después agregás otros remitentes
+`FromAddress=noreply@funcionbase.com` — si después agregás otros remitentes
 (`facturacion@`, `soporte@`), extender el array.
 
 ### 3.6 Salir del sandbox de SES
@@ -165,8 +165,8 @@ Para enviar a cualquier destinatario:
 1. SES Console → **Account dashboard** → **Request production access**.
 2. Llenar:
    - **Use case**: Transactional
-   - **Website**: `https://bistro.flexyflow.co`
-   - **Description**: "flexyflow es un SaaS de gestión para restaurantes en
+   - **Website**: `https://bistro.example.com`
+   - **Description**: "bistro es un SaaS de gestión para restaurantes en
      Colombia. Enviamos correos transaccionales: confirmación de cuenta,
      reset de contraseña, facturas mensuales, notificaciones operativas.
      Bounce y complaint rate monitoreados via SNS. Audiencia: dueños y
@@ -181,17 +181,17 @@ testear: SES → **Verified identities** → Create identity (Email).
 
 ### 3.7 Configurar Cloudflare Email Routing
 
-1. CF panel de `flexyflow.co` → **Email** → **Email Routing** → **Enable**.
+1. CF panel de `funcionbase.com` → **Email** → **Email Routing** → **Enable**.
 2. CF crea automáticamente 3 MX + 1 TXT SPF. Aceptar.
 3. **Destination addresses** → Add → ingresar tu Gmail personal → confirmar
    el link que llega al Gmail.
 4. **Routing rules** → crear:
-   - `hola@flexyflow.co` → forward a Gmail
-   - `soporte@flexyflow.co` → forward a Gmail
-   - `ops@flexyflow.co` → forward a Gmail
-   - `dmarc@flexyflow.co` → forward a Gmail (recibe reportes DMARC)
-   - **Catch-all** (opcional): cualquier `*@flexyflow.co` → forward
-5. Si querés responder *desde* `hola@flexyflow.co` con Gmail:
+   - `hello@funcionbase.com` → forward a Gmail
+   - `soporte@funcionbase.com` → forward a Gmail
+   - `ops@funcionbase.com` → forward a Gmail
+   - `dmarc@funcionbase.com` → forward a Gmail (recibe reportes DMARC)
+   - **Catch-all** (opcional): cualquier `*@funcionbase.com` → forward
+5. Si querés responder *desde* `hello@funcionbase.com` con Gmail:
    - Gmail → Settings → Accounts → **Send mail as** → Add another email.
    - SMTP: `email-smtp.us-east-1.amazonaws.com` puerto 587 STARTTLS.
    - Credenciales: generar **SES SMTP credentials** en AWS Console (IAM →
@@ -199,7 +199,7 @@ testear: SES → **Verified identities** → Create identity (Email).
    - Verificar con código que SES envía al Gmail.
 
 > **Conflicto SPF**: si ya tenías un TXT SPF y CF crea uno propio, hay que
-> mergearlos. Solo puede haber UN TXT SPF en `flexyflow.co`. Combinar:
+> mergearlos. Solo puede haber UN TXT SPF en `funcionbase.com`. Combinar:
 > `"v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com -all"`.
 
 ## 4. Configurar GitHub Environments
@@ -210,8 +210,8 @@ GH Settings → Environments → **qa** → Add variables:
 
 ```
 MAIL_MAILER=ses
-MAIL_FROM_ADDRESS=noreply@flexyflow.co
-MAIL_REPLY_TO_ADDRESS=soporte@flexyflow.co
+MAIL_FROM_ADDRESS=noreply@funcionbase.com
+MAIL_REPLY_TO_ADDRESS=soporte@funcionbase.com
 ```
 
 (Borrar `MAIL_USERNAME` / `MAIL_PASSWORD` si existen — legacy SMTP.)
@@ -220,7 +220,7 @@ MAIL_REPLY_TO_ADDRESS=soporte@flexyflow.co
 
 Idéntico a qa. Las variables son las mismas porque enviamos al mismo
 identity. Si en algún momento se separan los buckets/identities por
-entorno (`noreply@qa.flexyflow.co` vs `noreply@flexyflow.co`), ajustar
+entorno (`noreply@qa.example.com` vs `noreply@funcionbase.com`), ajustar
 `MAIL_FROM_ADDRESS` por entorno.
 
 Tras setear las vars, correr **Actions** → `Sync GH Environment → AWS
@@ -235,7 +235,7 @@ el ASG o re-launchar EC2 para que tome el nuevo `.env`.
 cd bistro/backend
 php artisan tinker --execute '
     Mail::raw("Test SES setup", function ($m) {
-        $m->to("cristian@gmail.com")->subject("Test desde local");
+        $m->to("juan.perez@example.com")->subject("Test desde local");
     });
 '
 tail -n 50 storage/logs/laravel.log
@@ -245,16 +245,16 @@ Debe aparecer el correo serializado en el log — NO se envía nada al exterior.
 
 ### QA (driver `ses`, sandbox)
 
-Verificar primero `cristian@gmail.com` (o el destinatario que vayas a usar)
+Verificar primero `juan.perez@example.com` (o el destinatario que vayas a usar)
 en SES → Verified identities → Create identity (Email) → confirmar link.
 
 SSH al EC2 del ASG y:
 
 ```bash
-cd /var/www/panel.flexyflow/bistro/backend
+cd /var/www/bistro/backend
 sudo -u www-data php artisan tinker --execute '
     Mail::raw("Test SES desde QA", function ($m) {
-        $m->to("cristian@gmail.com")->subject("Test QA → SES");
+        $m->to("juan.perez@example.com")->subject("Test QA → SES");
     });
 '
 ```
@@ -265,8 +265,8 @@ Debe llegar al Gmail (revisar también la carpeta de spam la primera vez).
 
 ```bash
 php artisan config:show mail.default        # ses
-php artisan config:show mail.from.address   # noreply@flexyflow.co
-php artisan config:show mail.reply_to       # array con soporte@flexyflow.co
+php artisan config:show mail.from.address   # noreply@funcionbase.com
+php artisan config:show mail.reply_to       # array con soporte@funcionbase.com
 php artisan config:show services.ses        # region us-east-1, options con ConfigurationSetName si aplica
 ```
 
@@ -289,7 +289,7 @@ ser **Verified**.
    recibido (Gmail → ⋮ → "Show original").
 2. Si SPF falla y el `From` muestra `amazonses.com`: falta el Custom MAIL
    FROM (§3.3).
-3. Confirmar DMARC: `dig _dmarc.flexyflow.co TXT`.
+3. Confirmar DMARC: `dig _dmarc.example.com TXT`.
 4. Reputación de remitente nueva — los primeros envíos a Gmail pueden caer
    en spam hasta que el dominio acumule historial. Pedir al equipo que
    marquen "No es spam" las primeras veces.
@@ -367,13 +367,13 @@ bucket privado) y nunca se borran.
 - Migration `email_suppressions`.
 - Webhook `POST /api/v1/webhooks/ses-notifications` con verificación SNS.
 - Listener en `MessageSending` que aborta si destinatario está suppressed.
-- SES Configuration Set `flexyflow-default` con destino SNS para Bounce
+- SES Configuration Set `bistro-default` con destino SNS para Bounce
   + Complaint.
 - Auditoría con `AuditService::log('email.suppressed', ...)`.
 
 ### Fase 3 (incluida en este PR — branding de templates)
 - Templates `vendor/mail/html/*` publicadas y personalizadas con logo
-  flexyflow, paleta del DS, footer legal CO (razón social, dirección,
+  bistro, paleta del DS, footer legal CO (razón social, dirección,
   contacto, link a política de privacidad).
 
 ### #226 — Welcome email idempotente (registro exitoso)

@@ -1,5 +1,5 @@
 /**
- * Banner sticky de modo offline (#140).
+ * Banner sticky de modo offline.
  *
  * Estados visuales:
  *  - Online + 0 pending → no se renderiza nada.
@@ -32,7 +32,7 @@ async function downloadExport(): Promise<void> {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `flexyflow-pendientes-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    a.download = `bistro-pendientes-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();

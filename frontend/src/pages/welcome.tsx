@@ -8,7 +8,7 @@ import { useDocumentTitle } from '@/lib/use-document-title';
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const DEMO_URL = 'https://flexyflow.co/#footer-with-contact';
+const DEMO_URL = 'https://example.com/#footer-with-contact';
 
 /** Funcionalidades clave del manual — reemplazan el menú de referencia (homerun.co). */
 const navLinks: Array<{ label: string; to: string }> = [

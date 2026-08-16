@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Proxy de firma para assets públicos en S3 (issue #172).
+ * Proxy de firma para assets públicos en S3.
  *
  * Recibe un path bajo `/storage-proxy/{path}` (registrado en `routes/web.php`),
  * verifica que el prefijo sea uno de los permitidos para el bucket de assets,
@@ -36,7 +36,7 @@ class StorageProxyController extends Controller
     private const ALLOWED_PREFIXES = [
         'companies/',
         'menus/',
-        // CIBER-05: `chat-media/` se retiró de este proxy anónimo. La media de
+        // `chat-media/` se retiró de este proxy anónimo. La media de
         // chats es privada (conversaciones de clientes) y ahora se sirve por el
         // endpoint autenticado `GET /api/v1/chats/{id}/messages/{messageId}/media`
         // (scope de empresa + chats.read). Solo quedan assets genuinamente
@@ -44,8 +44,7 @@ class StorageProxyController extends Controller
     ];
 
     /**
-     * TTL de la URL firmada que devuelve S3 (60 min, alineado con la decisión
-     * del issue #172). El header `Cache-Control: max-age` del redirect se setea
+     * TTL de la URL firmada que devuelve S3 (60 min). El header `Cache-Control: max-age` del redirect se setea
      * con un margen para evitar entregar URLs caducadas a clientes que cachean.
      */
     private const SIGNED_URL_TTL_MINUTES = 60;

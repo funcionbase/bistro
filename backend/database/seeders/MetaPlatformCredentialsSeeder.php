@@ -6,7 +6,7 @@ use App\Models\MetaPlatformCredential;
 use Illuminate\Database\Seeder;
 
 /**
- * Carga las credenciales de la app de Meta (Tech Provider/BSP de flexyflow).
+ * Carga las credenciales de la app de Meta (Tech Provider/BSP de bistro).
  *
  * Lee SIEMPRE de variables de entorno (mismas keys que las de GitHub Actions
  * Variables del repo). Si una variable falta:

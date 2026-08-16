@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Evento disparado por una regla de alerta (#124).
+ * Evento disparado por una regla de alerta.
  *
  * Inmutable salvo en los campos `dismissed_at`, `actioned_at`, `actioned_note`
  * y `actioned_by` — el resto (payload, severity, target) refleja el snapshot

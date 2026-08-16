@@ -1,5 +1,5 @@
 /**
- * Cliente API DIAN (HU #235). Wrapper fino sobre `apiFetch` con:
+ * Cliente API DIAN. Wrapper fino sobre `apiFetch` con:
  *  - Idempotency-Key automático para el endpoint de emisión.
  *  - Helpers para descarga vía URL firmada S3 (xml/pdf).
  */

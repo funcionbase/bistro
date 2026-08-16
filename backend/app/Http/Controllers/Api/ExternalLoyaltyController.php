@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Endpoints de fidelización para el bot externo (#122).
+ * Endpoints de fidelización para el bot externo.
  *
  * El bot (n8n / WhatsApp) consume estos para responder a comandos como
  * /puntos o /canjear desde el chat. company_nit viene del JWT (bot.jwt),

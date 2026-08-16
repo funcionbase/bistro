@@ -17,12 +17,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Flujo público de unión a mesa con QR (#191) — API REST.
+ * Flujo público de unión a mesa con QR — API REST.
  *
  * Sin auth. Identidad del comensal = cookie firmada httpOnly `tdt_*`.
  * Rate-limit `table-public` (IP + qr_token) aplicado a nivel de ruta.
  *
- * Migrado desde `Web\TableJoinController` (#191 SPA): las acciones que antes
+ * Migrado desde `Web\TableJoinController` (SPA): las acciones que antes
  * devolvían `Inertia::render` ahora responden JSON; el frontend SPA hidrata
  * las páginas `table/join` y `table/menu` con fetch a estos endpoints.
  *
@@ -106,7 +106,7 @@ class TableJoinController extends Controller
         // Cookie firmada httpOnly que ataja al comensal en esta mesa.
         //
         // SameSite=None + Secure: el deploy es cross-origin same-site — el SPA
-        // (`bistro.flexyflow.co`) y la API (`bistro-api.flexyflow.co`)
+        // (`bistro.example.com`) y la API (`bistro-api.example.com`)
         // viven en hosts distintos bajo el mismo site. Con `SameSite=Lax` el
         // navegador NO adjuntaría esta cookie en los fetch XHR del flujo de
         // mesa hacia la API. `None` permite el envío cross-site y `Secure`
@@ -171,7 +171,7 @@ class TableJoinController extends Controller
             str_starts_with($normalized, '57') ? substr($normalized, 2) : $normalized,
         ]));
 
-        // Scope escape justificado (#192): flujo público sin JWT. El contacto
+        // Scope escape justificado: flujo público sin JWT. El contacto
         // es único por (company_nit, phone) sin importar la sede que lo creó
         // — recuperar el nombre por phone para autocomplete es lookup binario,
         // no listado.

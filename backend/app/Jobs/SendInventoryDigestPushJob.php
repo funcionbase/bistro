@@ -14,7 +14,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
 
 /**
- * Digest de inventario al primer login del día (#149 CA6).
+ * Digest de inventario al primer login del día.
  *
  * Disparado desde `AuthController::selectCompany` cuando:
  *   - El user no recibió digest hoy (cache key `push.inventory.sent.{userId}.{date}`).

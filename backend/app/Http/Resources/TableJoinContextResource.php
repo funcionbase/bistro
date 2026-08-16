@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Contexto que necesita la pantalla pública de unión a mesa (#191).
+ * Contexto que necesita la pantalla pública de unión a mesa.
  *
  * Hidrata `pages/table/join.tsx` con la mesa, la sede y el branding del
  * restaurante resueltos desde el `qr_token`. Sin auth — el flujo es público.

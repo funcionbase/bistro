@@ -74,9 +74,9 @@ El enrolamiento ocurre **antes** de tener empresa activa, por lo que la mayoría
 
 ```json
 {
-  "first_name": "Cristian",
-  "last_name": "Marín",
-  "cedula": "1112792674",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "cedula": "000000000",
   "accept_tos": true,
   "accept_privacy": true,
   "accepted_documents": [
@@ -126,7 +126,7 @@ El enrolamiento ocurre **antes** de tener empresa activa, por lo que la mayoría
 }
 ```
 
-JWT nuevo se entrega vía `Set-Cookie: flexyflow_jwt=...; HttpOnly; Secure; SameSite=Lax`.
+JWT nuevo se entrega vía `Set-Cookie: bistro_jwt=...; HttpOnly; Secure; SameSite=Lax`.
 
 ### Errores comunes
 
@@ -152,7 +152,7 @@ JWT nuevo se entrega vía `Set-Cookie: flexyflow_jwt=...; HttpOnly; Secure; Same
 3. Google devuelve a `/auth/google/callback`. El controller:
    - Busca o crea `users` por `email`. Si es nuevo, `status='pending_enrollment'`, `password=null`, `email_verified_at=now()` (Google ya verificó).
    - Emite JWT con `sub=user.id`, sin `active_company_nit` aún.
-   - Setea cookie HttpOnly `flexyflow_jwt`.
+   - Setea cookie HttpOnly `bistro_jwt`.
 4. Frontend redirige según `users.status`:
    - `pending_enrollment` → `/enrollment/user`
    - `active` sin empresa → `/enrollment/company`
@@ -178,7 +178,7 @@ Wizard de 3 pasos en `pages/enrollment/user.tsx`:
 
 Wizard de 2 pasos en `pages/enrollment/company.tsx`:
 
-1. **Contrato de servicio**: link a `bootstrap.legalUrls.contract` → `/legal/contract` en el propio SPA (target `_blank`). Checkbox obligatorio.
+1. **Contrato de servicio**: link externo a `bootstrap.legalUrls.contract` (target `_blank`), mismo patrón placeholder que TOS/privacidad. Checkbox obligatorio.
 2. **Datos de empresa + evidencia**: campos descritos arriba.
 
 El campo `proof_document` es el corazón de #154. Acepta PDF, Word (`.doc`/`.docx`), JPG y PNG hasta **10 MB**. Validado por MIME real (`mimetypes:`) tanto en cliente como en backend — el botón "Registrar empresa" queda deshabilitado sin archivo válido.
@@ -215,7 +215,7 @@ Si existe un `BillingPlan::default()` vigente, se crea `Subscription` con snapsh
 - `plan_tax_regime_snapshot`, `plan_tax_rate_snapshot`.
 - `plan_snapshot_at`, `starts_at=now()`, `status='active'`.
 
-El snapshot es la fuente para reportes históricos: si flexyflow cambia el precio del plan default mañana, las suscripciones existentes no se afectan.
+El snapshot es la fuente para reportes históricos: si bistro cambia el precio del plan default mañana, las suscripciones existentes no se afectan.
 
 Si el frontend pasó `?promo=<slug>`, `PromoCodeService::applyToCompany` aplica el descuento. Si el código es inválido, **no bloquea el enrolamiento** — solo loggea.
 
@@ -224,7 +224,7 @@ Si el frontend pasó `?promo=<slug>`, `PromoCodeService::applyToCompany` aplica 
 Después del `DB::commit`:
 
 - `SendCompanyRegistrationWelcomeEmailJob::dispatch($user->id, $company->nit)` — correo al owner.
-- `SendCompanyPendingActivationOpsAlertJob::dispatch($company->nit, $user->id)` — alerta al equipo flexyflow para iniciar la revisión.
+- `SendCompanyPendingActivationOpsAlertJob::dispatch($company->nit, $user->id)` — alerta al equipo bistro para iniciar la revisión.
 
 Ambos jobs son `ShouldQueue + ShouldBeUnique` con columnas de tracking (`welcome_email_sent_at`, `ops_alert_sent_at`). El `after_commit:true` global de `config/queue.php` garantiza que solo se encolan si la transacción commitea OK.
 
@@ -285,7 +285,7 @@ Catálogo completo en `bistro/backend/constants/AUDIT_EVENTS.md`.
 
 - **Usuario con email duplicado**: si Google devuelve un email ya existente, `GoogleAuthController::callback` reusa la fila. Si `status='completed'` salta enrolamiento; si está en estado intermedio, retoma el paso pendiente.
 - **NIT duplicado entre empresas**: bloqueado por `unique:companies,nit`. El owner debe usar otra empresa o esperar a que el dueño anterior la libere (no hay flujo de "tomar" empresas — soporte manual).
-- **Documento de propiedad corrupto/ilegible**: el workflow externo marca `status='rejected'` con `reason`. El frontend muestra el tono crítico en `under-review.tsx` con CTA a `soporte@flexyflow.com`. El owner puede reintentar contactando soporte; el workflow soporta `rejected → pending_activation`.
+- **Documento de propiedad corrupto/ilegible**: el workflow externo marca `status='rejected'` con `reason`. El frontend muestra el tono crítico en `under-review.tsx` con CTA a `hello@funcionbase.com`. El owner puede reintentar contactando soporte; el workflow soporta `rejected → pending_activation`.
 - **Pérdida de conexión durante el upload**: la transacción se revierte completa (sin empresa parcial, sin S3 huérfano). El frontend re-habilita el botón.
 - **Empresa sin sede default**: no debería ocurrir — la sede `principal` se crea en la misma transacción. Si pasa (data drift), las mutaciones operativas fallan con 403 por `EnsureBranchAccess`.
 - **Invitación a email no registrado**: el invitado debe primero loguearse con Google. Tras el callback, frontend detecta `users.status='pending_enrollment'` y le ofrece el paso personal antes del `/enrollment/invited`.

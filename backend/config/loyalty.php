@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Configuración del programa de fidelización (#122).
+ * Configuración del programa de fidelización.
  *
  * Estos valores son defaults globales. Cada empresa puede overridearlos en
  * company_settings con keys:

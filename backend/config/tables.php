@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Configuración del flujo de mesa con QR (#191).
+ * Configuración del flujo de mesa con QR.
  *
  * Toda decisión de tiempo o validación que afecte sesiones de mesa, comensales
  * y QR vive aquí. Los reportes y servicios consumen `config('tables.*')` en

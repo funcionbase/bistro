@@ -23,21 +23,21 @@
 @component('mail::footer')
 @php
     $year = now()->format('Y');
-    $supportEmail = config('mail.reply_to.address') ?? 'soporte@flexyflow.co';
+    $supportEmail = config('mail.reply_to.address') ?? 'soporte@funcionbase.com';
 @endphp
 @php
-    $brandHost = parse_url((string) config('app.frontend_url'), PHP_URL_HOST) ?: 'flexyflow.co';
+    $brandHost = parse_url((string) config('app.frontend_url'), PHP_URL_HOST) ?: 'example.com';
 @endphp
-flexyflow — diseñamos y operamos los flujos que hacen funcionar tu negocio de comida.
+bistro — diseñamos y operamos los flujos que hacen funcionar tu negocio de comida.
 {{ $brandHost }}
 
-Recibes este correo porque tienes una cuenta activa en flexyflow.
+Recibes este correo porque tienes una cuenta activa en bistro.
 ¿Dudas? Escríbenos a {{ $supportEmail }}.
 
-Política de privacidad: https://flexyflow.co/privacy-policy/
-Términos y condiciones: https://flexyflow.co/terms-conditions/
+Política de privacidad: https://example.com/privacy-policy/
+Términos y condiciones: https://example.com/terms-conditions/
 
-Copyright © {{ $year }} by flexyflow · Valle del Cauca, Colombia
+Copyright © {{ $year }} by bistro · Valle del Cauca, Colombia
 @endcomponent
 @endslot
 @endcomponent

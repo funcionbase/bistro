@@ -34,7 +34,7 @@ class StoreDeliveryRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'uuid', 'exists:orders,id'],
-            // CIBER-01: `exists:users,id` era global (cross-tenant). El courier
+            // `exists:users,id` era global (cross-tenant). El courier
             // debe ser miembro de la empresa activa; si no, el user_id es
             // inválido (no revela usuarios de otras empresas).
             'user_id' => ['required', 'uuid', Rule::exists('company_users', 'user_id')

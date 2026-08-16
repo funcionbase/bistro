@@ -38,7 +38,7 @@ return [
         'voided' => [],
     ],
 
-    // Espejo de `config('payments.methods')` (#203). Para cambiar el catálogo,
+    // Espejo de `config('payments.methods')`. Para cambiar el catálogo,
     // editar `config/payments.php` y reflejarlo aquí en el mismo PR.
     'payment_methods' => ['cash', 'card', 'transfer'],
 

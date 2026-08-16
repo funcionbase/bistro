@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Movimientos de inventario por bodega (#120). Append-only.
+ * Movimientos de inventario por bodega. Append-only.
  *
  * Cada movimiento (entry/waste/adjustment) requiere `warehouse_id` en el
  * body — si no se provee, se usa la bodega default de la sede activa.

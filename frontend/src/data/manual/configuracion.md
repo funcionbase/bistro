@@ -1,7 +1,7 @@
 ---
 title: "Configuración"
 description: "Información del negocio, preferencias operativas, perfil fiscal DIAN, conexión a WhatsApp, impresoras térmicas, atajos y la cuenta personal de cada miembro del equipo."
-metaTitle: "Configuración — Manual bistro.flexyflow.co"
+metaTitle: "Configuración — Manual bistro.example.com"
 metaDescription: "Datos del negocio, banca, QR de pagos, impuestos, perfil fiscal DIAN, conexión a WhatsApp, impresoras térmicas y configuración personal. Todo desde un solo lugar."
 section: "administración"
 readingTime: "8 min"
@@ -101,12 +101,12 @@ La pantalla de facturación electrónica tiene tres pestañas:
 - **Resoluciones:** los rangos de numeración que la DIAN le autorizó a tu negocio. Puedes tener varias activas a la vez y ver cuánto le queda a cada una.
 - **Contacto por defecto:** el "consumidor final" genérico que se usa en los tickets de caja cuando el cliente no da sus datos.
 
-El **perfil fiscal** (razón social, dirección, régimen tributario, representante legal, municipio) se completa en *configuración → información del negocio*. La conexión técnica con la DIAN la opera directamente el equipo de flexyflow — no tienes que contratar ni configurar nada por tu cuenta. La facturación electrónica hace parte del *Plan Plus* y se activa con tu asesor.
+El **perfil fiscal** (razón social, dirección, régimen tributario, representante legal, municipio) se completa en *configuración → información del negocio*. La conexión técnica con la DIAN la opera directamente el equipo de bistro — no tienes que contratar ni configurar nada por tu cuenta. La facturación electrónica hace parte del *Plan Plus* y se activa con tu asesor.
 
 <div class="callout callout-warn">
 <p>
 <strong>Sin perfil fiscal no se factura:</strong> si intentas emitir un documento electrónico
-sin tener el perfil DIAN y la resolución vigente configurados, bistro flexy te bloquea.
+sin tener el perfil DIAN y la resolución vigente configurados, bistro te bloquea.
 </p>
 </div>
 
@@ -158,7 +158,7 @@ En **mi cuenta → notificaciones** decides en qué dispositivo quieres recibir 
 <p>
 <strong>iPhone:</strong> en iOS las notificaciones push solo llegan si
 <strong>instalas la app al "home screen"</strong> (botón Compartir → "Agregar al Inicio"). Es
-una limitación de Apple, no de bistro flexy.
+una limitación de Apple, no de bistro.
 </p>
 </div>
 

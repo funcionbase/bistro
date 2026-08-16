@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Poda eventos crudos de `menu_scan_events` anteriores al cutoff de retención
- * (default: 90 días). Reemplaza el `DROP PARTITION` previo — en #193 se
- * retiró el particionamiento RANGE mensual porque generaba tablas históricas
- * que se acumulaban con el tiempo.
+ * (default: 90 días). Reemplaza el `DROP PARTITION` previo — se retiró el
+ * particionamiento RANGE mensual porque generaba tablas históricas que se
+ * acumulaban con el tiempo.
  *
  * `menu_scan_daily_rollup` ya tiene los agregados pre-calculados, así que
  * perder el detalle crudo > 90 días no afecta reportes. Si en algún momento

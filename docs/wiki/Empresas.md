@@ -8,7 +8,7 @@
 
 ## Multi-tenancy + multi-sede
 
-flexyflow es multi-empresa **y** multi-sede (#117). Reglas clave:
+bistro es multi-empresa **y** multi-sede (#117). Reglas clave:
 
 - La PK física de `companies` es `id` (UUID v7). El identificador tributario
   **NIT** (UNIQUE, inmutable post-creación #193) es lo que se usa en FKs

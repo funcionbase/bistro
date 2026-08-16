@@ -1,7 +1,7 @@
 @component('mail::message')
 <div style="margin: 0 0 16px 0;"><span style="display: inline-block; background-color: #C0FD79; color: #1E232E; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; padding: 6px 12px; border-radius: 9999px;">Invitación a equipo</span></div>
 
-# Te invitaron a un restaurante en flexyflow
+# Te invitaron a un restaurante en bistro
 
 Hola.
 
@@ -21,7 +21,7 @@ Correo invitado: {{ $invitation->email }}
 3. **Listo.** El propietario ya te asignó un rol con los permisos que vas a necesitar.
 
 @component('mail::button', ['url' => $loginUrl])
-Entrar a flexyflow
+Entrar a bistro
 @endcomponent
 
 ¿No esperabas esta invitación o el correo no es tuyo? Ignora este mensaje o escríbenos a <a href="mailto:{{ $supportEmail }}" style="color: #0052FF;">{{ $supportEmail }}</a> y la cancelamos.

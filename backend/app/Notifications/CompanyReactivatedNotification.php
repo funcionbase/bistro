@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Disparada cuando companies.status pasa de past_due|suspended → active (#175).
+ * Disparada cuando companies.status pasa de past_due|suspended → active.
  */
 class CompanyReactivatedNotification extends Notification implements BillingNotificationContract, ShouldQueue
 {
@@ -51,7 +51,7 @@ class CompanyReactivatedNotification extends Notification implements BillingNoti
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('¡Tu cuenta de flexyflow fue reactivada!')
+            ->subject('¡Tu cuenta de bistro fue reactivada!')
             ->markdown('emails.billing.reactivated', [
                 'name' => $notifiable->name,
                 'companyName' => $this->company->commercial_name,

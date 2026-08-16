@@ -63,7 +63,7 @@ export function useInventory(token: string | null): UseInventoryReturn {
         setFiltersState((prev) => ({ ...prev, ...next }));
     }, []);
 
-    // Listado principal vía React Query (#269, Fase 3): cache + dedupe +
+    // Listado principal vía React Query (Fase 3): cache + dedupe +
     // `keepPreviousData` para que al cambiar filtros o revisitar la página no
     // se blanquee la tabla ni parpadee el skeleton — la data previa se mantiene
     // mientras llega la nueva. El skeleton completo solo aparece en el primer

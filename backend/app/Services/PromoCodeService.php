@@ -15,7 +15,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Aplicación de promo codes a empresas — #246.
+ * Aplicación de promo codes a empresas.
  *
  * Responsabilidades:
  *  - Validar slug (`validateBySlug`): existe, está activo, dentro de vigencia,
@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Reglas de aplicación (`starts_at`):
  *  - `enrollment`: `companies.created_at` (registro). Si hay
- *    `paid_billing_starts_at > now()`, se difiere a esa fecha (decisión #246 #3).
+ *    `paid_billing_starts_at > now()`, se difiere a esa fecha (decisión #3).
  *  - `github_action` / `self_service`: primer día del próximo mes
  *    `America/Bogota`. Si hay trial activo, se difiere igual.
  *  - Override explícito: el caller puede pasar `$startsAt` para fijar la fecha
@@ -262,7 +262,7 @@ class PromoCodeService
         };
 
         // Si la empresa tiene trial activo (paid_billing_starts_at futuro),
-        // diferir el inicio del promo a esa fecha (#246 decisión #3).
+        // diferir el inicio del promo a esa fecha (decisión #3).
         $paidStart = $company->paid_billing_starts_at;
         if ($paidStart !== null) {
             $paidStartImmutable = CarbonImmutable::instance($paidStart);

@@ -17,7 +17,7 @@
     <a href="/" class="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
         Volver al inicio
     </a>
-    <a href="mailto:info@flexyflow.co?subject=Error%20500%20en%20FlexyFlow" class="border-input bg-background text-foreground hover:bg-muted focus-visible:ring-ring inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+    <a href="mailto:hello@funcionbase.com?subject=Error%20500%20en%20Bistro" class="border-input bg-background text-foreground hover:bg-muted focus-visible:ring-ring inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
         Contactar soporte
     </a>
 @endsection
@@ -26,7 +26,7 @@
 
 @section('panel_body')
     <p>
-        Las fallas inesperadas se registran automáticamente. Si esta operación era crítica (un cobro, un cierre de caja) escríbenos a <span class="text-foreground font-medium">info@flexyflow.co</span> para revisarlo de inmediato.
+        Las fallas inesperadas se registran automáticamente. Si esta operación era crítica (un cobro, un cierre de caja) escríbenos a <span class="text-foreground font-medium">hello@funcionbase.com</span> para revisarlo de inmediato.
     </p>
 @endsection
 

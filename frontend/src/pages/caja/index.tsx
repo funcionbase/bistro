@@ -56,7 +56,7 @@ export default function CajaPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [cart, setCart] = useState<Record<string, CartLine>>({});
-    // Prellenado desde el chat (§8.4b punto 9): "Crear pedido para este cliente"
+    // Prellenado desde el chat: "Crear pedido para este cliente"
     // navega a `?client_phone=…`. Se arranca como domicilio porque un cliente de
     // WhatsApp no está en una mesa. Mismo patrón que `table` de abajo.
     const [orderType, setOrderType] = useState<OrderType>(() => {
@@ -170,7 +170,7 @@ export default function CajaPage() {
         return () => window.removeEventListener('focus', onFocus);
     }, [fetchTables, fetchOccupiedTables]);
 
-    // ── Persistencia del carrito (caja offline-first, plan §7.2) ──────────
+    // ── Persistencia del carrito (caja offline-first) ──────────
     // Hidrata el carrito guardado al montar y lo persiste (debounced) en cada
     // cambio, para que sobreviva una recarga offline sin perder la venta en curso.
     const cartHydratedRef = useRef(false);
@@ -289,7 +289,7 @@ export default function CajaPage() {
     const total = Math.max(0, grossTotal - discountAmount);
 
     // Happy hour activo: badge informativo. Si no hay cupón manual aplicado,
-    // el backend hará el auto-apply al cerrar la orden (#125).
+    // el backend hará el auto-apply al cerrar la orden.
     const activeAutoApply = useActiveAutoApply(appliedCoupon?.valid ? 0 : grossTotal, clientPhone || undefined);
 
     const handleSubmit = async () => {
@@ -350,7 +350,7 @@ export default function CajaPage() {
             removeCoupon();
             setCouponInput('');
         } catch {
-            // Modo offline (#140): si la red falló, encolar localmente con
+            // Modo offline: si la red falló, encolar localmente con
             // client_uuid para idempotencia. El sync engine la enviará en cuanto
             // vuelva la conexión. NO se aplica cupón offline (requiere validación
             // server-side); el cajero deberá aplicarlo cuando vuelva online.

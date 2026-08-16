@@ -8,7 +8,7 @@ interface KdsStandaloneLayoutProps {
 }
 
 /**
- * #115 — Layout full-screen para la pantalla del KDS por estación.
+ * Layout full-screen para la pantalla del KDS por estación.
  *
  * Pensado para kiosk-mode en tablet (vertical 1280×800 es el target
  * original, pero **totalmente responsive**: 1 columna en mobile portrait
@@ -19,7 +19,7 @@ interface KdsStandaloneLayoutProps {
  * `min-h-dvh` (dynamic viewport height) en lugar de `min-h-screen` para
  * que en iOS Safari la barra de URL colapsada no oculte el contenido.
  * `overflow-x-hidden` previene scroll lateral incluso si un ticket se
- * pasa accidentalmente del breakpoint (#212 PR #214 — invariante de DS).
+ * pasa accidentalmente del breakpoint (invariante de DS).
  *
  * Sin `OfflineBootstrap`: el sync-engine necesita JWT + active_company y
  * acá no aplica. Si se necesita offline en v1.1, montar un módulo

@@ -11,7 +11,7 @@ const ACCEPTED = '.pdf,.jpg,.jpeg,.png';
 const MAX_BYTES = 10 * 1024 * 1024;
 
 /**
- * Form de subida de comprobante de pago (#175). Sube a
+ * Form de subida de comprobante de pago. Sube a
  * POST /api/v1/billing/payment-proofs (multipart). Valida tamaño/tipo en
  * cliente; el backend re-valida con PaymentProofUploadRequest (autoritativo).
  */

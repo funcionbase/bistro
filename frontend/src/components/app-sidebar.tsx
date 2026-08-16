@@ -82,7 +82,7 @@ import {
  * frecuencia de uso, no por afinidad técnica.
  */
 export function AppSidebar() {
-    // #193 — Cuando la empresa está suspendida por mora, el sidebar se reduce
+    // Cuando la empresa está suspendida por mora, el sidebar se reduce
     // a Dashboard + Mi empresa. El resto se oculta. El middleware backend
     // (`EnsureCompanyNotBlocked`) ya gatea las URLs operativas; este filtro
     // visual evita que el operador vea opciones que llevan a un redirect.
@@ -90,7 +90,7 @@ export function AppSidebar() {
     // solo ve el banner blando con countdown.
     const { activeCompany, permissions = [], role, branches } = useSharedData();
     const isSuspended = activeCompany ? isFullyBlocked(activeCompany.status) : false;
-    // #119: rol Domiciliario u otro courier-only — sidebar reducido a
+    // Rol Domiciliario u otro courier-only — sidebar reducido a
     // "Mis entregas" + Mi perfil (en footer). Decisión por permisos, no
     // por nombre del rol, para sobrevivir renombres.
     const isCourierOnly = isCourierOnlyMode(permissions, role?.is_system === true);
@@ -134,7 +134,7 @@ export function AppSidebar() {
             permission: 'chats.read',
         },
         {
-            // #115 — KDS por estación. Item visible para cualquier rol con
+            // KDS por estación. Item visible para cualquier rol con
             // kds.read=true. Owner bypass automático vía is_system.
             // Para courier-only se oculta porque su rol no incluye este permiso.
             title: 'Cocina (KDS)',
@@ -150,7 +150,7 @@ export function AppSidebar() {
             permission: 'deliveries.read',
             businessCapability: 'delivery',
         },
-        // #119: vista mobile-first del domiciliario. Visible para cualquier
+        // Vista mobile-first del domiciliario. Visible para cualquier
         // rol con `deliveries.read` — el filtro `user_id = actor` del
         // backend asegura que solo se vean entregas propias. El owner que
         // entra ve empty state si no tiene asignaciones, no un error.
@@ -355,7 +355,7 @@ export function AppSidebar() {
                     permission: 'company.update',
                 },
                 {
-                    // #115 — Configuración del KDS: estaciones, SLA y
+                    // Configuración del KDS: estaciones, SLA y
                     // device-tokens. Permiso sensible de sede; owner por
                     // default, admin por delegación explícita (mismo
                     // patrón que cash_register.bypass_switch_lock).
@@ -387,33 +387,9 @@ export function AppSidebar() {
                 },
             ],
         },
-        // Referencia del grupo previo (WhatsApp/Instagram/Facebook próx.):
-        // {
-        //     title: 'Canales',
-        //     icon: Phone,
-        //     children: [
-        //         {
-        //             title: 'WhatsApp',
-        //             url: route('company.whatsapp'),
-        //             icon: Phone,
-        //             permission: 'whatsapp.read',
-        //             comingSoon: true,
-        //         },
-        //     ],
-        // },
-        // Facturación (suscripción flexyflow): oculta del sidebar. La ruta
+        // Facturación (suscripción bistro): oculta del sidebar. La ruta
         // /billing sigue activa y se accede desde botones dentro de Mi
         // Empresa. Ver pages/company/settings.tsx para el call-to-action.
-        //
-        // Chats: oculto hasta que se implemente. Mantener comentado para
-        // reactivar luego en "Catálogo y CRM".
-        // {
-        //     title: 'Chats',
-        //     url: route('chats'),
-        //     icon: MessageCircle,
-        //     permission: 'chats.read',
-        //     comingSoon: true,
-        // },
     ];
 
     // Filtro de mora: solo Dashboard + Mi empresa cuando la empresa está
@@ -439,7 +415,7 @@ export function AppSidebar() {
     // Antes "Mi empresa" era item plano; ahora vive bajo "Empresa".
     const visibleAdmin = isSuspended ? adminItems.filter((item) => item.title === 'Empresa') : adminItems;
 
-    // #119: courier-only oculta secciones que no le aplican. El switcher de
+    // Courier-only oculta secciones que no le aplican. El switcher de
     // empresa/sede sigue arriba porque puede pertenecer a >1 sede.
     const showCatalogAndOps = !isSuspended && !isCourierOnly && !noBranch;
 

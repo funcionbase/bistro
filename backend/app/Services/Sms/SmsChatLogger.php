@@ -11,7 +11,7 @@ use App\Services\CrmService;
 
 /**
  * Persiste cada SMS enviado al cliente como un `ChatMessage` saliente dentro de
- * un `Chat` con `source='sms'` (#275, Fase 2), para que aparezca en el hilo del
+ * un `Chat` con `source='sms'` (Fase 2), para que aparezca en el hilo del
  * cliente (`/clients/{id}` vía `CrmService::profile`) y en `/chats`.
  *
  * Clave canónica del chat = `contact.phone` cuando la orden tiene contacto

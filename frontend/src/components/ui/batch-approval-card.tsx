@@ -41,7 +41,7 @@ interface BatchApprovalCardProps {
 }
 
 /**
- * Card de una "tanda" pendiente de aprobación (#191 Fase 4).
+ * Card de una "tanda" pendiente de aprobación.
  *
  * Tanda = items con `submitted_at` cercano del mismo comensal. El mesero
  * los ve agrupados con selección múltiple (default: todos seleccionados) y
