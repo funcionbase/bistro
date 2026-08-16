@@ -25,7 +25,7 @@ function formatBytes(bytes: number): string {
 }
 
 /**
- * #154 — Panel "Prueba de pertenencia": documento de propiedad subido en el
+ * Panel "Prueba de pertenencia": documento de propiedad subido en el
  * enrolamiento. Solo lectura; el backend firma una URL temporal de S3 al
  * abrirlo y gatea el acceso (owner o quien lo subió).
  */

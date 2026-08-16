@@ -1,5 +1,5 @@
 /**
- * UUID v4 generado en el cliente para idempotencia de órdenes/cobros offline (#140).
+ * UUID v4 generado en el cliente para idempotencia de órdenes/cobros offline.
  *
  * Usa `crypto.randomUUID()` cuando está disponible (Chrome 92+, Safari 15.4+,
  * Firefox 95+) y cae a un fallback puro JS si no.

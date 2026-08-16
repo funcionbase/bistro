@@ -3,7 +3,7 @@ import { apiClient } from './api-client';
 import { clearCachedStores } from './offline/db';
 
 /**
- * Acción de logout del shell SPA (#220).
+ * Acción de logout del shell SPA.
  *
  * POST a `/api/v1/auth/logout`, limpieza de datos locales de la sesión y hard
  * navigation al home.

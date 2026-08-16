@@ -1,7 +1,7 @@
 # PWA · Web Push Notifications (#149)
 
 Guía operativa para entender, configurar y testear el sistema de
-notificaciones push de bistro Restaurante.
+notificaciones push de bistro.
 
 **Catálogo canónico de tipos / payloads / permisos**:
 [`bistro/backend/constants/NOTIFICATIONS.md`](../../bistro/backend/constants/NOTIFICATIONS.md).
@@ -128,7 +128,7 @@ con la app cerrada (siempre que la PWA esté instalada).
    composer run dev      # arranca php + queue:listen + vite
    ```
 
-4. **Instalar la PWA** desde Chrome → menu → "Instalar funcionbase". En
+4. **Instalar la PWA** desde Chrome → menu → "Instalar Bistro". En
    iOS desde Safari → Compartir → Añadir a inicio.
 
 5. **Habilitar push**: ir a `/settings/notifications` → "Activar

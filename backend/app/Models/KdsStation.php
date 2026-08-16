@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Estación de cocina (#115).
+ * Estación de cocina.
  *
  * Una empresa tiene N sedes; cada sede tiene M estaciones (caliente / fría /
  * barra / fritos por defecto). Las categorías del menú se mapean a
@@ -87,7 +87,7 @@ class KdsStation extends Model
     }
 
     /**
-     * Definición canónica de estaciones default por sede (#115).
+     * Definición canónica de estaciones default por sede.
      *
      * Lista de tuplas (slug, name, color, sla_warn, sla_alert, is_default).
      * El primer item con is_default=true es el fallback para categorías de

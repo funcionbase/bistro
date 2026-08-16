@@ -38,7 +38,7 @@ use Throwable;
  * Responsabilidades: generación mensual, marcado de past_due, expiración de descuentos y consultas de historial.
  * Idempotencia: generateMonthlyInvoices() salta facturas existentes no-void para el mismo período.
  *
- * Past-due (#175): la transición `companies.status` por atraso de pago la
+ * Past-due: la transición `companies.status` por atraso de pago la
  * resuelve un único método derivado e idempotente — `recalculateCompanyStatus()`.
  * Es la **única** función que muta el status por motivos de facturación.
  * `markOverdueInvoices` pasa a ser un wrapper: marca invoices `pending → overdue`
@@ -62,9 +62,9 @@ class BillingService
      *
      * `$forMonth` representa el **mes a facturar**. Si pasas mayo, factura mayo
      * (con due_date en junio). El scheduler corre el día 1 de cada mes y pasa
-     * el mes anterior — patrón post-pago (#246 decisión #7).
+     * el mes anterior — patrón post-pago.
      *
-     * Cambios #246:
+     * Cambios:
      *  - `plan_price_snapshot` se usa en lugar de `plan->price` (drift inmune).
      *  - Desglose IVA: `base_amount_taxable + tax_amount = amount` cuando el
      *    plan tiene `price_includes_tax=true`. Descuento se aplica al bruto
@@ -94,7 +94,7 @@ class BillingService
         $periodFromDate = Carbon::parse($periodFrom);
 
         foreach ($subscriptions as $subscription) {
-            // Trial extendido (#193). Si la empresa tiene
+            // Trial extendido. Si la empresa tiene
             // `paid_billing_starts_at` y el período a facturar arranca antes
             // de esa fecha, NO se genera factura — la empresa sigue en
             // gratuidad. La condición `>=` significa que el período cuyo
@@ -236,7 +236,7 @@ class BillingService
 
             $created[] = $invoice->id;
 
-            // #246 PR-2.5: dispara emisión DIAN del invoice. afterCommit asegura
+            // Dispara emisión DIAN del invoice. afterCommit asegura
             // que solo se encole si el invoice persistió. El job es idempotente
             // y N-instance safe (ShouldBeUnique).
             if (config('billing.emit_dian_for_invoices', true)) {
@@ -248,8 +248,8 @@ class BillingService
     }
 
     /**
-     * Calcula el desglose contable de un invoice según política #246, extendida
-     * con el cargo por uso DIAN (#facturación-dian): el descuento por promo
+     * Calcula el desglose contable de un invoice según política extendida
+     * con el cargo por uso DIAN: el descuento por promo
      * code aplica SOLO a la mensualidad; el cargo por uso ($10/documento) se
      * suma bruto (IVA incluido) después del descuento y el IVA final se
      * extrae sobre el total combinado.
@@ -516,7 +516,7 @@ class BillingService
             $todayDate = $today->copy()->startOfDay();
             $createdAt = $fresh->created_at?->copy()?->startOfDay();
 
-            // Trial efectivo (#193): si la empresa tiene `paid_billing_starts_at`,
+            // Trial efectivo: si la empresa tiene `paid_billing_starts_at`,
             // ese es el límite autoritativo. Si está vacío (legacy), caemos al
             // cálculo histórico de `created_at + BILLING_TRIAL_DAYS`. Mientras
             // el trial efectivo esté en el futuro, la empresa sigue `active`
@@ -657,7 +657,7 @@ class BillingService
 
     /**
      * Expire active company_promo_codes whose ends_at has passed.
-     * #246 — reemplaza el legacy `expireDiscounts` (subscription_discounts).
+     * Reemplaza el legacy `expireDiscounts` (subscription_discounts).
      *
      * Delega a `PromoCodeService::expireOverdue` que audita uno por uno.
      */
@@ -714,7 +714,7 @@ class BillingService
     }
 
     /**
-     * #257 — Activa una empresa en `pending_activation` y dispara la
+     * Activa una empresa en `pending_activation` y dispara la
      * notificacion de aprobacion con info del plan.
      *
      * Garantias:
@@ -938,7 +938,7 @@ class BillingService
 
     /**
      * Calcula el descuento aplicable a una empresa para un período.
-     * #246 — ahora lee de `company_promo_codes` (snapshot inmutable).
+     * Ahora lee de `company_promo_codes` (snapshot inmutable).
      *
      * Solo 1 promo activo por empresa (UNIQUE parcial DB), así que el cálculo
      * es directo. Mantiene la firma del método para compatibilidad con
@@ -953,7 +953,7 @@ class BillingService
     }
 
     /**
-     * #257 — Encola la notification a owners + admins activos de la empresa
+     * Encola la notification a owners + admins activos de la empresa
      * con defensa idempotente cross-instance.
      *
      * Doble capa de proteccion:

@@ -269,7 +269,7 @@ Ver `WhatsApp-Bot.md` para flow completo (Embedded Signup, NaaS, OTP, webhook).
 
 ### Conectar WhatsApp (Embedded Signup)
 
-1. Owner abre `/company/whatsapp`. UI carga el SDK de Facebook con `config_id` por ambiente (`META_CONFIG_ID_QA=941660645323511`, `META_CONFIG_ID_PDN=2605276259869097`).
+1. Owner abre `/company/whatsapp`. UI carga el SDK de Facebook con `config_id` por ambiente (`META_CONFIG_ID_QA`, `META_CONFIG_ID_PDN`).
 2. Owner click "Conectar con Facebook" → flow Meta retorna `code`.
 3. Antes de enviar al backend, UI pide OTP por correo (`POST /api/v1/whatsapp/verification/request` con `action='connect'`). Rate limit: 3 códigos / 30 min por (company, action).
 4. Owner ingresa código de 6 dígitos. UI llama `POST /api/v1/whatsapp/embedded-signup-callback` con header `X-Whatsapp-Verification-Code`.

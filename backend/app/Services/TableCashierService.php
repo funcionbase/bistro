@@ -34,7 +34,7 @@ use Ramsey\Uuid\Uuid;
  * Naming: una orden por sesión. Los receipts pueden ser uno o muchos por
  * orden — uno por comensal en pay-partial, uno único en pay-all.
  *
- * Aislamiento por sede (#192): el caller (TableCashierController) corre bajo
+ * Aislamiento por sede: el caller (TableCashierController) corre bajo
  * JWT con `active_branch_id`. Las queries de `lockForUpdate` sobre
  * `TableSession` y `PaymentReceipt` usan `withoutBranchScope()` para no
  * depender del scope en el contexto bloqueante (evita inconsistencias si
@@ -378,7 +378,7 @@ class TableCashierService
             return $receipt;
         });
 
-        // SMS al cliente FUERA de la txn de cobro (#275): su fallo nunca
+        // SMS al cliente FUERA de la txn de cobro: su fallo nunca
         // revierte el pago ya commiteado. `maybeCloseSession` es el camino
         // dominante de cierre de orden en mesas QR — antes no disparaba SMS.
         if ($closedOrder !== null) {
@@ -579,7 +579,7 @@ class TableCashierService
             return $primaryReceipt ?? $receiptsCreated[0];
         });
 
-        // SMS al cliente FUERA de la txn de cobro (#275), una notificación por
+        // SMS al cliente FUERA de la txn de cobro, una notificación por
         // cada orden que quedó completed (una sesión puede tener N órdenes).
         foreach ($closedOrders as $closedOrder) {
             $this->smsDispatcher->dispatch($closedOrder, 'completed', $actor);
@@ -722,7 +722,7 @@ class TableCashierService
     /**
      * Si ya no quedan items pendientes de pago, cierra la sesión y
      * promueve la orden a `completed`. Devuelve `true` si esta llamada
-     * completó la orden (el caller usa esto para disparar el SMS #275
+     * completó la orden (el caller usa esto para disparar el SMS
      * fuera de la transacción, una vez commiteada).
      */
     private function maybeCloseSession(Order $order, TableSession $session): bool

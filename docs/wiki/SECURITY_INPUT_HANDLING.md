@@ -205,7 +205,7 @@ Columnas migradas:
 - `delivery_status_logs.reason`
 - `branches.address`
 
-Los documentos legales no se persisten en BD (TOS/privacidad en el sitio institucional, contrato en `contrato.md` del repo — ver `config/legal.php`), así que no entran en esta matriz de saneamiento.
+Los documentos legales no se persisten en BD (TOS/privacidad/contrato son URLs fijas fuera del repo — ver `config/legal.php`), así que no entran en esta matriz de saneamiento.
 
 ---
 
@@ -221,7 +221,7 @@ Los documentos legales no se persisten en BD (TOS/privacidad en el sitio institu
 
 ## Referencias
 
-- Issue de origen: [HU #200 — Sanitización transversal de inputs](https://github.com/cristianmarint/bistro.restaurante/issues/200).
+- Issue de origen: HU #200 — Sanitización transversal de inputs (tracker interno, previo a la apertura del repo).
 - `CLAUDE.md` (raíz) — sección "Sanitización de inputs".
 - `bistro/backend/app/Http/Middleware/SecurityHeaders.php` — base para CSP + headers complementarios.
 - OWASP ASVS v4 §5.1 (validation), §5.2 (sanitization), §14.4 (HTTP security headers).

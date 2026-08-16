@@ -55,7 +55,7 @@ function BranchCard({ branch, onSelect, disabled = false, loading = false }: Bra
 }
 
 /**
- * Selector de sede — ruta SPA (#220, Fase 2, multi-sede #117).
+ * Selector de sede — ruta SPA (Fase 2, multi-sede).
  *
  * branches y activeCompany llegan vía useBootstrap(). La selección llama
  * /api/v1/auth/switch-branch. "Cambiar de empresa" navega a la ruta

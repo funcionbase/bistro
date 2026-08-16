@@ -14,6 +14,7 @@
 
 Siempre aplican, sin importar la actividad: `.claude/contabilidad.md` en código que toca dinero, `.claude/sanitizacion.md` en código que persiste texto de usuario.
 
+Features con jobs/crons/cache/sesiones/storage deben ser N-instance safe (la app corre en un ASG con N instancias): `->onOneServer()` en schedules, driver compartido (`redis`/`database`) para cache/sesiones/colas, storage en `s3`. Detalle en `apps-bistro-co/.claude/infra-aws.md`.
 
 ---
 

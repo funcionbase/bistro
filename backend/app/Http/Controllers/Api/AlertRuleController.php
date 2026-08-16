@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * CRUD ligero de reglas de alerta (#124).
+ * CRUD ligero de reglas de alerta.
  *
  * En v1 hay UNA fila por (company_nit, type). El endpoint PUT actúa como
  * upsert: si la regla no existe se crea con defaults; si existe se actualiza.

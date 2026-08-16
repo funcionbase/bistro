@@ -29,7 +29,7 @@ use RuntimeException;
  *      provider activo (mock) y vincula al invoice (`invoices.electronic_document_id`).
  *   5. Audita el evento.
  *
- * NOTA #246 PR-2.5: este servicio crea el documento electrónico inicial.
+ * NOTA: este servicio crea el documento electrónico inicial.
  * La emisión real (XML UBL + PDF + push al proveedor) se delegará en una
  * iteración futura cuando se decida integrar el provider real (Factura1/
  * Siigo/Carvajal). Hoy queda como mock + audit para tener trazabilidad DIAN
@@ -63,7 +63,7 @@ class SaaSInvoiceDispatchService
 
             $issuer = Company::query()->where('nit', $flexyNit)->first();
             if ($issuer === null) {
-                throw new RuntimeException("bistro company NIT={$flexyNit} no existe — corre funcionbaseProviderSeeder.");
+                throw new RuntimeException("bistro company NIT={$flexyNit} no existe — corre FuncionbaseProviderSeeder.");
             }
 
             $resolution = DianResolution::query()

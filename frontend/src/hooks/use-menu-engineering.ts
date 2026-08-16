@@ -3,7 +3,7 @@ import type { MenuEngineeringMatrix, MetricPeriod } from '@/types';
 import { useCallback } from 'react';
 
 /**
- * Lectura del matrix de menu engineering (issue #114).
+ * Lectura del matrix de menu engineering.
  *
  * Período por defecto = month (mediana estable). El backend cachea ~5 min, así
  * que múltiples llamadas seguidas no pegan a la BD.

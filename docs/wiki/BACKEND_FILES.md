@@ -1,6 +1,6 @@
 # BACKEND_FILES.md — Inventario Técnico Backend
 
-> Referencia técnica completa del backend Laravel 12 de bistro Restaurante.
+> Referencia técnica completa del backend Laravel 12 de bistro.
 > Documento canónico para desarrollo, troubleshooting y manuales operativos.
 > Cubre: rutas, controladores, modelos, servicios, middleware, jobs, comandos, configuración, RBAC, auditoría y multi-tenancy.
 
@@ -1467,7 +1467,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `2026_05_11_200000_create_loyalty_tables` | Fidelización (#122) | `loyalty_accounts`, `loyalty_movements`, `loyalty_redemptions` |
 | `2026_05_11_210000_add_loyalty_columns_to_coupons` | Fidelización | `coupons.locked_to_phone`, `coupons.source` ENUM (`manual`, `loyalty_redeem`, ...) para canjes desde puntos |
 | `2026_05_14_084116_cleanup_stale_legal_document_v1_placeholders` | Legales (#170) | Migración one-shot: borra filas `legal_documents` v1.0 cuyo contenido coincide byte-a-byte con el texto placeholder del seeder anterior. Habilita la transición a la fuente .md sin abortar el deploy por drift. `user_acceptances` no afectados (snapshot propio). |
-| `2026_05_23_000000_drop_legal_documents_and_relax_user_acceptances` | Legales | Drop de `legal_documents` (TOS/privacidad pasaron al sitio institucional `funcionbase.com`, contrato a `contrato.md` en el repo) y `document_version` / `document_content` de `user_acceptances` quedan nullable. Los registros históricos se conservan para Habeas Data CO. |
+| `2026_05_23_000000_drop_legal_documents_and_relax_user_acceptances` | Legales | Drop de `legal_documents` (TOS/privacidad/contrato pasaron a URLs fijas en `config/legal.php`, fuera de BD) y `document_version` / `document_content` de `user_acceptances` quedan nullable. Los registros históricos se conservan para Habeas Data CO. |
 | `2026_07_23_000001_whatsapp_multichannel_block` | WhatsApp multi-canal (F1) | `company_whatsapp_accounts`: `branch_id`, `label`, `evo_*`, `inbound_secret_encrypted`, `last_connection_check_at` + únicos parciales (1 canal de empresa + 1 por sede). `chats`: `whatsapp_account_id` (backfill al canal de empresa) + `pending_reply_since` con índice parcial; unique pasa de `(company_nit, client_phone)` a `(whatsapp_account_id, client_phone)` con índice legacy para chats sin canal. `chat_messages`: `sent_by_user_id` |
 | `2026_07_23_000002_add_whatsapp_manage_branch_channels_permission` | RBAC | Feature `whatsapp.manage_branch_channels` + `permission_templates` (solo owner) + backfill idempotente de `company_role_permissions` |
 
@@ -1501,7 +1501,7 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `delivery.php` | Límites, notificaciones | `DELIVERY_MAX_ACTIVE_PER_COURIER`, `DELIVERY_NOTIFY_*` |
 | `dompdf.php` | Tamaño papel, orientación, fuentes (FlexyFont) | `PDF_DRIVER` |
 | `filesystems.php` | Discos (local, public, s3) | `FILESYSTEM_DISK`, `AWS_*` |
-| `legal.php` | URLs fijas de TOS/privacidad (`funcionbase.com`) + `contract_path` (`/legal/contract`, resuelto contra `app.frontend_url` por ambiente). El frontend lee `useBootstrap().data.legalUrls`. | — |
+| `legal.php` | URLs fijas de TOS/privacidad/contrato (placeholders `example.com`, reemplazar por tus propios documentos legales antes de producción). El frontend lee `useBootstrap().data.legalUrls`. | — |
 | `logging.php` | Canales (single, daily, slack) | `LOG_CHANNEL` |
 | `loyalty.php` (#122) | Tiers, ratio earn, expiración, rewards | `LOYALTY_ENABLED`, `LOYALTY_EARN_RATIO`, `LOYALTY_EXPIRY_DAYS`, `LOYALTY_MAX_MANUAL_ADJUST`, `LOYALTY_REWARDS` |
 | `mail.php` | Driver, from, reply_to global; SES via IAM en qa/pdn ([`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md)) | `MAIL_MAILER`, `MAIL_FROM_*`, `MAIL_REPLY_TO_ADDRESS`, `SES_CONFIGURATION_SET`, `SES_WEBHOOK_SECRET` |
@@ -1556,13 +1556,13 @@ A partir del refactor de mayo 2026, las migraciones se consolidaron por dominio 
 | `GOOGLE_CLIENT_ID` | OAuth Google |
 | `GOOGLE_CLIENT_SECRET` | OAuth Google |
 | `GOOGLE_REDIRECT_URI` | Callback Google |
-| `META_APP_ID` | App ID bistro en Meta (1265007232388204) |
+| `META_APP_ID` | App ID de bistro en Meta (tu propio App ID) |
 | `META_APP_SECRET` | Secret app Meta |
 | `META_BUSINESS_ID` | Business Manager bistro |
 | `META_SYSTEM_USER_ID` | System User ID |
 | `META_SYSTEM_USER_TOKEN` | Token never-expire del System User |
-| `META_CONFIG_ID_QA` | Config ID Embedded Signup QA (941660645323511) |
-| `META_CONFIG_ID_PDN` | Config ID Embedded Signup prod (2605276259869097) |
+| `META_CONFIG_ID_QA` | Config ID Embedded Signup QA (tu propio config ID) |
+| `META_CONFIG_ID_PDN` | Config ID Embedded Signup prod (tu propio config ID) |
 | `META_GRAPH_API_VERSION` | v25.0 |
 | `META_WEBHOOK_VERIFY_TOKEN_QA` | Token handshake webhook QA |
 | `META_WEBHOOK_VERIFY_TOKEN_PDN` | Token handshake webhook prod |
@@ -1754,16 +1754,16 @@ Ambas Lambdas viven en el **mismo stack** `07-shutdown.yaml` (merge de los antig
 
 | Lambda | Stack IaC | Trigger | Frecuencia (qa) | Propósito |
 |---|---|---|---|---|
-| `bistro-panel-{env}-shutdown-ec2` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${Ec2CheckIntervalMinutes} minutes)` | **15 min** | Si una EC2 del ASG `bistro-panel-{env}-asg` lleva > `Ec2ShutdownAfterMinutes` (60) activa, escala `DesiredCapacity=0` y `MinSize=0`. |
-| `bistro-panel-{env}-shutdown-alb` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${AlbCheckIntervalMinutes} minutes)` | **15 min** | Lee `/{project}/{env}/alb/started-at` (SSM); si edad > `AlbShutdownAfterMinutes` (60), borra el stack `*-alb` (ALB + Listener + TG). |
+| `bistro-{env}-shutdown-ec2` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${Ec2CheckIntervalMinutes} minutes)` | **15 min** | Si una EC2 del ASG `bistro-{env}-asg` lleva > `Ec2ShutdownAfterMinutes` (60) activa, escala `DesiredCapacity=0` y `MinSize=0`. |
+| `bistro-{env}-shutdown-alb` | `aws/iac/cloudformation/stacks/07-shutdown.yaml` | `AWS::Events::Rule` (EventBridge) `rate(${AlbCheckIntervalMinutes} minutes)` | **15 min** | Lee `/{project}/{env}/alb/started-at` (SSM); si edad > `AlbShutdownAfterMinutes` (60), borra el stack `*-alb` (ALB + Listener + TG). |
 
 ### Reglas operacionales
 
 - Frecuencia mínima permitida: **5 min** (ambos `MinValue: 5` en CFN). Por costo no bajar de 15 sin justificación documentada.
 - El stack incluye dos `AWS::CloudWatch::Alarm` `*-shutdown-{ec2,alb}-overinvocation` que disparan si `Invocations > 10/h` (umbral fijo). Sirven de canario contra cambios accidentales en el cron.
-- Log groups: `/aws/lambda/bistro-panel-{env}-shutdown-{ec2,alb}` con retención **7 días**.
+- Log groups: `/aws/lambda/bistro-{env}-shutdown-{ec2,alb}` con retención **7 días**.
 - Para volver a encender después de un auto-shutdown:
-  - ASG: `aws autoscaling update-auto-scaling-group --auto-scaling-group-name bistro-panel-{env}-asg --min-size 1 --desired-capacity 1`.
+  - ASG: `aws autoscaling update-auto-scaling-group --auto-scaling-group-name bistro-{env}-asg --min-size 1 --desired-capacity 1`.
   - ALB: `aws/iac/scripts/alb-toggle.sh up` o workflow `alb-toggle.yml`.
 - Cambiar la frecuencia se hace en `aws/iac/cloudformation/parameters/{env}.json` (`Ec2CheckIntervalMinutes`, `AlbCheckIntervalMinutes`) y reaplicando el stack `shutdown` — **no** editar la regla EventBridge a mano.
 
@@ -1784,7 +1784,7 @@ Antes de cualquier `php artisan migrate --force` o `php artisan db:seed` **en pd
 ### Script
 | Archivo | Propósito |
 |---------|-----------|
-| `aws/ec2/scripts/db-backup.sh` | `pg_dump --format=plain --clean --if-exists --no-owner --no-acl`, gzip, sube a `s3://bistro-panel-{env}-backups/db-dumps/{reason}/{ISO}/dump.sql.gz` + `manifest.json`. Reason ∈ `pre-migration | pre-seed | pre-fresh | manual | other`. Reads creds del `.env` de la app. **Aborta con exit != 0 si pg_dump, upload, o bucket access fallan.** El script no se autorestringe a pdn — la guarda vive en los callers. |
+| `aws/ec2/scripts/db-backup.sh` | `pg_dump --format=plain --clean --if-exists --no-owner --no-acl`, gzip, sube a `s3://bistro-{env}-backups/db-dumps/{reason}/{ISO}/dump.sql.gz` + `manifest.json`. Reason ∈ `pre-migration | pre-seed | pre-fresh | manual | other`. Reads creds del `.env` de la app. **Aborta con exit != 0 si pg_dump, upload, o bucket access fallan.** El script no se autorestringe a pdn — la guarda vive en los callers. |
 | `aws/iac/scripts/backup-signed-url.sh` | Genera presigned URL temporal (default 15 min, max 24h) para descargar un dump del bucket privado sin dar IAM directo al usuario. |
 
 ### Puntos de invocación
@@ -1797,16 +1797,16 @@ Cada caller chequea env=pdn antes de invocar. En qa el step se omite.
 | `.github/workflows/ops-app-deploy.yml` step "Run migrations (single instance)" | `if [ "$TARGET_ENV" = "pdn" ]` (compone MIGRATE_CMD distinto) | `php artisan migrate --force` via SSM | Sí (SSM command tiene `set -e`) |
 
 ### Bucket de destino
-- **`bistro-panel-{env}-backups`** — separado del bucket `*-documents` (DIAN, 10 años, datos de cliente). **NUNCA mezclar dumps operacionales con info contable del cliente.**
+- **`bistro-{env}-backups`** — separado del bucket `*-documents` (DIAN, 10 años, datos de cliente). **NUNCA mezclar dumps operacionales con info contable del cliente.**
 - Privado total: `BlockPublicAcls + BlockPublicPolicy + IgnorePublicAcls + RestrictPublicBuckets`.
 - BucketPolicy explícito `DenyInsecureTransport` (sólo HTTPS) y `DenyUnencryptedPut` (sólo AES256). Aplica también a `*-assets` y `*-documents` (defense-in-depth en `03-storage.yaml` y `04-backups.yaml`).
 - Acceso únicamente via:
-  1. IAM role de la EC2 (`bistro-panel-{env}-app-role` + `ManagedPolicy app-backups-access`).
+  1. IAM role de la EC2 (`bistro-{env}-app-role` + `ManagedPolicy app-backups-access`).
   2. Presigned URL generada por `backup-signed-url.sh` (TTL corto, single-use).
 
 ### Path en S3
 ```
-s3://bistro-panel-{env}-backups/
+s3://bistro-{env}-backups/
 ├── db-dumps/
 │   ├── pre-migration/
 │   │   └── 20260512T140000Z/
@@ -2415,7 +2415,7 @@ Cada PR debe actualizar la página correspondiente del wiki cuando modifique end
 - **DB compartida:** Supabase managed PostgreSQL. Local: Postgres en Docker.
 - **Session/cache/queue:** todos `database` driver → tablas en Supabase compartidas entre nodos.
 - **Coordinación de schedulers:** `cache_locks` (vía `->onOneServer()`).
-- **Storage:** S3 (`bistro-panel-{env}-assets` público, `*-documents` privado). Local: MinIO en `docker/`.
+- **Storage:** S3 (`bistro-{env}-assets` público, `*-documents` privado). Local: MinIO en `docker/`.
 - **Auth cross-node:** JWT cifrado AES-256 + HMAC (cookie `bistro_jwt`) — sin sticky sessions.
 - **APP_KEY:** GitHub Secret propagado a todas las EC2 al deploy.
 
@@ -2471,11 +2471,11 @@ Canary: `php artisan healthcheck:heartbeat` cada minuto loguea `host + timestamp
 Tareas a ejecutar manualmente en Supabase SQL Editor (post-merge de #43):
 
 ```sql
-SELECT cron.schedule('funcionbase_purge_sessions', '0 * * * *',
+SELECT cron.schedule('bistro_purge_sessions', '0 * * * *',
   $$DELETE FROM sessions WHERE last_activity < extract(epoch FROM now() - interval '2 hours')$$);
-SELECT cron.schedule('funcionbase_purge_cache', '0 * * * *',
+SELECT cron.schedule('bistro_purge_cache', '0 * * * *',
   $$DELETE FROM cache WHERE expiration < extract(epoch FROM now())$$);
-SELECT cron.schedule('funcionbase_purge_cache_locks', '*/15 * * * *',
+SELECT cron.schedule('bistro_purge_cache_locks', '*/15 * * * *',
   $$DELETE FROM cache_locks WHERE expiration < extract(epoch FROM now())$$);
 ```
 
@@ -2486,7 +2486,7 @@ Las tablas `sessions` y `cache` quedan **UNLOGGED** (migración `2026_05_11_1740
 `docker/docker-compose.yml`:
 - `db` (postgres:15-alpine) — equivalente a Supabase en prod.
 - `minio` (S3-compatible) — equivalente a S3 buckets en prod.
-- `minio-bootstrap` (minio/mc) — crea buckets `bistro-panel-local-{assets,documents}`, marca el de assets como público, sube objetos `.health`.
+- `minio-bootstrap` (minio/mc) — crea buckets `bistro-local-{assets,documents}`, marca el de assets como público, sube objetos `.health`.
 
 Detalles y env vars: `docker/README.md`.
 

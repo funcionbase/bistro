@@ -51,7 +51,7 @@ export function IngredientFormModal({ open, onClose, onSubmit, editing, submitti
             setName(editing?.name ?? '');
             setCategory(editing?.category ?? '');
             setUnit(nextUnit);
-            // min_stock vive en ingredient_stocks por bodega (#120). El form usa
+            // min_stock vive en ingredient_stocks por bodega. El form usa
             // el primer min_stock > 0 entre las bodegas como valor representativo.
             const repMin = editing?.stocks.find((s) => Number(s.min_stock) > 0)?.min_stock ?? '';
             // Unidades discretas (`un`) no admiten fracción: el backend guarda

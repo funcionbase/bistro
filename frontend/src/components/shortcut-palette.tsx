@@ -1,7 +1,7 @@
 import { APP_SHORTCUTS, LEADER_KEY } from '@/lib/shortcuts';
 
 /**
- * Overlay "go to" que aparece al **sostener** la tecla líder `G` (#50).
+ * Overlay "go to" que aparece al **sostener** la tecla líder `G`.
  *
  * Oscurece la UI y lista los destinos de navegación con su segunda tecla, para
  * que el usuario que no recuerda el atajo pueda elegir sin soltar `G`. Se monta

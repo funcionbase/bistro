@@ -52,7 +52,7 @@ final class FoodCostMetricsService
     public function summary(string $companyNit, string $period, ?Carbon $dateFrom, ?Carbon $dateTo, int $limit = 100, ?string $branchId = null): array
     {
         [$start, $end] = $this->resolveDates($period, $dateFrom, $dateTo);
-        // (#costeo-multibodega / multisede #117) El food cost se filtra por sede
+        // (costeo multibodega / multisede) El food cost se filtra por sede
         // activa; `branchId === null` = consolidado (todas las sedes). El SQL es
         // crudo, así que el BranchScope NO aplica — hay que filtrar a mano y
         // separar el cache por sede.
@@ -315,7 +315,7 @@ final class FoodCostMetricsService
      */
     public function generateSnapshotsForCompany(string $companyNit, string $date): int
     {
-        // Multi-sede (#117): cada sede tiene su propio menú activo y no se
+        // Multi-sede: cada sede tiene su propio menú activo y no se
         // comparte entre sedes. Generamos snapshots por sede (atribuidos a su
         // branch_id) para que el histórico de food cost cubra TODAS las cartas,
         // no solo una. withoutBranchScope porque el cron/backfill no tiene

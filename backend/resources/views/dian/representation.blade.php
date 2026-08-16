@@ -150,7 +150,7 @@
     </div>
 
     <div class="footer">
-        Software: bistro Restaurante · {{ $dto->environment === 'produccion' ? 'Producción' : 'Habilitación (pruebas)' }} ·
+        Software: bistro · {{ $dto->environment === 'produccion' ? 'Producción' : 'Habilitación (pruebas)' }} ·
         Documento generado el {{ now('America/Bogota')->format('Y-m-d H:i:s') }} (UTC-5).
     </div>
 </body>

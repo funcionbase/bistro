@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 /**
  * Registra (idempotente, N-instance-safe) la intención de notificar al
- * cliente por SMS un cambio de estado de orden (#275) y despacha el job
+ * cliente por SMS un cambio de estado de orden y despacha el job
  * de envío. Extraído de `OrderController` para que cualquier código que
  * mute `orders.status` a un estado notificable (KDS, cierre de sesión QR,
  * sync offline) pueda disparar el mismo SMS — antes solo lo hacían

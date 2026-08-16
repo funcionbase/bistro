@@ -40,7 +40,7 @@ return [
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
-            // after_commit=true global (#226 CA-6): los jobs encolados dentro
+            // after_commit=true global: los jobs encolados dentro
             // de una DB::transaction sólo se persisten en la tabla `jobs` si
             // la transacción commitea OK. Evita disparar correos / efectos
             // colaterales cuando la transacción revierte. Si algún call site

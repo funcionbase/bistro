@@ -12,10 +12,10 @@ interface DeliveryCardProps {
 }
 
 /**
- * Card del tablero admin de deliveries (#117). Para la vista mobile-first
- * del courier ver `MyDeliveryCard` (#119).
+ * Card del tablero admin de deliveries. Para la vista mobile-first
+ * del courier ver `MyDeliveryCard`.
  *
- * Tokens DS (sin colores hardcoded, #192/#119 cleanup): `text-foreground`,
+ * Tokens DS (sin colores hardcoded): `text-foreground`,
  * `text-muted-foreground`, y la variante `safe` del botón usa
  * `var(--color-status-success)` indirectamente.
  */

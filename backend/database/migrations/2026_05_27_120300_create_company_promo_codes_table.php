@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #246 Fase 1 — Aplicación de promo codes a empresas (`company_promo_codes`).
+ * Aplicación de promo codes a empresas (`company_promo_codes`).
  *
  * Tabla puente entre `promo_codes` (catálogo) y `companies`. Cada fila representa
  * un descuento vigente o histórico aplicado a una empresa específica.
@@ -20,11 +20,11 @@ use Illuminate\Support\Facades\Schema;
  *  - github_action: primer día del próximo mes
  *  - self_service: primer día del próximo mes
  *  - Si hay `companies.paid_billing_starts_at > now()` (trial activo):
- *    se difiere a `paid_billing_starts_at` (decisión #246 #3).
+ *    se difiere a `paid_billing_starts_at`.
  *
  * Constraint UNIQUE parcial: solo 1 promo `status='active'` por empresa a la vez.
  *
- * Soft-deleted (política #246 §9).
+ * Soft-deleted.
  */
 return new class extends Migration
 {

@@ -158,7 +158,7 @@ class SyncController extends Controller
                     $idMap[$op['entity_ref']] = $result['server_id'];
                 }
 
-                // SMS al cliente (#275) FUERA de la txn de `applyOrderClose` (ya
+                // SMS al cliente FUERA de la txn de `applyOrderClose` (ya
                 // commiteada al volver acá): antes este camino de cobro offline
                 // nunca notificaba, solo `OrderController::closeWithPayment`.
                 if ($type === 'order.close' && ($result['status'] ?? null) === 'created' && ! empty($result['server_id'])) {
@@ -284,7 +284,7 @@ class SyncController extends Controller
                 'sync_warnings' => $warnings ?: null,
             ]);
 
-            // Materializar filas `order_items` (#293): sin esto la orden
+            // Materializar filas `order_items`: sin esto la orden
             // sincronizada quedaba invisible para el KDS y el pago por item.
             $this->orderController->materializeOrderItems($order, $items);
 
@@ -344,7 +344,7 @@ class SyncController extends Controller
         }
 
         // Resuelta en vivo (pudo abrirse por un cash.open del mismo lote).
-        // Multi-caja (#117): el cobro se imputa a LA caja que envió el cliente
+        // Multi-caja: el cobro se imputa a LA caja que envió el cliente
         // (`payload.cash_session_id`), no a la primera abierta de la sede.
         $session = $this->resolveSyncCashSession($companyNit, $branchId, $payload['cash_session_id'] ?? null);
         if ($session === null) {
@@ -489,7 +489,7 @@ class SyncController extends Controller
             return ['op_id' => $op['op_id'], 'status' => 'duplicate', 'server_id' => $existing->id];
         }
 
-        // Multi-caja (#117): el cliente indica QUÉ caja abre. El conflicto
+        // Multi-caja: el cliente indica QUÉ caja abre. El conflicto
         // "ya hay sesión abierta" se evalúa por CAJA cuando viene el id —
         // evaluarlo por sede impedía abrir la caja 2 offline con la caja 1
         // abierta. Sin id (cliente legacy / mono-caja) se conserva el chequeo
@@ -619,7 +619,7 @@ class SyncController extends Controller
         $payload = $op['payload'];
         $closedAtClient = isset($payload['closed_at_client']) ? Carbon::parse($payload['closed_at_client']) : null;
 
-        // Multi-caja (#117): cerrar LA caja que el cajero operaba, no la
+        // Multi-caja: cerrar LA caja que el cajero operaba, no la
         // primera abierta de la sede — con 2+ cajas abiertas el cierre offline
         // caía en la sesión equivocada con el conteo físico de otra,
         // descuadrando ambas. Si el id apunta a una sesión ya cerrada

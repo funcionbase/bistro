@@ -2,7 +2,7 @@ import { useToken } from '@/hooks/use-token';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
-/** Respuesta de GET /api/v1/enrollment/proof/preview (#154). */
+/** Respuesta de GET /api/v1/enrollment/proof/preview. */
 export interface EnrollmentProofPreview {
     url: string;
     mime_type: string;
@@ -20,7 +20,7 @@ interface UseEnrollmentProofReturn {
 }
 
 /**
- * #154 — Carga la metadata de la prueba de pertenencia (evidencia de
+ * Carga la metadata de la prueba de pertenencia (evidencia de
  * enrolamiento). El backend gatea el acceso: solo el owner (is_system) o
  * quien subió el documento; si no hay permiso responde 403. `openProof`
  * re-pide una URL firmada fresca (≤ 15 min) y la abre en otra pestaña.

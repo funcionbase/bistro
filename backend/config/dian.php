@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Configuración del subsistema DIAN (HU #235).
+ * Configuración del subsistema DIAN.
  *
  * - `default_final_consumer`: convención DIAN UBL Colombia para "consumidor
  *   final" — adquirente genérico cuando el cajero no captura datos. NIT

@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * CRUD de estaciones KDS (#115 F6).
+ * CRUD de estaciones KDS.
  *
  * Listar es lo único accesible a roles operativos (selector del editor de
  * menú); store/update/archive requiere permiso `kds.manage_stations`

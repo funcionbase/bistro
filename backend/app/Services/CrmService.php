@@ -17,10 +17,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Servicio de CRM básico (#123 + refactor #235).
+ * Servicio de CRM básico.
  *
  * Vista consolidada del cliente (cross-sede): cada `Contact` es el cliente.
- * Desde #235 la identidad canónica es `contacts.id`; las órdenes apuntan a
+ * La identidad canónica es `contacts.id`; las órdenes apuntan a
  * `contact_id`. Para órdenes legacy sin contact_id, hacemos fallback por
  * `orders.client_phone = contacts.phone` (solo cuando el phone es único en
  * la empresa).
@@ -106,7 +106,7 @@ class CrmService
     /**
      * Perfil consolidado de un cliente (Contact).
      *
-     * Scope escape justificado (#192): un cliente final es único a nivel
+     * Scope escape justificado: un cliente final es único a nivel
      * empresa, no de sede. Para construir el perfil 360 (todas las órdenes y
      * chats independientemente de la sede atendida) se SALTA `BranchScope`.
      *
@@ -226,7 +226,7 @@ class CrmService
                     'order_type' => $order->order_type,
                     'total' => (float) $order->total,
                     'discount_amount' => (float) $order->discount_amount,
-                    // Órdenes post-#191 guardan ítems en order_items (relación);
+                    // Las órdenes nuevas guardan ítems en order_items (relación);
                     // las antiguas usan el JSON. Prefiere order_items_count cuando > 0.
                     'items_count' => $order->order_items_count > 0
                         ? $order->order_items_count

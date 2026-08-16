@@ -17,7 +17,7 @@ interface PromoCodeEnrollFormProps {
 const MAX_BYTES = 50;
 
 /**
- * Form de inscripción self-service de promo codes desde billing-tab — #246.
+ * Form de inscripción self-service de promo codes desde billing-tab.
  *
  * Flujo: input + "Validar código" → muestra preview con starts_at_preview +
  * ahorro mensual → botón "Confirmar inscripción" → POST + refetch del

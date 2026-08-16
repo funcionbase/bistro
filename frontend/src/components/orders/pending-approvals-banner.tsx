@@ -55,7 +55,7 @@ const POLL_INTERVAL_MS = 10_000;
 export default function PendingApprovalsBanner() {
     const { activeBranch, activeCompany } = useSharedData();
     const hasBranch = Boolean(activeBranch?.id);
-    // #193: cuando la empresa está suspended, EnsureCompanyNotBlocked devuelve
+    // Cuando la empresa está suspended, EnsureCompanyNotBlocked devuelve
     // 403 en cualquier endpoint operativo. Cortar el polling acá evita 403
     // recurrentes que inflarían audit_logs y bloquearían el UI con spinners.
     const isSuspended = activeCompany?.status === 'suspended';

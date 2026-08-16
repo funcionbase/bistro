@@ -34,8 +34,8 @@ bistro — diseñamos y operamos los flujos que hacen funcionar tu negocio de co
 Recibes este correo porque tienes una cuenta activa en bistro.
 ¿Dudas? Escríbenos a {{ $supportEmail }}.
 
-Política de privacidad: https://funcionbase.com/privacy-policy/
-Términos y condiciones: https://funcionbase.com/terms-conditions/
+Política de privacidad: https://example.com/privacy-policy/
+Términos y condiciones: https://example.com/terms-conditions/
 
 Copyright © {{ $year }} by bistro · Valle del Cauca, Colombia
 @endcomponent

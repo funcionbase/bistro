@@ -24,7 +24,7 @@ interface LoyaltyBadgeProps {
 }
 
 /**
- * Badge reutilizable para el tier de fidelizacion (#122).
+ * Badge reutilizable para el tier de fidelizacion.
  *
  * Mapeo a variants semanticas del Badge:
  *  - bronze -> `warning` (amber semaforo, primer escalon)

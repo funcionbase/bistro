@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * Banner blando de mora en período de gracia (issue #193, status `past_due`).
+ * Banner blando de mora en período de gracia (status `past_due`).
  *
  * Se monta globalmente desde `app-layout.tsx`. Muestra un countdown desde el
  * día 1 (no espera 30 días como la versión anterior) usando `expected_block_at`

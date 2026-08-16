@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Disparada cuando companies.status pasa de past_due → suspended (#175).
+ * Disparada cuando companies.status pasa de past_due → suspended.
  */
 class CompanyPaymentBlockedNotification extends Notification implements BillingNotificationContract, ShouldQueue
 {

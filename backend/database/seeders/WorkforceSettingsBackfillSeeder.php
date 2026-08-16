@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
  *
  * Idempotente: usa `firstOrCreate` por `company_nit`. Las empresas nuevas
  * reciben la fila default en el flujo de `CompanyEnrollmentController` —
- * este seeder solo cubre el periodo previo al despliegue de #182.
+ * este seeder solo cubre el periodo previo al despliegue del feature de colaboradores.
  */
 class WorkforceSettingsBackfillSeeder extends Seeder
 {

@@ -10,9 +10,9 @@ use App\Services\TaxCalculator;
 
 /**
  * Helper único para recalcular los totales de una orden a partir de sus filas
- * `order_items` (#191, #293).
+ * `order_items`.
  *
- * Consolidación #293: `order_items` es la FUENTE de líneas y `orders.items`
+ * Consolidación: `order_items` es la FUENTE de líneas y `orders.items`
  * JSON es una proyección de lectura que este helper reconstruye en cada
  * recálculo (mismo formato que las líneas de caja: id/name/price/cost/
  * quantity/category/notes + desglose tributario). Así los consumidores del

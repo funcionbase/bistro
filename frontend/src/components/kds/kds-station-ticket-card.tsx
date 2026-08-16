@@ -19,7 +19,7 @@ export interface KdsStationTicketItem {
     in_kitchen_at: string | null;
     ready_at: string | null;
     sla_state: KdsSlaState;
-    /** #115 — true si el item pertenece a la estación de este device-token. */
+    /** true si el item pertenece a la estación de este device-token. */
     is_own_station: boolean;
     /** Estación a la que está enrutado el item (id) — útil para mostrar de dónde es. */
     station_id: string | null;
@@ -68,7 +68,7 @@ const SLA_LABEL: Record<KdsSlaState, string> = {
 };
 
 /**
- * #115 — Ticket de KDS por estación: una card por orden con los items
+ * Ticket de KDS por estación: una card por orden con los items
  * agrupados. Mostrar mesa/comensal/notas en el header, lista de items con
  * acción por estado, y borde de color según el peor SLA del grupo.
  *

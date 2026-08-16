@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Suscripción Web Push de un dispositivo del usuario (#149).
+ * Suscripción Web Push de un dispositivo del usuario.
  *
  * Una sub representa el par (user, dispositivo+navegador). El navegador
  * genera un `endpoint` único (FCM / Mozilla / Apple) y dos claves

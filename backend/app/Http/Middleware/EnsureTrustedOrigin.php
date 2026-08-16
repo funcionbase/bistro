@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * CIBER-06 — Defensa CSRF para la API.
+ * Defensa CSRF para la API.
  *
  * La cookie del JWT viaja `SameSite=None` (deploy cross-origin SPA↔API), así que
  * el navegador la adjunta también en peticiones cross-site. Las rutas `api/*` no

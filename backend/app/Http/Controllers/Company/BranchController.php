@@ -74,7 +74,7 @@ class BranchController extends Controller
                 Branch::query()->where('company_nit', $nit)->where('is_default', true)->update(['is_default' => false]);
             }
 
-            // #237 — vertical default 'restaurant' si no llega. Sembramos
+            // Vertical default 'restaurant' si no llega. Sembramos
             // prep_areas del vertical recién creada en la misma transacción.
             $businessTypeSlug = $data['business_type_id'] ?? 'restaurant';
             $businessType = BusinessType::find($businessTypeSlug);
@@ -130,7 +130,7 @@ class BranchController extends Controller
                 );
             }
 
-            // KDS (#115): cada sede nueva nace con sus 4 estaciones canónicas
+            // KDS: cada sede nueva nace con sus 4 estaciones canónicas
             // (caliente/fría/barra/fritos). El owner puede renombrar/archivar
             // desde /company/settings → KDS.
             KdsStation::seedDefaultsForBranch($nit, $branch->id);

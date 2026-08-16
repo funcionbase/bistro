@@ -134,7 +134,7 @@ Política mínima — pegar al rol del ASG:
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowSendFromfuncionbaseIdentity",
+      "Sid": "AllowSendFromBistroIdentity",
       "Effect": "Allow",
       "Action": [
         "ses:SendEmail",
@@ -187,8 +187,6 @@ testear: SES → **Verified identities** → Create identity (Email).
    el link que llega al Gmail.
 4. **Routing rules** → crear:
    - `hello@funcionbase.com` → forward a Gmail
-   - `hello@funcionbase.com` → forward a Gmail
-   - `hello@funcionbase.com` → forward a Gmail
    - `dmarc@funcionbase.com` → forward a Gmail (recibe reportes DMARC)
    - **Catch-all** (opcional): cualquier `*@funcionbase.com` → forward
 5. Si querés responder *desde* `hello@funcionbase.com` con Gmail:
@@ -235,7 +233,7 @@ el ASG o re-launchar EC2 para que tome el nuevo `.env`.
 cd bistro/backend
 php artisan tinker --execute '
     Mail::raw("Test SES setup", function ($m) {
-        $m->to("hello@gmail.com")->subject("Test desde local");
+        $m->to("juan.perez@example.com")->subject("Test desde local");
     });
 '
 tail -n 50 storage/logs/laravel.log
@@ -245,16 +243,16 @@ Debe aparecer el correo serializado en el log — NO se envía nada al exterior.
 
 ### QA (driver `ses`, sandbox)
 
-Verificar primero `hello@gmail.com` (o el destinatario que vayas a usar)
+Verificar primero `juan.perez@example.com` (o el destinatario que vayas a usar)
 en SES → Verified identities → Create identity (Email) → confirmar link.
 
 SSH al EC2 del ASG y:
 
 ```bash
-cd /var/www/panel.bistro/bistro/backend
+cd /var/www/bistro/backend
 sudo -u www-data php artisan tinker --execute '
     Mail::raw("Test SES desde QA", function ($m) {
-        $m->to("hello@gmail.com")->subject("Test QA → SES");
+        $m->to("juan.perez@example.com")->subject("Test QA → SES");
     });
 '
 ```

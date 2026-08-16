@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Menú de restaurante con estructura JSON v3. Solo un menú puede estar 'active'
  * por SEDE a la vez (company_nit + branch_id); las sedes son independientes
- * (#117) y no comparten carta. activate() y MenuSchedulerService desactivan
+ * y no comparten carta. activate() y MenuSchedulerService desactivan
  * únicamente los demás menús de la MISMA sede.
  *
  * structure: JSON con la estructura v3 de categorías e ítems (versiones anteriores son incompatibles).
@@ -145,7 +145,7 @@ class RestaurantMenu extends Model
     }
 
     /**
-     * Mapa `menu_item_id → kds_station_id` (#115). null = la categoría no
+     * Mapa `menu_item_id → kds_station_id`. null = la categoría no
      * declara estación y el item debe enrutarse a la estación `is_default`
      * de la sede (fallback). Consumido por `KdsController` para filtrar
      * tickets por estación sin pegar otra query por item.

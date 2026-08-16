@@ -36,7 +36,7 @@ class CouponService
             return ['valid' => false, 'coupon' => $coupon, 'discount_amount' => 0, 'total_after_discount' => $totalAmount, 'error' => $validation['error']];
         }
 
-        // Multi-sede (#117): si llamamos con sede activa, validar scope.
+        // Multi-sede: si llamamos con sede activa, validar scope.
         // Las llamadas anónimas (bot público) no pasan branchId y se omite.
         if ($branchId !== null) {
             $scopeOk = match ($coupon->scope ?? 'branch') {
@@ -75,7 +75,7 @@ class CouponService
     }
 
     /**
-     * Auto-aplica el mejor cupón programado para el carrito actual (#125 happy hour).
+     * Auto-aplica el mejor cupón programado para el carrito actual (happy hour).
      *
      * Filtra cupones de la empresa con `auto_apply = true` y status='active', valida
      * cada uno (vigencia, programación, scope, monto mínimo, etc.) y devuelve el de
@@ -128,7 +128,7 @@ class CouponService
         $redemption = CouponRedemption::create([
             'coupon_id' => $coupon->id,
             'company_nit' => $coupon->company_nit,
-            // Multi-sede (#117): la redención se inscribe en la sede de la orden,
+            // Multi-sede: la redención se inscribe en la sede de la orden,
             // NO la del cupón (que puede ser company-scope cubriendo varias).
             'branch_id' => $order->branch_id,
             'order_id' => $order->id,
@@ -141,7 +141,7 @@ class CouponService
 
         $coupon->incrementUsage();
 
-        // Fidelización (#122): si el cupón viene de un canje de puntos, marcamos
+        // Fidelización: si el cupón viene de un canje de puntos, marcamos
         // la redemption asociada como 'applied' y fijamos applied_order_id. Una
         // vez aplicado, status es inmutable (consistente con append-only).
         if ($coupon->source === 'loyalty_redeem') {

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('settings', 'settings/profile');
 
-// Páginas de settings migradas al shell SPA (#220). El frontend consume
+// Páginas de settings migradas al shell SPA. El frontend consume
 // los endpoints /api/v1/account/* y /api/v1/auth/*.
 Route::get('settings/profile', FrontendRedirectController::class)->name('profile.edit');
 Route::get('settings/password', FrontendRedirectController::class)->name('password.edit');
@@ -21,7 +21,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // HU #231 — Cambio de contraseña deshabilitado: el acceso es solo Google OAuth,
+    // Cambio de contraseña deshabilitado: el acceso es solo Google OAuth,
     // las cuentas no tienen contraseña gestionable por la app.
     Route::put('settings/password', function (Request $request) {
         Log::info('auth.legacy_endpoint_hit', [

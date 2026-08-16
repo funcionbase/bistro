@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Caja física de una sede (multi-caja, #117). Entidad persistente con nombre
+ * Caja física de una sede (multi-caja). Entidad persistente con nombre
  * estable ("Caja 1", "Barra", "Domicilios"); los turnos
  * (`CashRegisterSession`) cuelgan de una caja.
  *

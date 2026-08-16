@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Movimiento append-only sobre una cuenta de fidelización (#122).
+ * Movimiento append-only sobre una cuenta de fidelización.
  *
  * Toda variación de balance debe materializarse aquí. NUNCA actualizar este
  * registro tras su creación: errores se corrigen con un movement adicional

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Bitácora append-only de eventos de sincronización offline (#140).
+ * Bitácora append-only de eventos de sincronización offline.
  *
  * Cada batch sincronizado registra una fila por tipo de evento (`order_synced`,
  * `receipt_synced`, `sync_failed`) con totales agregados. Inmutable post-creación

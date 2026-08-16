@@ -1,7 +1,7 @@
 import { apiFetch } from './api';
 
 /**
- * Cliente HTTP tipado para la SPA (#220).
+ * Cliente HTTP tipado para la SPA.
  *
  * Construido encima de `apiFetch` para reutilizar:
  *  - Migración de Bearer legacy → cookie HttpOnly.

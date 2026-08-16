@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
  * default con el nuevo catálogo — "Plan Básico" a $0 COP/mes.
  *
  * Las invoices se generan del snapshot (`plan_price_snapshot`), no del precio
- * vivo del catálogo (drift inmune, #246); sin este backfill las empresas
+ * vivo del catálogo (drift inmune); sin este backfill las empresas
  * existentes seguirían facturando $300.000. Con precio $0 el generador de
  * invoices las salta (guard en BillingService::generateMonthlyInvoices).
  *
@@ -38,7 +38,7 @@ return new class extends Migration
         /** @var AuditService $auditService */
         $auditService = app(AuditService::class);
 
-        // Incluye snapshots NULL (subs legacy pre-#246): sin snapshot el
+        // Incluye snapshots NULL (subs legacy): sin snapshot el
         // invoice caería al precio vivo del catálogo — mejor sellarlas acá.
         $pending = Subscription::query()
             ->where('billing_plan_id', $defaultPlan->id)

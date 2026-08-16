@@ -6,7 +6,7 @@ use App\Models\Subscription;
 use Illuminate\Support\Facades\Log;
 
 /**
- * #257 — Presenta el plan de una suscripcion en lenguaje amigable para
+ * Presenta el plan de una suscripcion en lenguaje amigable para
  * correos transaccionales billing (CompanyRegistrationApproved, InvoiceGenerated).
  *
  * Fuente de datos (orden de prioridad):
@@ -46,7 +46,7 @@ class BillingPlanPresenter
         $taxRate = (float) ($sub->plan_tax_rate_snapshot ?? $plan?->tax_rate ?? 19.00);
         $featuresRaw = (array) ($sub->plan_features_snapshot ?? $plan?->features ?? []);
 
-        // Snapshot ausente — marker para detectar drift en suscripciones viejas pre-#246.
+        // Snapshot ausente — marker para detectar drift en suscripciones viejas.
         if ($sub->plan_name_snapshot === null) {
             Log::warning('billing.subscription_snapshot_missing', [
                 'subscription_id' => $sub->id,

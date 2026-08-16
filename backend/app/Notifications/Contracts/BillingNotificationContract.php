@@ -3,7 +3,7 @@
 namespace App\Notifications\Contracts;
 
 /**
- * #257 — Contrato de notificaciones billing que se despachan via
+ * Contrato de notificaciones billing que se despachan via
  * NotificationDispatchTracker.
  *
  * Las clases que implementan este contrato deben proveer:

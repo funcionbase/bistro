@@ -138,7 +138,7 @@ class CompanyEnrollmentController extends Controller
             // ('principal'). El owner puede renombrar/agregar sedes desde
             // /company/branches. Sin esto, ninguna mutación operativa funcionaría
             // (branch_id es NOT NULL en todas las tablas operativas).
-            // #237 — vertical de la primera sede. Si no llega, default
+            // Vertical de la primera sede. Si no llega, default
             // 'restaurant' (compatibilidad). El frontend lo expone como
             // selector con descripción/tooltip por opción.
             $businessTypeSlug = $validated['main_branch_business_type'] ?? 'restaurant';
@@ -161,7 +161,7 @@ class CompanyEnrollmentController extends Controller
                 'granted_at' => now(),
             ]);
 
-            // #237 — sembrar prep_areas del vertical en la sede recién creada.
+            // Sembrar prep_areas del vertical en la sede recién creada.
             // Aplica salvo `dark_store` (sin prep_areas por diseño).
             foreach ($businessType->prep_area_defaults ?? [] as $i => $area) {
                 PrepArea::create([
@@ -244,7 +244,7 @@ class CompanyEnrollmentController extends Controller
                 'vinculation_status' => 'active',
             ]);
 
-            // #246 — Crear suscripción al plan default vigente con snapshot inmutable.
+            // Crear suscripción al plan default vigente con snapshot inmutable.
             $defaultPlan = BillingPlan::default();
             if ($defaultPlan !== null) {
                 Subscription::create([
@@ -261,7 +261,7 @@ class CompanyEnrollmentController extends Controller
                 ]);
             }
 
-            // #246 — Aplicar promo code si llegó por URL `?promo=...`. Si el
+            // Aplicar promo code si llegó por URL `?promo=...`. Si el
             // código es inválido, NO bloqueamos el enrollment — solo loggeamos.
             $promoCodeSlug = $validated['promo_code'] ?? null;
             if ($promoCodeSlug !== null && $promoCodeSlug !== '') {
@@ -292,7 +292,7 @@ class CompanyEnrollmentController extends Controller
             return $company;
         });
 
-        // Correos transaccionales post-registro (#226). Ambos son jobs con
+        // Correos transaccionales post-registro. Ambos son jobs con
         // ShouldBeUnique + ShouldQueue; cada uno tiene su columna de tracking
         // (welcome_email_sent_at / ops_alert_sent_at) y su audit event. El
         // after_commit:true global en config/queue.php asegura que estos

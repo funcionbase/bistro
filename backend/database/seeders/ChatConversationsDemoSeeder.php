@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Pobla 5 conversaciones de WhatsApp con sus ordenes asociadas para QA del
- * panel de chats (issue #39 + #77). Cada conversacion termina con un Order en
+ * panel de chats. Cada conversacion termina con un Order en
  * un estado distinto del lifecycle: successful (validada/entregada), cancelled
  * (rechazada), in_delivery (en envio), in_kitchen (en cocina) y pending
  * (en proceso, antes de cocina). Mientras n8n no este disponible, todas las

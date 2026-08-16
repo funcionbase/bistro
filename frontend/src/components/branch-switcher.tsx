@@ -23,7 +23,7 @@ type SwitchBlocker = { kind: 'cash_open'; openSessionId: string | null; branchId
  * empresa cuando el usuario tiene más de una sede accesible. También expone
  * "+ Nueva sede" si tiene permiso `branches.manage`.
  *
- * Bloqueadores antes de hacer el switch (#192 Fase 3):
+ * Bloqueadores antes de hacer el switch:
  *  1. Trabajo sin guardar (`useIsAnyDirty`): muestra ConfirmDialog pidiendo
  *     confirmar que se abandonarán los cambios. Si confirma → switch.
  *  2. Caja abierta en la sede actual (backend devuelve
@@ -60,7 +60,7 @@ export function BranchSwitcher() {
                 if (activeCompany?.nit) {
                     localStorage.setItem(`${LAST_BRANCH_KEY}:${activeCompany.nit}`, branchId);
                 }
-                // #119: el backend devuelve `default_route` según el rol
+                // El backend devuelve `default_route` según el rol
                 // del usuario (courier-only entra a /my-deliveries).
                 let target = 'dashboard';
                 try {

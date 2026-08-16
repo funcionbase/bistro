@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 /**
- * Histórico del valor del inventario por bodega (#120).
+ * Histórico del valor del inventario por bodega.
  *
  * GET /api/v1/inventory/history/valuation?from=YYYY-MM-DD&to=YYYY-MM-DD&warehouse_id=<uuid|null>
  *

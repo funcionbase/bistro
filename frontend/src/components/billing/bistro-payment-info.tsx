@@ -4,13 +4,13 @@ import type { Company } from '@/types';
 import { Check, Copy, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
-interface funcionbasePaymentInfoProps {
+interface FuncionbasePaymentInfoProps {
     payment: NonNullable<Company['funcionbase_payment']>;
 }
 
 /**
  * Sección informativa visible en `/company/settings → Facturación` con los
- * datos de transferencia interbancaria hacia bistro — #246.
+ * datos de transferencia interbancaria hacia bistro.
  *
  * Visible SIEMPRE (no solo en past_due/suspended) para que el cliente pueda
  * pagar proactivamente cada mes. Renderiza identificación fiscal (NIT/DV/
@@ -20,7 +20,7 @@ interface funcionbasePaymentInfoProps {
  * Reusable: la prop `payment` viene del bootstrap (shared-data). El caller
  * decide si renderizar (oculta cuando todos los campos son null).
  */
-export function funcionbasePaymentInfo({ payment }: funcionbasePaymentInfoProps) {
+export function FuncionbasePaymentInfo({ payment }: FuncionbasePaymentInfoProps) {
     const hasAnyBankData = payment.breb_key !== null || payment.account_number !== null;
 
     if (!hasAnyBankData && payment.nit === null) {

@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Núcleo del programa de fidelización (#122).
+ * Núcleo del programa de fidelización.
  *
  * Reglas contables (CLAUDE.md):
  *  - Puntos NO son moneda. Nunca tocan payment_receipts.

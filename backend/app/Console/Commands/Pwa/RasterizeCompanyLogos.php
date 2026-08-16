@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 /**
  * Regenera los iconos PWA derivados del logo subido por cada empresa.
  *
- * Útil tras instalar el feature offline (#140) en una BD existente, donde
+ * Útil tras instalar el feature offline en una BD existente, donde
  * las empresas ya tenían `logo_path` pero nunca pasaron por el pipeline de
  * rasterización.
  */

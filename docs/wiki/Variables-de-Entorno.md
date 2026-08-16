@@ -162,7 +162,7 @@ Ver [`EMAIL_SES_SETUP.md`](EMAIL_SES_SETUP.md) para configuración completa de D
 
 ## Documentos legales
 
-Sin variable de entorno propia. `config/legal.php` fija TOS/privacidad al sitio institucional (`funcionbase.com`) y resuelve el contrato contra `app.frontend_url` (`FRONTEND_URL`, ver arriba) + `/legal/contract`. `BootstrapService::buildCatalogs()` expone las 3 URLs al SPA vía `legalUrls`.
+Sin variable de entorno propia. `config/legal.php` fija TOS/privacidad/contrato a placeholders (`example.com`) — reemplazalos por tus propios documentos legales antes de producción. `BootstrapService::buildCatalogs()` expone las 3 URLs al SPA vía `legalUrls`.
 
 ---
 
@@ -212,7 +212,7 @@ Visibles al cliente en `/company/settings → Facturación` y en `SuspendedBlock
 | `BISTRO_PAYMENT_BANK_NAME` | `Bancolombia` | Banco destinatario |
 | `BISTRO_PAYMENT_ACCOUNT_NUMBER` | `***REMOVED-ACCOUNT-NUMBER***` | Número de cuenta |
 | `BISTRO_PAYMENT_ACCOUNT_TYPE` | `ahorros` | Tipo de cuenta |
-| `BISTRO_PAYMENT_ACCOUNT_HOLDER` | `CRISTIAN MARIN` | Titular |
+| `BISTRO_PAYMENT_ACCOUNT_HOLDER` | `***REMOVED-ACCOUNT-HOLDER***` | Titular |
 | `BISTRO_NIT` | *(vacío)* | NIT de bistro. Vacío = se oculta en "Datos para transferir", funcionbaseProviderSeeder skipea y la emisión DIAN SaaS falla explícito. Setear cuando exista NIT real |
 | `BISTRO_DV` | *(vacío)* | Dígito de verificación |
 | `BISTRO_COMMERCIAL_NAME` | `bistro SAS` | Nombre comercial |
@@ -265,8 +265,8 @@ El template es **neutral**. En qa/pdn las credenciales vienen del IAM instance p
 | Variable | Default | Descripción |
 |----------|---------|-------------|
 | `AWS_DEFAULT_REGION` | `us-east-1` | Región AWS — debe coincidir con la región de los identities de SES |
-| `AWS_BUCKET` | — | Bucket público (assets, logos, imágenes de menú, QR, iconos PWA). qa/pdn: `bistro-panel-{qa\|pdn}-assets` |
-| `AWS_BUCKET_DOCUMENTS` | — | Bucket privado (PDFs de factura, reportes, evidencia de enrolamiento — DIAN 10 años). qa/pdn: `bistro-panel-{qa\|pdn}-documents` |
+| `AWS_BUCKET` | — | Bucket público (assets, logos, imágenes de menú, QR, iconos PWA). qa/pdn: `bistro-{qa\|pdn}-assets` |
+| `AWS_BUCKET_DOCUMENTS` | — | Bucket privado (PDFs de factura, reportes, evidencia de enrolamiento — DIAN 10 años). qa/pdn: `bistro-{qa\|pdn}-documents` |
 | `AWS_ENDPOINT` | — | Endpoint custom S3-compatible. Vacío = endpoint nativo AWS |
 | `AWS_URL` | — | URL base del bucket público. Vacío = vhost-style automático |
 | `AWS_USE_PATH_STYLE_ENDPOINT` | `false` | `false` = vhost-style (AWS S3 real); `true` = path-style (MinIO local) |
@@ -391,13 +391,13 @@ El template es **neutral**. En qa/pdn las credenciales vienen del IAM instance p
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `META_APP_ID` | `1265007232388204` | App de Meta de bistro (compartida QA + PDN) |
+| `META_APP_ID` | *(tu App ID de Meta)* | App de Meta de bistro (compartida QA + PDN) |
 | `META_APP_SECRET` | — | App Secret (SECRETO, GitHub Secrets) |
-| `META_BUSINESS_ID` | `929046296489964` | Business Manager de bistro |
-| `META_SYSTEM_USER_ID` | `61573213870387` | System User de partner |
+| `META_BUSINESS_ID` | *(tu Business Manager ID de Meta)* | Business Manager de bistro |
+| `META_SYSTEM_USER_ID` | *(tu System User ID de partner)* | System User de partner |
 | `META_SYSTEM_USER_TOKEN` | — | Token "Nunca expira" del System User (SECRETO) |
-| `META_CONFIG_ID_QA` | `941660645323511` | Embedded Signup configuration ID (qa) |
-| `META_CONFIG_ID_PDN` | `2605276259869097` | Embedded Signup configuration ID (pdn) |
+| `META_CONFIG_ID_QA` | *(tu config ID)* | Embedded Signup configuration ID (qa) |
+| `META_CONFIG_ID_PDN` | *(tu config ID)* | Embedded Signup configuration ID (pdn) |
 | `META_GRAPH_API_VERSION` | `v25.0` | Versión del Graph API |
 | `META_WEBHOOK_VERIFY_TOKEN_QA` | — | Verify token del webhook (qa) |
 | `META_WEBHOOK_VERIFY_TOKEN_PDN` | — | Verify token del webhook (pdn) |
@@ -440,7 +440,7 @@ El frontend es un proyecto independiente (Vite + React + Cloudflare Worker). Viv
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
-| `CORS_ALLOWED_ORIGINS` | — | Orígenes permitidos para CORS con credenciales (lista separada por coma). Vacío → `config/cors.php` deriva la lista de `FRONTEND_URL` + orígenes locales (`http://localhost`, `:80`, `:5173`). NUNCA usar `*` con credenciales — el config lo rechaza. El patrón `*.funcionbase.com` aplica siempre. |
+| `CORS_ALLOWED_ORIGINS` | — | Orígenes permitidos para CORS con credenciales (lista separada por coma). Vacío → `config/cors.php` deriva la lista de `FRONTEND_URL` + orígenes locales (`http://localhost`, `:80`, `:5173`). NUNCA usar `*` con credenciales — el config lo rechaza. El patrón `*.example.com` aplica siempre. |
 
 ---
 

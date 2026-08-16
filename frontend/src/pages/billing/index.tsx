@@ -48,7 +48,7 @@ function formatPeriod(from: string): string {
 
 /**
  * Badge contextual de facturación. Usa el variant del catálogo canónico
- * (#205 — `lib/company-status.ts`) pero override del label porque billing
+ * (`lib/company-status.ts`) pero override del label porque billing
  * añade contexto operativo ("período de gracia", "pago bloqueado") que no
  * aplica fuera de esta página.
  */
@@ -216,7 +216,6 @@ function NormalBillingView({
 }: NormalBillingViewProps) {
     return (
         <>
-            {/* Suscripción activa */}
             {loading ? (
                 <BillingSubscriptionSkeleton />
             ) : (
@@ -263,7 +262,6 @@ function NormalBillingView({
                 </Card>
             )}
 
-            {/* Historial de facturas */}
             {loading ? (
                 <BillingInvoicesSkeleton />
             ) : (
@@ -378,7 +376,6 @@ function NormalBillingView({
                                     </Table>
                                 </div>
 
-                                {/* Paginación */}
                                 {invoices.last_page > 1 && (
                                     <div className="text-muted-foreground mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                                         <span className="tabular-nums">

@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Configura bistro como empresa-proveedora SaaS para emisión DIAN (#246 PR-1.5).
+ * Configura bistro como empresa-proveedora SaaS para emisión DIAN.
  *
  * Asume que la Company de bistro ya existe (creada manualmente o por el flujo
  * de enrollment normal). Este seeder solo asegura:
@@ -30,14 +30,14 @@ use Illuminate\Support\Str;
  * Cuando se contrate Factura1/Siigo/Carvajal: solo cambia el `provider_slug`
  * de esta config en BD (rotación documentada en migration data por separado).
  */
-class funcionbaseProviderSeeder extends Seeder
+class FuncionbaseProviderSeeder extends Seeder
 {
     public function run(): void
     {
         $nit = (string) config('billing.bistro.nit');
 
         if ($nit === '') {
-            $this->command?->warn('BISTRO_NIT no configurado — skip funcionbaseProviderSeeder.');
+            $this->command?->warn('BISTRO_NIT no configurado — skip FuncionbaseProviderSeeder.');
 
             return;
         }

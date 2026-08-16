@@ -26,7 +26,7 @@ return [
     | Métodos de pago para egresos
     |--------------------------------------------------------------------------
     |
-    | Espejo de `config('payments.methods')` (#203). NO modificar aquí —
+    | Espejo de `config('payments.methods')`. NO modificar aquí —
     | actualizar `config/payments.php` y este array reflejará el cambio.
     | Se mantiene la clave para retro-compatibilidad con `cash_register.*`.
     */

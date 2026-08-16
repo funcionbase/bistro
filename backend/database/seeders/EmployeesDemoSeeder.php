@@ -91,10 +91,10 @@ class EmployeesDemoSeeder extends Seeder
      */
     private function upsertEmployeesForExistingUsers(Branch $pereira, Branch $cartago, array $positions): array
     {
-        $owner = User::where('email', 'cristianmarint@gmail.com')->first();
-        $admin = User::where('email', 'funcionbaseco@gmail.com')->first();
-        $kitchen = User::where('email', 'flexyconsultora@gmail.com')->first();
-        $courier = User::where('email', 'cristianmarintt@gmail.com')->first();
+        $owner = User::where('email', 'owner@example.com')->first();
+        $admin = User::where('email', 'admin@example.com')->first();
+        $kitchen = User::where('email', 'kitchen@example.com')->first();
+        $courier = User::where('email', 'courier@example.com')->first();
 
         $blueprints = [
             'owner' => [
@@ -103,7 +103,7 @@ class EmployeesDemoSeeder extends Seeder
                 'doc_number' => '1010100001',
                 'first_name' => 'Cristian',
                 'last_name' => 'Marín',
-                'email' => 'cristianmarint@gmail.com',
+                'email' => 'owner@example.com',
                 'pay_type' => 'mensual',
                 'pay_rate' => 8000000,
                 'contract_type' => 'indefinido',
@@ -115,7 +115,7 @@ class EmployeesDemoSeeder extends Seeder
                 'doc_number' => '1010100002',
                 'first_name' => 'Carolina',
                 'last_name' => 'Mejía',
-                'email' => 'funcionbaseco@gmail.com',
+                'email' => 'admin@example.com',
                 'pay_type' => 'mensual',
                 'pay_rate' => 4500000,
                 'contract_type' => 'indefinido',
@@ -127,7 +127,7 @@ class EmployeesDemoSeeder extends Seeder
                 'doc_number' => '1010100003',
                 'first_name' => 'Sebastián',
                 'last_name' => 'Ramírez',
-                'email' => 'flexyconsultora@gmail.com',
+                'email' => 'kitchen@example.com',
                 'pay_type' => 'mensual',
                 'pay_rate' => 1800000,
                 'contract_type' => 'fijo',
@@ -139,7 +139,7 @@ class EmployeesDemoSeeder extends Seeder
                 'doc_number' => '1010100004',
                 'first_name' => 'Andrés',
                 'last_name' => 'Domiciliario',
-                'email' => 'cristianmarintt@gmail.com',
+                'email' => 'courier@example.com',
                 'pay_type' => 'diario',
                 'pay_rate' => 60000,
                 'contract_type' => 'OPS',

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Solicitud de cancelación de un order_item ya aprobado (#191).
+ * Solicitud de cancelación de un order_item ya aprobado.
  *
  * Se crea cuando el cliente intenta cancelar un item con status `approved`
  * (post-aprobación del mesero, pre-cocina). El mesero ve la solicitud en su

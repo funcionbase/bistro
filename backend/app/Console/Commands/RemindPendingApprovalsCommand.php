@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Cron de recordatorios de pending approvals (#149 CA5).
+ * Cron de recordatorios de pending approvals.
  *
  * Ejecutado por `routes/console.php` cada minuto con `onOneServer()` +
  * `withoutOverlapping(5)` (CLAUDE.md §12).

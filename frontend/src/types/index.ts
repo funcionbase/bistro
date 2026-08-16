@@ -28,7 +28,7 @@ export interface NavItem {
     badge?: number;
     children?: NavItem[];
     /**
-     * Capability del vertical de la sede activa (#237). Si está definida y la
+     * Capability del vertical de la sede activa. Si está definida y la
      * sede activa no la habilita, el item se oculta y, cuando un grupo padre
      * queda sin hijos visibles, también se oculta el grupo. A diferencia del
      * `permission`, esta no es escalable por el usuario — depende del tipo de
@@ -77,11 +77,11 @@ export interface Company {
     default_tax_rate?: number;
     default_tax_label?: string;
     tax_included_in_price?: boolean;
-    // Snapshot de past_due (#175) — solo cuando status ∈ {past_due, suspended}.
+    // Snapshot de past_due — solo cuando status ∈ {past_due, suspended}.
     past_due_started_at?: string | null;
     expected_block_at?: string | null;
     payment_blocked_at?: string | null;
-    // Features del plan de facturación ACTIVO (#facturación-dian). `[]` si no
+    // Features del plan de facturación ACTIVO. `[]` si no
     // hay subscription activa. Ej: incluye `'dian'` solo en Plan Plus — gatea
     // el sidebar y /company/dian sin un fetch extra a /billing/subscription.
     plan_features?: string[];
@@ -91,7 +91,7 @@ export interface Company {
         account_number: string | null;
         account_type: string | null;
         account_holder: string | null;
-        // #246 — Identificación fiscal de bistro visible al cliente para
+        // Identificación fiscal de bistro visible al cliente para
         // diligenciar la transferencia (NIT/DV en formulario del banco, etc.).
         nit: string | null;
         dv: string | null;
@@ -205,7 +205,7 @@ export interface Bank {
     name: string;
 }
 
-/** Catálogo de impresión (config/printing.php). Emitido por bootstrap (#220). */
+/** Catálogo de impresión (config/printing.php). Emitido por bootstrap. */
 export interface PrintingConfig {
     types: Record<string, string>;
     connections: Record<string, string>;
@@ -316,13 +316,13 @@ export interface SharedData {
     paymentMethods?: PaymentMethodsConfig;
     rbacActions?: RbacActionDescriptor[];
     employeeStatuses?: EmployeeStatusesConfig;
-    /** #149 — Clave pública VAPID para Web Push. NO es secreta. */
+    /** Clave pública VAPID para Web Push. NO es secreta. */
     vapidPublicKey?: string | null;
     /** Measurement ID de GA4 (`G-XXXXXXXXXX`). Público, NO secreto. `null` => GA4 off. */
     gaMeasurementId?: string | null;
-    /** #220 — catálogo de impresión, antes prop server-side de company/printers. */
+    /** Catálogo de impresión, antes prop server-side de company/printers. */
     printingConfig?: PrintingConfig;
-    /** #220 — bancos disponibles, antes prop server-side de company/settings. */
+    /** Bancos disponibles, antes prop server-side de company/settings. */
     availableBanks?: Bank[];
     /** Versión del backend que respondió el bootstrap (runtime, no build). */
     versions?: { backend: string };
@@ -330,7 +330,7 @@ export interface SharedData {
 }
 
 /**
- * Acción RBAC canónica (#203 — `config/rbac.php`). Las columnas reales
+ * Acción RBAC canónica (`config/rbac.php`). Las columnas reales
  * (`can_create | can_read | can_update | can_delete`) viven en la BD;
  * este descriptor solo centraliza el label en es-CO para UI.
  */
@@ -342,7 +342,7 @@ export interface RbacActionDescriptor {
 }
 
 /**
- * Catálogo de métodos de pago (#203 — `config/payments.php`).
+ * Catálogo de métodos de pago (`config/payments.php`).
  *
  * - `methods`: opciones seleccionables al cobrar (cash/card/transfer).
  * - `receipt_methods`: superset que puede aparecer en `payment_receipts.payment_method`
@@ -362,7 +362,7 @@ export interface PaymentMethodsConfig {
 }
 
 /**
- * Catálogo de vinculation_status para colaboradores (#204 — `config/employees.php`).
+ * Catálogo de vinculation_status para colaboradores (`config/employees.php`).
  *
  * - `statuses`: lista cerrada aceptada por el enum BD.
  * - `absence_statuses`: subset que requiere `valid_from`/`valid_until` y dispara
@@ -453,7 +453,7 @@ export interface MenuCategory {
     description: string | null;
     order: number;
     /**
-     * #115 — Estación KDS a la que se enrutan los items de la categoría
+     * Estación KDS a la que se enrutan los items de la categoría
      * cuando se aprueban. null = usar la estación `is_default=true` de la
      * sede como fallback. La existencia de la estación se valida server-side
      * contra la sede activa del request.
@@ -505,7 +505,7 @@ export interface CompanyMember {
         avatar_url?: string | null;
     };
     role: CompanyRole;
-    /** Multi-sede (#117): UUIDs de sedes accesibles dentro de la empresa activa. */
+    /** Multi-sede: UUIDs de sedes accesibles dentro de la empresa activa. */
     branch_ids?: string[];
 }
 
@@ -682,7 +682,7 @@ export interface MetricCartAbandonment {
     estimated_lost_revenue: number;
 }
 
-// --- Food cost (issue #113) ---
+// --- Food cost ---
 
 export interface FoodCostItem {
     item_id: string;
@@ -741,7 +741,7 @@ export interface FoodCostHistory {
     points: FoodCostHistoryPoint[];
 }
 
-// --- Menu engineering (issue #114) ---
+// --- Menu engineering ---
 
 export type MenuEngineeringQuadrant = 'star' | 'cow' | 'puzzle' | 'dog';
 
@@ -787,7 +787,7 @@ export interface MenuEngineeringMatrix {
 export type DeliveryStatus = 'pending' | 'completed' | 'cancelled';
 
 /**
- * Catálogo canónico de razones de cambio de estado (#203 — `DeliveryService::REASON_*`).
+ * Catálogo canónico de razones de cambio de estado (`DeliveryService::REASON_*`).
  *
  * - `error_usuario`: el domiciliario marcó completed por error y revirtió.
  * - `pedido_rechazado`: el cliente rechazó la entrega al recibirla.
@@ -832,7 +832,7 @@ export interface Delivery {
     previous_delivery_id: string | null;
     reason: string | null;
     cancellation_reason: string | null;
-    /** #119: motivo estructurado del último cambio de status (subset que puede vivir en la fila). */
+    /** Motivo estructurado del último cambio de status (subset que puede vivir en la fila). */
     status_change_reason?: DeliveryRowReason | null;
     created_by: string | null;
     order?: DeliveryOrder;
@@ -891,7 +891,7 @@ export interface DashboardPageProps {
     lowStockInventory?: LowStockInventorySummary | null;
 }
 
-/** Respuesta del endpoint GET /api/v1/dashboard (#220, shell SPA). */
+/** Respuesta del endpoint GET /api/v1/dashboard (shell SPA). */
 export interface DashboardData {
     period: Period;
     needsProfileCompletion: boolean;

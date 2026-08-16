@@ -32,7 +32,7 @@ import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**
- * Fallback de `<Suspense>` consciente de la ruta (#269, Fase 1 + 2).
+ * Fallback de `<Suspense>` consciente de la ruta.
  *
  * Mientras el chunk lazy de la ruta destino se descarga, en vez de un spinner
  * centrado genérico se pinta el skeleton que **calca el layout** de esa

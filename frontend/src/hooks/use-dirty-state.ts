@@ -2,7 +2,7 @@ import { isAnyDirty, registerDirtyTicket, releaseDirtyTicket, setDirty, subscrib
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Reporta el estado dirty del componente que lo invoca (#192 Fase 3.2).
+ * Reporta el estado dirty del componente que lo invoca (Fase 3.2).
  *
  * Uso:
  *   const isDirty = formHasChanges();

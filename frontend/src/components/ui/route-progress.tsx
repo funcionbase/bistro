@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigation } from 'react-router-dom';
 
 /**
- * Barra de progreso global de navegación (#269, Fase 1).
+ * Barra de progreso global de navegación.
  *
  * Barra fina superior que refleja:
  *  - Transiciones de ruta de React Router (`useNavigation().state`).

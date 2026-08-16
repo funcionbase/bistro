@@ -12,7 +12,7 @@ interface PaymentState {
     tipAmount: string;
     submitting: boolean;
     error: string | null;
-    // HU #235 — integración DIAN al flujo de cobro.
+    // Integración DIAN al flujo de cobro.
     dianRequested: boolean;
     dianPrint: boolean;
     dianClientPhone: string;
@@ -68,7 +68,7 @@ const INITIAL_PAYMENT_STATE: PaymentState = {
  * propina voluntaria, monto recibido y devuelta en efectivo. El
  * comportamiento es idéntico al que vivía inline en la página de mesas.
  *
- * HU #235: además, opcionalmente dispara la emisión DIAN (`emitDocument`)
+ * Además, opcionalmente dispara la emisión DIAN (`emitDocument`)
  * cuando el cajero marca "Cliente solicita factura DIAN" en el sheet.
  * Si la emisión falla, NO se hace rollback del cobro (ya está confirmado);
  * el error se expone como `paymentState.dianEmissionError` y el cajero
@@ -129,7 +129,7 @@ export function useTablePayment({ selectedOrder, closeWithPayment, onPaid, cashS
                 return;
             }
 
-            // HU #235 — emisión DIAN opt-in disparada por el cajero. FEV si
+            // Emisión DIAN opt-in disparada por el cajero. FEV si
             // hay cliente identificado vía lookup (1er match completo); DEE
             // POS si no. El backend re-valida permisos + estado de orden +
             // idempotencia. Si el lookup retornó múltiples matches y ninguno

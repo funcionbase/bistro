@@ -14,7 +14,7 @@ interface ActivePromoCodeCardProps {
 }
 
 /**
- * Card que muestra el promo activo de la empresa + invoices afectadas. — #246.
+ * Card que muestra el promo activo de la empresa + invoices afectadas.
  *
  * Permite cancelar si `canCancel` (owner/admin). El cancel no afecta
  * invoices ya emitidas — solo deja de aplicar en futuros períodos.

@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Throwable;
 
 /**
- * #257 — Comando interno para aprobar el registro de una empresa.
+ * Comando interno para aprobar el registro de una empresa.
  *
  * Operacion administrativa: transiciona la empresa de `pending_activation`
  * a `active`, asegura una Subscription activa con snapshot del plan,

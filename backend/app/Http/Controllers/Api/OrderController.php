@@ -184,7 +184,7 @@ class OrderController extends Controller
         $branchId = $this->activeBranchId($request);
 
         // Caja debe estar abierta para crear órdenes. La sesión se resuelve por
-        // SEDE (#117): cada sede tiene su propia caja abierta.
+        // SEDE: cada sede tiene su propia caja abierta.
         $this->cashRegister->requireActiveSession($companyNit, $branchId);
 
         $menu = RestaurantMenu::forCompany($companyNit)->active()->first();
@@ -355,7 +355,7 @@ class OrderController extends Controller
         $autoApplied = false;
 
         if (! $code) {
-            // Sin código explícito: intenta auto-aplicar un cupón programado (#125 happy hour).
+            // Sin código explícito: intenta auto-aplicar un cupón programado (happy hour).
             // Si no hay candidatos válidos para la franja actual, sigue sin cupón.
             $auto = $this->couponService->bestAutoApplyForCart(
                 companyNit: $companyNit,
@@ -507,7 +507,7 @@ class OrderController extends Controller
 
     /**
      * Materializa líneas construidas por `buildOrderLines` como filas
-     * `order_items` (#293). `order_items` es la fuente de líneas (KDS, pago
+     * `order_items`. `order_items` es la fuente de líneas (KDS, pago
      * por item, recálculo de totales); toda creación/append de orden desde
      * caja u offline DEBE llamarlo — sin esto la orden queda invisible para
      * cocina. Nacen `approved` porque el cajero ya validó los items (no
@@ -939,13 +939,13 @@ class OrderController extends Controller
             }
 
             // ¿La orden ya está respaldada por filas `order_items`? Todo lo
-            // creado post-#293 lo está (caja, QR, sync offline); solo órdenes
-            // legacy abiertas antes del dual-write carecen de filas.
+            // creado tras la migración al dual-write lo está (caja, QR, sync
+            // offline); solo órdenes legacy abiertas antes carecen de filas.
             $hadRows = OrderItem::query()->where('order_id', $order->id)->exists();
 
             // Materializar las líneas nuevas como filas `order_items` — sin
             // esto los items agregados quedaban invisibles para el KDS y el
-            // pago por item (#293).
+            // pago por item.
             $this->materializeOrderItems($order, $newLines);
 
             if ($hadRows) {
@@ -1073,7 +1073,7 @@ class OrderController extends Controller
                 return [$order, $from];
             }
 
-            // Orden legacy sin filas `order_items` (pre-#293): recalcular desde
+            // Orden legacy sin filas `order_items`: recalcular desde
             // filas dejaría el total en 0. No admite cambio de tipo — se
             // cancela y se crea de nuevo (mismo criterio que otros flujos).
             if (! OrderItem::query()->where('order_id', $order->id)->exists()) {
@@ -1211,7 +1211,7 @@ class OrderController extends Controller
             // impuesto. Si la pagan en efectivo el cliente entrega total + tip y la
             // devuelta se calcula contra ese expectedTotal.
             'tip_amount' => ['nullable', 'numeric', 'min:0'],
-            // Multi-caja (#117): contra qué caja se cobra. Opcional para
+            // Multi-caja: contra qué caja se cobra. Opcional para
             // retrocompat (sede mono-caja → única caja abierta).
             'cash_session_id' => ['nullable', 'uuid'],
         ]);
@@ -1354,10 +1354,10 @@ class OrderController extends Controller
         ]);
 
         // SMS al cliente FUERA de la txn de cobro: su fallo nunca revierte el
-        // pago ya commiteado (#275 Fase 4 / CLAUDE.md §13).
+        // pago ya commiteado (CLAUDE.md §13).
         $this->dispatchOrderStatusSms($order, 'completed', $actor);
 
-        // Fidelización (#122): award fuera de la transacción de cobro para que
+        // Fidelización: award fuera de la transacción de cobro para que
         // un fallo del programa de puntos NUNCA reverse un cobro válido. El
         // service es idempotente por order_id vía UNIQUE PARCIAL.
         $loyaltyMovement = null;
@@ -1591,7 +1591,7 @@ class OrderController extends Controller
 
         // Las devoluciones también afectan la caja física (efectivo o no), por
         // lo que requieren caja abierta (de esta sede) para asociarlas a una
-        // sesión auditable. Multi-caja (#117): la caja operada se recibe
+        // sesión auditable. Multi-caja: la caja operada se recibe
         // explícita o se infiere si la sede tiene una sola abierta.
         $session = $this->cashRegister->resolveSessionForCharge(
             $companyNit,
@@ -1738,7 +1738,7 @@ class OrderController extends Controller
             'reason' => $validated['reason'] ?? null,
         ]);
 
-        // Fidelización (#122): solo reversamos puntos cuando el refund es total.
+        // Fidelización: solo reversamos puntos cuando el refund es total.
         // En refunds parciales mantenemos el award para no romper el incentivo
         // del cliente; la columna lifetime_earned puede recalibrarse a futuro
         // si se implementa reversa proporcional.
@@ -1771,7 +1771,7 @@ class OrderController extends Controller
      * orden pasa a `pending` (entra al kanban) y sus items a `approved`.
      *
      * Las órdenes de sesión de mesa NO pasan por aquí — se aprueban por tanda
-     * vía `TableSessionController::approveBatch` (flujo #191).
+     * vía `TableSessionController::approveBatch`.
      */
     public function approve(Request $request, string $id): JsonResponse
     {
@@ -1938,7 +1938,7 @@ class OrderController extends Controller
             ]);
 
             // SMS al cliente FUERA de la txn: su fallo nunca revierte el cambio
-            // de estado ya commiteado (#275 Fase 4). user_id = quien arrastró,
+            // de estado ya commiteado. user_id = quien arrastró,
             // para avisarle si el envío async falla.
             $this->dispatchOrderStatusSms($order, $order->status, $actor);
         }

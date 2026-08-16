@@ -60,7 +60,7 @@ export default function EmployeesIndex() {
         return p.toString();
     }, [search, branchId, status, positionId, includeArchived]);
 
-    // Listado principal (#269, Fase 3): query crítica con `keepPreviousData`
+    // Listado principal (Fase 3): query crítica con `keepPreviousData`
     // para no blanquear la tabla al cambiar filtros ni al revisitar. El
     // skeleton completo solo en el primer load sin cache (`isLoading`).
     const employeesQuery = useQuery<Employee[], Error>({
@@ -77,7 +77,7 @@ export default function EmployeesIndex() {
         },
     });
 
-    // Catálogos de los filtros (#269, Fase 3): secciones secundarias e
+    // Catálogos de los filtros (Fase 3): secciones secundarias e
     // independientes — no bloquean el listado y se cachean (cambian rara vez).
     const branchesQuery = useQuery<Branch[]>({
         queryKey: ['company', 'branches', 'employee-filter'],

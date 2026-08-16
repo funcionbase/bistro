@@ -86,7 +86,7 @@ function describeCancellationReason(reason: string | null | undefined): string |
 }
 
 /**
- * Card reutilizable para presentar un `order_item` (#191).
+ * Card reutilizable para presentar un `order_item`.
  *
  * Reusable en 4 contextos:
  *  - Carrito del comensal (con onEdit/onCancel si pending_approval).

@@ -1,7 +1,7 @@
 export type InvoiceStatus = 'pending' | 'paid' | 'overdue' | 'voided';
 export type InvoiceType = 'monthly' | 'proration';
 export type SubscriptionStatus = 'active' | 'cancelled' | 'suspended';
-// `CompanyBillingStatus` retirado por #205 — usar `CompanyStatus` desde
+// `CompanyBillingStatus` retirado — usar `CompanyStatus` desde
 // `@/lib/company-status`. El alias era código muerto (sin consumers).
 
 export interface BillingPlan {

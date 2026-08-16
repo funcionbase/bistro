@@ -28,8 +28,8 @@ interface PaymentMethodPickerProps {
 
 /**
  * Selector visual de método de pago para cierre/cobro de orden. Renderiza una
- * grilla clickeable con icono + label leído del catálogo canónico (#203 —
- * `config/payments.php` vía el endpoint de bootstrap de la SPA).
+ * grilla clickeable con icono + label leído del catálogo canónico
+ * (`config/payments.php` vía el endpoint de bootstrap de la SPA).
  *
  * El activo se marca con tonos de `primary` para mantener el sistema de
  * tokens semánticos (v3.1). Los inactivos hacen hover muted sutil.

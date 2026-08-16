@@ -21,7 +21,7 @@ import { DianApiError, createResolution, deactivateResolution, listResolutions }
 import { DIAN_DOC_TYPE_LABELS, type DianDocumentType, type DianResolution } from '@/types/dian';
 
 /**
- * Configuración → Facturación DIAN (HU #235 — pantalla owner-only).
+ * Configuración → Facturación DIAN (pantalla owner-only).
  *
  * 3 tabs: Facturas (principal — consulta de documentos emitidos por
  * resolución, con filtro por sede/empresa, búsqueda, ordenamiento y

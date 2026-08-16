@@ -61,7 +61,7 @@ export interface BusinessTypeSelectorProps {
 }
 
 /**
- * Componente reutilizable para seleccionar un vertical de negocio (#237).
+ * Componente reutilizable para seleccionar un vertical de negocio.
  *
  * Reusado en:
  *   - Wizard de onboarding (paso "primera sede").

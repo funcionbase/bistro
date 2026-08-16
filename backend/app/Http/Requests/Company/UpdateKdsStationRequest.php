@@ -7,7 +7,7 @@ use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * PATCH /api/v1/company/kds/stations/{id} — actualiza estación (#115 F6).
+ * PATCH /api/v1/company/kds/stations/{id} — actualiza estación.
  *
  * `slug` no se permite cambiar (mantiene estable las referencias en JSON
  * del menú y los device-tokens). Si se necesita renombrar usar `name`.

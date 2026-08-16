@@ -267,7 +267,7 @@ class AuthController extends Controller
         $this->jwtService->invalidate($request->attributes->get('jwt_token'));
         $token = $this->jwtService->issue($user, $user->companies()->get(), $activeCompanyNit, $branch->id);
 
-        // Telemetría de switch (#192): permite reconstruir patrones de uso
+        // Telemetría de switch: permite reconstruir patrones de uso
         // del switcher post-deploy. `from_branch_id` ayuda a detectar
         // saltos cross-sede frecuentes que justificarían un endpoint
         // específico (ej. supervisor que opera 2 sedes en paralelo).

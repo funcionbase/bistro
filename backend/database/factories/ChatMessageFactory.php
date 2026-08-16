@@ -18,7 +18,6 @@ class ChatMessageFactory extends Factory
     public function definition(): array
     {
         return [
-            //
         ];
     }
 }

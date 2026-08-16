@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Servicio del flujo público de mesa con QR (#191).
+ * Servicio del flujo público de mesa con QR.
  *
  * Resuelve `/t/{qr_token}` → mesa → sesión activa (o nueva), enrola al
  * comensal como `TableSessionGuest` (con captura de Contact en CRM) y
@@ -30,9 +30,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *
  * Phone: input se normaliza (strip espacios, guiones, paréntesis, prefijo
  * `+57`/`57` opcional). Debe matchear `config('tables.guest_phone_regex')`
- * tras normalizar. Bloquea fijos y extranjeros (consciente; ver issue #191).
+ * tras normalizar. Bloquea fijos y extranjeros (decisión consciente).
  *
- * Aislamiento por sede (#192): este servicio sirve el flujo público sin JWT
+ * Aislamiento por sede: este servicio sirve el flujo público sin JWT
  * — no hay `active_branch_id` en el request. Las queries usan
  * `withoutBranchScope()` porque el scope global no aplicaría igual; el
  * filtro explícito por `qr_token`, `table_id` o `session_id` (uuid/id

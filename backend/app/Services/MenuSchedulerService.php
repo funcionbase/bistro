@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
  * incluya el dayOfWeek de hoy (Carbon 0=domingo) y pone los demás de ESA sede
  * en estado 'scheduled'. Si ninguno coincide, todos quedan 'scheduled'.
  *
- * Las sedes son independientes (#117): cada branch opera su propia carta y
+ * Las sedes son independientes: cada branch opera su propia carta y
  * están físicamente separadas, así que la programación de una sede NUNCA toca
  * los menús de otra. Agrupar por empresa degradaba el menú de las demás sedes
  * a 'scheduled', dejándolas sin carta servible.

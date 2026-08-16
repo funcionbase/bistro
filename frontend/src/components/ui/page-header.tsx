@@ -29,7 +29,7 @@ interface PageHeaderProps {
     variant?: 'dense' | 'editorial';
     className?: string;
     /**
-     * Aislamiento por sede (#192 Fase 3.3): renderizar el pill de sede
+     * Aislamiento por sede: renderizar el pill de sede
      * activa a la derecha del eyebrow. El badge se autocompleta con
      * `useActiveBranch()` y se oculta si el usuario tiene ≤1 sede.
      * Default `true`. Páginas globales (settings, billing, legales)

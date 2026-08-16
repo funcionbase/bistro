@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * CRUD de insumos por empresa (multibodega #120).
+ * CRUD de insumos por empresa (multibodega).
  *
  * El stock vive en `ingredient_stocks` por (ingredient, warehouse). Este
  * controller expone para cada insumo:

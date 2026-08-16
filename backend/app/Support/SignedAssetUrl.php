@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
  * íconos PWA, media de chat) emitiendo una URL **estable del dominio propio**
  * que pasa por `StorageProxyController`.
  *
- * Motivación (issue #172): el bucket de assets dejó de ser de acceso público
+ * Motivación: el bucket de assets dejó de ser de acceso público
  * anónimo. El proxy firma con TTL corto en cada hit y redirige (302) a una
  * URL temporal de S3 con `X-Amz-Signature`. Para el cliente, la URL es siempre
  * del dominio del ALB → ningún detalle del bucket queda expuesto.

@@ -43,7 +43,7 @@ interface GuestItemListProps {
 
 /**
  * Lista de items consumidos por un comensal con totals y selección para
- * cobro parcial (#191 Fase 6).
+ * cobro parcial.
  *
  * Reusable en caja (con checkboxes + CTAs de pago y refund) y en vista
  * mesero/historial (readOnly). Cuando un item ya tiene `paid_at`, se

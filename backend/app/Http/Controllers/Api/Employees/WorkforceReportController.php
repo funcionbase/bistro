@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *  - mensual:   pay_rate × (horas / 192)
  *
  * NOTA: aproximación operativa, NO equivale a nómina formal. La nómina con
- * prestaciones/parafiscales queda fuera del MVP (#182 §9).
+ * prestaciones/parafiscales queda fuera del MVP.
  */
 class WorkforceReportController extends Controller
 {

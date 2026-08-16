@@ -51,7 +51,6 @@ export default function WhatsappVerificationCodeModal({ open, action, title, des
             return;
         }
 
-        // Auto-request on open
         void requestCode();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);

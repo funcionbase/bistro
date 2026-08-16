@@ -17,9 +17,9 @@ use Illuminate\Support\Facades\DB;
  *
  * Roles que crea (todos `is_system=false` — el owner los puede
  * renombrar/eliminar):
- *  - Flujo mesa QR (#191 F7): waiter, cook, cashier.
- *  - Domicilios (#119): courier (Domiciliario, courier-only).
- *  - Administrativos (#215 F4): manager, accountant, marketing,
+ *  - Flujo mesa QR: waiter, cook, cashier.
+ *  - Domicilios: courier (Domiciliario, courier-only).
+ *  - Administrativos: manager, accountant, marketing,
  *    inventory_manager, supervisor.
  *
  * Sus permisos se leen de la tabla `permission_templates` (sembrada vía

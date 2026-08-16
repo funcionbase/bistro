@@ -74,9 +74,9 @@ El enrolamiento ocurre **antes** de tener empresa activa, por lo que la mayoría
 
 ```json
 {
-  "first_name": "Cristian",
-  "last_name": "Marín",
-  "cedula": "1112792674",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "cedula": "000000000",
   "accept_tos": true,
   "accept_privacy": true,
   "accepted_documents": [
@@ -178,7 +178,7 @@ Wizard de 3 pasos en `pages/enrollment/user.tsx`:
 
 Wizard de 2 pasos en `pages/enrollment/company.tsx`:
 
-1. **Contrato de servicio**: link a `bootstrap.legalUrls.contract` → `/legal/contract` en el propio SPA (target `_blank`). Checkbox obligatorio.
+1. **Contrato de servicio**: link externo a `bootstrap.legalUrls.contract` (target `_blank`), mismo patrón placeholder que TOS/privacidad. Checkbox obligatorio.
 2. **Datos de empresa + evidencia**: campos descritos arriba.
 
 El campo `proof_document` es el corazón de #154. Acepta PDF, Word (`.doc`/`.docx`), JPG y PNG hasta **10 MB**. Validado por MIME real (`mimetypes:`) tanto en cliente como en backend — el botón "Registrar empresa" queda deshabilitado sin archivo válido.

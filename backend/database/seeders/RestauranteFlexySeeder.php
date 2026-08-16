@@ -47,15 +47,15 @@ use Illuminate\Support\Str;
 /**
  * Demo dataset operativo para SuperPapas — comidas rápidas y salchipapas.
  *
- * Modelo multi-sede (#117): la empresa opera 2 sedes con menús diferentes:
+ * Modelo multi-sede: la empresa opera 2 sedes con menús diferentes:
  *  - Pereira: foco en salchipapas tradicionales (10 platos).
  *  - Cartago: foco en hamburguesas, perros y combos (10 platos).
  *
  * Equipo (4 personas, conservados):
- *  - Owner: cristianmarint@gmail.com (Cristian Marín) → ambas sedes
- *  - Admin: funcionbaseco@gmail.com (Carolina Mejía) → ambas sedes
- *  - Cocina: flexyconsultora@gmail.com (Sebastián Ramírez) → solo Pereira
- *  - Domiciliario: cristianmarintt@gmail.com → solo Cartago
+ *  - Owner: owner@example.com (Cristian Marín) → ambas sedes
+ *  - Admin: admin@example.com (Carolina Mejía) → ambas sedes
+ *  - Cocina: kitchen@example.com (Sebastián Ramírez) → solo Pereira
+ *  - Domiciliario: courier@example.com → solo Cartago
  *
  * Régimen tributario: Simple (sin IVA) — coherente con CLAUDE.md.
  *
@@ -103,7 +103,7 @@ class RestauranteFlexySeeder extends Seeder
 
             $menus = [];
             foreach ($branches as $key => $branch) {
-                // Sede 'armenia' queda intencionalmente vacía (#192): valida
+                // Sede 'armenia' queda intencionalmente vacía: valida
                 // empty states y aislamiento por sede en QA. No se siembran
                 // menú, bodegas, inventario, recetas, ni órdenes históricas.
                 if ($key === 'armenia') {
@@ -170,14 +170,14 @@ class RestauranteFlexySeeder extends Seeder
     /**
      * Sedes de SuperPapas. `armenia` queda intencionalmente vacía (sin menú,
      * inventario ni órdenes históricas) para exponer empty states en la UI
-     * y servir de smoke-test del aislamiento por sede (#192). El admin tiene
+     * y servir de smoke-test del aislamiento por sede. El admin tiene
      * acceso a las 3 → recibe `metrics.view_all_branches` automáticamente.
      *
      * @return array{pereira: Branch, cartago: Branch, armenia: Branch}
      */
     private function ensureBranches(string $companyNit): array
     {
-        // #237 — Verticales mixtos en el dataset demo: la misma empresa opera
+        // Verticales mixtos en el dataset demo: la misma empresa opera
         // sedes de distinto tipo para validar end-to-end que una compañía puede
         // tener sucursales con configuración independiente.
         //   - Pereira: `fast_food` (sede emblema SuperPapas, plancha + freidora)
@@ -207,7 +207,7 @@ class RestauranteFlexySeeder extends Seeder
             'business_type_id' => 'food_truck',
         ]);
 
-        // KDS (#115): cada sede del dataset demo arranca con sus 4 estaciones
+        // KDS: cada sede del dataset demo arranca con sus 4 estaciones
         // canónicas (caliente/fría/barra/fritos). Idempotente: firstOrCreate
         // por (company_nit, branch_id, slug).
         foreach ([$pereira, $cartago, $armenia] as $branch) {
@@ -299,28 +299,28 @@ class RestauranteFlexySeeder extends Seeder
     {
         return [
             'owner' => $this->upsertUser(
-                email: 'cristianmarint@gmail.com',
+                email: 'owner@example.com',
                 firstName: 'Cristian',
                 lastName: 'Marín',
                 googleId: '108550001100000000001',
                 cedula: '1010100001'
             ),
             'admin' => $this->upsertUser(
-                email: 'funcionbaseco@gmail.com',
+                email: 'admin@example.com',
                 firstName: 'Carolina',
                 lastName: 'Mejía',
                 googleId: '108550001100000000002',
                 cedula: '1010100002'
             ),
             'kitchen' => $this->upsertUser(
-                email: 'flexyconsultora@gmail.com',
+                email: 'kitchen@example.com',
                 firstName: 'Sebastián',
                 lastName: 'Ramírez',
                 googleId: '108550001100000000003',
                 cedula: '1010100003'
             ),
             'courier' => $this->upsertUser(
-                email: 'cristianmarintt@gmail.com',
+                email: 'courier@example.com',
                 firstName: 'Cristian',
                 lastName: 'Marín',
                 googleId: '108550001100000000004',
@@ -424,11 +424,11 @@ class RestauranteFlexySeeder extends Seeder
      * Asigna acceso por sede vía pivot branch_users:
      *  - owner + admin: las 3 sedes (admin con cobertura total → recibe
      *    metrics.view_all_branches automáticamente vía
-     *    FeaturePermissionService::userCanViewConsolidated #192).
+     *    FeaturePermissionService::userCanViewConsolidated).
      *  - kitchen: solo Pereira.
      *  - courier: solo Cartago.
      *  - armenia: sin asignaciones operativas — sede vacía para validar
-     *    empty states y aislamiento por sede (#192).
+     *    empty states y aislamiento por sede.
      *
      * Owners hacen bypass del pivot, pero las filas se crean igual para
      * consistencia y para que branchesAvailable() devuelva la lista correcta.
@@ -818,7 +818,7 @@ class RestauranteFlexySeeder extends Seeder
                         'created_by' => $admin->email,
                     ]
                 ),
-                // Happy hour clásico (#125): -20% Mar/Mié/Jue 16:00–19:00, auto-aplicado.
+                // Happy hour clásico: -20% Mar/Mié/Jue 16:00–19:00, auto-aplicado.
                 // valid_until siempre incluye HOY (+3 meses desde now) para que la demo lo
                 // muestre como activo sin reseed manual.
                 'happyhour' => Coupon::updateOrCreate(
@@ -843,7 +843,7 @@ class RestauranteFlexySeeder extends Seeder
                         'created_by' => $admin->email,
                     ]
                 ),
-                // Promo nocturna cross-midnight (#125): −$5.000 desde 22:00 hasta 02:00,
+                // Promo nocturna cross-midnight: −$5.000 desde 22:00 hasta 02:00,
                 // auto-aplicado, todos los días. Sirve para validar la lógica de ventana
                 // que cruza medianoche en `Coupon::isScheduledNow()`.
                 'noche' => Coupon::updateOrCreate(
@@ -1014,7 +1014,7 @@ class RestauranteFlexySeeder extends Seeder
     {
         $roll = ($dayIndex * 7 + $orderIndex * 3) % 100;
 
-        // Pereira no tiene domiciliario asignado en el pivot (#117). Por
+        // Pereira no tiene domiciliario asignado en el pivot. Por
         // coherencia operativa, no se generan órdenes delivery: solo pickup
         // y mesa. Cartago concentra el servicio a domicilio.
         if ($isPereira) {
@@ -1353,7 +1353,7 @@ class RestauranteFlexySeeder extends Seeder
     {
         $this->call(BillingPlanSeeder::class);
 
-        // #246 consolidó el catálogo a un único plan activo; ya no existe 'pro'.
+        // El catálogo se consolidó a un único plan activo; ya no existe 'pro'.
         $plan = BillingPlan::where('slug', config('billing.default_plan_slug', 'default'))->firstOrFail();
 
         $startsAt = now()->subMonths(3)->startOfMonth();

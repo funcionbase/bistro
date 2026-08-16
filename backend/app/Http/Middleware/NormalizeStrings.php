@@ -39,7 +39,7 @@ class NormalizeStrings
         'api/v1/webhooks/whatsapp',
         'api/v1/webhooks/whatsapp/*',
         'api/v1/webhooks/ses-notifications',
-        // Webhook DIAN (#235). Body firmado HMAC SHA-256 con
+        // Webhook DIAN. Body firmado HMAC SHA-256 con
         // webhook_secret_encrypted de la empresa — normalizar Unicode
         // rompería la firma. Aplica a `mock` y a cualquier provider futuro.
         'api/v1/webhooks/dian/*',

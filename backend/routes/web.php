@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\Route;
  * garantiza que estén disponibles antes de cualquier dispatch.
  */
 
-// Health checks. /health/ready es el endpoint que el ALB usa (issue #43 T4).
+// Health checks. /health/ready es el endpoint que el ALB usa.
 // /health (nginx, "ok" estatico) sigue funcionando como fallback si PHP-FPM cae.
-// throttle:60,1 (#174 P3-2) en defensa en profundidad: la SG ya bloquea
+// throttle:60,1 en defensa en profundidad: la SG ya bloquea
 // trafico fuera del ALB, pero si alguien pivota dentro del cluster, esto
 // limita la enumeracion. El ALB hace ~1 healthcheck cada 30s -> holgado.
 Route::get('health/live', [HealthController::class, 'live'])
@@ -33,7 +33,7 @@ Route::get('health/ready', [HealthController::class, 'ready'])
     ->middleware('throttle:60,1')
     ->name('health.ready');
 
-// Landing pública — migrada al shell SPA (#220).
+// Landing pública — migrada al shell SPA.
 Route::get('/', FrontendRedirectController::class)->name('home');
 
 // PWA Web App Manifest dinámico: si el visitante tiene JWT válido con empresa
@@ -56,7 +56,7 @@ Route::get('sw.js', [PwaManifestController::class, 'serviceWorker'])
 Route::get('apple-touch-icon.png', [PwaManifestController::class, 'appleTouchIcon'])
     ->name('pwa.apple-touch-icon');
 
-// Proxy de firma para assets en S3 (issue #172). El bucket `assets` ya no
+// Proxy de firma para assets en S3. El bucket `assets` ya no
 // permite acceso anónimo: este endpoint firma con TTL de 60 min y redirige
 // (302) a la URL temporal. Sin auth: los logos y QR se incrustan en páginas
 // públicas (menú del comensal); la autorización fina vive en el prefijo
@@ -68,7 +68,7 @@ Route::get('storage-proxy/{path}', [StorageProxyController::class, 'show'])
     ->where('path', '.*')
     ->middleware('throttle:120,1')
     ->name('storage-proxy');
-// throttle:120,1 por IP (#174 P1-2): el proxy oculta el bucket pero firmar URLs
+// throttle:120,1 por IP: el proxy oculta el bucket pero firmar URLs
 // y enrutar 302 cuesta CPU al EC2 + S3 GET. 120/min cubre carga de dashboard
 // y galerias del menu publico (logos, QR, fotos de producto) sin estorbar.
 
@@ -105,35 +105,35 @@ Route::middleware('throttle:oauth')->group(function () {
         ->name('auth.email-change.confirm.execute');
 });
 
-// Selectores de empresa/sede migrados al shell SPA (#220, Fase 2).
+// Selectores de empresa/sede migrados al shell SPA (Fase 2).
 // Sirven `view('spa')`; React Router monta la ruta y obtiene su data vía
 // GET /api/v1/bootstrap. El JWT viaja en la cookie HttpOnly seteada por el
 // callback OAuth — el shell no necesita props server-side.
 Route::get('auth/company-selector', FrontendRedirectController::class)->name('auth.company-selector');
 
-// Selector de sede (multi-sede #117). Se llega aquí cuando el usuario tiene
+// Selector de sede (multi-sede). Se llega aquí cuando el usuario tiene
 // empresa activa pero N sedes y debe elegir cuál operar.
 Route::get('auth/branch-selector', FrontendRedirectController::class)->name('auth.branch-selector');
 
 Route::get('company/preferences', FrontendRedirectController::class)->name('company.preferences');
 
-// Pantalla "Cuenta en revisión" (#154). Punto de aterrizaje cuando una
+// Pantalla "Cuenta en revisión". Punto de aterrizaje cuando una
 // operación de negocio devuelve 403 `code=company_not_verified`, o cuando el
 // frontend detecta que la empresa activa no está en `config('companies.verified')`.
 // Sin JWT redirige al home.
 Route::get('company/under-review', FrontendRedirectController::class)->name('company.under-review');
 
-// Multi-sede (#117): gestión de sedes (CRUD, asignación de usuarios, copy-menu).
+// Multi-sede: gestión de sedes (CRUD, asignación de usuarios, copy-menu).
 Route::get('company/branches', FrontendRedirectController::class)->name('company.branches');
 
-// Multi-bodega (#120): gestión de bodegas dentro de cada sede (CRUD).
+// Multi-bodega: gestión de bodegas dentro de cada sede (CRUD).
 Route::get('company/warehouses', FrontendRedirectController::class)->name('company.warehouses');
 
 Route::get('company/settings', FrontendRedirectController::class)->name('company.settings');
 
 Route::get('company/printers', FrontendRedirectController::class)->name('company.printers');
 
-// #115 — Settings KDS: CRUD de estaciones y device-tokens. Gate
+// Settings KDS: CRUD de estaciones y device-tokens. Gate
 // kds_stations.read (sensible de sede — owner por default, admin
 // asignable; owner-bypass por is_system).
 Route::get('company/kds', FrontendRedirectController::class)->name('company.kds');
@@ -142,7 +142,7 @@ Route::get('company/metrics', FrontendRedirectController::class)->name('company.
 
 Route::get('company/reports', FrontendRedirectController::class)->name('company.reports');
 
-// #235 — Facturación electrónica DIAN: configuración (perfil fiscal,
+// Facturación electrónica DIAN: configuración (perfil fiscal,
 // resoluciones, plantillas) y consulta de documentos emitidos. Ambas
 // rutas existen en el SPA router pero faltaba el named route en Laravel,
 // lo que forzaba al sidebar a hardcodear las URLs.
@@ -160,7 +160,7 @@ Route::get('roles', function () {
     return redirect()->route('identities.roles', request()->query());
 });
 
-// Gate RBAC alineado con la API (#174 P2-1). Antes /menu, /coupons,
+// Gate RBAC alineado con la API. Antes /menu, /coupons,
 // /coupons/{id} renderizaban el shell sin validar permisos: el cliente
 // hacia el primer fetch a la API y recibia 401/403, dejando un shell vacio
 // con toast. Ahora redirigen a /dashboard sin renderizar nada.
@@ -177,7 +177,7 @@ Route::get('deliveries', function () {
     return redirect()->route('orders.deliveries', request()->query());
 });
 
-// #119: vista mobile-first para domiciliarios. Visible para cualquier rol
+// Vista mobile-first para domiciliarios. Visible para cualquier rol
 // con `deliveries.read` — el filtro `user_id = actor` del backend asegura
 // que solo se vean entregas propias. Si no hay sede activa, redirige al
 // dashboard.
@@ -189,30 +189,30 @@ Route::get('purchases', FrontendRedirectController::class)->name('purchases');
 
 Route::get('suppliers', FrontendRedirectController::class)->name('suppliers');
 
-// Horarios migrado al shell SPA (#220, Fase 3). Sirve view('spa'); el
+// Horarios migrado al shell SPA (Fase 3). Sirve view('spa'); el
 // control de acceso `hours.read` lo aplica el endpoint API GET /api/v1/hours
 // (middleware permission:hours.read) — el shell se sirve siempre y el
 // contenido se gatea en el backend, única autoridad de permisos.
 Route::get('hours', FrontendRedirectController::class)->name('hours');
 
-// Admin de mesas físicas (#191 Fase 8). Auth + gate company.update.
+// Admin de mesas físicas (Fase 8). Auth + gate company.update.
 Route::get('company/tables', FrontendRedirectController::class)->name('company.tables');
 
-// Caja para mesa con QR (#191 Fase 6). Auth + gate orders.update.
+// Caja para mesa con QR (Fase 6). Auth + gate orders.update.
 Route::get('cashier/table-sessions/{id}', FrontendRedirectController::class)->name('cashier.table-session');
 Route::get('caja/table-sessions/{id}', fn ($id) => redirect("/cashier/table-sessions/{$id}", 301));
 
-// Kitchen Display System (#191 F5 + #115). Auth + gate kds.read.
+// Kitchen Display System. Auth + gate kds.read.
 Route::get('kds', FrontendRedirectController::class)->name('kds');
 
-// #115 — KDS standalone por estación. Layout full-screen sin sidebar.
+// KDS standalone por estación. Layout full-screen sin sidebar.
 // Autentica con device-token (cookie HttpOnly `kds_device_token` o query
 // `?device=`). El controller `KdsStandaloneController` setea la cookie en
 // el primer acceso por query y redirige a URL limpia. No comparte props
 // con HandleInertiaRequests porque opera en kiosk-mode.
 Route::get('kds/{stationSlug}', FrontendRedirectController::class)->name('kds.station');
 
-// Pantalla del mesero — sesiones de mesa con QR (#191 Fase 4).
+// Pantalla del mesero — sesiones de mesa con QR (Fase 4).
 Route::get('orders/table-sessions', FrontendRedirectController::class)->name('orders.table-sessions');
 
 Route::get('orders/table-sessions/{id}', FrontendRedirectController::class)->name('orders.table-sessions.show');
@@ -223,7 +223,7 @@ Route::get('orders/board', FrontendRedirectController::class)->name('orders.boar
 
 Route::get('chats', FrontendRedirectController::class)->name('chats');
 
-// CRM básico de clientes (#123 + refactor #235). Gate RBAC alineado con la
+// CRM básico de clientes (con refactor posterior). Gate RBAC alineado con la
 // API (clients.read); listado y perfil viven en /clients y /clients/{contact}
 // donde {contact} es contacts.id (canónico). El UNIQUE parcial sobre
 // doc_number cubre la unicidad real; phone puede repetirse entre familiares.
@@ -232,7 +232,7 @@ Route::get('clients', FrontendRedirectController::class)->name('clients');
 Route::get('clients/{contact}', FrontendRedirectController::class)
     ->name('clients.show');
 
-// Fidelización con puntos (#122). Reportes y panel staff. El perfil por
+// Fidelización con puntos. Reportes y panel staff. El perfil por
 // cliente se ve embebido en /clients/{contact} y no necesita ruta propia.
 // Gate por loyalty.read.
 Route::get('loyalty/reports', FrontendRedirectController::class)->name('loyalty.reports');
@@ -255,7 +255,7 @@ Route::get('company/whatsapp', FrontendRedirectController::class)->name('company
 
 Route::get('billing', FrontendRedirectController::class)->name('billing');
 
-// Colaboradores y planificador de turnos (HU #182).
+// Colaboradores y planificador de turnos.
 // El gate RBAC se evalúa con la misma firma de la API (`employees.read` /
 // `shifts.read` / `workforce.reports`). Si el rol no tiene permiso, se
 Route::get('employees', FrontendRedirectController::class)->name('employees.index');
@@ -294,7 +294,7 @@ if (app()->environment('local') && config('app.debug') === true) {
     })->name('dev.errors.preview');
 }
 
-// Mesa con QR (#191) — flujo público sin auth. Migrado al shell SPA: el QR
+// Mesa con QR — flujo público sin auth. Migrado al shell SPA: el QR
 // físico apunta a `/t/{qr_token}`, que ahora es una ruta del frontend SPA
 // (`pages/table/join.tsx`). El backend solo sirve la API REST equivalente
 // bajo `/api/v1/public/table/{qr_token}` — ver routes/api.php.

@@ -36,7 +36,7 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Mismo alfabeto que el enrollment y el join de mesa (#191).
+            // Mismo alfabeto que el enrollment y el join de mesa.
             'first_name' => ['required', 'string', 'min:2', 'max:80', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$/u'],
             'last_name' => ['required', 'string', 'min:2', 'max:80', 'regex:/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$/u'],
             // SIN `unique`: revelar "ya existe" acá filtraría la existencia del

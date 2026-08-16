@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 /**
- * Service Worker custom de funcionbase Restaurante (#149).
+ * Service Worker custom de funcionbase Restaurante.
  *
  * Migración de `generateSW` (Workbox auto-genera) a `injectManifest`
  * (escribimos el SW y Workbox inyecta el manifest de precaching). Necesario
@@ -64,7 +64,7 @@ registerRoute(
         {
             // `\.[a-z0-9]+$` — navegaciones a archivos reales (sitemap.xml,
             // robots.txt, llms.txt…) van a red; sin esto el SW respondía con
-            // el shell del SPA y el router mostraba el 404 (#sitemap).
+            // el shell del SPA y el router mostraba el 404.
             denylist: [/^\/api\//, /^\/auth\//, /^\/storage-proxy\//, /^\/storage\//, /\.[a-z0-9]+$/i],
         },
     ),
@@ -143,7 +143,7 @@ self.addEventListener('sync', ((event: ExtendableEvent & { tag?: string }) => {
     );
 }) as EventListener);
 
-// 3. Web Push listeners (#149)
+// 3. Web Push listeners
 interface PushPayload {
     title: string;
     body: string;

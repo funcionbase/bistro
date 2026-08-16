@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 /**
  * Nota privada sobre un cliente del restaurante.
  *
- * Identidad canónica desde #235: `contact_id` (FK a contacts). `client_phone`
+ * Identidad canónica: `contact_id` (FK a contacts). `client_phone`
  * queda como denormalizado legacy para queries pre-refactor; nuevas notas
  * deben usar contact_id.
  *

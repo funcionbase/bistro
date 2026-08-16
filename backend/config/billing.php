@@ -11,7 +11,7 @@ return [
 
     // Régimen fiscal de la plataforma como empresa-proveedora SaaS.
     // Define si las invoices generadas para empresas cliente desglosan IVA.
-    //  - iva_19: Régimen común (default — confirmado #246).
+    //  - iva_19: Régimen común (default).
     //  - simple_no_iva: Régimen Simple sin IVA.
     //  - iva_5 / inc_8 / iva_exento: tarifas alternativas (raras).
     'funcionbase_tax_regime' => env('BISTRO_TAX_REGIME', 'iva_19'),
@@ -27,7 +27,7 @@ return [
     'trial_promo_code' => 'TRIAL3',
 
     // Precio unitario COP (IVA incluido) por documento electrónico DIAN
-    // emitido en el período — cargo por uso del Plan Plus (#facturación-dian).
+    // emitido en el período — cargo por uso del Plan Plus.
     'dian_unit_price' => (float) env('BILLING_DIAN_UNIT_PRICE', 10),
 
     // Si true, después de generar invoices mensuales se dispara EmitDianInvoiceJob
@@ -37,11 +37,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Empresa-proveedora SaaS (#246)
+    | Empresa-proveedora SaaS
     |--------------------------------------------------------------------------
     | Identificación de la empresa que opera esta instancia y factura a sus
     | empresas cliente. Necesario para emitir invoices SaaS con CUFE/QR DIAN.
-    | Resolución DIAN y DianProviderConfig se crean vía funcionbaseProviderSeeder.
+    | Resolución DIAN y DianProviderConfig se crean vía FuncionbaseProviderSeeder.
     */
     'bistro' => [
         // Todos vacíos por default a propósito: un valor de ejemplo se
@@ -66,7 +66,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Issue #175 — Past-due con gracia y bloqueo total
+    | Past-due con gracia y bloqueo total
     |--------------------------------------------------------------------------
     */
 

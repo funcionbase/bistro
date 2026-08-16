@@ -62,7 +62,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             SecurityHeaders::class,
-            // #193 — bloqueo comercial por mora en rutas web.
+            // Bloqueo comercial por mora en rutas web.
             EnsureCompanyNotBlocked::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
@@ -82,7 +82,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // ya cifrado AES-256 + firmado HMAC por JwtService, así que no se pierde
         // confidencialidad — y la cookie sigue siendo HttpOnly + Secure + SameSite=Lax.
         //
-        // #115 — `kds_device_token` también se excluye por la MISMA razón: el flujo
+        // `kds_device_token` también se excluye por la MISMA razón: el flujo
         // del KDS pasa por dos stacks (web para `/kds/{stationSlug}`, api para
         // `/api/v1/kds/{stationSlug}/*`). Si el stack web encripta la cookie y el
         // stack api la recibe sin EncryptCookies (no aplica al grupo api), la
@@ -90,7 +90,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // token ya es un secreto aleatorio de 48 chars guardado solo como SHA-256
         // en BD; la confidencialidad vive en HttpOnly + Secure según TLS, no en
         // el cifrado simétrico extra de Laravel.
-        // #191 — `tdt_*` (table device token) se excluye del cifrado por la
+        // `tdt_*` (table device token) se excluye del cifrado por la
         // MISMA razón que `kds_device_token`: el flujo público de mesa con QR
         // se sirve íntegramente desde el stack API (`/api/v1/public/table/*`),
         // que no monta EncryptCookies. La cookie se escribe y se lee sin
@@ -128,8 +128,8 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping()
             ->onOneServer();
 
-        // billing:mark-overdue-invoices se programa diario en routes/console.php
-        // (#175). Antes era mensual (día 16), ahora debe correr a diario para que
+        // billing:mark-overdue-invoices se programa diario en routes/console.php.
+        // Antes era mensual (día 16), ahora debe correr a diario para que
         // los countdowns de past_due → suspended y las liquidaciones se reflejen
         // dentro de las 24h. onOneServer + cache_locks garantiza ejecución única.
 

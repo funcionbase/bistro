@@ -199,8 +199,8 @@ class JwtService
             $activeCompanyNit = null;
         }
 
-        // Rol + permisos se resuelven desde BD vía la fuente de verdad única
-        // (#268): `FeaturePermissionService::resolveRoleAndPermissions`. El
+        // Rol + permisos se resuelven desde BD vía la fuente de verdad única:
+        // `FeaturePermissionService::resolveRoleAndPermissions`. El
         // mismo método lo consume `BootstrapService` en cada carga, de modo que
         // el sidebar nunca diverge de lo que el backend valida en vivo.
         $resolved = app(FeaturePermissionService::class)->resolveRoleAndPermissions($user, $activeCompanyNit);
@@ -500,7 +500,7 @@ class JwtService
             return [[], null, null];
         }
 
-        // Multi-sede (#117): owners (is_system) ven todas las sedes activas de la
+        // Multi-sede: owners (is_system) ven todas las sedes activas de la
         // empresa; el resto sólo las del pivot branch_users.
         $branches = $isOwner
             ? Branch::query()
@@ -532,7 +532,7 @@ class JwtService
             }
         }
 
-        // Fallback de selección automática de sede activa (#117 + #122 hotfix):
+        // Fallback de selección automática de sede activa:
         //  1. Si el usuario sólo tiene UNA sede accesible, esa es la activa.
         //  2. Si tiene N>1 sedes, intentamos resolver a la marcada como
         //     is_default=true. Cada empresa tiene exactamente una default

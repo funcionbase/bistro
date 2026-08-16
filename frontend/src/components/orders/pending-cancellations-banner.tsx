@@ -42,7 +42,7 @@ const POLL_INTERVAL_MS = 30_000;
 export default function PendingCancellationsBanner() {
     const { activeBranch, activeCompany } = useSharedData();
     const hasBranch = Boolean(activeBranch?.id);
-    // #193: detener polling si la empresa está suspended (los endpoints
+    // Detener polling si la empresa está suspended (los endpoints
     // operativos retornan 403 company_payment_blocked sin parar).
     const isSuspended = activeCompany?.status === 'suspended';
 

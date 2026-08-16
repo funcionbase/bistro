@@ -14,9 +14,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Contexto del menú del comensal dentro del flujo público de mesa (#191).
+ * Contexto del menú del comensal dentro del flujo público de mesa.
  *
- * API REST — migrado desde `Web\TableMenuController` (#191 SPA). Antes hacía
+ * API REST — migrado desde `Web\TableMenuController` (SPA). Antes hacía
  * `Inertia::render('table/menu')`; ahora devuelve JSON que la SPA usa para
  * hidratar `pages/table/menu.tsx`.
  *

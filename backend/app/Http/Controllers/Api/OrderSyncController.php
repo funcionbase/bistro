@@ -31,7 +31,7 @@ use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
- * Sincroniza órdenes y cobros creados en modo offline (#140).
+ * Sincroniza órdenes y cobros creados en modo offline.
  *
  * Endpoint: `POST /api/v1/orders/sync-batch`. Recibe un batch con múltiples
  * órdenes (cada una con un `client_uuid` UUID v4 generado en el navegador) y,
@@ -105,7 +105,7 @@ class OrderSyncController extends Controller
             }
         }
 
-        // Multi-sede (#117): la sesión de caja se resuelve por SEDE activa, no
+        // Multi-sede: la sesión de caja se resuelve por SEDE activa, no
         // por empresa (evita atribuir cobros offline a la caja de otra sede).
         $session = $this->cashRegister->activeSessionForBranch($companyNit, $this->activeBranchId($request));
         $company = Company::where('nit', $companyNit)->firstOrFail();
@@ -143,7 +143,7 @@ class OrderSyncController extends Controller
                     $aggregateReceipts['count']++;
                     $aggregateReceipts['amount'] += (float) ($result['total'] ?? 0);
 
-                    // SMS al cliente (#275) FUERA de la txn de `syncSingle` (ya
+                    // SMS al cliente FUERA de la txn de `syncSingle` (ya
                     // commiteada): la orden offline con pago incluido llega
                     // directo a `completed` y antes nunca notificaba.
                     if (! empty($result['server_id'])) {
@@ -283,7 +283,7 @@ class OrderSyncController extends Controller
                 'sync_warnings' => $warnings ?: null,
             ]);
 
-            // Materializar filas `order_items` (#293): sin esto la orden
+            // Materializar filas `order_items`: sin esto la orden
             // sincronizada quedaba invisible para el KDS y el pago por item.
             $this->orderController->materializeOrderItems($order, $items);
 

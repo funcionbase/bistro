@@ -41,11 +41,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $nit — NIT del restaurante (UNIQUE, identificador externo)
  * @property string $commercial_name
  * @property string $status — pending_activation | active | past_due | suspended | rejected | inactive
- * @property CarbonImmutable|null $past_due_started_at — momento en que entró en past_due (#175)
- * @property CarbonImmutable|null $expected_block_at — fecha cache para countdown (#175)
- * @property CarbonImmutable|null $payment_blocked_at — momento de la suspensión (#175)
- * @property CarbonImmutable|null $paid_billing_starts_at — primer día facturable (#193)
- * @property CarbonImmutable|null $last_paid_at — último invoice payment exitoso (#175)
+ * @property CarbonImmutable|null $past_due_started_at — momento en que entró en past_due
+ * @property CarbonImmutable|null $expected_block_at — fecha cache para countdown
+ * @property CarbonImmutable|null $payment_blocked_at — momento de la suspensión
+ * @property CarbonImmutable|null $paid_billing_starts_at — primer día facturable
+ * @property CarbonImmutable|null $last_paid_at — último invoice payment exitoso
  */
 class Company extends Model
 {
@@ -80,20 +80,20 @@ class Company extends Model
         'default_tax_rate',
         'default_tax_label',
         'tax_included_in_price',
-        // Cronología del atraso de pago (#175). No se setean directamente
+        // Cronología del atraso de pago. No se setean directamente
         // desde requests del cliente: BillingService::recalculateCompanyStatus
         // es la única fuente que muta estos campos.
         'past_due_started_at',
         'expected_block_at',
         'payment_blocked_at',
         'last_paid_at',
-        // Trial extendido (#193). NULL = la empresa usa el trial global
+        // Trial extendido. NULL = la empresa usa el trial global
         // (`BILLING_TRIAL_DAYS`). Valor seteado = no se generan invoices
         // para periodos anteriores a esa fecha y no se transiciona a
         // past_due hasta que llegue.
         'paid_billing_starts_at',
-        // Marcas de envío de los correos transaccionales del enrolamiento
-        // (#226). 3ª capa de idempotencia tras lock de fila + ShouldBeUnique.
+        // Marcas de envío de los correos transaccionales del enrolamiento.
+        // 3ª capa de idempotencia tras lock de fila + ShouldBeUnique.
         // Las manejan SendCompanyRegistrationWelcomeEmailJob (propietario)
         // y SendCompanyPendingActivationOpsAlertJob (equipo interno); nunca
         // se setean desde el cliente.
@@ -105,10 +105,10 @@ class Company extends Model
         'past_due_notified_at',
         'suspended_notified_at',
         'reactivated_notified_at',
-        // #257 — marker de envio del correo de aprobacion del registro.
+        // Marker de envio del correo de aprobacion del registro.
         // Setea BillingService::activateCompany() tras disparar la notif.
         'activation_notified_at',
-        // Perfil fiscal DIAN (#235). Mínimos del XML UBL 2.1 Colombia.
+        // Perfil fiscal DIAN. Mínimos del XML UBL 2.1 Colombia.
         // El owner los completa en Configuración → Facturación DIAN antes
         // de poder emitir el primer documento.
         'dv',
@@ -210,7 +210,7 @@ class Company extends Model
     }
 
     /**
-     * ¿La empresa puede servir al público (#193)? Devuelve false cuando el
+     * ¿La empresa puede servir al público? Devuelve false cuando el
      * status está en `config('companies.fully_blocked')` (hoy: `suspended`).
      *
      * Distinto de `isOperational()` que devuelve true para past_due/suspended
@@ -315,7 +315,7 @@ class Company extends Model
     }
 
     /**
-     * El gate `EnsureCompanyVerified` (issue #154, ajustado en #175) permite
+     * El gate `EnsureCompanyVerified` permite
      * operar a empresas en `config('companies.verified')` (hoy: active,
      * past_due, suspended). Se consulta también desde Inertia shared props
      * para que el frontend muestre la pantalla "Cuenta en revisión" cuando
@@ -360,7 +360,7 @@ class Company extends Model
     }
 
     /**
-     * Destinatarios canónicos de notificaciones billing de la empresa (#257):
+     * Destinatarios canónicos de notificaciones billing de la empresa:
      * propietario(s) + administrador(es), todos con `users.status = 'active'`,
      * deduplicados por `user_id`.
      *

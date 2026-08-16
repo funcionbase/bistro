@@ -5,7 +5,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\FrontendRedirectController;
 use Illuminate\Support\Facades\Route;
 
-// Acceso dual: Google OAuth + correo/contraseña (re-habilitado; antes HU #231
+// Acceso dual: Google OAuth + correo/contraseña (re-habilitado; antes se
 // forzaba solo-Google). Las páginas GET de auth viven en el SPA — cualquier
 // hit al backend se reenvía conservando path y query string. Las acciones
 // reales son JSON bajo /api/v1/auth/* (routes/api.php). Los named routes se

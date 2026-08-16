@@ -41,7 +41,7 @@ class StoreBranchOrderRequest extends FormRequest
     {
         return [
             'type' => ['required', 'in:pickup,delivery'],
-            // Mismo alfabeto que el join de mesa (#191): letras, tildes, ñ, espacios.
+            // Mismo alfabeto que el join de mesa: letras, tildes, ñ, espacios.
             'customer_name' => [
                 'required',
                 'string',

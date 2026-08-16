@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
- * Sesión grupal abierta sobre una mesa física (#191).
+ * Sesión grupal abierta sobre una mesa física.
  *
  * Una mesa puede tener UNA sola sesión activa (status ∈ open|locked) a la vez;
  * el constraint vive en BD como partial unique index. Mientras está `open`

@@ -5,14 +5,13 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #257 — marker para notifyOnce de CompanyRegistrationApprovedNotification.
+ * Marker para notifyOnce de CompanyRegistrationApprovedNotification.
  *
  * Se setea al disparar la notificacion en BillingService::activateCompany().
  * Defensa idempotente para que reactivaciones manuales (companies:approve
  * en una empresa ya activa) no spameen al cliente con el mismo correo.
  *
- * Hermano de welcome_email_sent_at (#226) y de las otras *_notified_at
- * billing.
+ * Hermano de welcome_email_sent_at y de las otras *_notified_at billing.
  */
 return new class extends Migration
 {

@@ -23,20 +23,16 @@ export default function ExpandableCategory({ category, onEdit, onDelete, isDragg
                 onClick={() => setIsExpanded(!isExpanded)}
                 className={cn('hover:bg-muted flex w-full items-center gap-3 px-3 py-3 transition-colors', isDragging && 'opacity-50')}
             >
-                {/* Drag handle */}
                 <GripVertical className="text-muted-foreground/50 h-4 w-4 shrink-0" />
 
-                {/* Category name */}
                 <div className="flex-1 text-left">
                     <p className="text-sm font-medium">{category.name}</p>
                 </div>
 
-                {/* Item count badge */}
                 <Badge variant="outline" className="shrink-0 text-xs">
                     {category.items.length} {category.items.length === 1 ? 'plato' : 'platos'}
                 </Badge>
 
-                {/* Edit and Delete buttons */}
                 <div className="flex shrink-0 items-center gap-1">
                     {onEdit && (
                         <Button
@@ -66,11 +62,9 @@ export default function ExpandableCategory({ category, onEdit, onDelete, isDragg
                     )}
                 </div>
 
-                {/* Chevron indicator */}
                 <ChevronDown className={cn('text-muted-foreground/50 h-4 w-4 shrink-0 transition-transform', isExpanded && 'rotate-180')} />
             </button>
 
-            {/* Collapsible content */}
             <div
                 className={cn(
                     'overflow-hidden transition-all duration-300 ease-in-out',

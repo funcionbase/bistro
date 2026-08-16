@@ -1,5 +1,5 @@
 /**
- * Preload de chunks de ruta en hover/focus (#269, Fase 4).
+ * Preload de chunks de ruta en hover/focus.
  *
  * El SPA usa `React.lazy()` (no loaders de React Router), por lo que el
  * `prefetch='intent'` de `<Link>` es **no-op** para el code-splitting. Aquí

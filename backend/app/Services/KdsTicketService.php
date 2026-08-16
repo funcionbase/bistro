@@ -204,7 +204,7 @@ class KdsTicketService
      * el KDS mostrara todo "Listo". Llamar SIEMPRE fuera de la txn de la
      * mutación, como hacen markInKitchen/markReady.
      *
-     * El SMS de cambio de estado (#275) se dispara fuera de este lock, ya
+     * El SMS de cambio de estado se dispara fuera de este lock, ya
      * commiteado: el KDS es el camino dominante por el que una orden llega
      * a `in_kitchen`/`ready`, así que sin este dispatch el cliente nunca
      * recibía esas dos notificaciones (solo las disparadas por el drag

@@ -17,8 +17,6 @@ use Throwable;
  *                     que el ALB Target Group consulta (ver
  *                     aws/iac/cloudformation/parameters/{qa,pdn}.json
  *                     HealthCheckPath=/health/ready).
- *
- * Ver issue #43 (T4).
  */
 class HealthController extends Controller
 {

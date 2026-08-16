@@ -7,7 +7,7 @@ import { useLogout } from '@/lib/use-logout';
 import { Clock, FileText, ShieldCheck, XCircle } from 'lucide-react';
 
 /**
- * Issue #154 — Pantalla que ve el propietario cuando su empresa está en
+ * Pantalla que ve el propietario cuando su empresa está en
  * `pending_activation` (esperando verificación) o `rejected`. El middleware
  * `EnsureCompanyVerified` redirige aquí cualquier intento de operar mientras
  * la empresa no esté en `verified`/`active`.

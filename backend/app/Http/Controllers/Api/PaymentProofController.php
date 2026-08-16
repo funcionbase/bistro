@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  *  - POST /api/v1/billing/payment-proofs            (upload, max 10MB, mime pdf|jpg|png)
  *  - GET  /api/v1/billing/payment-proofs            (historial del NIT activo)
- *  - GET  /api/v1/billing/payment-proofs/{uuid}     (stream inline del archivo, #193)
+ *  - GET  /api/v1/billing/payment-proofs/{uuid}     (stream inline del archivo)
  *
  * El upload NO muta `companies.status` — la decisión sigue siendo manual de
  * ops, validando el comprobante y marcando las invoices como `paid`. El cron

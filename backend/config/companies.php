@@ -8,7 +8,7 @@ declare(strict_types=1);
  * `company-status.yml`) debe consumir esta config en lugar de literales
  * hard-coded.
  *
- * Modelo de estados (post #175):
+ * Modelo de estados:
  *  - pending_activation: default al crear empresa, esperando workflow ops.
  *  - active: operando OK (paga al día o en período de prueba).
  *  - past_due: tiene ≥1 factura vencida y el atraso ≤ 3 meses calendario.
@@ -16,14 +16,14 @@ declare(strict_types=1);
  *  - rejected: workflow de verificación marcó la empresa como inválida.
  *  - inactive: baja voluntaria/administrativa (no usado por past_due).
  *
- * Estados retirados por #175: `verified` (colapsado en `active`) y `delinquent`
+ * Estados retirados: `verified` (colapsado en `active`) y `delinquent`
  * (colapsado en `past_due`).
  *
  * Gates de negocio:
  *  - `EnsureCompanyVerified`: permite operar sólo a empresas en
  *    `config('companies.verified')` = ['active','past_due','suspended'].
  *    Bloquea pre-onboarding (`pending_activation`, `rejected`, `inactive`).
- *  - `EnsureCompanyNotBlocked` (#175): bloquea `suspended` con excepciones
+ *  - `EnsureCompanyNotBlocked`: bloquea `suspended` con excepciones
  *    explícitas para rutas de facturación y carga de comprobante de pago.
  */
 return [

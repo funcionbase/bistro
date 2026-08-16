@@ -5,7 +5,7 @@ import { queryClient } from './query-client';
 /**
  * Refresca el contexto compartido (empresa, sedes, permisos) tras una
  * mutación que lo cambia — invalida el query de `/api/v1/bootstrap` y, en
- * cascada, el de `/api/v1/me/active-context` (#237) para que las capabilities
+ * cascada, el de `/api/v1/me/active-context` para que las capabilities
  * y labels del vertical de la sede activa se recalculen también.
  *
  * Es crítico invalidar ambas: el switch de sede cambia tanto los permisos

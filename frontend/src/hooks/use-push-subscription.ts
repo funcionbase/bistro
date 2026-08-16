@@ -2,7 +2,7 @@ import { useSharedData } from '@/lib/shared-data';
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Hook que gestiona la suscripción Web Push del dispositivo actual (#149).
+ * Hook que gestiona la suscripción Web Push del dispositivo actual.
  *
  * Encapsula el handshake browser ↔ backend:
  *   1. `serviceWorker.ready` → obtiene el SW registrado.

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Contacto de la empresa — antes llamado "Cliente" en la UI, desde #235
+ * Contacto de la empresa — antes llamado "Cliente" en la UI,
  * unificado bajo el concepto de Contact. Un contacto puede ser persona
  * natural o jurídica (empresa) según `kind`. La identidad canónica es
  * (company_nit, doc_number) cuando el doc está presente (UNIQUE parcial).
@@ -63,7 +63,7 @@ class Contact extends Model
         'name',
         'kind',
         'notes',
-        // Perfil fiscal DIAN del adquirente (#235). Cuando
+        // Perfil fiscal DIAN del adquirente. Cuando
         // `dian_profile_completed_at` está poblado, este contacto puede
         // recibir FEV directo desde una orden cobrada (lookup por phone).
         'doc_type',

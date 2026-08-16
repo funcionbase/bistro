@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * DTO de cuenta de fidelización (#122). Incluye progreso al siguiente tier
+ * DTO de cuenta de fidelización. Incluye progreso al siguiente tier
  * calculado a partir del catálogo de tiers de la empresa.
  */
 class LoyaltyAccountResource extends JsonResource

@@ -36,7 +36,7 @@ class ChatMessageResource extends JsonResource
             // permite renderizar una tarjeta de contacto o el boton a Google
             // Maps sin re-parsear el `body`.
             'media_payload' => $this->media_payload,
-            // CIBER-05: la media se sirve por endpoint autenticado (scope de
+            // La media se sirve por endpoint autenticado (scope de
             // empresa + chats.read), no por el proxy anónimo. Si el job aún no
             // bajó el archivo, queda null y el frontend muestra placeholder
             // hasta el siguiente poll.

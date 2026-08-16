@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Token persistente de dispositivo KDS (#115).
+ * Token persistente de dispositivo KDS.
  *
  * Asocia una tableta física a una estación de cocina específica. La columna
  * `token_hash` guarda SHA-256 del valor en claro — el claro se devuelve UNA

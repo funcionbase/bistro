@@ -1,7 +1,7 @@
 import { ROUTE_MAP } from './route-map';
 
 /**
- * Resolver de rutas con nombre para el shell SPA (#220).
+ * Resolver de rutas con nombre para el shell SPA.
  *
  * Resuelve nombres de ruta contra `ROUTE_MAP` — el mapa autogenerado desde
  * `php artisan route:list`. Reemplaza al `route()` global de Ziggy.

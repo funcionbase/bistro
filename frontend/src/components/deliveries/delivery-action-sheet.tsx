@@ -12,7 +12,7 @@ interface DeliveryActionSheetProps {
 }
 
 /**
- * Bottom-sheet con acciones secundarias del delivery (#119).
+ * Bottom-sheet con acciones secundarias del delivery.
  *
  * Se abre desde el icono "..." del `MyDeliveryCard`. Las opciones varían
  * según el estado del delivery:

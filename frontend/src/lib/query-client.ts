@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { ApiError } from './api-client';
 
 /**
- * Cliente global de TanStack Query (#220, Fase 0.4).
+ * Cliente global de TanStack Query (Fase 0.4).
  *
  * Defaults conservadores: refetch sólo en re-mount, no en window-focus
  * (la app es operativa, no informativa — no queremos polling agresivo

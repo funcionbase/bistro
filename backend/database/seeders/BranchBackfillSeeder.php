@@ -66,7 +66,7 @@ class BranchBackfillSeeder extends Seeder
 
         DB::transaction(function () use ($companies) {
             foreach ($companies as $company) {
-                // #237 — sede creada por backfill arranca como `restaurant`
+                // Sede creada por backfill arranca como `restaurant`
                 // (vertical histórico). El owner puede cambiarlo desde UI.
                 $branch = Branch::query()->firstOrCreate(
                     ['company_nit' => $company->nit, 'slug' => 'principal'],

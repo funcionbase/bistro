@@ -21,8 +21,6 @@ class DianProviderFactory
     {
         return match ($config->provider_slug) {
             'mock' => app(MockDianProvider::class),
-            // 'factura1' => app(Factura1Provider::class),
-            // 'siigo' => app(SiigoProvider::class),
             default => throw new RuntimeException("Provider DIAN no soportado: {$config->provider_slug}"),
         };
     }

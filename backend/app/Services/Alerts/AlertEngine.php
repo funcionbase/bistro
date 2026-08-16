@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Orquestador de evaluación de reglas de alerta (#124).
+ * Orquestador de evaluación de reglas de alerta.
  *
  *  - Para cada empresa, recorre sus AlertRule habilitadas y dispatcha al
  *    evaluator correspondiente (strategy pattern).

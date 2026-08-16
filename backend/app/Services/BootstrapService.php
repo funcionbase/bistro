@@ -72,7 +72,7 @@ class BootstrapService
         $activeCompanyNit = $payload['active_company_nit'] ?? null;
         $activeBranchId = $payload['active_branch_id'] ?? null;
 
-        // #268 — `role` y `permissions` se recomputan EN VIVO desde BD, NO se
+        // `role` y `permissions` se recomputan EN VIVO desde BD, NO se
         // copian del payload del JWT. El token es un snapshot horneado al login:
         // si un owner edita un rol a mitad de sesión, el payload queda rancio y
         // el sidebar mostraría accesos que el backend ya rechaza (él valida en
@@ -157,7 +157,7 @@ class BootstrapService
                     $activeCompany['default_tax_label'] = $fresh->default_tax_label;
                     $activeCompany['tax_included_in_price'] = (bool) $fresh->tax_included_in_price;
 
-                    // #246 — Datos para transferir a bistro visibles SIEMPRE
+                    // Datos para transferir a bistro visibles SIEMPRE
                     // (no solo en mora). El cliente puede pagar proactivamente
                     // desde /company/settings → Facturación. Combina datos
                     // bancarios (BREB, banco, cuenta) + identificación fiscal
@@ -243,7 +243,7 @@ class BootstrapService
             // NO carga gtag.js. Se setea solo en pdn (ver config/services.php).
             'gaMeasurementId' => config('services.ga4.measurement_id') ?: null,
             // Catálogo de impresión (config/printing.php) — consumido por
-            // la página company/printers (#220, antes prop server-side).
+            // la página company/printers (antes prop server-side).
             'printingConfig' => [
                 'types' => config('printing.types'),
                 'connections' => config('printing.connections'),

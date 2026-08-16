@@ -160,7 +160,7 @@ class WhatsappInboundMessageHandler
         $contactWasCreated = false;
 
         DB::transaction(function () use ($account, $msg, $clientPhone, $clientName, $metaMessageId, $sentAt, &$createdMessage, &$contactWasCreated): void {
-            // Multi-sede (#117, #192) + multi-canal (F1): la sede del chat la
+            // Multi-sede + multi-canal (F1): la sede del chat la
             // decide EL CANAL por el que entró el mensaje. Un canal de sede
             // (`branch_id` no nulo) hace nacer el chat en esa sede; un canal de
             // empresa (`branch_id` nulo) cae al comportamiento anterior — sede
@@ -214,7 +214,7 @@ class WhatsappInboundMessageHandler
             // conectar un canal quedaron con `whatsapp_account_id` nulo. Sin
             // esto el mismo cliente aparecería dos veces en la bandeja y la
             // duplicidad sería permanente y silenciosa.
-            // `withoutBranchScope()` (#192): flujo de webhook sin JWT — no hay
+            // `withoutBranchScope()`: flujo de webhook sin JWT — no hay
             // `active_branch_id` y el chat legacy puede estar en cualquier sede
             // de la empresa. El scope de empresa lo da el `where company_nit`.
             if (! $chat->exists) {

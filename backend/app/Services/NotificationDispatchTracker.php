@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * #257 — Despachador idempotente de notificaciones billing.
+ * Despachador idempotente de notificaciones billing.
  *
  * Garantiza que un mismo evento (representado por su idempotencyKey()) NO se
  * envia dos veces al mismo user. Defensa cross-instance EC2 y — esto es lo

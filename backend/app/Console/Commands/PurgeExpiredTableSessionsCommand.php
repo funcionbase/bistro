@@ -89,7 +89,7 @@ class PurgeExpiredTableSessionsCommand extends Command
             $session->closed_at = $now;
             $session->save();
 
-            // Scope escape justificado (#192): cron sin contexto HTTP — el
+            // Scope escape justificado: cron sin contexto HTTP — el
             // BranchScope ni siquiera aplicaría, pero hacemos explícito el
             // escape para que ningún seeder/middleware introducido en el
             // futuro filtre por sede inadvertidamente. El filtro por

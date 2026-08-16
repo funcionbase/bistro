@@ -6,7 +6,7 @@ import { MapPin } from 'lucide-react';
 /**
  * Filtro de sede compartido entre Dashboard, Métricas e Informes.
  *
- * Multi-sede (#117):
+ * Multi-sede:
  *  - 'active' (default): no envía ?branch al backend → BranchScope filtra por la sede
  *    activa del JWT.
  *  - 'all': consulta consolidada cross-sede (requiere `metrics.view_all_branches`).

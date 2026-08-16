@@ -116,7 +116,7 @@ const DEFAULT_DOC_BY_KIND: Record<ContactKind, string> = {
  * Diálogo del DS para registrar un contacto (persona natural o empresa) desde
  * el CRM.
  *
- * Refactor #235: la identidad canónica es (company_nit, doc_number). El
+ * La identidad canónica es (company_nit, doc_number). El
  * selector "Persona natural / Empresa" filtra el catálogo de doc_type
  * (impide estados imposibles tipo "persona con NIT"). Razón social es
  * obligatoria solo para empresas. Phone es opcional siempre.

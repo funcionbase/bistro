@@ -51,7 +51,7 @@ class MetricsService
     }
 
     /**
-     * (#costeo-multibodega / multisede #117) Todos los métodos aceptan
+     * (costeo multibodega / multisede) Todos los métodos aceptan
      * `$branchId`: null = consolidado (todas las sedes), uuid = una sede. Las
      * queries Eloquent (`Order::forCompany`/`CartSession::forCompany`) ya filtran
      * por la sede activa vía `BranchScope`; las de SQL crudo lo hacen a mano con
@@ -677,10 +677,7 @@ class MetricsService
     }
 
     /**
-     * @return array{0: Carbon, 1: Carbon}
-     */
-    /**
-     * SMS enviados al cliente por cambios de estado de orden (#275, Fase 3).
+     * SMS enviados al cliente por cambios de estado de orden (Fase 3).
      *
      * Conteo agregado en SQL (`COUNT(*) GROUP BY branch_id`) — nunca iterando en
      * PHP (§13). Devuelve total de empresa + desglose por sede. Respeta el scope
@@ -740,7 +737,7 @@ class MetricsService
     }
 
     /**
-     * Escaneos del menú QR (#294): lee menu_scan_daily_rollup (historia durable,
+     * Escaneos del menú QR: lee menu_scan_daily_rollup (historia durable,
      * agregada por AggregateMenuScansJob hasta D-1) y le une el día en curso
      * agregado en vivo desde menu_scan_events (is_bot = false) — sin eso el
      * período "today" siempre daría cero porque el rollup corre para ayer.

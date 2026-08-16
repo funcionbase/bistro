@@ -5,9 +5,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #257 — Elimina la columna companies.plan.
+ * Elimina la columna companies.plan.
  *
- * Cache denormalizado heredado del JWT pre-#246. La fuente de verdad del plan
+ * Cache denormalizado heredado del JWT legacy. La fuente de verdad del plan
  * vive en subscriptions (+ snapshots inmutables). Ya no se lee desde JwtService,
  * ActiveCompanyController, model ni seeders.
  *

@@ -30,7 +30,6 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onDownloa
 
                 {/* Body */}
                 <div className="space-y-4 px-6 py-5">
-                    {/* Plan name from subscription */}
                     {invoice.subscription?.plan && (
                         <div>
                             <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Plan</p>
@@ -38,7 +37,6 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onDownloa
                         </div>
                     )}
 
-                    {/* Período */}
                     <div>
                         <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Período</p>
                         <p className="text-foreground text-sm">
@@ -46,7 +44,6 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onDownloa
                         </p>
                     </div>
 
-                    {/* Desglose de montos */}
                     <div>
                         <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">Desglose</p>
                         {invoice.discount_percent ? (
@@ -76,13 +73,11 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onDownloa
                         )}
                     </div>
 
-                    {/* Vencimiento */}
                     <div>
                         <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Vencimiento</p>
                         <p className="text-foreground text-sm">{formatDate(invoice.due_date)}</p>
                     </div>
 
-                    {/* Estado del pago */}
                     <div>
                         <p className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">Estado</p>
                         <div className="flex items-center gap-2">

@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Inyecta en request: bot_company_nit, bot_branch_id (null para flujo de
  * empresa o para el legado), bot_flow_id (null para el legado).
  *
- * #193: si la empresa está bloqueada por mora responde 503 `company_unavailable`
+ * Si la empresa está bloqueada por mora responde 503 `company_unavailable`
  * — el bot deja de procesar sin que el comensal sepa el motivo comercial.
  */
 class ValidateBotToken
@@ -69,7 +69,7 @@ class ValidateBotToken
             ]);
         }
 
-        // Guard de empresa operativa (#193). 503 indistinguible de cualquier
+        // Guard de empresa operativa. 503 indistinguible de cualquier
         // indisponibilidad técnica; el bot consume el `code` para dejar de
         // procesar mensajes / canjes hasta que la empresa vuelva.
         $company = Company::query()->where('nit', $companyNit)->first();

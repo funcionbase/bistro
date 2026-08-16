@@ -8,7 +8,7 @@
 
 ## 0. Resumen técnico del sistema
 
-**bistro Restaurante** es una plataforma SaaS multi-empresa multi-sede multi-bodega para la gestión operativa de restaurantes en Colombia. Stack monolito server-rendered con Inertia.js v2 (React en el cliente, Laravel en el servidor; sin REST público para la SPA — los endpoints `/api/v1/*` son contratos para datos asíncronos y para integraciones externas como bots de WhatsApp).
+**bistro** es una plataforma SaaS multi-empresa multi-sede multi-bodega para la gestión operativa de restaurantes en Colombia. Stack monolito server-rendered con Inertia.js v2 (React en el cliente, Laravel en el servidor; sin REST público para la SPA — los endpoints `/api/v1/*` son contratos para datos asíncronos y para integraciones externas como bots de WhatsApp).
 
 **Módulos cubiertos en producción** (al 2026-05-11):
 
@@ -327,7 +327,7 @@ Antes de acciones sensibles (cambiar email, eliminar cuenta) Laravel pide reconf
 ```json
 {
   "sub": 22,
-  "email": "cristianmarint@gmail.com",
+  "email": "juan.perez@example.com",
   "enrollment_step": "completed",
   "active_company_nit": "1",
   "companies": [
@@ -363,7 +363,7 @@ Antes de acciones sensibles (cambiar email, eliminar cuenta) Laravel pide reconf
 | Secure | `true` en producción (`config('session.secure')`) |
 | SameSite | `lax` |
 | Path | `/` |
-| Domain | `config('session.domain')` (suele ser `.funcionbase.com`) |
+| Domain | `config('session.domain')` (suele ser `.example.com`) |
 | Max-Age | `ceil(JWT_TTL / 60) * 60` segundos |
 
 **Excluida de `EncryptCookies`:** Laravel cifra cookies por defecto, pero esta ya viene cifrada por `JwtService`. Excluida en `bootstrap/app.php` o `app/Http/Middleware/EncryptCookies.php` para evitar doble cifrado.
@@ -471,7 +471,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 
 **Paso 1 — Datos personales:** captura `first_name`, `last_name`, `cedula`.
 
-**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el sitio institucional (`funcionbase.com`) en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
+**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el sitio institucional (`example.com`) en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
 ```json
 {
   "type": "tos",
@@ -482,7 +482,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 ```
 El frontend guarda `tos_version` y `privacy_version` para enviarlos en el siguiente paso.
 
-> **Fuente de verdad:** TOS (`https://funcionbase.com/terms-conditions/`) y privacidad (`https://funcionbase.com/privacy-policy/`) viven en el sitio institucional, fuera de este repo. El contrato de servicio vive en el repo (`bistro/frontend/src/data/legal/contrato.md`) y se sirve en el propio SPA en `/legal/contract`. `useBootstrap().data.legalUrls` expone las 3 URLs; el enrollment las abre en pestaña nueva.
+> **Fuente de verdad:** TOS (`https://example.com/terms-conditions/`), privacidad (`https://example.com/privacy-policy/`) y contrato de servicio (`https://example.com/service-contract/`) son URLs fijas en `config/legal.php`, fuera de este repo — reemplazalas por tus propios documentos legales antes de producción. `useBootstrap().data.legalUrls` expone las 3 URLs; el enrollment las abre en pestaña nueva.
 
 **Paso 3 — Vinculación:** dos opciones:
 - **Crear nueva empresa** → al hacer "Continuar" envía a `/enrollment/company`.
@@ -495,9 +495,9 @@ POST /api/v1/enrollment/user
 Headers: Authorization: Bearer <jwt>  (o cookie HttpOnly)
 Body:
 {
-  "first_name": "Cristian",
-  "last_name": "Marín",
-  "cedula": "1112792674",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "cedula": "000000000",
   "accepted_documents": [
     {"type": "tos",     "version": "1.2.0"},
     {"type": "privacy", "version": "1.0.5"}
@@ -541,7 +541,7 @@ Página: `resources/js/pages/enrollment/company.tsx`. Gate: `users.status == 'pe
 #### Wizard de 2 pasos
 
 **Paso 1 — Contrato de servicio:**
-- El contrato vive en el repo (`contrato.md`) y se sirve en `/legal/contract` (`bootstrap.legalUrls.contract`, resuelto contra `app.frontend_url` del ambiente). El link del checkbox abre el documento en una pestaña nueva.
+- El contrato es una URL fija en `config/legal.php` (`bootstrap.legalUrls.contract`), mismo patrón placeholder que TOS/privacidad. El link del checkbox abre el documento en una pestaña nueva.
 - Checkbox obligatorio "He leído y acepto el contrato de servicio".
 
 **Paso 2 — Datos de empresa:**
@@ -2064,7 +2064,7 @@ per_page:  int (default 20, max 100)
       "id": 555,
       "order_id": 12345,
       "user_id": 26,
-      "deliverer": { "id": 26, "name": "Cristian Marín" },
+      "deliverer": { "id": 26, "name": "Juan Pérez" },
       "status": "pending",
       "assigned_at": "2026-05-06T19:42:00Z",
       "delivered_at": null,
@@ -2292,7 +2292,7 @@ ORDER BY total DESC
   "data": [
     {
       "user_id": 26,
-      "name": "Cristian Marín",
+      "name": "Juan Pérez",
       "total": 45,
       "completed": 42,
       "cancelled": 3,
@@ -4489,7 +4489,7 @@ const onConnect = () => {
       requestOtp(() => sendCallbackToBackend(code));
     }
   }, {
-    config_id: META_CONFIG_ID,  // 941660645323511 (QA) o 2605276259869097 (PDN)
+    config_id: META_CONFIG_ID,  // tu config ID de Embedded Signup, distinto por ambiente (QA/PDN)
     response_type: 'code',
     override_default_response_type: true,
   });
@@ -4504,7 +4504,7 @@ Permission: `whatsapp.connect,create` + verificación OTP.
 
 Body:
 ```json
-{ "code": "AQB...", "phone_number_id": "1061107973753281", "waba_id": "1258801695847080" }
+{ "code": "AQB...", "phone_number_id": "000000000000000", "waba_id": "000000000000000" }
 ```
 
 Header obligatorio: `X-Whatsapp-Verification-Code: 123456`.
@@ -4878,13 +4878,13 @@ Permission: `company.update,update`. Frontend muestra `can_update` para gating d
 ### 14.9 Configuración
 
 ```env
-META_APP_ID=1265007232388204
+META_APP_ID=...                          # tu App ID de Meta
 META_APP_SECRET=...
-META_BUSINESS_ID=929046296489964
+META_BUSINESS_ID=...                     # tu Business Manager ID
 META_SYSTEM_USER_ID=...
 META_SYSTEM_USER_TOKEN=...               # never-expire
-META_CONFIG_ID_QA=941660645323511        # Embedded Signup config QA
-META_CONFIG_ID_PDN=2605276259869097      # Embedded Signup config prod
+META_CONFIG_ID_QA=...                    # Embedded Signup config QA
+META_CONFIG_ID_PDN=...                   # Embedded Signup config prod
 META_GRAPH_API_VERSION=v25.0
 META_WEBHOOK_VERIFY_TOKEN_QA=...
 META_WEBHOOK_VERIFY_TOKEN_PDN=...
@@ -5258,8 +5258,8 @@ Permission gate web: `users.read,read`. Página: `pages/users/Users.tsx`.
   "data": [
     {
       "id": 22,
-      "email": "cristianmarint@gmail.com",
-      "name": "Cristian Marín",
+      "email": "juan.perez@example.com",
+      "name": "Juan Pérez",
       "membership": {
         "company_role_id": 5,
         "role": {
@@ -6241,11 +6241,11 @@ Vista **sólo lectura** — para acciones de edición se usa `/settings/profile`
 {
   "data": {
     "id": 22,
-    "name": "Cristian Marín",
-    "first_name": "Cristian",
-    "last_name": "Marín",
-    "email": "cristianmarint@gmail.com",
-    "cedula": "1010100001",
+    "name": "Juan Pérez",
+    "first_name": "Juan",
+    "last_name": "Pérez",
+    "email": "juan.perez@example.com",
+    "cedula": "000000000",
     "email_verified_at": "2026-04-15T19:32:00Z",
     "active_company": {
       "nit": "1",
@@ -7296,7 +7296,7 @@ Ahora el stack está listo para N=2+ instancias.
 ### Qué cambió
 
 - **Storage cross-node:** los uploads viven en S3 (bucket público
-  `bistro-panel-{env}-assets`). PDFs de factura y reportes en
+  `bistro-{env}-assets`). PDFs de factura y reportes en
   bucket privado `*-documents` (DIAN, 10 años). Local: MinIO en Docker.
 - **Sesiones cross-node:** tabla `sessions` en Supabase (compartida). JWT
   cifrado (cookie `bistro_jwt`) lleva la identidad sin depender de

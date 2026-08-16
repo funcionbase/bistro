@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 /**
  * Configuración de notificaciones al cliente por cambios de estado de la orden
- * (#275 — SMS vía Amazon SNS).
+ * (SMS vía Amazon SNS).
  *
  * Fuente única de los estados que disparan SMS y del texto orientado al
  * cliente. NUNCA hardcodear estas listas en el controller/job — consumir esta
  * config. Los slugs de estado son espejo de `config/orders.php`.
  *
- * Decisión de contenido (#275, Decisión 2): el remitente en Colombia no puede
+ * Decisión de contenido (Decisión 2): el remitente en Colombia no puede
  * ser un Sender ID con marca, así que el nombre comercial va SIEMPRE en el
  * cuerpo. El texto es ASCII puro (sin tildes) a propósito: mantiene el SMS en
  * 1 segmento GSM-7 (160 chars) y controla el costo por segmento.
@@ -18,7 +18,7 @@ declare(strict_types=1);
 return [
 
     // Estados de `orders.status` que disparan un SMS al cliente. Solo estados
-    // relevantes para el cliente (#275, Regla 2). NO incluye estados internos
+    // relevantes para el cliente (Regla 2). NO incluye estados internos
     // (pending_approval, pending, abandoned) ni terminales negativos
     // (cancelled, refunded, failed) — esos quedan fuera de alcance.
     'sms_statuses' => [

@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Auditoría de huérfanos por sede (#192 — branches:audit-orphans).
+ * Auditoría de huérfanos por sede (branches:audit-orphans).
  *
  * Recorre todas las tablas con columna `branch_id` (introspección dinámica
  * sobre `information_schema.columns`) y reporta cuántas filas tienen

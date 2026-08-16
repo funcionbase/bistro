@@ -105,14 +105,14 @@ class FeaturePermissionService
      *  2. `BootstrapService::buildSessionContext` — alimenta el sidebar en cada
      *     carga.
      *
-     * #268 — antes el bootstrap copiaba `role`/`permissions` del payload del JWT
+     * Antes el bootstrap copiaba `role`/`permissions` del payload del JWT
      * (snapshot rancio): si se editaba un rol a mitad de sesión, el sidebar
      * seguía mostrando los permisos viejos aunque el backend ya validara en vivo
      * y devolviera 403. Centralizar la resolución acá y consultarla en cada
      * bootstrap mantiene el frontend alineado con lo que el backend realmente
      * permite, sin esperar a re-loguear ni a que expire el token.
      *
-     * Incluye la regla derivada en runtime de `metrics.view_all_branches` (#192):
+     * Incluye la regla derivada en runtime de `metrics.view_all_branches`:
      * cobertura total de sedes activas otorga el permiso sin asignación explícita.
      *
      * @return array{role: array{id: string, name: string, is_system: bool}|null, permissions: array<int, string>}
@@ -174,7 +174,7 @@ class FeaturePermissionService
     }
 
     /**
-     * Determina si un usuario puede ver reportes consolidados de empresa (#192).
+     * Determina si un usuario puede ver reportes consolidados de empresa.
      *
      * Tres rutas posibles:
      *  1. **Owner** (`role.is_system=true`): bypass automático.

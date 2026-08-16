@@ -7,7 +7,7 @@ use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Renombrar / activar-desactivar / archivar una caja (multi-caja #117). El
+ * Renombrar / activar-desactivar / archivar una caja (multi-caja). El
  * permiso `cash_register.manage` se valida en la ruta. Archivar es el "borrado"
  * contable (no se elimina físicamente para preservar FKs históricas).
  */

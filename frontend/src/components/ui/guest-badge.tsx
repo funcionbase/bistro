@@ -32,7 +32,7 @@ const statusToDot: Record<NonNullable<GuestBadgeProps['status']>, string> = {
 
 /**
  * Chip reutilizable que identifica a un comensal dentro del flujo de mesa con
- * QR (#191). Genera un avatar con iniciales y color deterministicos a partir
+ * QR. Genera un avatar con iniciales y color deterministicos a partir
  * del `displayName`, usando tokens del DS.
  *
  * Casos de uso: encabezado del menú del comensal, lista de comensales de la

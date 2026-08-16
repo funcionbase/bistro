@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * Banner persistente de cuenta suspendida (issue #193, status `suspended`).
+ * Banner persistente de cuenta suspendida (status `suspended`).
  *
  * Se monta globalmente desde el layout autenticado de la SPA. Muestra:
  *  - Días desde el bloqueo (derivado de `payment_blocked_at`).

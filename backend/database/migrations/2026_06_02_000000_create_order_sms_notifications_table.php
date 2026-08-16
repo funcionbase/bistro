@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #275 — Ancla de deduplicación e historial de SMS al cliente por cambios de
+ * Ancla de deduplicación e historial de SMS al cliente por cambios de
  * estado de orden (Amazon SNS).
  *
  * Una fila = "se intentó notificar la orden X por el cambio a estado Y".
@@ -34,7 +34,7 @@ return new class extends Migration
             // acompaña.
             $table->foreignUuid('order_id')->constrained('orders')->cascadeOnDelete();
 
-            // Denormalizados para reportes por empresa/sede sin join (Fase 3).
+            // Denormalizados para reportes por empresa/sede sin join.
             // El conteo se agrupa por branch_id respetando BranchScope.
             $table->string('company_nit', 50)->index();
             $table->foreignUuid('branch_id')->constrained('branches')->restrictOnDelete();
@@ -53,7 +53,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('segments')->nullable();
             $table->string('error', 500)->nullable();
 
-            // Vínculo al ChatMessage espejo (Fase 2 — visibilidad en el chat).
+            // Vínculo al ChatMessage espejo (visibilidad en el chat).
             $table->uuid('chat_message_id')->nullable();
 
             $table->timestampTz('sent_at')->nullable();
@@ -63,7 +63,7 @@ return new class extends Migration
             // Ancla de deduplicación N-instance-safe.
             $table->unique(['order_id', 'to_status'], 'order_sms_notifications_order_status_unique');
 
-            // Reportes: conteo por sede en un período (Fase 3).
+            // Reportes: conteo por sede en un período.
             $table->index(['company_nit', 'branch_id', 'status', 'sent_at'], 'order_sms_notifications_report_idx');
         });
     }

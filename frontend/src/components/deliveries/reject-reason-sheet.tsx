@@ -16,7 +16,7 @@ interface RejectReasonSheetProps {
 }
 
 /**
- * Bottom-sheet de motivo cuando el cliente rechaza la entrega (#119).
+ * Bottom-sheet de motivo cuando el cliente rechaza la entrega.
  *
  * Razones rápidas preseleccionables (chips) + textarea opcional para
  * detalle adicional. El motivo se envía como string libre al backend

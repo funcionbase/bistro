@@ -21,7 +21,7 @@ interface PaymentState {
     tipAmount: string;
     submitting: boolean;
     error: string | null;
-    // HU #235 — campos DIAN (defaults vacíos cuando el usuario no tiene
+    // Campos DIAN (defaults vacíos cuando el usuario no tiene
     // permiso o no marca el toggle).
     dianRequested: boolean;
     dianPrint: boolean;
@@ -64,7 +64,7 @@ interface TablePaymentSheetProps {
  * Sheet de "cerrar y cobrar" una orden de mesa: propina voluntaria, método
  * de pago, monto recibido / devuelta y comprobante.
  *
- * HU #235: sección DIAN colapsable visible solo cuando el usuario tiene
+ * Sección DIAN colapsable visible solo cuando el usuario tiene
  * `dian.documents.emit`. Toggle "Cliente solicita factura DIAN" + checkbox
  * "Imprimir tirilla DIAN" + lookup por teléfono. La emisión la dispara
  * `useTablePayment.submitPayment` tras el cobro exitoso.
@@ -243,7 +243,7 @@ export function TablePaymentSheet({
                             </p>
                         )}
 
-                        {/* HU #235 — sección DIAN. Visible solo con permiso emit + Plan Plus. */}
+                        {/* Sección DIAN. Visible solo con permiso emit + Plan Plus. */}
                         {canEmitDian && (
                             <div className="space-y-2 rounded-md border border-dashed p-3">
                                 <div className="flex items-center gap-2">

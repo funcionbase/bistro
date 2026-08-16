@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Comprobante de pago manual subido por el cliente cuando su empresa está en
- * past_due o suspended (#175). Append-only: las filas no se mutan salvo al revisar
+ * past_due o suspended. Append-only: las filas no se mutan salvo al revisar
  * (status, reviewed_by_user_id, reviewed_at, review_notes). DIAN: retención
  * mínima 10 años.
  *

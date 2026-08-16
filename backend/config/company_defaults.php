@@ -108,7 +108,7 @@ return [
         'value' => '0.001',
         'type' => 'string',
     ],
-    // Facturación electrónica DIAN (HU #235).
+    // Facturación electrónica DIAN.
     // `manual` por default — la empresa NO emite documentos DIAN automáticos
     // al cerrar una orden hasta que owner habilite explícitamente en
     // Configuración → Facturación DIAN. Evita activación inadvertida.

@@ -68,7 +68,7 @@ function filterByCapabilities(items: NavItem[], capabilities: BusinessCapabiliti
 }
 
 /**
- * #268 — Única fuente de verdad de visibilidad por RBAC del sidebar.
+ * Única fuente de verdad de visibilidad por RBAC del sidebar.
  *
  * Oculta por completo los items para los que el usuario no tiene permiso.
  * Antes se renderizaban tachados (line-through + opacity-50), lo que ensuciaba
@@ -196,10 +196,10 @@ export function NavMain({ items = [], label }: { items: NavItem[]; label?: strin
     const isSystem = sharedData.role?.is_system ?? false;
     const closeMobile = useCloseMobileSidebar();
 
-    // #237 — filtro por capability del vertical de la sede activa. Si el
+    // Filtro por capability del vertical de la sede activa. Si el
     // contexto aún no carga (null), mostramos todo para no parpadear; cuando
     // resuelve, los items cuyo `businessCapability` no aplique desaparecen.
-    // #268 — encima, filtramos por RBAC: lo que el usuario no puede ver,
+    // Encima, filtramos por RBAC: lo que el usuario no puede ver,
     // desaparece (no se tacha). A partir de acá el árbol está limpio y los
     // componentes de render no vuelven a chequear permisos.
     const visibleItems = useMemo(() => {
@@ -404,7 +404,7 @@ function NestedCollapsibleNavGroup({ item, currentUrl }: { item: NavItem; curren
  *   que se abre al hover/click. Mantiene la jerarquía visual del
  *   árbol expandido sin aplanar.
  *
- * #268 — el árbol ya viene filtrado por RBAC desde `NavMain`; aquí sólo se
+ * El árbol ya viene filtrado por RBAC desde `NavMain`; aquí sólo se
  * excluyen los `comingSoon` (en modo colapsado no tiene sentido un flyout
  * con items "Pronto disponible" no clickeables). Si tras eso el grupo queda
  * sin hijos navegables, no se renderiza.

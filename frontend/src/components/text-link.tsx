@@ -4,7 +4,7 @@ import { type ComponentProps } from 'react';
 
 type TextLinkProps = ComponentProps<typeof AppLink>;
 
-/** Enlace de texto subrayado, agnóstico del transporte (#220). */
+/** Enlace de texto subrayado, agnóstico del transporte. */
 export default function TextLink({ className = '', children, ...props }: TextLinkProps) {
     return (
         <AppLink

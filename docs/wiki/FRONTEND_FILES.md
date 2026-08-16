@@ -132,14 +132,14 @@ Autenticado + JWT (HttpOnly cookie + Bearer fallback)
 
 ### Manual de usuario (`pages/manual/` + `data/manual/`, fv1.46.0)
 
-Contenido en **markdown**: `src/data/manual/<slug>.md` (frontmatter: `title`, `description`, `metaTitle`, `metaDescription`, `section`, `readingTime`, `lastUpdated`) servido por la página genérica `pages/manual/page.tsx` (ruta `/manual/:slug`, `import.meta.glob ?raw`, slug inexistente → redirect al índice). Renderiza con `components/ui/markdown.tsx` (remark-gfm + rehype-raw + rehype-sanitize con schema extendido: `div.callout-*`, `kbd`, `figure`/`img`; links internos → `<Link>` SPA, `![alt](src "caption")` → figure con caption). Cada página abre con una ilustración SVG del panel (`public/images/manual/<slug>.svg`, abstractas para no desactualizarse con la UI). Quedan como JSX: `index.tsx` (grids), `faq.tsx` (acordeón `details`) y `legal-contrato.tsx` (ya era md). `manual-layout.tsx`: diseño editorial estilo homerun — H1 display `font-brand`, rail derecho xl con meta + TOC autogenerado desde los `h2`, TOC mobile en `<details>`, CTA "Entrar al panel" también en el sidebar móvil, prev/next (`PagerLink`).
+Contenido en **markdown**: `src/data/manual/<slug>.md` (frontmatter: `title`, `description`, `metaTitle`, `metaDescription`, `section`, `readingTime`, `lastUpdated`) servido por la página genérica `pages/manual/page.tsx` (ruta `/manual/:slug`, `import.meta.glob ?raw`, slug inexistente → redirect al índice). Renderiza con `components/ui/markdown.tsx` (remark-gfm + rehype-raw + rehype-sanitize con schema extendido: `div.callout-*`, `kbd`, `figure`/`img`; links internos → `<Link>` SPA, `![alt](src "caption")` → figure con caption). Cada página abre con una ilustración SVG del panel (`public/images/manual/<slug>.svg`, abstractas para no desactualizarse con la UI). Quedan como JSX: `index.tsx` (grids) y `faq.tsx` (acordeón `details`). `manual-layout.tsx`: diseño editorial estilo homerun — H1 display `font-brand`, rail derecho xl con meta + TOC autogenerado desde los `h2`, TOC mobile en `<details>`, CTA "Entrar al panel" también en el sidebar móvil, prev/next (`PagerLink`).
 
 ### Enrollment (`pages/enrollment/`, 2 páginas)
 
 | Archivo | URL | APIs | Notas |
 |---------|-----|------|-------|
-| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a `funcionbase.com` en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
-| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (link a `/legal/contract` en pestaña nueva, URL desde `bootstrap.legalUrls.contract`) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
+| `user.tsx` | `/enrollment/user` | `POST /api/v1/enrollment/user` | Wizard 3 pasos: datos personales (nombre, apellido, cédula) → aceptación TOS+privacidad (links a `example.com` en pestaña nueva, URLs desde `useBootstrap().data.legalUrls`) → vinculación |
+| `company.tsx` | `/enrollment/company` | `POST /api/v1/enrollment/company` | Wizard 2 pasos: contrato (checkbox con link externo en pestaña nueva, URL desde `bootstrap.legalUrls.contract` — mismo patrón placeholder que TOS/privacidad) → datos empresa (NIT, nombre, banco, QR). Upload QR (PNG/JPG, máx 5 MB). `availableBanks` viene del bootstrap |
 
 ### Dashboard, Métricas, Reportes
 
@@ -457,7 +457,7 @@ Notas: `image-upload-zone` usa `useImageUpload` (valida JPG/PNG, máx 2 MB). `av
 - `PastDueBanner` (#193) — banner blando global en `app-layout.tsx`. `Alert variant="warning"` con countdown desde el día 1 hasta `expected_block_at` (TZ `America/Bogota`). CTA `Ir a Facturación`. Sólo se renderiza si `activeCompany.status === 'past_due'`. Tokens DS (`var(--color-status-warning)`), sin hex.
 - `SuspendedBanner` (#193) — banner persistente global en `app-layout.tsx`. `Alert variant="critical"` con días desde `payment_blocked_at` + monto adeudado (fetch a `/api/v1/billing/subscription`, skeleton inline) + CTA prominente. Sólo si `activeCompany.status === 'suspended'`. Tokens DS, sin hex.
 - `components/branches/missing-branch-banner` (#193) — banner global en `app-layout.tsx` cuando `!activeBranch`. Tres sub-estados según conteo de sedes y permisos: empresa sin sedes con CTA `Crear primera sede` (si puede manage), empresa sin sedes sin permiso (mensaje a admin), o hay sedes pero JWT sin sede activa (CTA al `branch-selector`). Antes cada banner operativo (`PendingApprovalsBanner`, `PendingCancellationsBanner`) replicaba un fallback "Sede activa fuera de fecha"; ahora se centraliza acá para que el mensaje sea único y accionable.
-- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago bistro y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
+- `SuspendedBlockedView` — vista completa que reemplaza el dashboard de `/billing/index.tsx` cuando la empresa está `suspended`. Muestra monto adeudado, datos de pago de bistro y `UploadPaymentProof` + historial de comprobantes enviados (deuda técnica conocida: aún usa hex hardcoded, pendiente migrar a tokens del DS).
 
 #### `components/company/`
 
@@ -863,7 +863,7 @@ Endpoints consumidos: `GET/POST/PUT/DELETE /api/v1/company/printers` y `POST /ap
 
 | Componente | Texto | Por qué |
 |------------|-------|---------|
-| `pages/welcome.tsx` | Wordmark `restaurantes bistro` + H1 `Accede a tu cuenta` | Punto de entrada de marca antes del login |
+| `pages/welcome.tsx` | Landing pública con wordmark `bistro` | Punto de entrada de marca antes del login |
 | `layouts/auth/auth-{simple,split}-layout.tsx` | H1 del título de pantalla | Auth flujos secundarios (registro, password reset) |
 | `pages/**/*.tsx` (27 páginas) | H1 principal de cada página (`Dashboard`, `Caja`, `Pedidos`, `Menú`, `Cupones`, etc.) | Identidad consistente en titular de cada vista |
 | `components/app-logo.tsx` | Wordmark del header móvil | Brand moment en navegación |

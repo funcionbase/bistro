@@ -14,11 +14,11 @@ interface MenuQrPosterProps {
     width?: number;
     height?: number;
     /**
-     * Variante del QR generado (#191 Fase 8):
+     * Variante del QR generado:
      *  - 'menu' (default): codifica `/menus/{nit}` (catálogo público para
      *    consultar, sin sesión grupal ni captura de comensales).
      *  - 'table-session': codifica `/t/{qrToken}` — flujo de mesa con QR
-     *    grupal (#191). El cliente captura nombre + phone CO y queda
+     *    grupal. El cliente captura nombre + phone CO y queda
      *    enlazado al `Contact` del CRM. Requiere `qrToken`.
      */
     mode?: 'menu' | 'table-session';
@@ -180,7 +180,7 @@ function buildTargetUrl(nit: string, tableNumber?: string | null, qrToken?: stri
 }
 
 /**
- * Construye la URL del QR de mesa con sesión grupal (#191). El qrToken
+ * Construye la URL del QR de mesa con sesión grupal. El qrToken
  * resuelve sede + mesa directamente en el backend — no se pasa nit ni
  * número.
  */

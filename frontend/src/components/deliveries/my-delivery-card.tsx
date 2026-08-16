@@ -17,7 +17,7 @@ interface MyDeliveryCardProps {
 }
 
 /**
- * Card mobile-first del domiciliario (#119).
+ * Card mobile-first del domiciliario.
  *
  * Diferencias con `DeliveryCard` (admin):
  *  - Layout vertical: info compacta arriba, CTAs grandes al pie del card

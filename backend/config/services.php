@@ -42,7 +42,7 @@ return [
     ],
 
     'sns' => [
-        // Envío de SMS al cliente por cambios de estado de orden (#275).
+        // Envío de SMS al cliente por cambios de estado de orden.
         // En qa/pdn las credenciales vienen del IAM instance profile del ASG
         // (key/secret vacíos → el SDK las toma del IMDS). Mismo patrón que SES/S3.
         'key' => env('AWS_ACCESS_KEY_ID'),
@@ -60,7 +60,7 @@ return [
         // entornos no productivos. Se activa en pdn vía GH Env Vars.
         'sms_enabled' => filter_var(env('SNS_SMS_ENABLED', false), FILTER_VALIDATE_BOOL),
 
-        // Transactional prioriza entrega sobre costo (#275, Decisión 2). No
+        // Transactional prioriza entrega sobre costo (Decisión 2). No
         // cambiar a Promotional para notificaciones de orden.
         'sms_type' => env('SNS_SMS_TYPE', 'Transactional'),
     ],

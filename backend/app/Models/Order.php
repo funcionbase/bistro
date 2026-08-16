@@ -36,9 +36,6 @@ class Order extends Model
 
     use HasUuids;
 
-    /** menu_item_id sintético de la línea de domicilio (no existe en el menú). */
-    public const DELIVERY_FEE_ITEM_ID = 'delivery_fee';
-
     /**
      * menu_item_id sintético de la línea "Domicilio" (no existe en el menú).
      * La inyecta el backend al crear órdenes delivery (caja y flujo público);
@@ -48,7 +45,7 @@ class Order extends Model
     public const DELIVERY_FEE_ITEM_ID = 'delivery_fee';
 
     /**
-     * Inmutabilidad de `branch_id` post-creación (#192).
+     * Inmutabilidad de `branch_id` post-creación.
      *
      * Si una orden cambia de sede después de creada, los reportes históricos,
      * los cierres de caja, los movimientos de inventario y las auditorías se
@@ -107,7 +104,7 @@ class Order extends Model
         // dispositivo (cuadre por esta hora) + flag de auditoría.
         'created_at_client',
         'is_offline_origin',
-        // Snapshot del adquirente DIAN al momento de emitir (#235).
+        // Snapshot del adquirente DIAN al momento de emitir.
         // Se congelan en la orden para que mutaciones futuras del Contact
         // del cliente no contaminen el documento emitido.
         'billing_doc_type',
@@ -159,11 +156,11 @@ class Order extends Model
     /**
      * Código corto legible derivado del UUID: los dos primeros segmentos en
      * mayúscula (ej. `019E7DA6-3C13`). Identificador de referencia compacto para
-     * mostrar al cliente (SMS, #275) y en el tablero, sin exponer el UUID
+     * mostrar al cliente (SMS) y en el tablero, sin exponer el UUID
      * completo. No es secuencial ni memorable, y como en UUIDv7 estos segmentos
      * codifican el timestamp, dos órdenes creadas en el mismo milisegundo
      * comparten código — es una referencia visual, no una clave única (el
-     * consecutivo real por sede queda fuera de alcance, #275). Helper único: el
+     * consecutivo real por sede queda fuera de alcance). Helper único: el
      * frontend lo espeja en `lib/order-code.ts`.
      */
     public function shortCode(): string
@@ -210,7 +207,7 @@ class Order extends Model
     }
 
     /**
-     * Items materializados de la orden (#191). Convive con `items` JSON hasta
+     * Items materializados de la orden. Convive con `items` JSON hasta
      * que todos los readers migren a esta relación.
      *
      * @return HasMany<OrderItem, $this>
@@ -233,7 +230,7 @@ class Order extends Model
     }
 
     /**
-     * Sesión de mesa con QR a la que pertenece esta orden (#191). Solo aplica
+     * Sesión de mesa con QR a la que pertenece esta orden. Solo aplica
      * cuando la orden nace del flujo público `/t/{qr_token}`.
      *
      * @return BelongsTo<TableSession, $this>

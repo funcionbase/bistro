@@ -41,7 +41,7 @@ class StoreCashIncomeRequest extends FormRequest
             'category' => ['required', 'string', 'in:'.implode(',', $categories)],
             'payment_method' => ['nullable', 'string', 'in:'.implode(',', $methods)],
             'description' => ['nullable', new SafePlainText(maxBytes: 500, allowWhitespace: true)],
-            // Multi-caja (#117): contra qué caja se carga la entrada.
+            // Multi-caja: contra qué caja se carga la entrada.
             'cash_session_id' => ['nullable', 'uuid'],
         ];
     }

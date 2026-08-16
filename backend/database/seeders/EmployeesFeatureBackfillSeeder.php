@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Backfill de las features de #182 a empresas EXISTENTES.
+ * Backfill de las features de gestión de colaboradores a empresas EXISTENTES.
  *
  * Las migraciones agregan las features al catálogo y `PermissionTemplateSeeder`
  * actualiza los templates owner/admin/employee. Pero los `company_role_permissions`

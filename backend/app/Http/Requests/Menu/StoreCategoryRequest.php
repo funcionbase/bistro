@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
  * Endpoint: POST /api/menus/{id}/categories (MenuController). Requiere menu.update.
  *
  * order: posición de la categoría en el menú (entero ≥ 0); si se omite, se añade al final.
- * kds_station_id (#115): estación de cocina a la que se enrutan los items
+ * kds_station_id: estación de cocina a la que se enrutan los items
  * de la categoría en el KDS. Debe ser una estación activa de la misma
  * sede del menú. Si se omite o se manda null, los items caen en la
  * estación `is_default=true` de la sede (fallback).

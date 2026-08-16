@@ -127,7 +127,7 @@ class PurchaseService
         return DB::transaction(function () use ($companyNit, $supplier, $items, $meta, $actor) {
             $po = PurchaseOrder::create([
                 'company_nit' => $companyNit,
-                // Multi-sede (#117): la PO hereda la sede del proveedor (los proveedores
+                // Multi-sede: la PO hereda la sede del proveedor (los proveedores
                 // viven por sede). Si en el futuro se decide proveedores cross-sede,
                 // este origen debe revisarse.
                 'branch_id' => $supplier->branch_id,
@@ -490,7 +490,7 @@ class PurchaseService
      * subtotal/tax/total en la cabecera. Usa bcmath para todas las cuentas.
      *
      * Cada línea lleva `warehouse_id` que indica la bodega de destino al
-     * recibir la compra (#120). Si no se provee, se usa la bodega default
+     * recibir la compra. Si no se provee, se usa la bodega default
      * de la sede de la PO.
      *
      * @param  array<int, array{ingredient_id:int, warehouse_id?:string, quantity:string|float, unit_cost:string|float, tax_rate?:string|float}>  $items

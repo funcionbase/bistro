@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
  * Endpoint: PUT /api/company (CompanyController::update). Gated por permiso RBAC company.update,update.
  *
  * Todos los campos son opcionales (sometimes). Los archivos qr_code y logo son multipart; máx 5MB.
- * El logo acepta raster (jpg/png/webp); SVG se rechaza (CIBER-02, stored XSS). El NIT no es editable.
+ * El logo acepta raster (jpg/png/webp); SVG se rechaza (stored XSS). El NIT no es editable.
  */
 class UpdateCompanyRequest extends FormRequest
 {
@@ -50,7 +50,7 @@ class UpdateCompanyRequest extends FormRequest
             // Límite de 5 MB (5120 KB) para QR y logo. La rule `max:` de Laravel
             // recibe kilobytes; 5 MB = 5 * 1024 KB.
             'qr_code' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
-            // CIBER-02: se retira `svg`. Un SVG válido puede contener
+            // Se retira `svg`. Un SVG válido puede contener
             // `<script>`/`onload` → stored XSS si se abre por URL directa o se
             // embebe. Se alinea con `UploadDishImageRequest`, que rechaza SVG
             // por la misma razón. Solo raster (la rule `image` valida raster;

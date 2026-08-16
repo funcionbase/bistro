@@ -124,7 +124,7 @@ export default function ManualLayout({
                 headline: pageTitle,
                 description: metaDescription,
                 inLanguage: 'es-CO',
-                author: { '@type': 'Organization', name: 'bistro', url: 'https://funcionbase.com' },
+                author: { '@type': 'Organization', name: 'bistro', url: 'https://example.com' },
                 about: 'Software de gestión para restaurantes: menú digital QR, POS, inventario y facturación DIAN',
             },
         ]);

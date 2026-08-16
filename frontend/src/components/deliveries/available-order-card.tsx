@@ -24,7 +24,7 @@ interface AvailableOrderCardProps {
 
 
 /**
- * Card de orden disponible para auto-asignación (#119).
+ * Card de orden disponible para auto-asignación.
  *
  * Mobile-first: la CTA "Tomar entrega" ocupa todo el ancho al pie del
  * card. Información mínima necesaria (cliente, dirección, monto, tiempo

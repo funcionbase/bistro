@@ -132,11 +132,6 @@ class PdfExportService
     }
 
     /**
-     * Devuelve el método de pago original de una orden ('cash'|'card'|'transfer'|'unknown').
-     * Lee desde la columna estructurada `payment_method` del receipt más reciente
-     * que NO sea de tipo refund. Lo usan los templates Blade para mostrar el método.
-     */
-    /**
      * Exporta el cierre de caja del período como PDF.
      *
      * @param  array{from: Carbon, to: Carbon, timezone: string}  $period
@@ -163,6 +158,11 @@ class PdfExportService
         return $this->streamPdf('pdf.cash-drawer', $data, $filename);
     }
 
+    /**
+     * Devuelve el método de pago original de una orden ('cash'|'card'|'transfer'|'unknown').
+     * Lee desde la columna estructurada `payment_method` del receipt más reciente
+     * que NO sea de tipo refund. Lo usan los templates Blade para mostrar el método.
+     */
     private function resolvePaymentMethod(Order $order): string
     {
         $receipt = $order->receipts->first(function ($r) {

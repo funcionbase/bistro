@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * Publica a Amazon SNS el SMS al cliente por un cambio de estado de orden (#275).
+ * Publica a Amazon SNS el SMS al cliente por un cambio de estado de orden.
  *
  * Recibe el id de un `OrderSmsNotification` ya insertado (status='queued')
  * dentro de la transacción + lockForUpdate del cambio de estado. Ese registro,

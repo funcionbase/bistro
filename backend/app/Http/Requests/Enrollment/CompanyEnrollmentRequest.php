@@ -61,7 +61,6 @@ class CompanyEnrollmentRequest extends FormRequest
             'commercial_name' => ['required', 'string', 'max:255'],
             'legal_name' => ['required', 'string', 'max:255'],
             'bank_id' => ['required', 'uuid', 'exists:banks,id'],
-            // Número de cuenta bancaria: solo dígitos.
             'account_number' => ['required', 'string', 'max:30', 'regex:/^[0-9]+$/'],
             'account_type' => ['required', 'string', Rule::in(['corriente', 'ahorros'])],
             'qr_code' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
@@ -74,7 +73,7 @@ class CompanyEnrollmentRequest extends FormRequest
             'main_branch_name' => ['nullable', 'string', 'max:120'],
             'main_branch_address' => ['nullable', 'string', 'max:255'],
             'main_branch_city' => ['nullable', 'string', 'max:120'],
-            // #237 — vertical de la primera sede. Si no llega, default a
+            // Vertical de la primera sede. Si no llega, default a
             // 'restaurant' (compatibilidad histórica). El wizard frontend lo
             // expone como selector en el paso de "primera sede".
             'main_branch_business_type' => ['nullable', 'string', 'exists:business_types,slug'],
@@ -86,7 +85,7 @@ class CompanyEnrollmentRequest extends FormRequest
                 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png',
                 'max:10240',
             ],
-            // #246 — promo code opcional desde URL `?promo=...`. Se valida en
+            // Promo code opcional desde URL `?promo=...`. Se valida en
             // el service (validateBySlug) — acá solo aceptamos el slug.
             'promo_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]{2,50}$/'],
         ];

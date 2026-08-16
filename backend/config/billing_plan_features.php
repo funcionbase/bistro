@@ -1,7 +1,7 @@
 <?php
 
 /**
- * #257 — Mapeo de slugs de features y regimenes tributarios a labels amigables
+ * Mapeo de slugs de features y regimenes tributarios a labels amigables
  * en espanol, usado por App\Services\BillingPlanPresenter al renderizar
  * el cuerpo de los correos transaccionales billing.
  *

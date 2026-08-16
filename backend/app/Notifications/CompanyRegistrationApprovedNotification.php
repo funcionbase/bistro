@@ -12,7 +12,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * #257 — Notificacion disparada cuando una empresa pasa de
+ * Notificacion disparada cuando una empresa pasa de
  * `pending_activation` a `active` (aprobacion del registro por el equipo
  * interno via `companies:approve`).
  *

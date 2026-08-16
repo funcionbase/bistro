@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Genera el snapshot diario del stock por bodega para series temporales (#120).
+ * Genera el snapshot diario del stock por bodega para series temporales.
  *
  * Idempotente: vuelve a correr el mismo día sin duplicar (upsert por
  * (warehouse_id, ingredient_id, snapshot_date)).

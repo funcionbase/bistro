@@ -58,7 +58,7 @@ export default function EnrollmentCompany() {
     const availableBanks = bootstrap?.availableBanks ?? [];
     const contractUrl = bootstrap?.legalUrls?.contract;
 
-    // #246 — promo code desde URL `?promo=` + plan default público.
+    // Promo code desde URL `?promo=` + plan default público.
     const { promoSlug, preview: promoPreview, loading: promoLoading, invalidReason: promoInvalidReason } = usePromoCodeFromUrl();
     const { plan: defaultPlan, loading: defaultPlanLoading } = useDefaultPlan();
     const hasValidPromo = promoPreview !== null;
@@ -79,7 +79,7 @@ export default function EnrollmentCompany() {
     const [brebKey, setBrebKey] = useState('');
     const [qrFile, setQrFile] = useState<File | null>(null);
 
-    // #154 — Evidencia de propiedad obligatoria.
+    // Evidencia de propiedad obligatoria.
     const [proofFile, setProofFile] = useState<File | null>(null);
 
     // Acceso dual: el registro por correo exige verificar el correo ANTES de
@@ -164,7 +164,7 @@ export default function EnrollmentCompany() {
             if (qrFile) {
                 formData.append('qr_code', qrFile);
             }
-            // #246 — promo code desde URL (`?promo=`). El backend lo valida y
+            // Promo code desde URL (`?promo=`). El backend lo valida y
             // si es inválido, NO bloquea el enrollment (best-effort).
             if (hasValidPromo && promoSlug !== null) {
                 formData.append('promo_code', promoSlug);
@@ -285,7 +285,7 @@ export default function EnrollmentCompany() {
                                 </Alert>
                             )}
 
-                            {/* #246 — Alert para promo inválido (sin bloquear enrollment). */}
+                            {/* Alert para promo inválido (sin bloquear enrollment). */}
                             {promoSlug !== null && !promoLoading && promoInvalidReason !== null && (
                                 <Alert variant="default">
                                     <AlertCircle className="h-4 w-4" />
@@ -507,7 +507,7 @@ export default function EnrollmentCompany() {
                         </div>
 
                         {/* Columna derecha: hero panel.
-                             - Con ?promo válido: PromoLandingPanel reemplaza todo el aside (#246 decisión #6).
+                             - Con ?promo válido: PromoLandingPanel reemplaza todo el aside.
                              - Sin promo o promo inválido: HeroPanel original + PlanInfoBlock debajo. */}
                         <div className="order-last flex flex-col gap-4 md:col-span-5 lg:col-span-5">
                             {hasValidPromo ? (

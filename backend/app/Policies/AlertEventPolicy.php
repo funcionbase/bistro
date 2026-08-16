@@ -8,7 +8,7 @@ use App\Models\CompanyUser;
 use App\Models\User;
 
 /**
- * Authorization para alertas (#124).
+ * Authorization para alertas.
  *
  * El middleware `permission:reports.read,read` (view/dismiss/action) y
  * `permission:company.update,update` (rule upsert) aplican RBAC. Esta policy

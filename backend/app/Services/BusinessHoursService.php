@@ -165,12 +165,10 @@ class BusinessHoursService
             ->get()
             ->keyBy('day_of_week');
 
-        // Check up to 7 days ahead
         for ($daysAhead = 0; $daysAhead <= 7; $daysAhead++) {
             $candidate = $from->copy()->addDays($daysAhead);
             $dow = $candidate->dayOfWeek;
 
-            // Check for exception on this date
             $exception = $this->getTodayException($companyNit, $candidate, $branchId);
 
             if ($exception !== null) {

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
- * Feed de alertas accionables (#124).
+ * Feed de alertas accionables.
  *
  * Gate por `reports.read` — mismo permiso que protege food cost y márgenes,
  * para que cajeros sin acceso a info financiera no vean alertas que la

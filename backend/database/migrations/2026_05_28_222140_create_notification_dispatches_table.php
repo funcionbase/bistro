@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #257 — Registro append-only de notificaciones billing despachadas.
+ * Registro append-only de notificaciones billing despachadas.
  *
  * Defensa de idempotencia complementaria a los markers *_notified_at en
  * companies (que protegen el evento a nivel empresa, pero no a nivel
@@ -48,7 +48,6 @@ return new class extends Migration
             $table->string('company_nit', 50)->nullable()->index();
             // Snapshot del email al momento del envio. Util si despues cambia.
             $table->string('target_email');
-            // Timestamp del envio.
             $table->timestampTz('sent_at');
             // Metadata extra (invoice_id, subscription_id, etc.).
             $table->jsonb('metadata')->nullable();

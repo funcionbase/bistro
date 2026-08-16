@@ -1,5 +1,5 @@
 /**
- * Tipos TS espejo de los endpoints DIAN del backend (HU #235).
+ * Tipos TS espejo de los endpoints DIAN del backend.
  *
  * Espejo manual de `App\Http\Resources\Dian\*` — actualizar en el mismo PR
  * cuando agreguen/cambien campos.
@@ -145,7 +145,7 @@ export interface DianRecipientMatch {
 }
 
 /**
- * Refactor #235: el lookup retorna SIEMPRE un array de matches porque un phone
+ * El lookup retorna SIEMPRE un array de matches porque un phone
  * puede pertenecer a varios miembros de una familia. `match_type='phone'` →
  * potencialmente N resultados (UI muestra selector); `match_type='doc'` → 0 o 1
  * (UNIQUE parcial por empresa).

@@ -20,7 +20,7 @@ interface LoyaltyPanelProps {
 }
 
 /**
- * Panel de fidelización en /clients/{phone} (#122). Muestra balance, tier,
+ * Panel de fidelización en /clients/{phone}. Muestra balance, tier,
  * progreso al siguiente, catálogo de recompensas (canjeables y bloqueadas),
  * historial de movimientos y modales para ajuste manual / canje en nombre
  * del cliente.

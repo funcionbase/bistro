@@ -17,7 +17,7 @@ interface SwitchCompanyResponse {
  * a la que puede saltar.
  *
  * Sin esto, un usuario con varias empresas que entra por accidente a la
- * suspendida solo ve Dashboard + Mi empresa (regla #193) y queda sin
+ * suspendida solo ve Dashboard + Mi empresa y queda sin
  * pista clara de cómo recuperarse. Este banner ofrece switch en 1 clic.
  *
  * Sirve para CUALQUIER rol — owner, admin, cashier, waiter — porque la

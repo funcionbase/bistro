@@ -9,7 +9,7 @@ import UploadPaymentProof from './upload-payment-proof';
 
 interface PaymentProof {
     /**
-     * UUID del comprobante (#193). Antes era `number` (BIGSERIAL) pero
+     * UUID del comprobante. Antes era `number` (BIGSERIAL) pero
      * abría puerta a enumeración secuencial — el backend ahora serializa el
      * UUID público en el campo `id` y mantiene el BIGSERIAL como PK interna.
      */
@@ -47,7 +47,7 @@ interface Props {
 }
 
 /**
- * Vista para empresas en `suspended` (#175). Reemplaza la vista normal de
+ * Vista para empresas en `suspended`. Reemplaza la vista normal de
  * facturación: oculta plan/historial detallado y enfoca al cliente en
  * regularizar el pago. Muestra: monto adeudado + datos de pago bistro +
  * formulario de comprobante + historial de comprobantes enviados.
@@ -199,7 +199,7 @@ export default function SuspendedBlockedView({ activeCompany, overdueTotal }: Pr
                 </Card>
             )}
 
-            {/* Popup de previsualización (#193). Se monta cuando `previewing`
+            {/* Popup de previsualización. Se monta cuando `previewing`
                 no es null. Para imágenes muestra el `<img>` a tamaño contenido;
                 para PDFs embebe el archivo en un `<iframe>` (los browsers
                 modernos vienen con visor PDF nativo). Cualquier otro mime cae

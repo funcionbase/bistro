@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Autenticación por device-token para endpoints KDS (#115).
+ * Autenticación por device-token para endpoints KDS.
  *
  * Sustituye a `jwt + company.access + branch.access` en las rutas
  * `/api/v1/kds/{stationSlug}/*` consumidas por las tabletas físicas de

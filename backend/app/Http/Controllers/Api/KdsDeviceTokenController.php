@@ -13,7 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Gestión de device-tokens KDS (#115 F6).
+ * Gestión de device-tokens KDS.
  *
  * Endpoints expuestos a la pantalla de settings de la empresa para que el
  * owner / admin con `kds.manage_stations` pueda generar tokens copy-once y

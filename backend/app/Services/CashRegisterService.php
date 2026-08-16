@@ -32,7 +32,7 @@ class CashRegisterService
     /**
      * Abre una sesión nueva. Falla si ya existe una `open` para la sede.
      *
-     * Multi-sede (#117): la unicidad de sesión abierta es por SEDE (no por empresa).
+     * Multi-sede: la unicidad de sesión abierta es por SEDE (no por empresa).
      * Una empresa con varias sedes puede tener N sesiones abiertas (una por sede).
      */
     public function openSession(
@@ -46,7 +46,7 @@ class CashRegisterService
         ?string $cashRegisterId = null,
     ): CashRegisterSession {
         return DB::transaction(function () use ($companyNit, $branchId, $openedBy, $openingAmount, $notes, $clientUuid, $openedAtClient, $cashRegisterId) {
-            // Multi-caja (#117): toda sesión cuelga de una caja. Si el caller no
+            // Multi-caja: toda sesión cuelga de una caja. Si el caller no
             // especifica cuál (cliente legacy / sede mono-caja), se usa la "Caja
             // principal" de la sede. El selector explícito lo envía Fase 2.
             $register = $cashRegisterId !== null
@@ -162,7 +162,7 @@ class CashRegisterService
      * Cierra la sesión activa de una sede: calcula expected_cash y
      * cash_difference, persiste.
      *
-     * Multi-sede (#117): la sesión a cerrar y el conteo de pedidos operativos
+     * Multi-sede: la sesión a cerrar y el conteo de pedidos operativos
      * que bloquean el cierre se resuelven por SEDE (no por empresa). Sin el
      * filtro de sede, en una empresa con varias sedes abiertas `first()` podía
      * cerrar la sesión equivocada y el bloqueo contaba pedidos de otras sedes.
@@ -176,7 +176,7 @@ class CashRegisterService
         int $pendingSyncCount = 0,
         ?string $cashSessionId = null,
     ): CashRegisterSession {
-        // Modo offline (#140): el cliente envía cuántas órdenes/cobros tiene aún
+        // Modo offline: el cliente envía cuántas órdenes/cobros tiene aún
         // sin sincronizar en su IndexedDB. Política decidida: bloqueo duro sin
         // escape — el cajero DEBE recuperar conexión y drenar la cola antes de
         // cerrar. Sin esto, los receipts llegan tarde y la sesión cerrada no
@@ -193,7 +193,7 @@ class CashRegisterService
         }
 
         return DB::transaction(function () use ($companyNit, $branchId, $closedBy, $closingAmount, $notes, $cashSessionId) {
-            // Multi-caja (#117): se cierra la caja indicada por `cashSessionId`.
+            // Multi-caja: se cierra la caja indicada por `cashSessionId`.
             // Fallback legacy: si no se indica y hay exactamente una abierta en
             // la sede, esa; si hay varias, se exige elegir.
             $query = CashRegisterSession::query()
@@ -222,7 +222,7 @@ class CashRegisterService
             // si no, los pedidos quedan huérfanos entre sesiones y la
             // conciliación contable se complica. El conteo es POR SEDE.
             //
-            // Multi-caja (#117, decisión de producto): cerrar UNA caja no se
+            // Multi-caja (decisión de producto): cerrar UNA caja no se
             // bloquea por pedidos operativos si quedan OTRAS cajas abiertas en
             // la sede (esas los cobran). Solo se bloquea el cierre de la ÚLTIMA
             // caja abierta de la sede.
@@ -291,7 +291,7 @@ class CashRegisterService
         ?string $cashSessionId = null,
     ): array {
         return DB::transaction(function () use ($companyNit, $branchId, $closedBy, $closingAmount, $notes, $closedAtClient, $cashSessionId) {
-            // Multi-caja (#117): si el caller resolvió la sesión operada, se
+            // Multi-caja: si el caller resolvió la sesión operada, se
             // cierra ESA; sin id (cliente legacy mono-caja) la única abierta.
             $session = CashRegisterSession::query()
                 ->where('company_nit', $companyNit)
@@ -587,7 +587,7 @@ class CashRegisterService
     }
 
     /**
-     * Sesión abierta de una sede específica. Multi-caja (#117): si la sede tiene
+     * Sesión abierta de una sede específica. Multi-caja: si la sede tiene
      * varias cajas abiertas devuelve la primera por `opened_at` — solo apto para
      * flujos legacy mono-caja. Para cobros usar `resolveSessionForCharge`.
      */
@@ -702,7 +702,7 @@ class CashRegisterService
      * ValidationException. Devuelve la sesión activa para que el caller la
      * asocie al receipt creado.
      *
-     * Multi-sede (#117): resuelve por `(company_nit, branch_id)` — no por
+     * Multi-sede: resuelve por `(company_nit, branch_id)` — no por
      * empresa. En empresas con varias sedes abiertas, resolver solo por empresa
      * podía atribuir el cobro a la sesión de otra sede y descuadrar ambas cajas.
      */

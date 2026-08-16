@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Canje de puntos por descuento (#122).
+ * Canje de puntos por descuento.
  *
  * Vincula un movement(type=redeem) con un Coupon single-use generado al canjear.
  * El cupón es de uso único y expira en config('loyalty.redemption_expires_minutes')

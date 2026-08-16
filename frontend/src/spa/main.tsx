@@ -1,5 +1,3 @@
-// Entry point del SPA (React Router). Cambio no-op para probar el trigger
-// de build de Cloudflare Workers Builds en push a main.
 import '../css/app.css';
 import '../lib/zod-config';
 
@@ -24,12 +22,12 @@ import { router } from './router';
 installChunkRecoveryHandlers();
 
 /**
- * Entry point del frontend SPA standalone (#220).
+ * Entry point del frontend SPA standalone.
  *
  * React Router puro — sin Inertia. El backend Laravel solo sirve la API.
  */
 
-// Anti-tamper (#220): en producción neutraliza el hook global de React
+// Anti-tamper: en producción neutraliza el hook global de React
 // DevTools para que el árbol de componentes no sea inspeccionable. Corre
 // antes del primer render; en dev queda inerte (import.meta.env.PROD=false).
 if (import.meta.env.PROD) {

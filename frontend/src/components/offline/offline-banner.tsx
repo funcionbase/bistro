@@ -1,5 +1,5 @@
 /**
- * Banner sticky de modo offline (#140).
+ * Banner sticky de modo offline.
  *
  * Estados visuales:
  *  - Online + 0 pending → no se renderiza nada.

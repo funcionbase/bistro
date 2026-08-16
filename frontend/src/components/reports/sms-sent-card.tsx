@@ -8,7 +8,7 @@ import { MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Seguimiento de SMS enviados al cliente por cambios de estado de orden (#275).
+ * Seguimiento de SMS enviados al cliente por cambios de estado de orden.
  * Las fechas y la sede se controlan desde el filtro principal de la página.
  */
 

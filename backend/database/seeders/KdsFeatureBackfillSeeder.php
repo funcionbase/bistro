@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Backfill de las features KDS (#115) a empresas existentes.
+ * Backfill de las features KDS a empresas existentes.
  *
  * `FeatureSeeder` agrega `kds.view_station`, `kds.operate_station` y
  * `kds.manage_stations` al catálogo y `PermissionTemplateSeeder` define

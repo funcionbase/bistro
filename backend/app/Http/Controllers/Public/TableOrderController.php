@@ -16,10 +16,10 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Endpoints públicos del carrito del comensal (#191) — API REST.
+ * Endpoints públicos del carrito del comensal — API REST.
  *
  * Sin auth — identidad resuelta por el middleware `table.guest` desde la
- * cookie `tdt_*`. Migrado desde `Web\TableOrderController` (#191 SPA): la
+ * cookie `tdt_*`. Migrado desde `Web\TableOrderController` (SPA): la
  * lógica es idéntica, solo cambia el namespace (Web → Public) y el prefijo
  * de ruta (`/t/` → `/api/v1/public/table/`).
  *
@@ -74,7 +74,7 @@ class TableOrderController extends Controller
         unset($qrToken);
         $guest = $this->requireGuest($request);
 
-        // CIBER-03: scope estructural por el guest dueño del item. Antes se
+        // Scope estructural por el guest dueño del item. Antes se
         // resolvía por UUID global y la pertenencia dependía solo del guard en
         // el service; ahora un item ajeno es 404 en la query.
         $item = OrderItem::query()->whereKey($itemId)->where('guest_id', $guest->id)->firstOrFail();
@@ -109,7 +109,7 @@ class TableOrderController extends Controller
         unset($qrToken);
         $guest = $this->requireGuest($request);
 
-        // CIBER-03: scope estructural por el guest dueño del item (ver updateItem).
+        // Scope estructural por el guest dueño del item (ver updateItem).
         $item = OrderItem::query()->whereKey($itemId)->where('guest_id', $guest->id)->firstOrFail();
         $reason = $request->input('reason');
 

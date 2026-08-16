@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * POST /api/v1/company/kds/stations — crear estación KDS (#115 F6).
+ * POST /api/v1/company/kds/stations — crear estación KDS.
  *
  * Reglas:
  *  - `name`: requerido, plain text 1..64 bytes.

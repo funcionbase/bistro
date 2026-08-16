@@ -1,4 +1,4 @@
-# bistro Restaurante — Wiki
+# bistro — Wiki
 
 > Documentación técnica y funcional de la plataforma SaaS de gestión de restaurantes.
 > Última actualización: 2026-05-28.

@@ -18,7 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Endpoints públicos y privados para promo codes y plan default — #246.
+ * Endpoints públicos y privados para promo codes y plan default.
  *
  * Públicos (sin auth, throttle):
  *  - `GET  /api/v1/billing/plans/default` — plan vigente para enrollment.
@@ -32,7 +32,7 @@ use Illuminate\Http\Request;
  *
  * Aplicación self-service:
  *  - Permiso: owner + admin automático (`role.is_system=true` y slug ∈
- *    {owner, admin}). Sin permiso asignable — decisión #246 #4.
+ *    {owner, admin}). Sin permiso asignable — decisión de diseño.
  *  - `starts_at` = primer día del próximo mes Bogota (deferido por trial activo).
  */
 class PromoCodeController extends Controller
@@ -206,7 +206,7 @@ class PromoCodeController extends Controller
      * POST /api/v1/company/billing/promo-code — privado.
      * Aplica el promo a la empresa autenticada (self-service).
      *
-     * Permiso: owner + admin estricto (#246 decisión #4). Sin permiso
+     * Permiso: owner + admin estricto. Sin permiso
      * asignable — `role.is_system=true` y nombre canonical.
      */
     public function applySelfService(ApplyPromoCodeRequest $request): JsonResponse
@@ -246,7 +246,7 @@ class PromoCodeController extends Controller
      * DELETE /api/v1/company/billing/promo-code — privado.
      * Cancela el promo activo de la empresa autenticada.
      *
-     * Permiso: owner + admin estricto (#246 decisión #4).
+     * Permiso: owner + admin estricto.
      */
     public function cancelSelfService(Request $request): JsonResponse
     {

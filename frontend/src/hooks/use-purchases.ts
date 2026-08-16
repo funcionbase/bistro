@@ -26,7 +26,7 @@ export function usePurchases(token: string | null) {
         setFiltersState((prev) => ({ ...prev, ...next }));
     }, []);
 
-    // Listado principal vía React Query (#269, Fase 3): cache + dedupe +
+    // Listado principal vía React Query (Fase 3): cache + dedupe +
     // `keepPreviousData` — la tabla no se blanquea al cambiar filtros ni al
     // revisitar; el skeleton completo solo en el primer load sin cache.
     const query = useQuery<PurchaseOrderListResponse, Error>({

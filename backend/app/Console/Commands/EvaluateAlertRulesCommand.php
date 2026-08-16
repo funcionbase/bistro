@@ -7,7 +7,7 @@ use App\Services\Alerts\AlertEngine;
 use Illuminate\Console\Command;
 
 /**
- * Evalúa diariamente las reglas de alerta y crea/actualiza eventos (#124).
+ * Evalúa diariamente las reglas de alerta y crea/actualiza eventos.
  *
  * Para cada empresa (o la indicada con --company), dispara AlertEngine que
  * recorre AlertRule habilitadas y persiste drafts con dedup diario. Diseñado

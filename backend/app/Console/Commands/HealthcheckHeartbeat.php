@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Canary del scheduler en multi-EC2 (issue #43, T6.d).
+ * Canary del scheduler en multi-EC2.
  *
  * Programado cada minuto con ->onOneServer(). Si cache_locks funciona
  * correctamente, CloudWatch Logs debe mostrar exactamente UNA entrada

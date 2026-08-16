@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #246 Fase 1 — Snapshots de plan + desglose tributario.
+ * Snapshots de plan + desglose tributario.
  *
  * Razón: los planes pueden cambiar (precio, features, tarifa). Las suscripciones
  * vivas e invoices ya emitidas deben recordar el plan vigente al momento del
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
  * Cambios en `subscriptions`:
  *  - `plan_name_snapshot`, `plan_price_snapshot`, `plan_features_snapshot`,
  *    `plan_tax_regime_snapshot`, `plan_tax_rate_snapshot`, `plan_snapshot_at`.
- *  - `deleted_at` (SoftDeletes — política #246 §9).
+ *  - `deleted_at` (SoftDeletes).
  *
  * Cambios en `invoices`:
  *  - `plan_name_snapshot`, `plan_price_snapshot`, `plan_snapshot_at` —
@@ -98,7 +98,7 @@ return new class extends Migration
             SQL);
         }
 
-        // FK al electronic_documents (PR-2.5 ya consume esta columna).
+        // FK al electronic_documents (ya consume esta columna).
         Schema::table('invoices', function (Blueprint $table): void {
             $table->foreign('electronic_document_id')
                 ->references('id')->on('electronic_documents')

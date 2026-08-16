@@ -8,7 +8,7 @@ export interface ShortcutTooltipProps {
     description: string;
     /** true => acorde (chips unidos por `+`); por defecto secuencia (chips adyacentes). */
     chord?: boolean;
-    /** Override the delay in ms (default 3000 per issue #50). */
+    /** Override the delay in ms (default 3000). */
     delay?: number;
     /** Single-element child whose hover triggers the tooltip. */
     children: ReactElement;

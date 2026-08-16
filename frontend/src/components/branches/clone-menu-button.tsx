@@ -21,7 +21,7 @@ interface CloneMenuButtonProps {
 }
 
 /**
- * CTA "Clonar menú de otra sede" para sedes nuevas sin menú (#192 Fase 3.4).
+ * CTA "Clonar menú de otra sede" para sedes nuevas sin menú.
  *
  * Solo aparece cuando:
  *  - El usuario tiene ≥1 sede destino distinta a la actual.

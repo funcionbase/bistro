@@ -157,7 +157,7 @@ class Coupon extends Model
             return ['valid' => false, 'error' => "Cupón requiere monto mínimo de \${$min}"];
         }
 
-        // Cupón de canje de fidelización (#122): solo aplicable si el client_phone
+        // Cupón de canje de fidelización: solo aplicable si el client_phone
         // del checkout coincide con el que canjeó. Evita compartir códigos LYL-*.
         if ($this->locked_to_phone !== null) {
             $normalizedRequest = $clientPhone ? CrmService::normalizePhone($clientPhone) : '';
@@ -190,7 +190,7 @@ class Coupon extends Model
     }
 
     /**
-     * Evalúa si el cupón está dentro de su franja horaria programada (#125).
+     * Evalúa si el cupón está dentro de su franja horaria programada.
      * Sin programación (valid_days NULL/[] y horas NULL) => siempre válido.
      * Días: array de ints 0-6 (0=domingo). Horas en America/Bogota.
      * Cross-midnight: si from > to (ej. 22:00→02:00), la ventana cruza medianoche

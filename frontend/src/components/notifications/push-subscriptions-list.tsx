@@ -18,7 +18,7 @@ interface Props {
 }
 
 /**
- * Lista los dispositivos suscritos del usuario actual (#149 CA4).
+ * Lista los dispositivos suscritos del usuario actual.
  *
  * Consume `GET /api/v1/push/subscriptions/me`. Cada fila muestra
  * `user_agent` (best-effort, parseado mínimo para legibilidad) y la

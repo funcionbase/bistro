@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Multi-sede (#117): permite a usuarios con `metrics.view_all_branches` consultar
+ * Multi-sede: permite a usuarios con `metrics.view_all_branches` consultar
  * reportes consolidados (`?branch=all`) o de una sede específica distinta a su
  * sede activa (`?branch=<uuid>`).
  *

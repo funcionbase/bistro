@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Disparada cuando companies.status pasa de active → past_due (#175).
+ * Disparada cuando companies.status pasa de active → past_due.
  */
 class CompanyEnteredPastDueNotification extends Notification implements BillingNotificationContract, ShouldQueue
 {

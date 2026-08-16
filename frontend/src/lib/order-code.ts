@@ -1,7 +1,7 @@
 /**
  * Código corto legible de una orden: los dos primeros segmentos del UUID en
- * mayúscula (ej. `019E7DA6-3C13`). Espejo de `Order::shortCode()` en backend
- * (#275). Único punto de verdad en frontend — reutilizar en tablero, detalle y
+ * mayúscula (ej. `019E7DA6-3C13`). Espejo de `Order::shortCode()` en backend.
+ * Único punto de verdad en frontend — reutilizar en tablero, detalle y
  * donde se muestre el id de orden, para no exponer el UUID completo.
  *
  * Es una referencia visual, no una clave única: en UUIDv7 estos segmentos

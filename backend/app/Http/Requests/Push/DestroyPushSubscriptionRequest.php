@@ -9,7 +9,7 @@ use App\Rules\SafePlainText;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * DELETE /api/v1/push/subscriptions — soft-revoke por endpoint (CA2 #149).
+ * DELETE /api/v1/push/subscriptions — soft-revoke por endpoint.
  *
  * Idempotente: si el endpoint no existe o ya está revocado, responde 204
  * igual. No exponemos 404 para no leak de información (qué endpoints

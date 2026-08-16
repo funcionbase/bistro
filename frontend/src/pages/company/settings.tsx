@@ -207,7 +207,7 @@ export default function CompanySettings() {
                             autocontenido con su propio guardado — antes vivía en /company/dian. */}
                         <CompanyFiscalSection />
 
-                        {/* #154 — Prueba de pertenencia: documento de propiedad subido en el
+                        {/* Prueba de pertenencia: documento de propiedad subido en el
                             enrolamiento. Solo lectura; el backend firma una URL temporal de S3
                             al abrirlo y gatea el acceso (owner o quien lo subió). */}
                         <EnrollmentProofPanel

@@ -16,7 +16,7 @@ import { Suspense, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 
 /**
- * Layout autenticado del shell SPA (#220, Fase 3).
+ * Layout autenticado del shell SPA.
  *
  * Carga el contexto global vía useBootstrap() y, una vez resuelto, monta
  * el SpaSharedDataBridge + el layout de sidebar compartido (ya agnóstico

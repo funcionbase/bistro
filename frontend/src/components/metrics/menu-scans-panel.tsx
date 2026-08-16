@@ -1,5 +1,5 @@
 /**
- * Panel de escaneos del menú QR en /company/metrics (#294).
+ * Panel de escaneos del menú QR en /company/metrics.
  *
  * Consume `GET /api/v1/metrics/menu-scans` (rollup diario + día en curso):
  *  - 2 KPIs: total escaneos, sesiones únicas (suma de únicos diarios).

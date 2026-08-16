@@ -30,7 +30,7 @@ Solo rechaza (422 `captcha`) cuando Cloudflare responde explícitamente que el t
 | Clave | Dónde vive | Notas |
 |---|---|---|
 | Site key (público) | `bistro/frontend/.env.production` → `VITE_TURNSTILE_SITE_KEY` | Se hornea en el bundle. Cambiarla requiere rebuild + `wrangler deploy`. |
-| Secret key | GH Environment `pdn` → secret `TURNSTILE_SECRET_KEY` → `sync-env-secret.yml` → AWS Secrets Manager `bistro-bistro/pdn/dotenv` → `.env` de la EC2 | Nunca en el frontend ni commiteada. |
+| Secret key | GH Environment `pdn` → secret `TURNSTILE_SECRET_KEY` → `sync-env-secret.yml` → AWS Secrets Manager `bistro/pdn/dotenv` → `.env` de la EC2 | Nunca en el frontend ni commiteada. |
 
 Widget en Cloudflare: **Turnstile → `bistro-auth`** (hostname `bistro.example.com`, modo Managed). Para rotar claves: regenerar en el dashboard, actualizar `.env.production` (rebuild+deploy frontend) y el secret `TURNSTILE_SECRET_KEY` (re-sync + App Deploy backend).
 

@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * #275 Fase 4 — Feedback al usuario que disparó el cambio de estado cuando el
+ * Feedback al usuario que disparó el cambio de estado cuando el
  * SMS al cliente falla (envío async en SendOrderStatusSmsJob).
  *
  * - `user_id`: usuario (JWT sub) que ejecutó el cambio de estado y debe

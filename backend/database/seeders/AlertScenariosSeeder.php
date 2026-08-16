@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Fuerza condiciones que disparan los 4 tipos de alerta (#124) para que QA
+ * Fuerza condiciones que disparan los 4 tipos de alerta para que QA
  * pueda probar el feed en /dashboard inmediatamente después de `db:seed`.
  *
  * Idempotente: cada bloque borra/upserta su propio scratch antes de re-crear.

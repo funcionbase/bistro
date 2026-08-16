@@ -217,7 +217,7 @@ export default function UsersTable({
                                 </Button>
                             </div>
 
-                            {/* Multi-sede (#117): bulk asignar/quitar acceso a sede */}
+                            {/* Multi-sede: bulk asignar/quitar acceso a sede */}
                             {onBulkBranchAssign && branches.length > 0 && (
                                 <div className="mt-2 flex flex-wrap items-center gap-3">
                                     <MapPin className="text-muted-foreground size-4" />

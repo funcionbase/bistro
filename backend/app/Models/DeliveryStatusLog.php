@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Log append-only de transiciones de estado de delivery (#119).
+ * Log append-only de transiciones de estado de delivery.
  *
  * Cada fila representa un cambio de status escrito desde `DeliveryService`.
  * Se mantiene en su propia tabla en vez de solo `audit_logs` para que la

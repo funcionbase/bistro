@@ -39,7 +39,7 @@ return [
         'refund' => 'Devolución',
     ],
 
-    // Métodos para los que `reference` es obligatoria (#119 + constants/PAYMENT_METHODS.md).
+    // Métodos para los que `reference` es obligatoria (ver constants/PAYMENT_METHODS.md).
     // Efectivo se documenta con quién autorizó (actor_id del JWT en AuditLog).
     'requires_reference' => ['card', 'transfer', 'nequi', 'daviplata'],
 

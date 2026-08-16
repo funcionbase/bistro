@@ -23,21 +23,19 @@ export function useImageUpload() {
     const handleImageSelect = useCallback((file: File): boolean => {
         setError(null);
 
-        // Validate file type
         if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
             setError('Solo se permiten archivos JPG, PNG y WEBP');
             return false;
         }
 
-        // Validate file size
         if (file.size > MAX_FILE_SIZE) {
             setError('La imagen no debe superar 2 MB');
             return false;
         }
 
-        // Create preview. La lectura es asíncrona: si el componente se
-        // desmonta antes del onload/onerror, no tocamos estado (evita el
-        // warning de React y un set sobre un hook muerto).
+        // La lectura es asíncrona: si el componente se desmonta antes del
+        // onload/onerror, no tocamos estado (evita el warning de React y un
+        // set sobre un hook muerto).
         const reader = new FileReader();
         reader.onload = (e) => {
             if (!isMounted.current) return;

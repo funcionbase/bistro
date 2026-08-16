@@ -16,7 +16,7 @@ use RuntimeException;
  * Emite y valida codigos de 6 digitos para acciones sensibles sobre la cuenta
  * de WhatsApp (connect, swap, disconnect).
  *
- * Reglas (ver issue #77):
+ * Reglas:
  *   - Codigo de 6 digitos numericos, hash bcrypt en BD.
  *   - TTL 10 min.
  *   - 3 intentos fallidos invalidan el codigo.

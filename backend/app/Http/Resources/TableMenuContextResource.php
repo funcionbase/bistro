@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Contexto que necesita la pantalla del menú del comensal (#191).
+ * Contexto que necesita la pantalla del menú del comensal.
  *
  * Hidrata `pages/table/menu.tsx` con la identidad del comensal (resuelta por
  * la cookie `tdt_*`), la sesión de mesa, la sede y el branding. El catálogo

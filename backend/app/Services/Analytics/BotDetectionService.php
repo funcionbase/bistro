@@ -72,7 +72,7 @@ class BotDetectionService
      * El escáner abre la carta pública primero; al hacer fetch de telemetría el
      * navegador envía Referer apuntando a esa URL. Un curl directo al endpoint no.
      *
-     * El SPA vive en `app.frontend_url` (deploy cross-origin #220: frontend
+     * El SPA vive en `app.frontend_url` (deploy cross-origin: frontend
      * bistro.example.com, API bistro-api.example.com) — comparar solo contra
      * `app.url` marcaba como bot TODO scan real en pdn. Los QR opacos
      * (`/menus?branch=`, `/menus?table=`) tienen path `/menus` sin NIT, así que

@@ -12,12 +12,12 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Backfill #246 — asigna el plan default vigente a empresas y subscriptions
+ * Backfill: asigna el plan default vigente a empresas y subscriptions
  * sin snapshot.
  *
  * Casos cubiertos (idempotente):
  *  1. Company activa sin Subscription activa: crea Subscription al plan
- *     default con `starts_at = company.created_at` (retroactivo, decisión #7).
+ *     default con `starts_at = company.created_at` (retroactivo).
  *  2. Subscription sin snapshot del plan: copia los campos `plan_*_snapshot`
  *     desde el plan vigente al momento del comando.
  *
