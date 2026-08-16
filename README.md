@@ -11,6 +11,8 @@
 
 **Frontend** ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white) ![TS](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white)
 
+![Caja / POS de bistro](docs/screenshots/caja-pos.jpg)
+
 ---
 
 ## ¿Qué es bistro?
@@ -60,7 +62,11 @@ cd bistro
 
 docker compose -f docker/docker-compose.yml up -d   # PostgreSQL + MinIO + Evolution API
 
-cd backend  && composer install && cp .env.example .env && php artisan key:generate && php artisan migrate --seed
+cd backend  && composer install && cp .env.example .env && php artisan key:generate
+# JWT_SECRET y JWT_PAYLOAD_ENCRYPTION_KEY son obligatorios — sin esto la API responde 500 en todas las rutas:
+php -r "echo 'JWT_SECRET='.bin2hex(random_bytes(32)).PHP_EOL.'JWT_PAYLOAD_ENCRYPTION_KEY='.bin2hex(random_bytes(32)).PHP_EOL;" >> .env
+php artisan migrate --seed
+
 cd ../frontend && npm install && cp .env.example .env
 
 cd .. && npm run dev   # API + cola + Vite (HMR) en paralelo
@@ -84,6 +90,15 @@ docs/wiki/  Documentación técnica y funcional
 - [Wiki técnica y funcional](docs/wiki/Home.md) — mapa completo por área (auth, pedidos, caja, inventario, DIAN, etc.).
 - [Manual funcional exhaustivo](docs/wiki/FUNCIONALIDADES_APP.md) — qué hace cada feature, endpoints, validaciones.
 - [Guía de contribución](docs/wiki/Guía-de-Contribución.md) — setup local, convenciones, cómo proponer cambios.
+
+## 📸 Capturas
+
+| | |
+|---|---|
+| ![Menú](docs/screenshots/menu.jpg) Gestión de menú por categorías | ![Tablero](docs/screenshots/tablero.jpg) Tablero Kanban de pedidos |
+| ![Cocina KDS](docs/screenshots/cocina-kds.jpg) Cocina (KDS) por estación | ![Inventario](docs/screenshots/inventario.jpg) Inventario y valorización |
+
+Más capturas en [`docs/screenshots/`](docs/screenshots/).
 
 ## 🤝 Contribuir
 
