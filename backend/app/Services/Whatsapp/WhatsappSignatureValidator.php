@@ -10,7 +10,7 @@ use App\Models\MetaPlatformCredential;
  * Formato del header: 'sha256=<hex_digest>'.
  *
  * El digest se calcula con HMAC-SHA256 sobre el RAW body usando el App Secret
- * de la app de flexyflow (no el token del cliente). Si la firma no coincide,
+ * de la app de bistro (no el token del cliente). Si la firma no coincide,
  * descartamos el evento.
  *
  * Ver: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#validate

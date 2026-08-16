@@ -4,13 +4,13 @@ import type { Company } from '@/types';
 import { Check, Copy, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
-interface FlexyFlowPaymentInfoProps {
-    payment: NonNullable<Company['flexyflow_payment']>;
+interface funcionbasePaymentInfoProps {
+    payment: NonNullable<Company['funcionbase_payment']>;
 }
 
 /**
  * Sección informativa visible en `/company/settings → Facturación` con los
- * datos de transferencia interbancaria hacia flexyflow — #246.
+ * datos de transferencia interbancaria hacia bistro — #246.
  *
  * Visible SIEMPRE (no solo en past_due/suspended) para que el cliente pueda
  * pagar proactivamente cada mes. Renderiza identificación fiscal (NIT/DV/
@@ -20,7 +20,7 @@ interface FlexyFlowPaymentInfoProps {
  * Reusable: la prop `payment` viene del bootstrap (shared-data). El caller
  * decide si renderizar (oculta cuando todos los campos son null).
  */
-export function FlexyFlowPaymentInfo({ payment }: FlexyFlowPaymentInfoProps) {
+export function funcionbasePaymentInfo({ payment }: funcionbasePaymentInfoProps) {
     const hasAnyBankData = payment.breb_key !== null || payment.account_number !== null;
 
     if (!hasAnyBankData && payment.nit === null) {
@@ -31,7 +31,7 @@ export function FlexyFlowPaymentInfo({ payment }: FlexyFlowPaymentInfoProps) {
     const fullNit = payment.nit !== null ? (payment.dv !== null ? `${payment.nit}-${payment.dv}` : payment.nit) : null;
 
     return (
-        <DashboardPanel title="Datos para transferir a flexyflow" icon={Wallet}>
+        <DashboardPanel title="Datos para transferir a bistro" icon={Wallet}>
             <div className="space-y-4">
                 <p className="text-muted-foreground text-sm">
                     Realiza la transferencia mensual a la siguiente cuenta. Apenas recibamos el pago, la suscripción queda al día.

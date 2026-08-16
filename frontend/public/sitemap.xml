@@ -1,151 +1,151 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://bistro.flexyflow.co/</loc>
+    <loc>https://bistro.example.com/</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual</loc>
+    <loc>https://bistro.example.com/manual</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/primeros-pasos</loc>
+    <loc>https://bistro.example.com/manual/primeros-pasos</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/menus</loc>
+    <loc>https://bistro.example.com/manual/menus</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/pedidos</loc>
+    <loc>https://bistro.example.com/manual/pedidos</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/caja</loc>
+    <loc>https://bistro.example.com/manual/caja</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/mesas</loc>
+    <loc>https://bistro.example.com/manual/mesas</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/entregas</loc>
+    <loc>https://bistro.example.com/manual/entregas</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/horarios</loc>
+    <loc>https://bistro.example.com/manual/horarios</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/chat</loc>
+    <loc>https://bistro.example.com/manual/chat</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/inventario</loc>
+    <loc>https://bistro.example.com/manual/inventario</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/clientes</loc>
+    <loc>https://bistro.example.com/manual/clientes</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/cupones</loc>
+    <loc>https://bistro.example.com/manual/cupones</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/fidelizacion</loc>
+    <loc>https://bistro.example.com/manual/fidelizacion</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/metricas</loc>
+    <loc>https://bistro.example.com/manual/metricas</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/alertas</loc>
+    <loc>https://bistro.example.com/manual/alertas</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/facturacion</loc>
+    <loc>https://bistro.example.com/manual/facturacion</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/usuarios</loc>
+    <loc>https://bistro.example.com/manual/usuarios</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/sedes</loc>
+    <loc>https://bistro.example.com/manual/sedes</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/compras</loc>
+    <loc>https://bistro.example.com/manual/compras</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/planner</loc>
+    <loc>https://bistro.example.com/manual/planner</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/configuracion</loc>
+    <loc>https://bistro.example.com/manual/configuracion</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/whatsapp</loc>
+    <loc>https://bistro.example.com/manual/whatsapp</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/legal/contrato</loc>
+    <loc>https://bistro.example.com/manual/legal/contrato</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bistro.flexyflow.co/manual/faq</loc>
+    <loc>https://bistro.example.com/manual/faq</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

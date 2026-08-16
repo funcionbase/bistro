@@ -69,7 +69,7 @@ class JwtService
 
     /**
      * Extrae el JWT de un Request en orden de prioridad:
-     *   1. Cookie HttpOnly `flexyflow_jwt` (default para navegador — no accesible a JS)
+     *   1. Cookie HttpOnly `bistro_jwt` (default para navegador — no accesible a JS)
      *   2. Header `Authorization: Bearer <token>` (clientes API externos / integraciones)
      *   3. Session flash key `jwt_token` (handoff entre redirects internos sin exponer en URL)
      *
@@ -107,7 +107,7 @@ class JwtService
      *
      * `secure` y `same_site` se leen de `config('session.*')` (env-driven). El
      * deploy es cross-origin same-site (SPA y API en hosts distintos bajo
-     * flexyflow.co): en PDN debe ir `SESSION_SAME_SITE=none` +
+     * funcionbase.com): en PDN debe ir `SESSION_SAME_SITE=none` +
      * `SESSION_SECURE_COOKIE=true` para que el navegador adjunte la cookie en
      * los fetch del SPA. En local sobre HTTP ambos quedan en su default seguro
      * (`lax` / `false`) porque el dev pasa por el proxy de Vite (same-origin).

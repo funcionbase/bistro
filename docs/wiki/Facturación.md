@@ -8,7 +8,7 @@
 
 ## Visión general
 
-flexyflow factura mensualmente (post-pago) la suscripción de cada empresa al plan vigente. El módulo soporta:
+bistro factura mensualmente (post-pago) la suscripción de cada empresa al plan vigente. El módulo soporta:
 
 - Suscripción única por empresa. Desde 2026-07 hay dos planes: **Plan Básico** (slug `default`, $0 COP/mes, is_default — plataforma completa sin costo) y **Plan Plus** (slug `plus`, $300.000 COP/mes IVA 19% incluido + `BILLING_DIAN_UNIT_PRICE` (default $10) COP por documento electrónico DIAN emitido en el período, incluye módulo DIAN). El cargo por uso se calcula sobre `electronic_documents.issued_at` del mes facturado (todos los `document_type`/`status`, cuenta lo que consumió consecutivo) y se agrega como líneas adicionales del invoice (una por resolución) — no recibe descuento de promo code, solo la mensualidad lo recibe (`BillingService::computeInvoiceBreakdown`). El cambio de plan se opera con `billing:change-plan` (workflow `bistro-ops-company-plan.yml`). Los tiers legacy `starter`/`basic`/`pro`/`enterprise` quedan inactivos para preservar FKs (#246). Con precio $0 no se generan invoices (guard en `generateMonthlyInvoices`); invoices de $0 por descuento 100% se auto-pagan al vencimiento.
 - Generación automática de facturas mensuales por cron (día 1 a las 03:00 América/Bogotá).
@@ -202,8 +202,8 @@ Las fechas son configurables en `.env` (`BILLING_GENERATE_DAY=1`, `BILLING_GENER
 | `due_day` | `15` | Día del mes en que vence la factura |
 | `generate_day` | `1` | Día del mes de generación (post-pago: factura el mes anterior) |
 | `overdue_day` | `16` | Día a partir del cual se marcan vencidas |
-| `flexyflow_tax_regime` | `iva_19` | Régimen fiscal de flexyflow como proveedor SaaS |
-| `flexyflow_tax_rate` | `19.00` | Tasa IVA del plan default |
+| `funcionbase_tax_regime` | `iva_19` | Régimen fiscal de bistro como proveedor SaaS |
+| `funcionbase_tax_rate` | `19.00` | Tasa IVA del plan default |
 | `default_plan_slug` | `default` | Slug del plan default usado por `/billing/plans/default` |
 | `emit_dian_for_invoices` | `true` | Si dispara `EmitDianInvoiceJob` tras generar invoice |
 | `past_due_grace_months` | `3` | Meses calendario en past_due antes de pasar a suspended (#175) |

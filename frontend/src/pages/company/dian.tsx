@@ -30,9 +30,9 @@ import { DIAN_DOC_TYPE_LABELS, type DianDocumentType, type DianResolution } from
  * (PageHeader, Card, Tabs, Alert, SanitizedInput, Select, Skeleton).
  *
  * El tab Proveedor se retiró (2026-07): el proveedor tecnológico es único
- * para toda la plataforma y lo gestiona flexyflow — el cliente no configura
+ * para toda la plataforma y lo gestiona bistro — el cliente no configura
  * credenciales ni ambiente. La config sigue viva en el backend
- * (DianProviderConfig) operada por flexyflow.
+ * (DianProviderConfig) operada por bistro.
  *
  * El perfil fiscal del emisor se edita ahora desde /company/settings →
  * "Información" (componente CompanyFiscalSection), no acá.
@@ -100,7 +100,7 @@ export default function DianConfigPage() {
                 <PageHeader
                     eyebrow="CONFIGURACIÓN"
                     title="Facturación electrónica DIAN"
-                    description="Facturas emitidas, resoluciones autorizadas y adquirente por defecto. La emisión la opera flexyflow con un proveedor único para toda la plataforma."
+                    description="Facturas emitidas, resoluciones autorizadas y adquirente por defecto. La emisión la opera bistro con un proveedor único para toda la plataforma."
                     variant="dense"
                     showBranchBadge={false}
                 />

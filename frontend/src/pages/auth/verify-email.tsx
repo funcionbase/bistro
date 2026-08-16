@@ -29,7 +29,7 @@ export default function VerifyEmail() {
         searchParams.get('email') ??
         (() => {
             try {
-                return sessionStorage.getItem('flexyflow.pending_verification_email');
+                return sessionStorage.getItem('bistro.pending_verification_email');
             } catch {
                 return null;
             }

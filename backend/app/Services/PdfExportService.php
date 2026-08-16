@@ -117,7 +117,7 @@ class PdfExportService
             'totalRecords' => $total,
             'limitApplied' => $limitApplied,
             'maxRows' => $maxRows,
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             'byMethod' => $byMethod,
             'grossTotal' => $grossTotal,
             'refundsTotal' => $refundsTotal,
@@ -150,7 +150,7 @@ class PdfExportService
             'period' => $period,
             'summary' => $summary,
             'generatedAt' => Carbon::now($period['timezone'] ?? 'America/Bogota')->format('d/m/Y H:i'),
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             ...$branding,
         ];
 
@@ -254,7 +254,7 @@ class PdfExportService
             'totalRecords' => $total,
             'limitApplied' => $limitApplied,
             'maxRows' => $maxRows,
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             ...$branding,
         ];
 
@@ -305,7 +305,7 @@ class PdfExportService
             'totalRecords' => $total,
             'limitApplied' => $limitApplied,
             'maxRows' => $maxRows,
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             ...$branding,
         ];
 
@@ -354,7 +354,7 @@ class PdfExportService
             'totalRecords' => $total,
             'limitApplied' => $limitApplied,
             'maxRows' => $maxRows,
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             ...$branding,
         ];
 
@@ -404,7 +404,7 @@ class PdfExportService
             'totalRecords' => $total,
             'limitApplied' => false,
             'maxRows' => $total,
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             ...$branding,
         ];
 

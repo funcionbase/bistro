@@ -10,7 +10,7 @@ return [
 
     'include_company_logo' => (bool) env('PDF_INCLUDE_COMPANY_LOGO', true),
 
-    'footer_text' => env('PDF_FOOTER_TEXT', 'Generado por flexyflow'),
+    'footer_text' => env('PDF_FOOTER_TEXT', 'Generado por bistro'),
 
     'font_size' => (int) env('PDF_FONT_SIZE', 10),
 

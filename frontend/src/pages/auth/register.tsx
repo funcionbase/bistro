@@ -78,7 +78,7 @@ export default function Register() {
             // PII en URL termina en historial, logs y referrers). El query
             // `?email=` queda solo para el flujo de enlaces de correo.
             try {
-                sessionStorage.setItem('flexyflow.pending_verification_email', res.email ?? email);
+                sessionStorage.setItem('bistro.pending_verification_email', res.email ?? email);
             } catch {
                 // sessionStorage indisponible — verify-email pedirá reintentar.
             }

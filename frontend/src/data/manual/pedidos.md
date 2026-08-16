@@ -1,8 +1,8 @@
 ---
 title: "Pedidos"
 description: "Cómo llegan los pedidos, el tablero por columnas, aprobación por QR de mesa, mover estados, inventario, actualizaciones en vivo, pantalla de cocina y devoluciones."
-metaTitle: "Pedidos — Manual bistro.flexyflow.co"
-metaDescription: "El tablero de pedidos de bistro.flexyflow.co: columnas por estado, aprobación, pantalla de cocina, tickets térmicos, devoluciones y todo lo que pasa desde que llega un pedido hasta que se entrega."
+metaTitle: "Pedidos — Manual bistro.example.com"
+metaDescription: "El tablero de pedidos de bistro.example.com: columnas por estado, aprobación, pantalla de cocina, tickets térmicos, devoluciones y todo lo que pasa desde que llega un pedido hasta que se entrega."
 section: "el día a día"
 readingTime: "9 min"
 lastUpdated: "8 de julio de 2026"
@@ -59,7 +59,7 @@ No tienes que hacer nada para que salga — funciona sin importar desde dónde s
 
 ## Inventario y recetas
 
-Si tienes recetas configuradas en los platos, bistro flexy descuenta el inventario cuando la cocina marca el plato como listo. Si un ingrediente se acaba antes de que el turno termine, el plato se marca automáticamente como agotado en el menú público.
+Si tienes recetas configuradas en los platos, bistro descuenta el inventario cuando la cocina marca el plato como listo. Si un ingrediente se acaba antes de que el turno termine, el plato se marca automáticamente como agotado en el menú público.
 
 ## Actualizaciones en vivo
 

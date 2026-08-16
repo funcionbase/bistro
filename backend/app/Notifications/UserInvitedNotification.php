@@ -49,13 +49,13 @@ class UserInvitedNotification extends Notification
             ?? 'el equipo';
 
         return (new MailMessage)
-            ->subject('Te invitaron a '.$this->company->commercial_name.' en flexyflow')
+            ->subject('Te invitaron a '.$this->company->commercial_name.' en bistro')
             ->markdown('emails.invitations.user-invited', [
                 'invitation' => $this->invitation,
                 'company' => $this->company,
                 'inviterName' => $inviterName,
                 'loginUrl' => rtrim((string) config('app.frontend_url'), '/').'/',
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

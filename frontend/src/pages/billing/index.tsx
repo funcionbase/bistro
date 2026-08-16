@@ -152,7 +152,7 @@ export default function BillingIndex() {
                 <PageHeader
                     eyebrow="Facturación"
                     title="Facturación"
-                    description="Suscripción de la plataforma y facturas emitidas por flexyflow."
+                    description="Suscripción de la plataforma y facturas emitidas por bistro."
                     showBranchBadge={false}
                     actions={
                         !isSuspended && (

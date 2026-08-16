@@ -19,5 +19,5 @@
 
 **Siempre desde la rama `main`** (nunca desde una feature branch ni con cambios sin commitear).
 
-1. **Preferencia — deploy local con wrangler**: desde `frontend`, `npm run build` + `npx wrangler deploy`. No depende de la cola de Workers Builds (wrangler ya quedó autenticado vía OAuth en esta máquina). Verificar contra `https://bistro.flexyflow.co/` después de deployar.
-2. **Fallback — Cloudflare Workers Builds**: si el deploy local falla (auth vencida, build roto local), el push a `main` dispara el build remoto (watch path `frontend/**`). Revisar el build history en el dashboard (Workers → `bistro-flexyflow-co` → Deployments → View build history) si no se refleja en minutos.
+1. **Preferencia — deploy local con wrangler**: desde `frontend`, `npm run build` + `npx wrangler deploy`. No depende de la cola de Workers Builds (wrangler ya quedó autenticado vía OAuth en esta máquina). Verificar contra `https://bistro.example.com/` después de deployar.
+2. **Fallback — Cloudflare Workers Builds**: si el deploy local falla (auth vencida, build roto local), el push a `main` dispara el build remoto (watch path `frontend/**`). Revisar el build history en el dashboard (Workers → `bistro` → Deployments → View build history) si no se refleja en minutos.

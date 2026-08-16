@@ -73,7 +73,7 @@ class BotDetectionService
      * navegador envía Referer apuntando a esa URL. Un curl directo al endpoint no.
      *
      * El SPA vive en `app.frontend_url` (deploy cross-origin #220: frontend
-     * bistro.flexyflow.co, API bistro-api.flexyflow.co) — comparar solo contra
+     * bistro.example.com, API bistro-api.example.com) — comparar solo contra
      * `app.url` marcaba como bot TODO scan real en pdn. Los QR opacos
      * (`/menus?branch=`, `/menus?table=`) tienen path `/menus` sin NIT, así que
      * el path esperado es `/menus` con o sin sufijo.

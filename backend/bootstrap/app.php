@@ -76,7 +76,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureTrustedOrigin::class,
         ]);
 
-        // La cookie HttpOnly del JWT (`flexyflow_jwt`) se excluye del cifrado de Laravel
+        // La cookie HttpOnly del JWT (`bistro_jwt`) se excluye del cifrado de Laravel
         // porque sólo se cifra automáticamente en rutas web; las rutas API no tienen
         // EncryptCookies en su stack y la recibirían cifrada (ilegible). El JWT viene
         // ya cifrado AES-256 + firmado HMAC por JwtService, así que no se pierde

@@ -203,7 +203,7 @@ export default function WhatsappPage() {
         .join(' · ');
 
     return (
-        <PageShell title="WhatsApp · flexyflow">
+        <PageShell title="WhatsApp · bistro">
             <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
                 {loading ? (
                     <WhatsappPageSkeleton />

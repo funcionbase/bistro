@@ -31,5 +31,5 @@
 @endsection
 
 @section('panel_footer')
-    Si esto persiste, escríbenos a info@flexyflow.co — revisamos al toque.
+    Si esto persiste, escríbenos a hello@funcionbase.com — revisamos al toque.
 @endsection

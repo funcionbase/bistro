@@ -85,13 +85,13 @@ export interface Company {
     // hay subscription activa. Ej: incluye `'dian'` solo en Plan Plus — gatea
     // el sidebar y /company/dian sin un fetch extra a /billing/subscription.
     plan_features?: string[];
-    flexyflow_payment?: {
+    funcionbase_payment?: {
         breb_key: string | null;
         bank_name: string | null;
         account_number: string | null;
         account_type: string | null;
         account_holder: string | null;
-        // #246 — Identificación fiscal de flexyflow visible al cliente para
+        // #246 — Identificación fiscal de bistro visible al cliente para
         // diligenciar la transferencia (NIT/DV en formulario del banco, etc.).
         nit: string | null;
         dv: string | null;

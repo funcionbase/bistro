@@ -18,7 +18,7 @@
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
-const DB_NAME = 'flexyflow_offline';
+const DB_NAME = 'funcionbase_offline';
 const DB_VERSION = 2;
 
 import type { PaymentMethod as CanonicalPaymentMethod } from '@/types';

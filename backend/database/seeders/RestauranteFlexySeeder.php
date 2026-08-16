@@ -53,7 +53,7 @@ use Illuminate\Support\Str;
  *
  * Equipo (4 personas, conservados):
  *  - Owner: cristianmarint@gmail.com (Cristian Marín) → ambas sedes
- *  - Admin: flexyflowco@gmail.com (Carolina Mejía) → ambas sedes
+ *  - Admin: funcionbaseco@gmail.com (Carolina Mejía) → ambas sedes
  *  - Cocina: flexyconsultora@gmail.com (Sebastián Ramírez) → solo Pereira
  *  - Domiciliario: cristianmarintt@gmail.com → solo Cartago
  *
@@ -306,7 +306,7 @@ class RestauranteFlexySeeder extends Seeder
                 cedula: '1010100001'
             ),
             'admin' => $this->upsertUser(
-                email: 'flexyflowco@gmail.com',
+                email: 'funcionbaseco@gmail.com',
                 firstName: 'Carolina',
                 lastName: 'Mejía',
                 googleId: '108550001100000000002',

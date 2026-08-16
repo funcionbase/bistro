@@ -23,23 +23,23 @@
 @component('mail::footer')
 @php
     $year = now()->format('Y');
-    $supportEmail = config('mail.reply_to.address') ?? 'soporte@flexyflow.co';
+    $supportEmail = config('mail.reply_to.address') ?? 'hello@funcionbase.com';
 @endphp
 
 @php
-    $brandHost = parse_url((string) config('app.frontend_url'), PHP_URL_HOST) ?: 'flexyflow.co';
-    $brandUrl = rtrim((string) config('app.frontend_url'), '/') ?: 'https://flexyflow.co';
+    $brandHost = parse_url((string) config('app.frontend_url'), PHP_URL_HOST) ?: 'funcionbase.com';
+    $brandUrl = rtrim((string) config('app.frontend_url'), '/') ?: 'https://funcionbase.com';
 @endphp
-**flexyflow** — diseñamos y operamos los flujos que hacen funcionar tu negocio de comida.
+**bistro** — diseñamos y operamos los flujos que hacen funcionar tu negocio de comida.
 [{{ $brandHost }}]({{ $brandUrl }})
 
-Recibes este correo porque tienes una cuenta activa en flexyflow.
+Recibes este correo porque tienes una cuenta activa en bistro.
 ¿Dudas? Escríbenos a [{{ $supportEmail }}](mailto:{{ $supportEmail }}).
 
-[Política de privacidad](https://flexyflow.co/privacy-policy/) ·
-[Términos y condiciones](https://flexyflow.co/terms-conditions/)
+[Política de privacidad](https://funcionbase.com/privacy-policy/) ·
+[Términos y condiciones](https://funcionbase.com/terms-conditions/)
 
-Copyright © {{ $year }} by flexyflow · Valle del Cauca, Colombia
+Copyright © {{ $year }} by bistro · Valle del Cauca, Colombia
 @endcomponent
 @endslot
 @endcomponent

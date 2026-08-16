@@ -33,12 +33,12 @@ class AccountEmailChangeRequestedNotification extends Notification implements Sh
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Confirma el cambio de correo de tu cuenta flexyflow')
+            ->subject('Confirma el cambio de correo de tu cuenta bistro')
             ->markdown('emails.auth.email-change-requested', [
                 'confirmUrl' => $this->confirmUrl,
                 'newEmail' => $this->newEmail,
                 'expiresInMinutes' => $this->expiresInMinutes,
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

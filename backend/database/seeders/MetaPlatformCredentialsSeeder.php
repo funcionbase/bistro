@@ -6,14 +6,11 @@ use App\Models\MetaPlatformCredential;
 use Illuminate\Database\Seeder;
 
 /**
- * Carga las credenciales de la app de Meta (Tech Provider/BSP de flexyflow).
+ * Carga las credenciales de la app de Meta (Tech Provider/BSP).
  *
  * Lee SIEMPRE de variables de entorno (mismas keys que las de GitHub Actions
- * Variables del repo). Si una variable falta:
- *   - app_id, business_id, system_user_id, config_id, graph_api_version
- *     usan defaults conocidos (los que ya estan en GitHub).
- *   - app_secret, system_user_token, webhook_verify_token quedan en placeholder
- *     visible para que se note en el log y el equipo los configure.
+ * Variables del repo). Si una variable falta, todos los campos quedan en
+ * placeholder visible para que se note en el log y el equipo los configure.
  *
  * Idempotente: una sola fila activa por ambiente. Vuelve a correrlo y los
  * valores se actualizan in-place via updateOrCreate.
@@ -27,10 +24,10 @@ class MetaPlatformCredentialsSeeder extends Seeder
         $configIdEnvKey = $environment === 'production' ? 'META_CONFIG_ID_PDN' : 'META_CONFIG_ID_QA';
         $verifyTokenEnvKey = $environment === 'production' ? 'META_WEBHOOK_VERIFY_TOKEN_PDN' : 'META_WEBHOOK_VERIFY_TOKEN_QA';
 
-        $appId = env('META_APP_ID', '1265007232388204');
-        $businessId = env('META_BUSINESS_ID', '929046296489964');
-        $systemUserId = env('META_SYSTEM_USER_ID', '61573213870387');
-        $configId = env($configIdEnvKey, $environment === 'production' ? '2605276259869097' : '941660645323511');
+        $appId = env('META_APP_ID', '');
+        $businessId = env('META_BUSINESS_ID', '');
+        $systemUserId = env('META_SYSTEM_USER_ID', '');
+        $configId = env($configIdEnvKey, '');
         $graphVersion = env('META_GRAPH_API_VERSION', 'v25.0');
 
         $appSecret = env('META_APP_SECRET');

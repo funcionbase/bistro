@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Export diario de morosos a S3 (uso interno flexyflow).
+ * Export diario de morosos a S3 (uso interno bistro).
  *
  * Genera un CSV con la foto del día de empresas en {past_due, suspended} y lo
  * sube a `config('billing.delinquent_export_disk')` bajo
@@ -84,7 +84,7 @@ class ExportDelinquentCompaniesCommand extends Command
         fclose($csv);
 
         $disk = config('billing.delinquent_export_disk', 's3_documents');
-        $prefix = rtrim((string) config('billing.delinquent_export_prefix', 'flexyflow-internal/delinquent-companies'), '/');
+        $prefix = rtrim((string) config('billing.delinquent_export_prefix', 'bistro-internal/delinquent-companies'), '/');
         $key = "{$prefix}/{$todayDate}.csv";
 
         Storage::disk($disk)->put($key, $csvContent, ['visibility' => 'private']);

@@ -28,7 +28,7 @@ interface SwitchBranchResponse {
     authenticated?: boolean;
 }
 
-const LAST_BRANCH_KEY = 'flexyflow.last_branch_id';
+const LAST_BRANCH_KEY = 'bistro.last_branch_id';
 
 function BranchCard({ branch, onSelect, disabled = false, loading = false }: BranchCardProps) {
     return (

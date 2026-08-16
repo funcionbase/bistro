@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 interface WhatsappPageSkeletonProps {
     /** Si `true`, esqueletiza también la card de "Conectado" (status detail).
      * Si `false` (default), esqueletiza la grilla de 2 cards "Tengo número /
-     * flexyflow me provee". */
+     * bistro me provee". */
     connected?: boolean;
     className?: string;
 }

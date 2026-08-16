@@ -85,7 +85,7 @@ Route::middleware([
 
 ### `ValidateJwt` (`jwt`)
 
-- Lee la cookie `flexyflow_jwt` (HttpOnly + Secure + SameSite=Lax) cifrada AES-256 + HMAC por `JwtService`.
+- Lee la cookie `bistro_jwt` (HttpOnly + Secure + SameSite=Lax) cifrada AES-256 + HMAC por `JwtService`.
 - Inyecta `jwt_payload` en `$request->attributes`.
 - Si falta o es inválido → 401.
 
@@ -107,7 +107,7 @@ Route::middleware([
 
 ### `EnsureBranchAccess` (`branch.access`)
 
-- Lee `?branch=<id>` o cookie `flexyflow_branch`.
+- Lee `?branch=<id>` o cookie `funcionbase_branch`.
 - Valida que el usuario tiene acceso vía `branch_users` (o `is_system=true` → bypass).
 - Inyecta `active_branch_id`.
 - Si no tiene acceso → 403.

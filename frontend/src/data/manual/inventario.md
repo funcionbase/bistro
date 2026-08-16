@@ -1,8 +1,8 @@
 ---
 title: "Inventario"
 description: "Control de insumos por bodega: entradas, mermas, ajustes, transferencias entre bodegas, historial de movimientos y valorización en tiempo real."
-metaTitle: "Inventario — Manual bistro.flexyflow.co"
-metaDescription: "Cómo gestionar el inventario de insumos en bistro.flexyflow.co: bodegas, movimientos (entrada/merma/ajuste/transferencia), historial y valorización."
+metaTitle: "Inventario — Manual bistro.example.com"
+metaDescription: "Cómo gestionar el inventario de insumos en bistro.example.com: bodegas, movimientos (entrada/merma/ajuste/transferencia), historial y valorización."
 section: "el día a día"
 readingTime: "8 min"
 lastUpdated: "8 de julio de 2026"
@@ -12,7 +12,7 @@ lastUpdated: "8 de julio de 2026"
 
 ## ¿Para qué sirve el inventario?
 
-El módulo de inventario lleva el control del stock de insumos (ingredientes, bebidas, empaque, suministros) y lo conecta directamente con las recetas del menú. Cada vez que el KDS marca un plato como listo, bistro flexy descuenta automáticamente los ingredientes de la receta. El resultado: siempre sabes cuánto tienes, qué cuesta y qué platos están en riesgo de agotarse.
+El módulo de inventario lleva el control del stock de insumos (ingredientes, bebidas, empaque, suministros) y lo conecta directamente con las recetas del menú. Cada vez que el KDS marca un plato como listo, bistro descuenta automáticamente los ingredientes de la receta. El resultado: siempre sabes cuánto tienes, qué cuesta y qué platos están en riesgo de agotarse.
 
 El inventario es por **sede**. Si tienes varias sedes, cada una lleva su propio control — pero un insumo puede estar en varias bodegas dentro de una misma sede.
 
@@ -104,7 +104,7 @@ entra a la bodega destino en el mismo movimiento.
 <div class="callout callout-info">
 <p>
 <strong>Movimiento automático por receta:</strong> cuando el KDS marca un plato como
-"listo", bistro flexy descuenta automáticamente cada ingrediente de la receta del plato,
+"listo", bistro descuenta automáticamente cada ingrediente de la receta del plato,
 según la cantidad configurada. Ese movimiento aparece en el historial como "consumo por
 orden".
 </p>
@@ -128,7 +128,7 @@ Las recetas se configuran en el menú de cada plato (ver [Menús](/manual/menus)
 2. La receta del plato debe tener ese insumo con la cantidad correcta.
 3. El KDS debe marcar el plato como "listo" — el descuento se hace en ese momento, no cuando llega el pedido.
 
-Si el stock de un ingrediente llega a cero y un plato lo requiere, bistro flexy marca ese plato como **agotado** en el menú público automáticamente.
+Si el stock de un ingrediente llega a cero y un plato lo requiere, bistro marca ese plato como **agotado** en el menú público automáticamente.
 
 ## Filtros y búsqueda
 

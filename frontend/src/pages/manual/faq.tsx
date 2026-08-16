@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const faqs = [
     {
-        q: '¿Necesito instalar algo para usar bistro flexy?',
+        q: '¿Necesito instalar algo para usar bistro?',
         a: 'No. Es una app web progresiva (PWA). La abres en el navegador desde cualquier celular, tableta o computador, y si quieres el ícono en la pantalla de inicio de tu teléfono, elige "Agregar al inicio" desde el menú del navegador.',
     },
     {
@@ -69,7 +69,7 @@ const faqs = [
     },
     {
         q: '¿Puedo cobrar con tarjeta desde el panel?',
-        a: 'El panel registra el pago en "método: tarjeta" pero no procesa la transacción — para eso necesitas un datáfono físico o Wompi/Epayco conectado por separado. bistro flexy registra el medio, el monto y la referencia del comprobante.',
+        a: 'El panel registra el pago en "método: tarjeta" pero no procesa la transacción — para eso necesitas un datáfono físico o Wompi/Epayco conectado por separado. bistro registra el medio, el monto y la referencia del comprobante.',
     },
     {
         q: '¿Cómo divido una cuenta entre varios comensales?',
@@ -101,7 +101,7 @@ const faqs = [
     },
     {
         q: '¿Qué pasa si la DIAN rechaza una factura?',
-        a: 'El sistema te muestra una alerta, te dice cuál fue el error y te deja reenviarla o corregir los datos. Nada se pierde — el recibo interno de bistro flexy queda aunque la DIAN no haya aceptado el documento todavía. Ver alertas.',
+        a: 'El sistema te muestra una alerta, te dice cuál fue el error y te deja reenviarla o corregir los datos. Nada se pierde — el recibo interno de bistro queda aunque la DIAN no haya aceptado el documento todavía. Ver alertas.',
     },
     {
         q: '¿Puedo imprimir desde el celular?',
@@ -116,12 +116,12 @@ const faqs = [
         a: 'Hoy el panel está disponible solo en español. La zona horaria (UTC-5, hora Colombia) y la moneda (pesos colombianos, COP) son fijas dado el enfoque en legislación colombiana.',
     },
     {
-        q: '¿bistro flexy usa analíticas o cookies de seguimiento?',
+        q: '¿bistro usa analíticas o cookies de seguimiento?',
         a: 'La plataforma usa Google Analytics 4 (GA4) para entender cómo se usa la app y mejorarla. La primera vez que entras aparece un banner de consentimiento donde decides si aceptas o rechazas las analíticas. Si cambias de opinión, puedes revocar desde el mismo banner o escribirnos. Las analíticas son de la plataforma — el restaurante no tiene acceso al panel de GA4.',
     },
     {
         q: '¿Cómo cancelo mi suscripción?',
-        a: 'Escríbele al equipo de flexyflow o a tu asesor asignado. La cancelación es manual por parte de nuestro equipo. Los datos del negocio se conservan por el período legal; después se eliminan según la política de privacidad.',
+        a: 'Escríbele al equipo de bistro o a tu asesor asignado. La cancelación es manual por parte de nuestro equipo. Los datos del negocio se conservan por el período legal; después se eliminan según la política de privacidad.',
     },
     {
         q: '¿Qué pasa con mis datos si cancelo?',
@@ -158,8 +158,8 @@ export default function ManualFaq() {
             currentSlug="faq"
             pageTitle="Preguntas frecuentes"
             pageDescription="Las preguntas que más llegan al soporte. Si no encuentras lo que buscas, escríbenos desde el chat del panel."
-            metaTitle="Preguntas frecuentes — Manual bistro.flexyflow.co"
-            metaDescription="Respuestas a las dudas más comunes sobre cómo funciona bistro flexy: pedidos, caja, WhatsApp, facturación DIAN, sedes y más."
+            metaTitle="Preguntas frecuentes — Manual bistro.example.com"
+            metaDescription="Respuestas a las dudas más comunes sobre cómo funciona bistro: pedidos, caja, WhatsApp, facturación DIAN, sedes y más."
             sectionLabel="ayuda"
             readingTime="10 min"
         >
@@ -196,12 +196,12 @@ export default function ManualFaq() {
                 Escríbenos desde el <strong>chat del panel</strong> (ícono abajo a la derecha) o a través del
                 formulario de contacto en{' '}
                 <a
-                    href="https://flexyflow.co"
+                    href="https://funcionbase.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--primary)', textDecoration: 'underline' }}
                 >
-                    flexyflow.co
+                    funcionbase.com
                 </a>
                 . El equipo de soporte responde en horario de lunes a sábado de 8 AM a 6 PM (hora Colombia).
             </p>

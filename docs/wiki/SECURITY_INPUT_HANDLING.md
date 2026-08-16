@@ -221,7 +221,7 @@ Los documentos legales no se persisten en BD (TOS/privacidad en el sitio institu
 
 ## Referencias
 
-- Issue de origen: [HU #200 — Sanitización transversal de inputs](https://github.com/cristianmarint/flexyflow.restaurante/issues/200).
+- Issue de origen: [HU #200 — Sanitización transversal de inputs](https://github.com/cristianmarint/bistro.restaurante/issues/200).
 - `CLAUDE.md` (raíz) — sección "Sanitización de inputs".
 - `bistro/backend/app/Http/Middleware/SecurityHeaders.php` — base para CSP + headers complementarios.
 - OWASP ASVS v4 §5.1 (validation), §5.2 (sanitization), §14.4 (HTTP security headers).

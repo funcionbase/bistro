@@ -1,7 +1,7 @@
 # PWA · Web Push Notifications (#149)
 
 Guía operativa para entender, configurar y testear el sistema de
-notificaciones push de flexyflow Restaurante.
+notificaciones push de bistro Restaurante.
 
 **Catálogo canónico de tipos / payloads / permisos**:
 [`bistro/backend/constants/NOTIFICATIONS.md`](../../bistro/backend/constants/NOTIFICATIONS.md).
@@ -128,7 +128,7 @@ con la app cerrada (siempre que la PWA esté instalada).
    composer run dev      # arranca php + queue:listen + vite
    ```
 
-4. **Instalar la PWA** desde Chrome → menu → "Instalar Flexyflow". En
+4. **Instalar la PWA** desde Chrome → menu → "Instalar funcionbase". En
    iOS desde Safari → Compartir → Añadir a inicio.
 
 5. **Habilitar push**: ir a `/settings/notifications` → "Activar
@@ -159,7 +159,7 @@ con la app cerrada (siempre que la PWA esté instalada).
 Variables (no secrets, decisión owner #149):
 - `VAPID_PUBLIC_KEY`
 - `VAPID_PRIVATE_KEY`
-- `VAPID_SUBJECT` (opcional; default `mailto:info@flexyflow.co`)
+- `VAPID_SUBJECT` (opcional; default `mailto:hello@funcionbase.com`)
 - `PUSH_INVENTORY_DIGEST_ENABLED` (kill-switch global del digest de
   inventario al login; default `true`). Se consume desde
   `config/notifications.php` → `inventory_digest.enabled`.

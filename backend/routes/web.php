@@ -38,7 +38,7 @@ Route::get('/', FrontendRedirectController::class)->name('home');
 
 // PWA Web App Manifest dinámico: si el visitante tiene JWT válido con empresa
 // activa, el manifest hereda nombre y colores de esa empresa; si no, devuelve
-// el branding flexyflow por defecto. Una sola URL evita lógica condicional en
+// el branding bistro por defecto. Una sola URL evita lógica condicional en
 // el blade y mantiene el `<link rel="manifest">` estático.
 Route::get('manifest.webmanifest', [PwaManifestController::class, 'show'])
     ->name('pwa.manifest');
@@ -52,7 +52,7 @@ Route::get('sw.js', [PwaManifestController::class, 'serviceWorker'])
 // Apple Touch Icon dinámico: iOS Safari NO consulta el manifest para esto;
 // lee `<link rel="apple-touch-icon">` del HTML, que apunta fijo a esta URL.
 // El controller resuelve la versión rasterizada del logo de la empresa
-// activa (si existe) o cae al logo flexyflow black-font por defecto.
+// activa (si existe) o cae al logo bistro black-font por defecto.
 Route::get('apple-touch-icon.png', [PwaManifestController::class, 'appleTouchIcon'])
     ->name('pwa.apple-touch-icon');
 

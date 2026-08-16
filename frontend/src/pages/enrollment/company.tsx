@@ -300,7 +300,7 @@ export default function EnrollmentCompany() {
                                 <form noValidate className="flex flex-col gap-6" onSubmit={handleSubmitStep1}>
                                     <p className="text-muted-foreground text-sm">
                                         Antes de registrar tu empresa debes leer y aceptar el Contrato de Servicio que rige la relación con
-                                        flexyflow.
+                                        bistro.
                                     </p>
                                     <div className="border-border bg-muted/30 rounded-lg border p-4">
                                         <div className="flex items-start gap-3">
@@ -475,7 +475,7 @@ export default function EnrollmentCompany() {
                                             <p className="text-muted-foreground text-xs">
                                                 Adjunta un documento que acredite que eres el propietario o representante legal de la empresa
                                                 (cámara de comercio, RUT, cédula del representante, etc.). Tu cuenta queda en revisión hasta que el
-                                                equipo de flexyflow valide la evidencia.
+                                                equipo de bistro valide la evidencia.
                                             </p>
                                             <FileDropzone
                                                 value={proofFile}

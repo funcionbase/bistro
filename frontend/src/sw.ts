@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 /**
- * Service Worker custom de Flexyflow Restaurante (#149).
+ * Service Worker custom de funcionbase Restaurante (#149).
  *
  * Migración de `generateSW` (Workbox auto-genera) a `injectManifest`
  * (escribimos el SW y Workbox inyecta el manifest de precaching). Necesario

@@ -157,7 +157,7 @@ class BootstrapService
                     $activeCompany['default_tax_label'] = $fresh->default_tax_label;
                     $activeCompany['tax_included_in_price'] = (bool) $fresh->tax_included_in_price;
 
-                    // #246 — Datos para transferir a flexyflow visibles SIEMPRE
+                    // #246 — Datos para transferir a bistro visibles SIEMPRE
                     // (no solo en mora). El cliente puede pagar proactivamente
                     // desde /company/settings → Facturación. Combina datos
                     // bancarios (BREB, banco, cuenta) + identificación fiscal
@@ -165,18 +165,18 @@ class BootstrapService
                     // paga y pueda diligenciar la transferencia sin error.
                     // NIT/DV vacío o ausente → null: el frontend oculta el campo
                     // (el placeholder 900000001 no debe mostrarse como NIT real).
-                    $flexyNit = trim((string) config('billing.flexyflow.nit'));
-                    $flexyDv = trim((string) config('billing.flexyflow.dv'));
+                    $flexyNit = trim((string) config('billing.bistro.nit'));
+                    $flexyDv = trim((string) config('billing.bistro.dv'));
 
-                    $activeCompany['flexyflow_payment'] = array_merge(
-                        config('billing.flexyflow_payment'),
+                    $activeCompany['funcionbase_payment'] = array_merge(
+                        config('billing.funcionbase_payment'),
                         [
                             'nit' => $flexyNit !== '' ? $flexyNit : null,
                             'dv' => $flexyDv !== '' ? $flexyDv : null,
-                            'legal_name' => config('billing.flexyflow.legal_name'),
-                            'commercial_name' => config('billing.flexyflow.commercial_name'),
-                            'billing_email' => config('billing.flexyflow.billing_email'),
-                            'billing_phone' => config('billing.flexyflow.billing_phone'),
+                            'legal_name' => config('billing.bistro.legal_name'),
+                            'commercial_name' => config('billing.bistro.commercial_name'),
+                            'billing_email' => config('billing.bistro.billing_email'),
+                            'billing_phone' => config('billing.bistro.billing_phone'),
                         ],
                     );
 

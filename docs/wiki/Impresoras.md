@@ -9,7 +9,7 @@
 
 ## Resumen
 
-flexyflow soporta impresión térmica para dos canales:
+bistro soporta impresión térmica para dos canales:
 
 1. **Comandas de cocina/barra** — tickets ESC/POS que listan los ítems de una orden agrupados por categoría, despachados a las impresoras configuradas (`type ∈ {kitchen, bar}`).
 2. **Recibos / comprobantes de caja** — receipt al cliente con totales, impuestos (cuando aplica) y referencia de pago.
@@ -139,7 +139,7 @@ El test despacha un `PrintCommandTicketJob` en modo `isTest=true` con un ítem f
 
 **Estado actual**: el registro es manual. No hay auto-detección de impresoras vía WebUSB / WebBluetooth ni descubrimiento mDNS de impresoras LAN. El usuario obtiene la URL del agente local (típicamente `http://<IP-LAN>:9100/print`) y la pega en el formulario.
 
-El agente local es un binario ligero estilo PrintNode (no provisto por flexyflow; el cliente lo instala en una mini-PC / Raspberry de cocina). Habla HTTP y reenvía el buffer ESC/POS al puerto físico USB / BT / paralelo.
+El agente local es un binario ligero estilo PrintNode (no provisto por bistro; el cliente lo instala en una mini-PC / Raspberry de cocina). Habla HTTP y reenvía el buffer ESC/POS al puerto físico USB / BT / paralelo.
 
 ### Mapeo impresora ↔ categoría del menú
 

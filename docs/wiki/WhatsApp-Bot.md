@@ -8,7 +8,7 @@
 
 ## Visión general
 
-El bot de WhatsApp es un **proceso externo** (n8n) que conversa con clientes finales y crea pedidos en flexyflow. El transporte de WhatsApp es **Evolution API** (Baileys), no Meta Cloud API: bistro recibe los mensajes y se los empuja al bot; el bot **nunca** habla con Evolution ni con WhatsApp directamente (§9.4). La automatización es opcional — sin flujo, la bandeja de operadores atiende todo (§5.6).
+El bot de WhatsApp es un **proceso externo** (n8n) que conversa con clientes finales y crea pedidos en bistro. El transporte de WhatsApp es **Evolution API** (Baileys), no Meta Cloud API: bistro recibe los mensajes y se los empuja al bot; el bot **nunca** habla con Evolution ni con WhatsApp directamente (§9.4). La automatización es opcional — sin flujo, la bandeja de operadores atiende todo (§5.6).
 
 El bot se autentica con un **token por flujo** (`bot.token`, §7.5.1) y consume:
 
@@ -100,9 +100,9 @@ Al retirar Meta, los mensajes llegan a bistro y a ningún otro lado. Para que el
 
 ```http
 POST https://n8n.<host>/webhook/bistro-whatsapp HTTP/1.1
-X-Flexyflow-Event: chat.message.received
-X-Flexyflow-Delivery: 018f…uuid
-X-Flexyflow-Signature: sha256=<hmac_hex(body, automation_flows.secret)>
+X-funcionbase-Event: chat.message.received
+X-funcionbase-Delivery: 018f…uuid
+X-funcionbase-Signature: sha256=<hmac_hex(body, automation_flows.secret)>
 Content-Type: application/json
 
 {
@@ -116,7 +116,7 @@ Content-Type: application/json
 }
 ```
 
-**Verificación de la firma en n8n**: recomputar `HMAC-SHA256(raw_body, secret)` y comparar con `X-Flexyflow-Signature` (el secreto se copia una vez al crear/rotar el flujo). Eventos: `chat.message.received`, `chat.handoff.requested`, `chat.bot_toggled`, `channel.status.changed`. **Anti-loop**: `chat.message.received` nunca se emite para `sender='bot'`.
+**Verificación de la firma en n8n**: recomputar `HMAC-SHA256(raw_body, secret)` y comparar con `X-funcionbase-Signature` (el secreto se copia una vez al crear/rotar el flujo). Eventos: `chat.message.received`, `chat.handoff.requested`, `chat.bot_toggled`, `channel.status.changed`. **Anti-loop**: `chat.message.received` nunca se emite para `sender='bot'`.
 
 ---
 
@@ -200,16 +200,16 @@ Notas:
 - El token del flujo es **revocable**: rotar o `enabled=false` lo invalida al instante, sin afectar a otros flujos. Se guarda hasheado (SHA-256), no cifrado reversible.
 - `bot.token` **no exige** `company.access`/`branch.access` — es un alias dedicado. El scope lo da el token.
 - Si la empresa está bloqueada por mora (`!canServePublic()`, #193) el middleware responde **503 `company_unavailable`** para que el bot deje de procesar.
-- El webhook saliente lleva contenido de conversaciones: la UI exige `https://` y firma cada entrega con HMAC-SHA256 (`X-Flexyflow-Signature`). El destino lo decide el cliente.
+- El webhook saliente lleva contenido de conversaciones: la UI exige `https://` y firma cada entrega con HMAC-SHA256 (`X-funcionbase-Signature`). El destino lo decide el cliente.
 - El menú público (`/api/v1/public/menu/{nit}`) NO requiere autenticación; cualquier visitante o bot lo consulta.
 - Los `cart_sessions` se marcan como `abandoned` cuando exceden `expired_at`; las activas durante reinicios persisten en BD.
-- El webhook entrante de Evolution (`/api/v1/webhooks/whatsapp/evolution/{account}`) autentica por secreto de 32 bytes por canal (header `X-Flexyflow-Token`), responde igual (401 sin cuerpo) ante secreto inválido y canal inexistente, y está whitelisted en `NormalizeStrings`. El webhook legado de Meta (`/api/webhooks/whatsapp`) coexiste hasta el corte de F4.
+- El webhook entrante de Evolution (`/api/v1/webhooks/whatsapp/evolution/{account}`) autentica por secreto de 32 bytes por canal (header `X-funcionbase-Token`), responde igual (401 sin cuerpo) ante secreto inválido y canal inexistente, y está whitelisted en `NormalizeStrings`. El webhook legado de Meta (`/api/webhooks/whatsapp`) coexiste hasta el corte de F4.
 
 ## N≥2 instancias EC2 — descubrimiento del líder de Evolution
 
-Evolution/Baileys mantiene el socket de WhatsApp en **memoria de UNA sola instancia** (el líder elegido por `leader-guard.sh` en el repo `apps-flexyflow-co`, tabla-heartbeat `public.evolution_leader`). Dos sockets con la misma identidad harían que WhatsApp invalide las credenciales → re-escaneo de todos los canales; por eso el guard garantiza un único líder.
+Evolution/Baileys mantiene el socket de WhatsApp en **memoria de UNA sola instancia** (el líder elegido por `leader-guard.sh` en el repo `apps-bistro-co`, tabla-heartbeat `public.evolution_leader`). Dos sockets con la misma identidad harían que WhatsApp invalide las credenciales → re-escaneo de todos los canales; por eso el guard garantiza un único líder.
 
-Pero **bistro corre en las N instancias del ASG** (`flexyflow-shared-*-asg`, con scale-out por CPU + refresh a 2). Si bistro apuntara a `127.0.0.1:8080` (loopback), la instancia que NO es líder no tiene Evolution ahí y **todo envío saliente fallaría** (mensaje del operador, QR del wizard, aviso de estado, reply del bot).
+Pero **bistro corre en las N instancias del ASG** (`bistro-shared-*-asg`, con scale-out por CPU + refresh a 2). Si bistro apuntara a `127.0.0.1:8080` (loopback), la instancia que NO es líder no tiene Evolution ahí y **todo envío saliente fallaría** (mensaje del operador, QR del wizard, aviso de estado, reply del bot).
 
 Solución (**descubrimiento del líder**):
 - El guard bindea Evolution a la **IP privada de la ENI** (`EVOLUTION_BIND_IP`), no a loopback, y publica esa IP en `evolution_leader.holder_ip` en cada latido.

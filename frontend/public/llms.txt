@@ -6,21 +6,21 @@
 > electrónica DIAN. Web app (PWA), sin instalaciones ni licencias por terminal.
 > Tarifa: Plan Básico $0 COP/mes (uso completo de la plataforma, sedes
 > ilimitadas); Plan Plus $300.000 COP/mes + $10 COP por factura electrónica
-> generada (incluye facturación electrónica DIAN). Producto de flexyflow
-> (https://flexyflow.co).
+> generada (incluye facturación electrónica DIAN). Producto de bistro
+> (https://funcionbase.com).
 
 ## Contenido público
 
-- [Landing](https://bistro.flexyflow.co/): qué es bistro y cómo probarlo.
-- [Manual de usuario](https://bistro.flexyflow.co/manual): documentación
+- [Landing](https://bistro.example.com/): qué es bistro y cómo probarlo.
+- [Manual de usuario](https://bistro.example.com/manual): documentación
   completa por módulo — primeros pasos, menús, pedidos, caja y cobros, mesas
   con QR, entregas/domicilios, horarios, chat, inventario, clientes, cupones,
   fidelización, métricas, alertas, facturación, usuarios y roles, sedes y
   bodegas, compras, planificador de turnos, configuración y WhatsApp.
-- [Preguntas frecuentes](https://bistro.flexyflow.co/manual/faq)
-- [Contrato de servicio](https://bistro.flexyflow.co/manual/legal/contrato)
+- [Preguntas frecuentes](https://bistro.example.com/manual/faq)
+- [Contrato de servicio](https://bistro.example.com/manual/legal/contrato)
 
 ## Contacto
 
-- Demo y ventas: https://flexyflow.co/#footer-with-contact
-- Registro: https://bistro.flexyflow.co/register
+- Demo y ventas: https://funcionbase.com/#footer-with-contact
+- Registro: https://bistro.example.com/register

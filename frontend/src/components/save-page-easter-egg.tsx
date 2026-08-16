@@ -3,9 +3,9 @@ import { useEffect } from 'react';
 /**
  * Easter egg: intercepta Ctrl/Cmd+S y, en vez de dejar que el navegador guarde
  * la página, descarga un `index.html` maquetado con el design system de
- * flexyflow + un mensaje gracioso aleatorio (distinto cada vez).
+ * bistro + un mensaje gracioso aleatorio (distinto cada vez).
  *
- * Port del `SavePageEasterEgg.astro` del sitio (flexyflow.co). NO es seguridad:
+ * Port del `SavePageEasterEgg.astro` del sitio (funcionbase.com). NO es seguridad:
  * el frontend sigue siendo público (DevTools, ver código fuente). Solo neutraliza
  * el atajo de teclado y le saca una sonrisa a quien lo intente.
  *
@@ -18,12 +18,12 @@ const MESSAGES = [
     'El frontend es público. Tu curiosidad, también ahora.',
     'Guardaste la página. La página te guardó a ti.',
     'Esto no es el código fuente. Es el código que mereces.',
-    '¿Ingeniería inversa? Empieza por postularte: info@flexyflow.co',
+    '¿Ingeniería inversa? Empieza por postularte: hello@funcionbase.com',
     'Ctrl+S detectado. Plot twist: estabas guardando una carpeta vacía.',
     'Lo que tu navegador hace dos veces, nosotros lo interceptamos una vez.',
     'Descargaste un .html. Tu disco duro te observa con tristeza.',
     'Aquí no hay secretos. Solo CSS bien puesto y este mensaje.',
-    'El producto de verdad vive en bistro.flexyflow.co. Tampoco lo robas.',
+    'El producto de verdad vive en bistro.example.com. Tampoco lo robas.',
     'Querías el código. Te llevas la moraleja.',
     'Minificado, sin comentarios, sin source maps. Te ahorramos la lectura.',
     'Esto es lo único que vas a guardar hoy. De nada.',
@@ -74,7 +74,7 @@ function escapeHtml(str: string): string {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** Documento HTML maquetado con el design system de flexyflow (tokens del sitio). */
+/** Documento HTML maquetado con el design system de bistro (tokens del sitio). */
 function buildHtml(message: string): string {
     return `<!doctype html>
 <html lang="es">
@@ -89,7 +89,7 @@ function buildHtml(message: string): string {
 <style>
   @font-face {
     font-family: "FlexyFont";
-    src: url("https://flexyflow.co/fonts/FlexyFont.otf") format("opentype");
+    src: url("https://funcionbase.com/fonts/FlexyFont.otf") format("opentype");
     font-weight: 400 700;
     font-display: swap;
   }
@@ -197,7 +197,7 @@ function buildHtml(message: string): string {
   </main>
   <footer>
     <span>bistro · SaaaaaaS :(</span>
-    <a href="https://flexyflow.co">flexyflow.co</a>
+    <a href="https://funcionbase.com">funcionbase.com</a>
   </footer>
 </body>
 </html>

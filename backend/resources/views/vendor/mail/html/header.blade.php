@@ -9,7 +9,7 @@
      web/Android. Outlook desktop (Windows) NO renderiza SVG → cae al
      fallback de texto con Unbounded vía conditional comment MSO. --}}
 <!--[if mso]>
-<span style="font-family: 'Unbounded', 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 700; color: #1E232E; letter-spacing: -0.025em;">flexyflow</span>
+<span style="font-family: 'Unbounded', 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 700; color: #1E232E; letter-spacing: -0.025em;">bistro</span>
 <![endif]-->
 <!--[if !mso]><!-->
 <svg xmlns="http://www.w3.org/2000/svg" width="92" height="57" viewBox="0 0 162 101" role="img" aria-label="{{ $slot }}" style="display: inline-block; vertical-align: middle;">

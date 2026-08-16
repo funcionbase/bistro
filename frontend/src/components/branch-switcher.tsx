@@ -14,7 +14,7 @@ import { ChevronDown, LoaderCircle, MapPin, Plus, Star } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const LAST_BRANCH_KEY = 'flexyflow.last_branch_id';
+const LAST_BRANCH_KEY = 'bistro.last_branch_id';
 
 type SwitchBlocker = { kind: 'cash_open'; openSessionId: string | null; branchId: string } | { kind: 'dirty_state'; branchId: string };
 

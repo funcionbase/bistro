@@ -44,7 +44,7 @@ class MetaGraphApiClient
     }
 
     /**
-     * Suscribe la app de flexyflow al WABA del cliente para recibir webhooks
+     * Suscribe la app de bistro al WABA del cliente para recibir webhooks
      * de mensajes y status updates.
      *
      * Endpoint: POST /{waba-id}/subscribed_apps

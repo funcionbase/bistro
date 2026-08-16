@@ -401,7 +401,7 @@ export function AppSidebar() {
         //         },
         //     ],
         // },
-        // Facturación (suscripción flexyflow): oculta del sidebar. La ruta
+        // Facturación (suscripción bistro): oculta del sidebar. La ruta
         // /billing sigue activa y se accede desde botones dentro de Mi
         // Empresa. Ver pages/company/settings.tsx para el call-to-action.
         //

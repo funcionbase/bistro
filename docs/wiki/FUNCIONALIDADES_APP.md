@@ -8,7 +8,7 @@
 
 ## 0. Resumen técnico del sistema
 
-**flexyflow Restaurante** es una plataforma SaaS multi-empresa multi-sede multi-bodega para la gestión operativa de restaurantes en Colombia. Stack monolito server-rendered con Inertia.js v2 (React en el cliente, Laravel en el servidor; sin REST público para la SPA — los endpoints `/api/v1/*` son contratos para datos asíncronos y para integraciones externas como bots de WhatsApp).
+**bistro Restaurante** es una plataforma SaaS multi-empresa multi-sede multi-bodega para la gestión operativa de restaurantes en Colombia. Stack monolito server-rendered con Inertia.js v2 (React en el cliente, Laravel en el servidor; sin REST público para la SPA — los endpoints `/api/v1/*` son contratos para datos asíncronos y para integraciones externas como bots de WhatsApp).
 
 **Módulos cubiertos en producción** (al 2026-05-11):
 
@@ -70,7 +70,7 @@ Cliente HTTP
 | Arquitectura | Laravel 12 streamlined (sin `app/Console/Kernel.php`, sin `app/Http/Kernel.php`; todo en `bootstrap/app.php`) |
 | Routing servidor | `routes/web.php` (rutas Inertia + auth Breeze) y `routes/api.php` (REST API) |
 | Routing cliente | Inertia visit/`<Link>` para navegación SPA; `router.reload({ only: [...] })` para refresh parcial |
-| Autenticación | Google OAuth → JWT custom (HS256 + payload AES-256) → cookie HttpOnly `flexyflow_jwt` |
+| Autenticación | Google OAuth → JWT custom (HS256 + payload AES-256) → cookie HttpOnly `bistro_jwt` |
 | Autorización | RBAC feature-based: tabla `features` × `company_roles` × `company_role_permissions` (CRUD) + overrides por `CompanyUser.custom_permissions` |
 | Multi-empresa | Un usuario en N empresas con roles distintos; el JWT lleva `active_company_nit` y la lista completa de membresías |
 | Moneda | COP (configurable `BILLING_CURRENCY`); `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })` |
@@ -214,7 +214,7 @@ Implementación con `laravel/socialite` v5, complementaria al acceso por correo/
 ```
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://bistro.flexyflow.co/auth/google/callback
+GOOGLE_REDIRECT_URI=https://bistro.example.com/auth/google/callback
 ```
 
 `config/services.php` mapea estos a `services.google.*`.
@@ -353,17 +353,17 @@ Antes de acciones sensibles (cambiar email, eliminar cuenta) Laravel pide reconf
 - Auto-refresh: cuando middleware `ValidateJwt` ve `exp - now < 300s`, llama `JwtService::reissue($payload)` y rota la cookie sin que el cliente lo note.
 - Blacklist: `Cache::put("jwt_blacklist:{$signature}", true, $remainingTtl)` cuando se revoca; `verify()` lo consulta en cada request si `JWT_BLACKLIST_ENABLED=true`.
 
-#### Cookie HttpOnly `flexyflow_jwt`
+#### Cookie HttpOnly `bistro_jwt`
 
 | Atributo | Valor |
 |---|---|
-| Nombre | `flexyflow_jwt` (config `JWT_COOKIE_NAME`) |
+| Nombre | `bistro_jwt` (config `JWT_COOKIE_NAME`) |
 | Valor | el JWT completo (3 partes: `header.payload.signature`) |
 | HttpOnly | `true` |
 | Secure | `true` en producción (`config('session.secure')`) |
 | SameSite | `lax` |
 | Path | `/` |
-| Domain | `config('session.domain')` (suele ser `.flexyflow.co`) |
+| Domain | `config('session.domain')` (suele ser `.funcionbase.com`) |
 | Max-Age | `ceil(JWT_TTL / 60) * 60` segundos |
 
 **Excluida de `EncryptCookies`:** Laravel cifra cookies por defecto, pero esta ya viene cifrada por `JwtService`. Excluida en `bootstrap/app.php` o `app/Http/Middleware/EncryptCookies.php` para evitar doble cifrado.
@@ -371,7 +371,7 @@ Antes de acciones sensibles (cambiar email, eliminar cuenta) Laravel pide reconf
 #### Extracción del JWT en cada request (`JwtService::extractTokenFromRequest`)
 
 Orden de prioridad (primer match gana):
-1. Cookie `flexyflow_jwt`.
+1. Cookie `bistro_jwt`.
 2. Header `Authorization: Bearer ...` (back-compat con tokens legacy).
 3. Session flash `jwt_token` (después de redirect interno con `with('jwt_token', $token)`).
 4. Query param `?token=...` (deep links de notificaciones email).
@@ -392,7 +392,7 @@ Una empresa (NIT) puede tener N sedes (locales físicos) bajo el mismo NIT. Cada
 
 **Login con 1 sede en la empresa**: `JwtService::issue` auto-asigna `active_branch_id`. El usuario va directo al dashboard.
 
-**Login con N sedes**: `active_branch_id` queda null. El frontend redirige a `/auth/branch-selector`, que llama `POST /api/v1/auth/switch-branch` para reemitir el JWT con la sede elegida. Persiste última en `localStorage['flexyflow.last_branch_id:<nit>']` para auto-selección posterior si la sede sigue accesible.
+**Login con N sedes**: `active_branch_id` queda null. El frontend redirige a `/auth/branch-selector`, que llama `POST /api/v1/auth/switch-branch` para reemitir el JWT con la sede elegida. Persiste última en `localStorage['bistro.last_branch_id:<nit>']` para auto-selección posterior si la sede sigue accesible.
 
 **Cambio de sede en sesión**: el `<BranchSwitcher>` en el sidebar (debajo de `RestaurantIdentity`) abre un dropdown con todas las sedes accesibles + acceso rápido a "Gestionar sedes" si tiene `branches.manage`. Al seleccionar, llama `POST /api/v1/auth/switch-branch` y refresca el dashboard.
 
@@ -471,7 +471,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 
 **Paso 1 — Datos personales:** captura `first_name`, `last_name`, `cedula`.
 
-**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el sitio institucional (`flexyflow.co`) en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
+**Paso 2 — Aceptación legal:** muestra TOS y Política de Privacidad como links que abren el sitio institucional (`funcionbase.com`) en una pestaña nueva. Las URLs llegan desde `useBootstrap().data.legalUrls`:
 ```json
 {
   "type": "tos",
@@ -482,7 +482,7 @@ Página: `resources/js/pages/enrollment/user.tsx`. Gate: el closure de la ruta w
 ```
 El frontend guarda `tos_version` y `privacy_version` para enviarlos en el siguiente paso.
 
-> **Fuente de verdad:** TOS (`https://flexyflow.co/terms-conditions/`) y privacidad (`https://flexyflow.co/privacy-policy/`) viven en el sitio institucional, fuera de este repo. El contrato de servicio vive en el repo (`bistro/frontend/src/data/legal/contrato.md`) y se sirve en el propio SPA en `/legal/contract`. `useBootstrap().data.legalUrls` expone las 3 URLs; el enrollment las abre en pestaña nueva.
+> **Fuente de verdad:** TOS (`https://funcionbase.com/terms-conditions/`) y privacidad (`https://funcionbase.com/privacy-policy/`) viven en el sitio institucional, fuera de este repo. El contrato de servicio vive en el repo (`bistro/frontend/src/data/legal/contrato.md`) y se sirve en el propio SPA en `/legal/contract`. `useBootstrap().data.legalUrls` expone las 3 URLs; el enrollment las abre en pestaña nueva.
 
 **Paso 3 — Vinculación:** dos opciones:
 - **Crear nueva empresa** → al hacer "Continuar" envía a `/enrollment/company`.
@@ -2710,7 +2710,7 @@ Middleware: jwt (sin company.access)
 - Sólo categorías con al menos un item disponible.
 - Sólo items con `available=true`.
 
-Diseñado para que `pedidos.flexyflow.co` cargue el menú antes de obtener cart JWT (precarga UX).
+Diseñado para que `pedidos.example.com` cargue el menú antes de obtener cart JWT (precarga UX).
 
 #### 9.12.1 Pedido público sin mesa desde el QR de sede
 
@@ -4312,7 +4312,7 @@ Lógica:
 ```env
 CART_JWT_SECRET=...                # required
 CART_JWT_TTL=4200                  # 70 min default
-CART_BASE_URL=https://pedidos.flexyflow.co
+CART_BASE_URL=https://pedidos.example.com
 ```
 
 **Resolución perezosa**: `CartController` resuelve `CartJwtService` vía `Container::make()` cuando lo necesita. Si `CART_JWT_SECRET` no está configurado:
@@ -4340,7 +4340,7 @@ Mientras n8n no esté disponible, los mensajes entrantes caen al panel de chats 
 
 #### `meta_platform_credentials`
 
-Credenciales de la app de flexyflow en Meta (BSP — Business Solution Provider). Una fila por ambiente.
+Credenciales de la app de bistro en Meta (BSP — Business Solution Provider). Una fila por ambiente.
 
 ```sql
 meta_platform_credentials (
@@ -4556,7 +4556,7 @@ public function embeddedSignupCallback(Request $request): JsonResponse {
 
 ### 14.4 Number as a Service (Opción B)
 
-`POST /api/v1/whatsapp/naas-request` — el restaurante solicita que flexyflow le provisione un número.
+`POST /api/v1/whatsapp/naas-request` — el restaurante solicita que bistro le provisione un número.
 
 Permission: `whatsapp.connect,create` + OTP.
 
@@ -4569,7 +4569,7 @@ Body:
 }
 ```
 
-Crea `company_whatsapp_accounts` con `status='pending'`, `provisioning_mode='naas'`. El equipo interno de flexyflow gestiona el provisioning manualmente y luego marca `status='active'`.
+Crea `company_whatsapp_accounts` con `status='pending'`, `provisioning_mode='naas'`. El equipo interno de bistro gestiona el provisioning manualmente y luego marca `status='active'`.
 
 ### 14.5 OTP (verificación por correo)
 
@@ -4658,7 +4658,7 @@ El consume real ocurre cuando el endpoint sensible (connect/swap/disconnect) pro
 **Endpoint público** — sin auth. El email contiene un link directo:
 
 ```
-https://bistro.flexyflow.co/api/v1/whatsapp/verification/reject?token={uuid}
+https://bistro.example.com/api/v1/whatsapp/verification/reject?token={uuid}
 ```
 
 ```php
@@ -4898,7 +4898,7 @@ La fuente de verdad operativa es `meta_platform_credentials` (cifrada en BD). El
 |---|---|---|---|
 | GET | `whatsapp` | `whatsapp.read,read` | Estado actual de la cuenta |
 | POST | `whatsapp/embedded-signup-callback` | `whatsapp.connect,create` + OTP | Conectar via FB SDK |
-| POST | `whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de flexyflow |
+| POST | `whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de bistro |
 | DELETE | `whatsapp/phone` | `whatsapp.swap_phone,delete` + Policy + OTP | Cambiar número (owner only) |
 | DELETE | `whatsapp` | `whatsapp.disconnect,delete` + Policy + OTP | Desconectar (owner only) |
 | POST | `whatsapp/verification/request` | `whatsapp.read,read` | Solicitar OTP |
@@ -5718,7 +5718,7 @@ Permission: `billing.read,read`. Ownership: `Invoice::forCompany($nit)->findOrFa
         "payment_date": "2026-06-10",
         "payment_method": "transferencia",
         "payment_reference": "FLEXY-PAY-MAY26-4521",
-        "registered_by": "admin@flexyflow.co"
+        "registered_by": "admin@funcionbase.com"
       }
     ]
   }
@@ -5732,7 +5732,7 @@ Permission: `billing.read,read`. Genera URL firmada y devuelve:
 ```json
 {
   "data": {
-    "url": "https://bistro.flexyflow.co/api/v1/billing/invoices/234/pdf?expires=...&signature=...",
+    "url": "https://bistro.example.com/api/v1/billing/invoices/234/pdf?expires=...&signature=...",
     "expires_at": "2026-05-06T22:30:00Z"
   }
 }
@@ -5803,7 +5803,7 @@ Permission: `billing.read,read` (sólo lectura).
 
 `is_current` se calcula contra la `Subscription` activa de la empresa.
 
-**Cambio de plan**: NO implementado en este endpoint. La gestión de upgrade/downgrade la hace el panel de operador de flexyflow externo. El restaurante sólo ve.
+**Cambio de plan**: NO implementado en este endpoint. La gestión de upgrade/downgrade la hace el panel de operador de bistro externo. El restaurante sólo ve.
 
 ### 17.8 Generación mensual de facturas (`billing:generate-monthly-invoices`)
 
@@ -7167,9 +7167,9 @@ La app es instalable como PWA en Android, iOS y desktop. La Fase 2 (modo offline
 
 - Endpoint: `GET /manifest.webmanifest` → `App\Http\Controllers\PwaManifestController@show` (ruta nombrada `pwa.manifest`).
 - Si el visitante tiene JWT válido con `active_company_nit`, el manifest hereda:
-  - `name`: `"flexyflow · {commercial_name}"`.
+  - `name`: `"bistro · {commercial_name}"`.
   - `theme_color` y `background_color`: leídos de `CompanySettingsService::get($nit, 'menu_primary_color', '#FF6B35')`.
-- Sin JWT o sin empresa activa → branding por defecto flexyflow (`#FF6B35`).
+- Sin JWT o sin empresa activa → branding por defecto bistro (`#FF6B35`).
 - Cache headers: `Cache-Control: private, max-age=300` (5 min) — evita golpear DB en cada visita y acepta un retraso pequeño en cambios de color.
 - Fallback estático: `public/manifest.webmanifest` (mismo branding por defecto, usado si la ruta dinámica falla por cualquier razón).
 
@@ -7221,14 +7221,14 @@ Sobre la PWA base de Fase 1, la caja (`/orders/cashier`) sigue creando órdenes 
   - `companies/logos/{nit}/icon-512-maskable.png` (maskable con safe area 22%)
   - `companies/logos/{nit}/apple-touch-180.png`
 - Fondo sólido = `menu_primary_color` de la empresa (CompanySettings).
-- Best-effort: si la rasterización falla (formato exótico, GD sin soporte), se loggea y se sigue — el manifest cae al logo flexyflow por defecto.
-- `PwaManifestController::show` apunta `icons[]` a estos archivos cuando existen; si no, cae a `/icons/icon-*.png` (flexyflow black-font sobre blanco).
-- Apple Touch Icon dinámico: nueva ruta `GET /apple-touch-icon.png` (`pwa.apple-touch-icon`) que sirve la versión rasterizada de la empresa activa o el fallback flexyflow.
+- Best-effort: si la rasterización falla (formato exótico, GD sin soporte), se loggea y se sigue — el manifest cae al logo bistro por defecto.
+- `PwaManifestController::show` apunta `icons[]` a estos archivos cuando existen; si no, cae a `/icons/icon-*.png` (bistro black-font sobre blanco).
+- Apple Touch Icon dinámico: nueva ruta `GET /apple-touch-icon.png` (`pwa.apple-touch-icon`) que sirve la versión rasterizada de la empresa activa o el fallback bistro.
 - Comando artisan para regenerar en bulk: `php artisan pwa:rasterize-logos [--nit=...]`.
 
 ### Logo por defecto
 
-- Cuando NO hay JWT o la empresa no subió logo, los iconos se generan a partir de `public/images/logo-black-font.svg` (logo flexyflow texto negro sobre blanco). El script `scripts/generate-pwa-icons.mjs` produce los 5 PNGs base con `sharp`.
+- Cuando NO hay JWT o la empresa no subió logo, los iconos se generan a partir de `public/images/logo-black-font.svg` (logo bistro texto negro sobre blanco). El script `scripts/generate-pwa-icons.mjs` produce los 5 PNGs base con `sharp`.
 
 ### Sincronización idempotente — endpoint
 
@@ -7296,10 +7296,10 @@ Ahora el stack está listo para N=2+ instancias.
 ### Qué cambió
 
 - **Storage cross-node:** los uploads viven en S3 (bucket público
-  `flexyflow-panel-{env}-assets`). PDFs de factura y reportes en
+  `bistro-panel-{env}-assets`). PDFs de factura y reportes en
   bucket privado `*-documents` (DIAN, 10 años). Local: MinIO en Docker.
 - **Sesiones cross-node:** tabla `sessions` en Supabase (compartida). JWT
-  cifrado (cookie `flexyflow_jwt`) lleva la identidad sin depender de
+  cifrado (cookie `bistro_jwt`) lleva la identidad sin depender de
   stickiness del ALB. Inertia flash sigue en session.
 - **Schedules sin duplicar:** todos usan `->onOneServer()` que se coordina
   vía `cache_locks` compartido. Job canary `healthcheck:heartbeat` corre

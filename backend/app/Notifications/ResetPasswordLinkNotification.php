@@ -40,7 +40,7 @@ class ResetPasswordLinkNotification extends Notification implements ShouldQueue
             ->markdown('emails.auth.reset-password', [
                 'resetUrl' => $resetUrl,
                 'expiresInMinutes' => $expires,
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

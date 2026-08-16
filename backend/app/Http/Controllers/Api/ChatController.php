@@ -937,7 +937,7 @@ class ChatController extends Controller
     /**
      * Link corto de carta con sesión de seguimiento (unifica "enviar la carta"
      * y "enviar carrito", antes cartLink con CartJWT de ~600 chars a
-     * pedidos.flexyflow.co).
+     * pedidos.example.com).
      *
      * Crea una `CartSession` ligada al chat (`chat_id`) con un token UUID en
      * `jwt_jti` y devuelve el token; el frontend arma la URL corta

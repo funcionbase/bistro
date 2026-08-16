@@ -35,10 +35,10 @@ class ProductionSeeder extends Seeder
             // BillingService::activateCompany al activar la empresa. La duración
             // del trial vive en esta fila, no en BILLING_TRIAL_DAYS. Idempotente.
             TrialPromoCodeSeeder::class,
-            // #246 — flexyflow como empresa-proveedora SaaS: resolución DIAN +
+            // #246 — bistro como empresa-proveedora SaaS: resolución DIAN +
             // DianProviderConfig (mock por defecto). Idempotente. La empresa se
-            // crea desde config('billing.flexyflow.*') si no existe.
-            FlexyFlowProviderSeeder::class,
+            // crea desde config('billing.bistro.*') si no existe.
+            funcionbaseProviderSeeder::class,
             MetaPlatformCredentialsSeeder::class,
             // Backfills idempotentes para #182: aseguran que empresas existentes
             // reciban los company_role_permissions nuevos y la fila de

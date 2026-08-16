@@ -49,11 +49,11 @@ interface Props {
 /**
  * Vista para empresas en `suspended` (#175). Reemplaza la vista normal de
  * facturación: oculta plan/historial detallado y enfoca al cliente en
- * regularizar el pago. Muestra: monto adeudado + datos de pago flexyflow +
+ * regularizar el pago. Muestra: monto adeudado + datos de pago bistro +
  * formulario de comprobante + historial de comprobantes enviados.
  */
 export default function SuspendedBlockedView({ activeCompany, overdueTotal }: Props) {
-    const payment = activeCompany.flexyflow_payment;
+    const payment = activeCompany.funcionbase_payment;
     const [proofs, setProofs] = useState<PaymentProof[]>([]);
     // Comprobante seleccionado para preview en modal. `null` cuando no hay
     // popup abierto. El backend ya restringe `preview_url` por empresa
@@ -91,7 +91,7 @@ export default function SuspendedBlockedView({ activeCompany, overdueTotal }: Pr
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-foreground text-base font-semibold">Datos de pago flexyflow</CardTitle>
+                    <CardTitle className="text-foreground text-base font-semibold">Datos de pago bistro</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
                     {payment?.breb_key && (
@@ -120,7 +120,7 @@ export default function SuspendedBlockedView({ activeCompany, overdueTotal }: Pr
                     )}
                     {!payment?.breb_key && !payment?.account_number && (
                         <p className="text-sm text-gray-500 sm:col-span-2">
-                            Los datos de pago no están disponibles en este momento. Escribe a soporte@flexyflow.co.
+                            Los datos de pago no están disponibles en este momento. Escribe a hello@funcionbase.com.
                         </p>
                     )}
                 </CardContent>

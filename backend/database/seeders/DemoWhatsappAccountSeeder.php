@@ -9,10 +9,9 @@ use Illuminate\Database\Seeder;
 /**
  * Pre-conecta el numero de prueba de Meta a la empresa demo del QaSeeder.
  *
- * Datos del numero de prueba (Meta Developer Console, app 1265007232388204):
- *   - Numero:           +1 555 637 2625
- *   - Phone Number ID:  1061107973753281
- *   - WABA ID:          1258801695847080
+ * Los identificadores del numero de prueba (Meta Developer Console) se leen
+ * de variables de entorno — configuralos con los datos de tu propia app de
+ * Meta en Meta for Developers > WhatsApp > API Setup.
  *
  * Asi cuando llegue un webhook real al ambiente QA, el resolver phone_number_id
  * → company_nit encuentra la empresa demo y crea/actualiza un Chat de WhatsApp.
@@ -22,12 +21,6 @@ use Illuminate\Database\Seeder;
 class DemoWhatsappAccountSeeder extends Seeder
 {
     private const DEMO_COMPANY_NIT = '1';
-
-    private const TEST_PHONE_NUMBER_ID = '1061107973753281';
-
-    private const TEST_WABA_ID = '1258801695847080';
-
-    private const TEST_PHONE_E164 = '+15556372625';
 
     public function run(): void
     {
@@ -45,10 +38,10 @@ class DemoWhatsappAccountSeeder extends Seeder
             [
                 'provisioning_mode' => 'embedded_signup',
                 'status' => 'connected',
-                'waba_id' => self::TEST_WABA_ID,
-                'phone_number_id' => self::TEST_PHONE_NUMBER_ID,
-                'business_id' => env('META_BUSINESS_ID', '929046296489964'),
-                'phone_e164' => self::TEST_PHONE_E164,
+                'waba_id' => env('META_TEST_WABA_ID', ''),
+                'phone_number_id' => env('META_TEST_PHONE_NUMBER_ID', ''),
+                'business_id' => env('META_BUSINESS_ID', ''),
+                'phone_e164' => env('META_TEST_PHONE_E164', ''),
                 'display_name' => 'SuperPapas (QA test)',
                 'display_name_status' => 'APPROVED',
                 'is_business_verified' => false,

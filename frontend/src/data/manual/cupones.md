@@ -1,7 +1,7 @@
 ---
 title: "Cupones y descuentos"
 description: "Promociones controladas: porcentaje o monto fijo, vigencia, alcance por sede, primer pedido, un solo uso por cliente, hora feliz automática e historial exportable."
-metaTitle: "Cupones y descuentos — Manual bistro.flexyflow.co"
+metaTitle: "Cupones y descuentos — Manual bistro.example.com"
 metaDescription: "Cupones por porcentaje o monto fijo, alcance por sede, hora feliz automática, un solo uso por teléfono, primer pedido, historial y exportación a PDF."
 section: "clientes y mercadeo"
 readingTime: "8 min"

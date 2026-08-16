@@ -115,7 +115,7 @@ export interface CloseSessionResult {
 }
 
 const POLL_INTERVAL_MS = 30_000;
-const SELECTED_REGISTER_KEY = 'flexyflow.selected_register_id';
+const SELECTED_REGISTER_KEY = 'bistro.selected_register_id';
 
 function selectedRegisterKey(branchId: string): string {
     return `${SELECTED_REGISTER_KEY}:${branchId}`;

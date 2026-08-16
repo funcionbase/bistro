@@ -40,7 +40,7 @@
 
 @section('panel_body')
     <p>
-        Las fallas del servidor se registran automáticamente y disparan alertas a oncall. Si esto bloquea una operación crítica (cobro, cierre de caja, factura) escríbenos a <span class="text-foreground font-medium">info@flexyflow.co</span> para revisarlo de inmediato.
+        Las fallas del servidor se registran automáticamente y disparan alertas a oncall. Si esto bloquea una operación crítica (cobro, cierre de caja, factura) escríbenos a <span class="text-foreground font-medium">hello@funcionbase.com</span> para revisarlo de inmediato.
     </p>
 @endsection
 

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Lista de direcciones que NO se deben enviar correos transaccionales.
  * Poblada por el webhook `/api/v1/webhooks/ses-notifications` que recibe
- * notificaciones SNS desde el SES Configuration Set `flexyflow-default`.
+ * notificaciones SNS desde el SES Configuration Set `bistro-default`.
  * Consultada por el listener `AbortIfSuppressed` antes de cada envío para
  * evitar danar la reputación del dominio (bounce rate > 5% o complaint
  * rate > 0.1% degradan deliverability rapidísimo).

@@ -21,7 +21,7 @@ use RuntimeException;
  * `companies.menu_primary_color`, e `icons[]` rasterizados desde su logo).
  *
  * Si no hay JWT válido, no hay empresa activa, o la empresa nunca subió logo,
- * se devuelve el manifest con branding flexyflow (logo black-font sobre blanco).
+ * se devuelve el manifest con branding bistro (logo black-font sobre blanco).
  *
  * El navegador re-pide el manifest periódicamente; un Cache-Control corto
  * (5 min, privado) evita golpear DB en cada visita sin atrasar mucho un
@@ -118,7 +118,7 @@ class PwaManifestController extends Controller
     /**
      * Resuelve los 4 iconos del manifest. Si la empresa tiene logo rasterizado
      * (vía LogoIconRasterizer), se usan esos PNGs por-empresa; si no, se cae
-     * a los iconos flexyflow por defecto en `/icons/`.
+     * a los iconos bistro por defecto en `/icons/`.
      *
      * @return array<int, array<string, string>>
      */
@@ -155,7 +155,7 @@ class PwaManifestController extends Controller
      * Sirve el apple-touch-icon dinámico. iOS Safari NO consulta el manifest
      * para esto; lee el `<link rel="apple-touch-icon">` del HTML, que apunta
      * fijo a `/apple-touch-icon.png`. Esta ruta resuelve a la versión de la
-     * empresa activa (si existe) o al logo flexyflow por defecto.
+     * empresa activa (si existe) o al logo bistro por defecto.
      */
     public function appleTouchIcon(Request $request): Response
     {

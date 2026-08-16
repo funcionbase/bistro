@@ -24,7 +24,7 @@ use Illuminate\Database\Seeder;
 //   ├───────────────────────────┼─────────────────────────────────┤
 //   │ cristianmarint@gmail.com  │ Propietario                     │
 //   ├───────────────────────────┼─────────────────────────────────┤
-//   │ flexyflowco@gmail.com     │ Administradora (Carolina Mejía) │
+//   │ funcionbaseco@gmail.com     │ Administradora (Carolina Mejía) │
 //   ├───────────────────────────┼─────────────────────────────────┤
 //   │ flexyconsultora@gmail.com │ Cocina (Sebastián Ramírez)      │
 //   ├───────────────────────────┼─────────────────────────────────┤

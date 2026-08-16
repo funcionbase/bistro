@@ -18,7 +18,7 @@
 ```bash
 # clonar
 git clone <repo>
-cd flexyflow.restaurante/application
+cd bistro.restaurante/application
 
 # dependencias
 composer install

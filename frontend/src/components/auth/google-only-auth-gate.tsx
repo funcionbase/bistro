@@ -218,7 +218,7 @@ export default function GoogleOnlyAuthGate({ variant = 'login', manualOnly = fal
                 )}
 
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                    Al continuar aceptas los Términos y la Política de privacidad de flexyflow. Tu sesión queda asociada a la cuenta de Google con la que entres.
+                    Al continuar aceptas los Términos y la Política de privacidad de bistro. Tu sesión queda asociada a la cuenta de Google con la que entres.
                 </p>
             </div>
         </AuthHeroLayout>

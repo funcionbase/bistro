@@ -226,7 +226,7 @@ Ver `Facturación-Electrónica-DIAN.md` para detalles del modelo, providers sopo
 |--------|------|------------|-------|
 | `GET` | `/api/v1/whatsapp` | `whatsapp.read,read` | Estado actual de la cuenta |
 | `POST` | `/api/v1/whatsapp/embedded-signup-callback` | `whatsapp.connect,create` + OTP | Conectar via Meta SDK |
-| `POST` | `/api/v1/whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de flexyflow |
+| `POST` | `/api/v1/whatsapp/naas-request` | `whatsapp.connect,create` + OTP | Solicitar número de bistro |
 | `DELETE` | `/api/v1/whatsapp/phone` | `whatsapp.swap_phone,delete` + Policy + OTP | Cambiar número (owner-only) |
 | `DELETE` | `/api/v1/whatsapp` | `whatsapp.disconnect,delete` + Policy + OTP | Desconectar (owner-only) |
 | `POST` | `/api/v1/whatsapp/verification/request` | `whatsapp.read,read` | Solicitar OTP |

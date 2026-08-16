@@ -26,7 +26,7 @@
 
 @section('panel_body')
     <p>
-        En flexyflow el acceso a cada módulo se asigna por rol. Si necesitas entrar a esta sección, el propietario puede ajustar tu rol desde <span class="text-foreground font-medium">Gestión &rsaquo; Usuarios</span>.
+        En bistro el acceso a cada módulo se asigna por rol. Si necesitas entrar a esta sección, el propietario puede ajustar tu rol desde <span class="text-foreground font-medium">Gestión &rsaquo; Usuarios</span>.
     </p>
 @endsection
 

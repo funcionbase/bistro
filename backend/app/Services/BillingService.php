@@ -319,8 +319,8 @@ class BillingService
      * #facturación-dian): el conteo es estable en el tiempo y no cambia si un
      * documento transiciona de estado después del cierre del período.
      *
-     * Las invoices SaaS de flexyflow generan `electronic_documents` con
-     * `company_nit = FLEXYFLOW_NIT`, no el de la empresa cliente — el filtro
+     * Las invoices SaaS de bistro generan `electronic_documents` con
+     * `company_nit = BISTRO_NIT`, no el de la empresa cliente — el filtro
      * por `$companyNit` ya las excluye sin lógica adicional.
      *
      * @return Collection<int, object{dian_resolution_id: string, count: int}>

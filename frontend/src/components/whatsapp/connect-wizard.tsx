@@ -253,7 +253,7 @@ export function ConnectWizard({
                 <AlertTitle>Antes de conectar</AlertTitle>
                 <AlertDescription className="space-y-3">
                     <p>
-                        flexyflow vincula tu WhatsApp como un dispositivo más (igual que WhatsApp Web). Tu número sigue funcionando en tu celular.
+                        bistro vincula tu WhatsApp como un dispositivo más (igual que WhatsApp Web). Tu número sigue funcionando en tu celular.
                         WhatsApp no autoriza formalmente este tipo de conexión y <strong>puede bloquear el número</strong>, sobre todo si se usa para
                         enviar mensajes masivos no solicitados.
                     </p>

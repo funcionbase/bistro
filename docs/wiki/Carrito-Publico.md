@@ -26,7 +26,7 @@ Existen dos canales públicos complementarios:
    usuario. Sección final.
 
 > **Nota (unificación desde /chats)**: el panel de chats YA NO envía links
-> de carrito con CartJWT a `pedidos.flexyflow.co`. La opción unificada
+> de carrito con CartJWT a `pedidos.example.com`. La opción unificada
 > "Enviar la carta" genera un link corto `/menus?cart={uuid}` respaldado por
 > una `CartSession` ligada al chat (`chat_id`); al confirmar el pedido desde
 > la carta, la sesión se convierte (`order_id`) y el resumen se precarga en
@@ -345,7 +345,7 @@ TABLES_SESSION_INACTIVITY_MINUTES=240    # job de expiración
 # Carrito Bot (legacy)
 CART_JWT_SECRET=...                       # requerido para activar
 CART_JWT_TTL=4200                         # 70 min
-CART_BASE_URL=https://pedidos.flexyflow.co
+CART_BASE_URL=https://pedidos.example.com
 ```
 
 Rate limiters (en `AppServiceProvider`):

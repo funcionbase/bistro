@@ -157,7 +157,7 @@ function TableJoinSkeleton() {
  * grid 7/5 con HeroHeadline + form a la izquierda y HeroPanel lime con el
  * branding de la empresa a la derecha. El `primary_color` de la empresa
  * va en acentos puntuales (nombre de la empresa) — el lime del DS manda
- * en el panel hero por consistencia visual de marca flexyflow.
+ * en el panel hero por consistencia visual de marca bistro.
  */
 function TableJoinForm({ context }: { context: TableJoinContext }) {
     const { qrToken, table, branch, company, phoneRegexHint } = context;
@@ -285,7 +285,7 @@ function TableJoinForm({ context }: { context: TableJoinContext }) {
         <div className="bg-background flex min-h-svh items-center justify-center p-3 sm:p-4 md:p-8">
             <div className="w-full max-w-6xl">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16">
-                    {/* Columna izquierda: logo flexyflow + headline + form */}
+                    {/* Columna izquierda: logo bistro + headline + form */}
                     <div className="flex flex-col gap-8 md:col-span-7 md:gap-10">
                         <img src="/images/logo-black-font.svg" alt={appName} className="block h-9 w-auto md:h-10 dark:hidden" />
                         <img src="/images/logo-white-font.svg" alt={appName} className="hidden h-9 w-auto md:h-10 dark:block" />

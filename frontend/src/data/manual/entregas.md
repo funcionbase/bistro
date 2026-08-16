@@ -1,8 +1,8 @@
 ---
 title: "Entregas / Domicilios"
 description: "La lista de domicilios, asignación de domiciliario, modo auto-asignación, reasignación, avisos por WhatsApp y métricas de entregas."
-metaTitle: "Entregas / Domicilios — Manual bistro.flexyflow.co"
-metaDescription: "Cómo gestionar los domicilios en bistro.flexyflow.co: asignación manual y automática, reasignación, cancelación y métricas de entrega."
+metaTitle: "Entregas / Domicilios — Manual bistro.example.com"
+metaDescription: "Cómo gestionar los domicilios en bistro.example.com: asignación manual y automática, reasignación, cancelación y métricas de entrega."
 section: "el día a día"
 readingTime: "8 min"
 lastUpdated: "8 de julio de 2026"

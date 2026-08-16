@@ -1,7 +1,7 @@
 ---
 title: "Alertas"
-description: "Avisos accionables sobre stock, costos, margen, popularidad, mora con flexyflow y emisión electrónica DIAN. El sistema vigila tu operación y te dice qué revisar primero."
-metaTitle: "Alertas — Manual bistro.flexyflow.co"
+description: "Avisos accionables sobre stock, costos, margen, popularidad, mora con bistro y emisión electrónica DIAN. El sistema vigila tu operación y te dice qué revisar primero."
+metaTitle: "Alertas — Manual bistro.example.com"
 metaDescription: "Avisos accionables cuando un insumo se acaba, un costo se dispara, un plato deja de ser rentable, una factura entra en mora o la DIAN rechaza una emisión electrónica."
 section: "números y reportes"
 readingTime: "6 min"
@@ -12,7 +12,7 @@ lastUpdated: "8 de julio de 2026"
 
 ## Para qué sirven
 
-Las alertas vigilan tu inventario, tus costos, la rentabilidad de cada plato, la popularidad de la carta, la mora con tu suscripción a flexyflow y la emisión electrónica DIAN. Cuando algo se sale del rango sano, te aparece una **alerta accionable** en el panel de inicio con la descripción y un enlace al sitio donde actuar.
+Las alertas vigilan tu inventario, tus costos, la rentabilidad de cada plato, la popularidad de la carta, la mora con tu suscripción a bistro y la emisión electrónica DIAN. Cuando algo se sale del rango sano, te aparece una **alerta accionable** en el panel de inicio con la descripción y un enlace al sitio donde actuar.
 
 No se automatiza nada — el sistema te dice qué pasa, tú decides qué hacer. Es una segunda opinión que mira números que tú no tienes tiempo de mirar todos los días.
 
@@ -48,12 +48,12 @@ Cuando un plato del menú activo no se ha vendido en varios días (típicamente 
 
 ## Alertas administrativas
 
-### Pagos vencidos con flexyflow
+### Pagos vencidos con bistro
 
 Si una factura de tu suscripción al panel quedó vencida, te aparece un aviso en la parte superior de la app. Es informativo, no bloquea — tu operación sigue funcionando con normalidad mientras se resuelve el pago.
 
 - **Naranja:** mora reciente, una factura vencida.
-- **Rojo:** mora prolongada, dos o más facturas vencidas. El equipo comercial de flexyflow está al tanto y se pone en contacto.
+- **Rojo:** mora prolongada, dos o más facturas vencidas. El equipo comercial de bistro está al tanto y se pone en contacto.
 
 Si la mora se prolonga varios meses, la cuenta puede pasar a modo solo-lectura mientras se regulariza. Detalles en [facturación](/manual/facturacion).
 
@@ -77,7 +77,7 @@ En el **panel de inicio** aparece un bloque "Alertas" con todas las activas, ord
 
 Cada madrugada, un proceso automático evalúa las cuatro reglas operativas (stock bajo, subida de costo, margen bajo, plato sin ventas) sobre los datos del día. Si hay alertas nuevas, las suma al panel. Si una alerta del día anterior sigue activa, se actualiza (no se duplica).
 
-Las alertas de mora con flexyflow y de emisión DIAN no esperan a la madrugada: se prenden apenas ocurre el evento.
+Las alertas de mora con bistro y de emisión DIAN no esperan a la madrugada: se prenden apenas ocurre el evento.
 
 <div class="callout callout-info">
 <p>

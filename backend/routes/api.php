@@ -1839,7 +1839,7 @@ Route::prefix('v1')->group(function () {
         });
 
     // Carrito publico — autenticado solo por el JWT de carrito (CartJwtService).
-    // El front lo invoca al abrir la URL pedidos.flexyflow.co/{jwt}.
+    // El front lo invoca al abrir la URL pedidos.example.com/{jwt}.
     Route::post('cart/migrate-jwt/{jwt}', [CartController::class, 'migrateJwt'])
         ->where('jwt', '[A-Za-z0-9._-]+')
         ->name('api.cart.migrate-jwt');

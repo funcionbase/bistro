@@ -196,7 +196,7 @@ Throttle: 20 req/min en el prefijo `push/`. Ver `PWA-Push-Notifications.md` para
 3. Submit: `POST /api/v1/account/delete` con `{confirm_email: '<email>'}`.
 4. Backend valida `confirm_email` igual al email actual y ejecuta `users::delete()` (hard delete).
 5. Cascade: borra `company_users`, `user_acceptances`, `user_active_tokens`, `push_subscriptions`.
-6. UI: invalida JWT (cookie `flexyflow_jwt` con `expires` pasado) y redirige a `/`.
+6. UI: invalida JWT (cookie `bistro_jwt` con `expires` pasado) y redirige a `/`.
 
 ### Cambiar tema (apariencia)
 

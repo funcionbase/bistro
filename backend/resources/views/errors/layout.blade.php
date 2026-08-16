@@ -12,7 +12,7 @@
 
     Para visitantes anónimos: nunca muestra logo/colores de `activeCompany` (esas
     shared props pertenecen al contexto autenticado). Usa siempre el wordmark
-    genérico de flexyflow.
+    genérico de bistro.
 
     Hijos disponibles (vía @yield/@section):
     - title          string corto para <title>
@@ -56,7 +56,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
 
-    <title>@yield('title', 'Error') · flexyflow</title>
+    <title>@yield('title', 'Error') · bistro</title>
 
     {{-- Iconos: mismo set que el index.html del frontend. El SVG es el favicon
          real en navegadores modernos; el PNG 192 cubre los que no renderizan
@@ -84,9 +84,9 @@
             <div class="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16">
                 {{-- Columna izquierda: logo + hero + CTAs (col-span-7, mismo split que welcome/auth) --}}
                 <div class="flex flex-col gap-8 md:col-span-7 md:gap-10 lg:col-span-7">
-                    <a href="/" class="inline-flex items-center" aria-label="flexyflow inicio">
-                        <img src="/images/logo-black-font.svg" alt="flexyflow" class="block h-9 w-auto md:h-10 dark:hidden" />
-                        <img src="/images/logo-white-font.svg" alt="flexyflow" class="hidden h-9 w-auto md:h-10 dark:block" />
+                    <a href="/" class="inline-flex items-center" aria-label="bistro inicio">
+                        <img src="/images/logo-black-font.svg" alt="bistro" class="block h-9 w-auto md:h-10 dark:hidden" />
+                        <img src="/images/logo-white-font.svg" alt="bistro" class="hidden h-9 w-auto md:h-10 dark:block" />
                     </a>
 
                     {{-- HeroHeadline replicado en Blade: eyebrow + H1 font-brand + description --}}
@@ -113,7 +113,7 @@
                     @endif
 
                     <p class="text-muted-foreground text-xs">
-                        &copy; {{ date('Y') }} flexyflow &middot; @yield('footer_label')
+                        &copy; {{ date('Y') }} bistro &middot; @yield('footer_label')
                     </p>
                 </div>
 

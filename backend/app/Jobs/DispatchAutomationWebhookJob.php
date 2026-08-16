@@ -76,9 +76,9 @@ class DispatchAutomationWebhookJob implements ShouldQueue
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders([
-                    'X-Flexyflow-Event' => $this->event,
-                    'X-Flexyflow-Delivery' => $this->deliveryId,
-                    'X-Flexyflow-Signature' => $signature,
+                    'X-funcionbase-Event' => $this->event,
+                    'X-funcionbase-Delivery' => $this->deliveryId,
+                    'X-funcionbase-Signature' => $signature,
                 ])
                 ->withBody($json, 'application/json')
                 ->post($flow->url);

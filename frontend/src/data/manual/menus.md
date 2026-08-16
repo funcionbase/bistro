@@ -1,8 +1,8 @@
 ---
 title: "Menús"
 description: "Cómo crear y publicar tu carta, editar platos, subir fotos, definir recetas para el inventario, configurar el KDS y generar el QR."
-metaTitle: "Menús — Manual bistro.flexyflow.co"
-metaDescription: "Cómo crear categorías, platos, recetas, fotos, menú público, QR y configurar el KDS de cocina en bistro.flexyflow.co."
+metaTitle: "Menús — Manual bistro.example.com"
+metaDescription: "Cómo crear categorías, platos, recetas, fotos, menú público, QR y configurar el KDS de cocina en bistro.example.com."
 section: "el día a día"
 readingTime: "9 min"
 lastUpdated: "8 de julio de 2026"
@@ -53,7 +53,7 @@ Los platos agotados se muestran tachados. Los borradores no aparecen. Si el nego
 
 ## Estaciones KDS
 
-Cada categoría del menú puede ir a una estación de cocina diferente. Cuando la orden entra, bistro flexy separa los ítems por estación y manda cada parte a la pantalla correcta. El cocinero ve solo lo suyo, el bartender solo lo de barra.
+Cada categoría del menú puede ir a una estación de cocina diferente. Cuando la orden entra, bistro separa los ítems por estación y manda cada parte a la pantalla correcta. El cocinero ve solo lo suyo, el bartender solo lo de barra.
 
 ### Configuración de estaciones
 

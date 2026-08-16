@@ -1,7 +1,7 @@
 /**
  * Marker opaco que el frontend usa para representar "sesión autenticada".
  *
- * Estado FINAL deseado: el JWT vive únicamente en cookie HttpOnly (`flexyflow_jwt`)
+ * Estado FINAL deseado: el JWT vive únicamente en cookie HttpOnly (`bistro_jwt`)
  * inaccesible al JS; este marker reemplaza al token en la prop Inertia `token` para
  * que el código que verifica `if (token) ...` siga funcionando sin exponer el JWT.
  *

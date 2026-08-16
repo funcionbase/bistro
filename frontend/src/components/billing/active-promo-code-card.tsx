@@ -50,7 +50,7 @@ export function ActivePromoCodeCard({ active, canCancel, onCancel }: ActivePromo
 
     const appliedViaLabel: Record<ActiveCompanyPromoCode['applied_via'], string> = {
         enrollment: 'Aplicado al registrarse',
-        github_action: 'Aplicado por flexyflow',
+        github_action: 'Aplicado por bistro',
         self_service: 'Aplicado desde tu panel',
     };
 

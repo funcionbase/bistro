@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * Credenciales de la app de Meta de flexyflow (Tech Provider/BSP).
+ * Credenciales de la app de Meta de bistro (Tech Provider/BSP).
  *
  * Una sola fila activa por ambiente (qa | production). Almacena los secretos
  * cifrados en reposo via cast `encrypted`. Se usa para iniciar Embedded Signup,
  * intercambiar el code de autorizacion, validar firmas HMAC del webhook y
- * gestionar las WABAs de los clientes en nombre de flexyflow.
+ * gestionar las WABAs de los clientes en nombre de bistro.
  *
  * @property string $app_id
  * @property string $app_secret_encrypted

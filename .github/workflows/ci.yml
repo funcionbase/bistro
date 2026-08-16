@@ -1,5 +1,5 @@
 # Caller mínimo del guard de versionado. La lógica vive en el reusable
-# de apps-flexyflow-co (workflow.md §6): falla el push si cambió código
+# de apps-bistro-co (workflow.md §6): falla el push si cambió código
 # desplegable sin bump de version y autosincroniza los badges del README.
 name: CI
 
@@ -12,4 +12,4 @@ permissions:
 
 jobs:
   version-guard:
-    uses: cristianmarint/apps-flexyflow-co/.github/workflows/version-guard.yml@main
+    uses: cristianmarint/apps-bistro-co/.github/workflows/version-guard.yml@main

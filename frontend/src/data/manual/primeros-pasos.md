@@ -1,8 +1,8 @@
 ---
 title: "Primeros pasos"
 description: "El primer ingreso, los datos del negocio, cómo agregar tu equipo y arrancar la operación desde cero."
-metaTitle: "Primeros pasos — Manual bistro.flexyflow.co"
-metaDescription: "Guía paso a paso para crear tu cuenta, configurar el negocio, agregar el equipo y hacer tu primer pedido en bistro.flexyflow.co."
+metaTitle: "Primeros pasos — Manual bistro.example.com"
+metaDescription: "Guía paso a paso para crear tu cuenta, configurar el negocio, agregar el equipo y hacer tu primer pedido en bistro.example.com."
 section: "para arrancar"
 readingTime: "8 min"
 lastUpdated: "8 de julio de 2026"
@@ -12,7 +12,7 @@ lastUpdated: "8 de julio de 2026"
 
 ## 1. Entra con tu cuenta de Google
 
-En [bistro.flexyflow.co](https://bistro.flexyflow.co) le das a <kbd>Continuar con Google</kbd>. Entras con tu cuenta de Google de siempre — no tienes que crear ni recordar una contraseña nueva.
+En [bistro.example.com](https://bistro.example.com) le das a <kbd>Continuar con Google</kbd>. Entras con tu cuenta de Google de siempre — no tienes que crear ni recordar una contraseña nueva.
 
 <div class="callout callout-info">
 <p>
@@ -37,7 +37,7 @@ Después del perfil, el sistema te lleva al formulario de registro del negocio:
 <div class="callout callout-warn">
 <p>
 <strong>Activación manual:</strong> no hay activación automática. Un miembro del equipo de
-flexyflow revisa el documento y activa la cuenta. Si tienes apuro, escríbenos por el chat de
+bistro revisa el documento y activa la cuenta. Si tienes apuro, escríbenos por el chat de
 soporte desde la pantalla de "en revisión" y lo resolvemos rápido.
 </p>
 </div>

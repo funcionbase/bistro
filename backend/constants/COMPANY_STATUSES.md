@@ -101,7 +101,7 @@ adjunta al `activeCompany` un snapshot adicional desde la BD:
 - `past_due_started_at` — `timestamp`, momento en que entró en mora.
 - `expected_block_at` — `date`, día calculado en que pasaría a `suspended`.
 - `payment_blocked_at` — `timestamp`, momento en que el sistema bloqueó.
-- `flexyflow_payment` — objeto con datos para regularizar pago.
+- `funcionbase_payment` — objeto con datos para regularizar pago.
 
 Esto vive en `companies.past_due_started_at`, `companies.expected_block_at`,
 `companies.payment_blocked_at` (migración foundation, líneas 82-84).

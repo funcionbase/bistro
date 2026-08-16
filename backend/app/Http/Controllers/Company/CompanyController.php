@@ -99,7 +99,7 @@ class CompanyController extends Controller
 
             // Rasterizar el logo en los 5 iconos PWA. Best-effort: si falla
             // (formato exótico, GD sin soporte), se loggea y se sigue — el
-            // manifest hace fallback a los iconos flexyflow por defecto.
+            // manifest hace fallback a los iconos bistro por defecto.
             try {
                 $this->logoRasterizer->rasterize($company->nit, $validated['logo_path']);
             } catch (\Throwable $e) {

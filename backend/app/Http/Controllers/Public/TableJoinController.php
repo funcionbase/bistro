@@ -106,7 +106,7 @@ class TableJoinController extends Controller
         // Cookie firmada httpOnly que ataja al comensal en esta mesa.
         //
         // SameSite=None + Secure: el deploy es cross-origin same-site — el SPA
-        // (`bistro.flexyflow.co`) y la API (`bistro-api.flexyflow.co`)
+        // (`bistro.example.com`) y la API (`bistro-api.example.com`)
         // viven en hosts distintos bajo el mismo site. Con `SameSite=Lax` el
         // navegador NO adjuntaría esta cookie en los fetch XHR del flujo de
         // mesa hacia la API. `None` permite el envío cross-site y `Secure`

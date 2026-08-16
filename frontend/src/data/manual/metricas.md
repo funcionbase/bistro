@@ -1,7 +1,7 @@
 ---
 title: "Métricas"
 description: "Tu cabina de mando: KPIs del día, mapas de calor, ranking de platos, costo de insumos en tiempo real, ingeniería de menú y vista consolidada cuando tienes varias sedes."
-metaTitle: "Métricas — Manual bistro.flexyflow.co"
+metaTitle: "Métricas — Manual bistro.example.com"
 metaDescription: "Ingresos en vivo, ticket promedio, mapas de calor por hora y día, ranking de platos, costo de insumos, ingeniería de menú, abandono de carrito y vista consolidada multi-sede."
 section: "números y reportes"
 readingTime: "8 min"

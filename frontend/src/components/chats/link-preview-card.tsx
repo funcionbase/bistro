@@ -21,8 +21,8 @@ const MENU_PREVIEW = {
 };
 
 // Hosts propios cuyos links de menú previsualizamos. El origin actual cubre
-// dev/qa/pdn sin hardcodear; pedidos.flexyflow.co aparece en chats viejos.
-const OWN_HOSTS = new Set(['pedidos.flexyflow.co']);
+// dev/qa/pdn sin hardcodear; pedidos.example.com aparece en chats viejos.
+const OWN_HOSTS = new Set(['pedidos.example.com']);
 
 /** ¿Es un link de carta NUESTRO? (mismo origin o host propio conocido, path /menus). */
 function ownMenuLink(rawUrl: string): boolean {
@@ -32,7 +32,7 @@ function ownMenuLink(rawUrl: string): boolean {
         const sameOrigin = typeof window !== 'undefined' && u.host === window.location.host;
         const ownHost = sameOrigin || OWN_HOSTS.has(u.host);
         if (!ownHost) return false;
-        // pedidos.flexyflow.co es todo carta; bistro solo en /menus.
+        // pedidos.example.com es todo carta; bistro solo en /menus.
         return OWN_HOSTS.has(u.host) || u.pathname === '/menus' || u.pathname.startsWith('/menus/');
     } catch {
         return false;

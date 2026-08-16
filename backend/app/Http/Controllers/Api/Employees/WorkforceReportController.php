@@ -118,7 +118,7 @@ class WorkforceReportController extends Controller
             'totals' => $this->presentTotals($rows),
             'filters' => $filters,
             'generatedAt' => Carbon::now('America/Bogota')->format('d/m/Y H:i'),
-            'footerText' => config('pdf.footer_text', 'Generado por flexyflow'),
+            'footerText' => config('pdf.footer_text', 'Generado por bistro'),
             'companyName' => $nit,
         ];
 

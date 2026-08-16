@@ -64,14 +64,14 @@ class CompanyRegistrationApprovedNotification extends Notification implements Bi
         $companyName = $this->company->commercial_name;
 
         return (new MailMessage)
-            ->subject("¡{$companyName} ya está activa en flexyflow!")
+            ->subject("¡{$companyName} ya está activa en bistro!")
             ->markdown('emails.billing.registration-approved', [
                 'companyName' => $companyName,
                 'name' => $notifiable->name,
                 'plan' => BillingPlanPresenter::forSubscription($this->subscription),
                 'trialEndsAt' => $this->company->paid_billing_starts_at?->format('d/m/Y'),
                 'panelUrl' => route('billing'),
-                'supportEmail' => config('mail.reply_to.address', 'soporte@flexyflow.co'),
+                'supportEmail' => config('mail.reply_to.address', 'hello@funcionbase.com'),
             ]);
     }
 

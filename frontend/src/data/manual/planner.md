@@ -1,8 +1,8 @@
 ---
 title: "Planificador de turnos"
 description: "Programa los turnos de tu equipo en una vista semanal o mensual: asigna empleados, horarios y cargos, y lleva el control de la cobertura de tu operación."
-metaTitle: "Planificador de turnos — Manual bistro.flexyflow.co"
-metaDescription: "Cómo usar el planificador de turnos de bistro.flexyflow.co: vista semanal, mensual, asignación de empleados por cargo y control de cobertura del local."
+metaTitle: "Planificador de turnos — Manual bistro.example.com"
+metaDescription: "Cómo usar el planificador de turnos de bistro.example.com: vista semanal, mensual, asignación de empleados por cargo y control de cobertura del local."
 section: "administración"
 readingTime: "5 min"
 lastUpdated: "8 de julio de 2026"
@@ -59,7 +59,7 @@ El acceso al planificador requiere el permiso de **ver y gestionar turnos**. Por
 <div class="callout callout-warn">
 <p>
 <strong>El planificador no bloquea el acceso al panel:</strong> un empleado puede
-ingresar a bistro flexy fuera de su turno programado — el planificador es de organización,
+ingresar a bistro fuera de su turno programado — el planificador es de organización,
 no de control de acceso horario.
 </p>
 </div>

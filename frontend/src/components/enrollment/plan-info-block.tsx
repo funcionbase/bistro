@@ -8,7 +8,7 @@ interface PlanInfoBlockProps {
 }
 
 /**
- * Bloque informativo del plan default de flexyflow — #246. Se renderiza
+ * Bloque informativo del plan default de bistro — #246. Se renderiza
  * debajo del HeroPanel cuando NO hay `?promo=` en la URL (el panel hero
  * se mantiene como marketing). Cuando hay promo válido, lo reemplaza
  * `<PromoLandingPanel>`.

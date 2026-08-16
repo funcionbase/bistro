@@ -7,7 +7,7 @@
 
 Hola, {{ $name }}.
 
-Detectamos facturas vencidas en tu cuenta de restaurante flexyflow.
+Detectamos facturas vencidas en tu cuenta de restaurante bistro.
 
 @component('mail::panel')
 <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #6B7280;">Período de gracia</span><br>

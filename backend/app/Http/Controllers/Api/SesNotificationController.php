@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
  *   POST /api/v1/webhooks/ses-notifications
  *
  * AWS SNS llama este endpoint cada vez que el SES Configuration Set
- * `flexyflow-default` reporta un evento (Bounce, Complaint, Delivery,
+ * `bistro-default` reporta un evento (Bounce, Complaint, Delivery,
  * DeliveryDelay, ...). En la suscripción inicial también llega un
  * SubscriptionConfirmation que hay que confirmar siguiendo el
  * `SubscribeURL`.
